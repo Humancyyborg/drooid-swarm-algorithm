@@ -212,20 +212,40 @@ def generate_points(n=3):
         n = 3
     return points_in_sphere(n, 0.1 + 1.2 * n)
 
-
-def calculate_collision_matrix(positions, arm):
-    dist = spatial.distance_matrix(x=positions, y=positions)
-    collision_matrix = (dist < 2 * arm).astype(np.float32)
-    np.fill_diagonal(collision_matrix, 0.0)
-
-    # get upper triangular matrix and check if they have collisions and append to all collisions
+def get_collision_drones(collision_matrix):
     upt = np.triu(collision_matrix)
     up_w1 = np.where(upt >= 1)
     all_collisions = []
     for i, val in enumerate(up_w1[0]):
         all_collisions.append((up_w1[0][i], up_w1[1][i]))
+    return all_collisions
 
-    return collision_matrix, all_collisions
+def calculate_collision_matrix(positions, arm, collision_mode):
+    dist = spatial.distance_matrix(x=positions, y=positions)
+    collision_matrix = (dist <= 2 * arm).astype(np.float32)
+    np.fill_diagonal(collision_matrix, 0.0)
+    # get upper triangular matrix and check if they have collisions and append to all collisions
+    all_collisions = get_collision_drones(collision_matrix=collision_matrix)
+    dist_matrix = dist / arm
+
+    if collision_mode >= 1:
+        # limit range, will add collision penalty once distance in (2 * arm, 3 * arm]
+        dist_penalty_matrix = np.logical_and(dist > 2 * arm, dist <= 3 * arm).astype(np.float32)
+        np.fill_diagonal(dist_penalty_matrix, 0.0)
+        all_penalty_collisions = get_collision_drones(collision_matrix=dist_penalty_matrix)
+    else:
+        all_penalty_collisions = []
+
+    if collision_mode >= 2:
+        # add reward once distance in (3 * arm, +inf]
+        dist_reward_matrix = (dist > 3 * arm).astype(np.float32)
+        np.fill_diagonal(dist_reward_matrix, 0.0)
+        all_reward_collisions = get_collision_drones(collision_matrix=dist_reward_matrix)
+    else:
+        all_reward_collisions = []
+
+
+    return collision_matrix, all_collisions, all_penalty_collisions, all_reward_collisions, dist_matrix
 
 
 def hyperbolic_proximity_penalty(dist_matrix, dt, coeff=0.0):
@@ -274,7 +294,7 @@ def perform_collision_between_drones(dyn1, dyn2):
     dyn2.vel += -cons_rand_val + np.random.normal(0, 0.15, 3)
 
     # Random forces for omega
-    omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
+    omega_max = 20 * np.pi  # this will amount to max 20 revolutions per second
     eps = 1e-5
     new_omega = np.random.uniform(low=-1, high=1, size=(3,))  # random direction in 3D space
     while all(np.abs(new_omega) < eps):

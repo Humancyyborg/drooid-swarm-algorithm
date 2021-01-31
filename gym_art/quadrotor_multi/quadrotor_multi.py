@@ -27,7 +27,7 @@ class QuadrotorEnvMulti(gym.Env):
                  swarm_obs='none', quads_use_numba=False, quads_settle=False, quads_settle_range_meters=1.0,
                  quads_vel_reward_out_range=0.8, quads_obstacle_mode='no_obstacles', quads_view_mode='local',
                  quads_obstacle_num=0, quads_obstacle_type='sphere', quads_obstacle_size=0.0, collision_force=True,
-                 adaptive_env=False, obstacle_traj='gravity', local_obs=-1):
+                 adaptive_env=False, obstacle_traj='gravity', local_obs=-1, collision_mode=0):
 
         super().__init__()
 
@@ -151,6 +151,9 @@ class QuadrotorEnvMulti(gym.Env):
         # measuring the total number of pairwise collisions per episode
         self.collisions_per_episode = 0
 
+        # Aux collision
+        self.collision_mode = collision_mode
+
         # some collisions may happen because the quadrotors get initialized on the collision course
         # if we wait a couple of seconds, then we can eliminate all the collisions that happen due to initialization
         # this is the actual metric that we want to minimize
@@ -183,7 +186,7 @@ class QuadrotorEnvMulti(gym.Env):
             obs_neighbor_rel = np.concatenate((obs_neighbor_rel, goals_rel), axis=1)
         if self.swarm_obs == 'pos_vel_dist' or self.swarm_obs == 'pos_vel_goals_dist':
             rel_pos = pos_neighbor - pos_vel[:3]
-            rel_dist = np.linalg.norm(rel_pos, axis=1).reshape(3, 1)
+            rel_dist = np.linalg.norm(rel_pos, axis=1).reshape(self.num_agents-1, 1)
             obs_neighbor_rel = np.concatenate((obs_neighbor_rel, rel_dist), axis=1)
 
         return obs_neighbor_rel
@@ -310,7 +313,8 @@ class QuadrotorEnvMulti(gym.Env):
             obs = obs_ext
 
         # Calculating collisions between drones
-        drone_col_matrix, self.curr_drone_collisions = calculate_collision_matrix(self.pos, self.envs[0].dynamics.arm)
+        drone_col_matrix, self.curr_drone_collisions, all_penalty_collisions, all_reward_collisions, dist_matrix \
+            = calculate_collision_matrix(self.pos, self.envs[0].dynamics.arm, self.collision_mode)
 
         unique_collisions = np.setdiff1d(self.curr_drone_collisions, self.prev_drone_collisions)
 
@@ -327,7 +331,31 @@ class QuadrotorEnvMulti(gym.Env):
         rew_collisions_raw = np.zeros(self.num_agents)
         if unique_collisions.any():
             rew_collisions_raw[unique_collisions] = -1.0
+
+        if self.collision_mode >= 1:
+            col_penalty_ratio = 1.0 / (self.num_agents - 1)
+            for i, j in all_penalty_collisions:
+                rel_ij_dist = dist_matrix[i, j] - 3.0
+                penalty_col = col_penalty_ratio * rel_ij_dist
+                rew_collisions_raw[i] += penalty_col
+                rew_collisions_raw[j] += penalty_col
+
         rew_collisions = self.rew_coeff["quadcol_bin"] * rew_collisions_raw
+
+        if self.collision_mode >= 2:
+            # 7.0 means the maximum reward is bounded by 10 = 7+3 arm_length;
+            # 3 in 7 + 3 means we would punish drones within 3 arm_length
+            col_rew_ratio = 1.0 / (self.num_agents - 1)
+            col_rew_ratio = col_rew_ratio / 7.0
+            for i, j in all_reward_collisions:
+                rel_ij_dist = dist_matrix[i, j] - 3.0
+                rel_ij_dist = np.clip(rel_ij_dist, 0.0, 7.0)
+                rew_col = col_rew_ratio * rel_ij_dist
+                rew_collisions_raw[i] += 0.6 * abs(infos[i]["rewards"]["rew_pos"]) * rew_col
+                rew_collisions_raw[j] += 0.6 * abs(infos[j]["rewards"]["rew_pos"]) * rew_col
+                rew_collisions[i] += rew_collisions_raw[i]
+                rew_collisions[j] += rew_collisions_raw[j]
+
 
         # COLLISION BETWEEN QUAD AND OBSTACLE(S)
         col_obst_quad = self.obstacles.collision_detection(pos_quads=self.pos, set_obstacles=self.set_obstacles)
