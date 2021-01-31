@@ -95,6 +95,10 @@ class QuadrotorEnvMulti(gym.Env):
             self.neighbor_obs_size = 6
         elif self.swarm_obs == 'pos_vel_goals':
             self.neighbor_obs_size = 9
+        elif self.swarm_obs == 'pos_vel_dist':
+            self.neighbor_obs_size = 7
+        elif self.swarm_obs == 'pos_vel_goals_dist':
+            self.neighbor_obs_size = 10
         elif self.swarm_obs == 'none':
             self.neighbor_obs_size = 0
         else:
@@ -174,13 +178,19 @@ class QuadrotorEnvMulti(gym.Env):
         vel_neighbor = np.stack([self.envs[j].dynamics.vel for j in range(len(self.envs)) if j != i])
         pos_vel_neighbor = np.concatenate((pos_neighbor, vel_neighbor), axis=1)
         obs_neighbor_rel = pos_vel_neighbor - pos_vel
-        if self.swarm_obs == 'pos_vel_goals':  # include relative goal info of neighbors
+        if 'pos_vel_goals' in self.swarm_obs:  # include relative goal info of neighbors
             goals_rel = np.stack([self.envs[j].goal for j in range(len(self.envs)) if j != i]) - pos_vel[:3]  # subtract pos of current drone
             obs_neighbor_rel = np.concatenate((obs_neighbor_rel, goals_rel), axis=1)
+        if self.swarm_obs == 'pos_vel_dist' or self.swarm_obs == 'pos_vel_goals_dist':
+            rel_pos = pos_neighbor - pos_vel[:3]
+            rel_dist = np.linalg.norm(rel_pos, axis=1).reshape(3, 1)
+            obs_neighbor_rel = np.concatenate((obs_neighbor_rel, rel_dist), axis=1)
+
         return obs_neighbor_rel
 
     def extend_obs_space(self, obs):
-        assert self.swarm_obs == 'pos_vel' or self.swarm_obs == 'pos_vel_goals', f'Invalid parameter {self.swarm_obs} passed in --obs_space'
+        assert self.swarm_obs == 'pos_vel' or self.swarm_obs == 'pos_vel_goals' or self.swarm_obs == 'pos_vel_dist' or \
+               self.swarm_obs == 'pos_vel_goals_dist', f'Invalid parameter {self.swarm_obs} passed in --obs_space'
         obs_neighbors = []
         for i in range(len(self.envs)):
             obs_neighbor_rel = self.get_obs_neighbor_rel(env_id=i)
