@@ -467,6 +467,9 @@ class Scenario_mix(QuadrotorScenario):
             "dynamic_formations": [QUADS_FORMATION_LIST, [4 * quad_arm_size, 30 * quad_arm_size], 16.0, str_dynamic_obstacles]
         }
 
+        # Aux collision
+        self.quads_mode = None
+
     def step(self, infos, rewards, pos):
         infos, rewards = self.scenario.step(infos=infos, rewards=rewards, pos=pos)
         return infos, rewards
@@ -482,7 +485,7 @@ class Scenario_mix(QuadrotorScenario):
         # reset formation size
         formation_size_low, formation_size_high = self.quads_formation_and_size_dict[mode][1]
         self.formation_size = np.random.uniform(low=formation_size_low, high=formation_size_high)
-
+        self.quads_mode = mode
         # init the scenario
         self.scenario = create_scenario(quads_mode=mode, envs=self.envs, num_agents=self.num_agents,
                                         room_dims=self.room_dims, rew_coeff=self.rew_coeff,

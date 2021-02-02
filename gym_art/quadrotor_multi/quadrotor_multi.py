@@ -380,10 +380,13 @@ class QuadrotorEnvMulti(gym.Env):
         dt = 1.0 / self.envs[0].control_freq
         spacing_reward = hyperbolic_proximity_penalty(dists, dt)
 
+        scenario_name = self.scenario.scenario.quads_mode if self.scenario.quads_mode == "mix" else self.scenario.quads_mode
         for i in range(self.num_agents):
             rewards[i] += rew_collisions[i]
             infos[i]["rewards"]["rew_quadcol"] = rew_collisions[i]
             infos[i]["rewards"]["rewraw_quadcol"] = rew_collisions_raw[i]
+            infos[i]["rewards"]["rew_quadcol_" + scenario_name] = rew_collisions[i]
+            infos[i]["rewards"]["rewraw_quadcol_" + scenario_name] = rew_collisions_raw[i]
 
             rewards[i] += rew_col_obst_quad[i]
             infos[i]["rewards"]["rew_quadcol_obstacle"] = rew_col_obst_quad[i]
@@ -441,6 +444,8 @@ class QuadrotorEnvMulti(gym.Env):
                 infos[i]['episode_extra_stats'] = {
                     'num_collisions': self.collisions_per_episode,
                     'num_collisions_after_settle': self.collisions_after_settle,
+                    'num_collisions_' + scenario_name: self.collisions_per_episode,
+                    'num_collisions_after_settle_' + scenario_name: self.collisions_after_settle,
                 }
 
             obs = self.reset()
