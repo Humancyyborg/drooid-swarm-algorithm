@@ -27,7 +27,7 @@ class QuadrotorEnvMulti(gym.Env):
                  swarm_obs='none', quads_use_numba=False, quads_settle=False, quads_settle_range_meters=1.0,
                  quads_vel_reward_out_range=0.8, quads_obstacle_mode='no_obstacles', quads_view_mode='local',
                  quads_obstacle_num=0, quads_obstacle_type='sphere', quads_obstacle_size=0.0, collision_force=True,
-                 adaptive_env=False, obstacle_traj='gravity', local_obs=-1):
+                 adaptive_env=False, obstacle_traj='gravity', local_obs=-1, attn_mode='dist'):
 
         super().__init__()
 
@@ -54,7 +54,7 @@ class QuadrotorEnvMulti(gym.Env):
                 rew_coeff, sense_noise, verbose, gravity, t2w_std, t2t_std, excite, dynamics_simplification,
                 quads_use_numba, self.swarm_obs, self.num_agents, quads_settle, quads_settle_range_meters,
                 quads_vel_reward_out_range, quads_view_mode, quads_obstacle_mode, quads_obstacle_num,
-                self.num_use_neighbor_obs
+                self.num_use_neighbor_obs, attn_mode
             )
             self.envs.append(e)
 
@@ -94,7 +94,11 @@ class QuadrotorEnvMulti(gym.Env):
         if self.swarm_obs == 'pos_vel':
             self.neighbor_obs_size = 6
         elif self.swarm_obs == 'attn':
-            self.neighbor_obs_size = 11
+            self.neighbor_obs_size = 6
+            if 'lmap' in attn_mode:
+                self.neighbor_obs_size += 4 ** 3 * 4
+            if 'dist' in attn_mode:
+                self.neighbor_obs_size += 5
         elif self.swarm_obs == 'pos_vel_goals':
             self.neighbor_obs_size = 9
         elif self.swarm_obs == 'none':
@@ -160,6 +164,9 @@ class QuadrotorEnvMulti(gym.Env):
         self.all_collisions = {}
         self.apply_collision_force = collision_force
 
+        # Aux Attention Encoder
+        self.attn_mode = attn_mode
+
     def all_dynamics(self):
         return tuple(e.dynamics for e in self.envs)
 
@@ -170,18 +177,86 @@ class QuadrotorEnvMulti(gym.Env):
             2 * np.pi / self.num_agents)
         return metric_dist
 
-    def get_obs_neighbor_attn(self, env_id):
-        i = env_id
+    def build_occupancy_maps(self, id, cell_size, cell_num):
+        occupancy_maps = []
+        for index, env in enumerate(self.envs):
+            if index == id:
+                continue
+            cur_pos, cur_vel = self.envs[index].dynamics.pos, self.envs[index].dynamics.vel
+            cur_vel_magnitude = max(1e-6, np.linalg.norm(cur_vel))
+            cur_vel_theta = np.arccos(cur_vel[2] / cur_vel_magnitude)
+            cur_vel_phi = np.arctan2(cur_vel[1], cur_vel[0])
+
+            obs_neighbor_rel, pos_neighbors_rel, vel_neighbors_rel = self.get_obs_neighbor_pos_vel(id=index)
+            other_pos_magnitude = np.clip(np.linalg.norm(pos_neighbors_rel, axis=1), 1e-6, np.sqrt(3) * self.envs[0].room_length)
+            other_pos_theta = np.arccos(pos_neighbors_rel[:, 2] / other_pos_magnitude)
+            other_pos_phi = np.arctan2(pos_neighbors_rel[:, 1], pos_neighbors_rel[:, 0])
+            rotation_bearing_theta = other_pos_theta - cur_vel_theta
+            rotation_bearing_phi = other_pos_phi - cur_vel_phi
+
+            other_pos = other_pos_magnitude * np.array([np.sin(rotation_bearing_theta) * np.cos(rotation_bearing_phi),
+                                                        np.sin(rotation_bearing_theta) * np.sin(rotation_bearing_phi),
+                                                        np.cos(rotation_bearing_theta)])
+
+            other_pos_index = np.floor(other_pos / cell_size + cell_num / 2)
+            other_pos_index[other_pos_index < 0] = float('-inf')
+            other_pos_index[other_pos_index >= cell_num] = float('-inf')
+            grid_indices = np.square(cell_num) * other_pos_index[:, 2] + cell_num * other_pos_index[:, 1] + other_pos_index[:, 0]
+            occupancy_map = np.isin(range(cell_num ** 3), grid_indices)
+
+            # calculate relative velocity for other agents
+            other_vel_magnitude = np.linalg.norm(vel_neighbors_rel, axis=1)
+            other_vel_theta = np.arccos(vel_neighbors_rel[:, 2] / other_vel_magnitude)
+            other_vel_phi = np.arctan2(vel_neighbors_rel[:, 1], vel_neighbors_rel[:, 0])
+            rotation_rel_vel_theta = other_vel_theta - cur_vel_theta
+            rotation_rel_vel_phi = other_vel_phi - cur_vel_phi
+            other_vel = other_vel_magnitude * np.array([np.sin(rotation_rel_vel_theta) * np.cos(rotation_rel_vel_phi),
+                                                        np.sin(rotation_rel_vel_theta) * np.sin(rotation_rel_vel_phi),
+                                                        np.cos(rotation_rel_vel_theta)])
+
+            # 3 means the channels, which is the size of pos
+            # 4 means the channel size: (vx, vy, vz, 1)
+            dm = [list() for _ in range(cell_num ** 3 * 4)]
+            for i, index in np.ndenumerate(grid_indices):
+                if index in range(cell_num ** 3):
+                    dm[4 * int(index)].append(other_vel[i][0])
+                    dm[4 * int(index) + 1].append(other_vel[i][1])
+                    dm[4 * int(index) + 2].append(other_vel[i][2])
+                    dm[4 * int(index) + 3].append(1)
+
+            for i, cell in enumerate(dm):
+                dm[i] = sum(dm[i]) / len(dm[i]) if len(dm[i]) != 0 else 0
+            occupancy_maps.append([dm])
+
+        return np.concatenate(occupancy_maps, axis=0)
+
+    def get_obs_neighbor_pos_vel(self, id):
+        i = id
         pos_neighbors = np.stack([self.envs[j].dynamics.pos for j in range(len(self.envs)) if j != i])
         pos_neighbors_rel = pos_neighbors - self.envs[i].dynamics.pos
-        dist_to_neighbors = np.linalg.norm(pos_neighbors_rel, axis=1).reshape(-1, 1)
         vel_neighbors = np.stack([self.envs[j].dynamics.vel for j in range(len(self.envs)) if j != i])
         vel_neighbors_rel = vel_neighbors - self.envs[i].dynamics.vel
-        neighbor_goals_rel = np.stack([self.envs[j].goal for j in range(len(self.envs)) if j != i]) - self.envs[i].dynamics.pos
-        dist_to_neighbor_goals = np.linalg.norm(neighbor_goals_rel, axis=1).reshape(-1, 1)
-        obs_neighbor = np.concatenate((pos_neighbors_rel, dist_to_neighbors, vel_neighbors_rel, neighbor_goals_rel, dist_to_neighbor_goals), axis=1)
-        return obs_neighbor
+        obs_neighbor_rel = np.concatenate((pos_neighbors_rel, vel_neighbors_rel), axis=1)
+        return obs_neighbor_rel, pos_neighbors_rel, vel_neighbors_rel
 
+    def get_obs_neighbor_attn(self, env_id):
+        i = env_id
+        obs_neighbor, pos_neighbors_rel, vel_neighbors_rel = self.get_obs_neighbor_pos_vel(id=i)
+
+        if "lmap" in self.attn_mode:
+            cell_size = 4 * self.envs[0].dynamics.arm
+            cell_num = 4
+            local_maps = self.build_occupancy_maps(id=env_id, cell_size=cell_size, cell_num=cell_num)
+            obs_neighbor = np.concatenate((obs_neighbor, local_maps), axis=1)
+
+
+        if "dist" in self.attn_mode:
+            dist_to_neighbors = np.linalg.norm(pos_neighbors_rel, axis=1).reshape(-1, 1)
+            neighbor_goals_rel = np.stack([self.envs[j].goal for j in range(len(self.envs)) if j != i]) - self.envs[i].dynamics.pos
+            dist_to_neighbor_goals = np.linalg.norm(neighbor_goals_rel, axis=1).reshape(-1, 1)
+            obs_neighbor = np.concatenate((obs_neighbor, dist_to_neighbors, dist_to_neighbor_goals, neighbor_goals_rel), axis=1)
+
+        return obs_neighbor
 
     def get_obs_neighbor_rel(self, env_id):
         i = env_id

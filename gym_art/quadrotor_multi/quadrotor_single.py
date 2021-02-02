@@ -691,7 +691,7 @@ class QuadrotorSingle:
                  rew_coeff=None, sense_noise=None, verbose=False, gravity=GRAV,
                  t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False, swarm_obs='none', num_agents=1,quads_settle=False,
                  quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8,
-                 view_mode='local', obstacle_mode='no_obstacles', obstacle_num=0, num_use_neighbor_obs=0):
+                 view_mode='local', obstacle_mode='no_obstacles', obstacle_num=0, num_use_neighbor_obs=0, attn_mode='dist'):
         np.seterr(under='ignore')
         """
         Args:
@@ -784,6 +784,9 @@ class QuadrotorSingle:
         ## Obstacle Mode
         self.obstacle_mode = obstacle_mode
         self.obstacle_num = obstacle_num
+
+        ## Aux attention encoder
+        self.attn_mode = attn_mode
 
         ###############################################################################
         ## DYNAMICS (and randomization)
@@ -965,6 +968,7 @@ class QuadrotorSingle:
             "goal": [-(self.room_box[1] - self.room_box[0]), self.room_box[1] - self.room_box[0]],
             "nbr_dist": [np.array([0]), np.array([np.linalg.norm(self.room_box[1] - self.room_box[0])])],
             "nbr_goal_dist": [np.array([0]), np.array([np.linalg.norm(self.room_box[1] - self.room_box[0])])],
+            "lmap": [np.tile(np.append(0.0, -2.0 * self.dynamics.vxyz_max * np.ones(3)), 64), np.tile(np.append(1.0, 2.0 * self.dynamics.vxyz_max * np.ones(3)), 64)],
         }
         self.obs_comp_names = list(self.obs_space_low_high.keys())
         self.obs_comp_sizes = [self.obs_space_low_high[name][1].size for name in self.obs_comp_names]
@@ -975,7 +979,12 @@ class QuadrotorSingle:
         elif self.swarm_obs == 'pos_vel_goals' and self.num_agents > 1:
             obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['goal']) * self.num_use_neighbor_obs
         elif self.swarm_obs == 'attn' and self.num_agents > 1:
-            obs_comps = obs_comps + (['rxyz'] + ['nbr_dist'] + ['rvxyz'] + ['goal'] + ['nbr_goal_dist']) * self.num_use_neighbor_obs
+            neighbor_obs_comps = (['rxyz'] + ['rvxyz'])
+            if "lmap" in self.attn_mode:
+                neighbor_obs_comps += (['lmap'])
+            if "dist" in self.attn_mode:
+                neighbor_obs_comps += (['nbr_dist'] + ['nbr_goal_dist'] + ['goal'])
+            obs_comps = obs_comps + neighbor_obs_comps * self.num_use_neighbor_obs
         if self.obstacle_mode != 'no_obstacles' and self.obstacle_num > 0:
             obs_comps = obs_comps + (['roxyz'] + ['rovxyz']) * (self.obstacle_num)
 
