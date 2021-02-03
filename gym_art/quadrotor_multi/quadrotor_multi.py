@@ -164,6 +164,9 @@ class QuadrotorEnvMulti(gym.Env):
         self.all_collisions = {}
         self.apply_collision_force = collision_force
 
+        self.col_num_dict = {}
+        self.reset_num = 0
+
     def all_dynamics(self):
         return tuple(e.dynamics for e in self.envs)
 
@@ -288,6 +291,13 @@ class QuadrotorEnvMulti(gym.Env):
         self.scene.reset(tuple(e.goal for e in self.envs), self.all_dynamics(), self.obstacles, self.all_collisions)
 
         self.collisions_per_episode = self.collisions_after_settle = 0
+        self.reset_num += 1
+        tmp_col_num_dict = {}
+        for k, v in self.col_num_dict.items():
+            tmp_col_num_dict[k] = v*1.0 / self.reset_num
+
+        print(tmp_col_num_dict)
+
         return obs
 
     # noinspection PyTypeChecker
@@ -329,8 +339,13 @@ class QuadrotorEnvMulti(gym.Env):
         self.prev_drone_collisions = self.curr_drone_collisions
 
         rew_collisions_raw = np.zeros(self.num_agents)
+        scenario_name = self.scenario.quads_mode if self.quads_mode == "mix" else self.quads_mode
         if unique_collisions.any():
             rew_collisions_raw[unique_collisions] = -1.0
+            if scenario_name not in self.col_num_dict:
+                self.col_num_dict[scenario_name] = 0
+            else:
+                self.col_num_dict[scenario_name] += 1
 
         if self.collision_mode >= 1:
             col_penalty_ratio = 1.0 / (self.num_agents - 1)
@@ -380,7 +395,6 @@ class QuadrotorEnvMulti(gym.Env):
         dt = 1.0 / self.envs[0].control_freq
         spacing_reward = hyperbolic_proximity_penalty(dists, dt)
 
-        scenario_name = self.scenario.scenario.quads_mode if self.scenario.quads_mode == "mix" else self.scenario.quads_mode
         for i in range(self.num_agents):
             rewards[i] += rew_collisions[i]
             infos[i]["rewards"]["rew_quadcol"] = rew_collisions[i]
