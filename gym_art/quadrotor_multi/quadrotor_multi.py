@@ -197,12 +197,12 @@ class QuadrotorEnvMulti(gym.Env):
             other_pos = other_pos_magnitude * np.array([np.sin(rotation_bearing_theta) * np.cos(rotation_bearing_phi),
                                                         np.sin(rotation_bearing_theta) * np.sin(rotation_bearing_phi),
                                                         np.cos(rotation_bearing_theta)])
+            other_pos = other_pos.T
 
             other_pos_index = np.floor(other_pos / cell_size + cell_num / 2)
             other_pos_index[other_pos_index < 0] = float('-inf')
             other_pos_index[other_pos_index >= cell_num] = float('-inf')
             grid_indices = np.square(cell_num) * other_pos_index[:, 2] + cell_num * other_pos_index[:, 1] + other_pos_index[:, 0]
-            occupancy_map = np.isin(range(cell_num ** 3), grid_indices)
 
             # calculate relative velocity for other agents
             other_vel_magnitude = np.linalg.norm(vel_neighbors_rel, axis=1)
@@ -214,6 +214,7 @@ class QuadrotorEnvMulti(gym.Env):
                                                         np.sin(rotation_rel_vel_theta) * np.sin(rotation_rel_vel_phi),
                                                         np.cos(rotation_rel_vel_theta)])
 
+            other_vel = other_vel.T
             # 3 means the channels, which is the size of pos
             # 4 means the channel size: (vx, vy, vz, 1)
             dm = [list() for _ in range(cell_num ** 3 * 4)]
