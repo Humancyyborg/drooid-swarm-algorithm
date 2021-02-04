@@ -96,7 +96,7 @@ class QuadrotorEnvMulti(gym.Env):
         elif self.swarm_obs == 'attn':
             self.neighbor_obs_size = 6
             if 'lmap' in attn_mode:
-                self.neighbor_obs_size += 4 ** 3 * 4
+                self.neighbor_obs_size += (2 ** 3) * 4
             if 'dist' in attn_mode:
                 self.neighbor_obs_size += 5
         elif self.swarm_obs == 'pos_vel_goals':

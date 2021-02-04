@@ -968,7 +968,7 @@ class QuadrotorSingle:
             "goal": [-(self.room_box[1] - self.room_box[0]), self.room_box[1] - self.room_box[0]],
             "nbr_dist": [np.array([0]), np.array([np.linalg.norm(self.room_box[1] - self.room_box[0])])],
             "nbr_goal_dist": [np.array([0]), np.array([np.linalg.norm(self.room_box[1] - self.room_box[0])])],
-            "lmap": [np.tile(np.append(0.0, -2.0 * self.dynamics.vxyz_max * np.ones(3)), 64), np.tile(np.append(1.0, 2.0 * self.dynamics.vxyz_max * np.ones(3)), 64)],
+            "lmap": [np.tile(np.append(0.0, -2.0 * self.dynamics.vxyz_max * np.ones(3)), 8), np.tile(np.append(1.0, 2.0 * self.dynamics.vxyz_max * np.ones(3)), 8)],
         }
         self.obs_comp_names = list(self.obs_space_low_high.keys())
         self.obs_comp_sizes = [self.obs_space_low_high[name][1].size for name in self.obs_comp_names]
