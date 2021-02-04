@@ -349,7 +349,6 @@ class Scenario_swap_goals(QuadrotorScenario):
 
     def reset(self):
         self.swap_interval = np.random.uniform(low=2.0, high=6.0)
-        print('swap:', self.swap_interval)
         self.formation_size = max(0.0, self.formation_size)
         # Generate goals
         self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center)

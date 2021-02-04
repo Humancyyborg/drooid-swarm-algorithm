@@ -245,7 +245,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         if "lmap" in self.attn_mode:
             cell_size = 4 * self.envs[0].dynamics.arm
-            cell_num = 4
+            cell_num = 2
             local_maps = self.build_occupancy_maps(id=env_id, cell_size=cell_size, cell_num=cell_num)
             obs_neighbor = np.concatenate((obs_neighbor, local_maps), axis=1)
 
