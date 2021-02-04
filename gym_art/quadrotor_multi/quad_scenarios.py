@@ -322,7 +322,11 @@ class Scenario_circular_config(QuadrotorScenario):
         # drones settled at the goal for 1 sec
         control_step_for_one_sec = int(self.envs[0].control_freq)
         tmp_count = self.settle_count >= control_step_for_one_sec
-        if all(tmp_count):
+        # if all(tmp_count):
+        tick = self.envs[0].tick
+        control_step_for_three_sec = int(3 * self.envs[0].control_freq)
+        # Switch every 3 second
+        if tick % control_step_for_three_sec == 0 and tick > 0:
             self.update_goals()
             rews_settle_raw = control_step_for_one_sec
             rews_settle = self.rew_coeff["quadsettle"] * rews_settle_raw
@@ -402,7 +406,8 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
             if abs(diff_x) < dist_low_bound:
                 goal_center_2[0] = np.sign(diff_x) * dist_low_bound + goal_center_1[0]
 
-        return goal_center_1, goal_center_2
+        return np.array([0., 0.25, 2.]), np.array([0., -0.25, 2.]),
+        # return goal_center_1, goal_center_2
 
     def create_formations(self, goal_center_1, goal_center_2):
         self.goals_1 = self.generate_goals(self.num_agents // 2, goal_center_1)
@@ -411,17 +416,20 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
 
     def update_goals(self):
         # Switch goals
-        tmp_goals_1 = copy.deepcopy(self.goals_1)
-        tmp_goals_2 = copy.deepcopy(self.goals_2)
-        self.goals_1 = tmp_goals_2
-        self.goals_2 = tmp_goals_1
+        # tmp_goals_1 = copy.deepcopy(self.goals_1)
+        # tmp_goals_2 = copy.deepcopy(self.goals_2)
+        # self.goals_1 = tmp_goals_2
+        # self.goals_2 = tmp_goals_1
+        self.id += 1
+        self.goals_2 = self.goals_2 + np.array([0., 1.0, 0.]) * ((-1)**(self.id+1))
         self.goals = np.concatenate([self.goals_1, self.goals_2])
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
 
+
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
-        control_step_for_eight_sec = int(8 * self.envs[0].control_freq)
+        control_step_for_eight_sec = int(3 * self.envs[0].control_freq)
         # Switch every 8th second
         if tick % control_step_for_eight_sec == 0 and tick > 0:
             self.update_goals()
@@ -429,6 +437,7 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
 
     def reset(self):
         # Reset the formation size and the goals of swarms
+        self.id = 0
         self.goal_center_1, self.goal_center_2 = self.formation_centers()
         self.create_formations(self.goal_center_1, self.goal_center_2)
 

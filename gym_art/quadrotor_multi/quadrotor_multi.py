@@ -146,7 +146,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.simulation_start_time = 0
         self.frames_since_last_render = self.render_skip_frames = 0
         self.render_every_nth_frame = 1
-        self.render_speed = 1.0  # set to below 1 slowmo, higher than 1 for fast forward (if simulator can keep up)
+        self.render_speed = 0.25  # set to below 1 slowmo, higher than 1 for fast forward (if simulator can keep up)
 
         # measuring the total number of pairwise collisions per episode
         self.collisions_per_episode = 0
@@ -164,6 +164,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.all_collisions = {}
         self.apply_collision_force = collision_force
 
+        self.scenario_num_dict = {}
         self.col_num_dict = {}
         self.reset_num = 0
 
@@ -292,11 +293,19 @@ class QuadrotorEnvMulti(gym.Env):
 
         self.collisions_per_episode = self.collisions_after_settle = 0
         self.reset_num += 1
+        scenario_name = self.scenario.quads_mode if self.quads_mode == "mix" else self.quads_mode
+        if scenario_name not in self.scenario_num_dict:
+            self.scenario_num_dict[scenario_name] = 1
+        else:
+            self.scenario_num_dict[scenario_name] += 1
+
         tmp_col_num_dict = {}
         for k, v in self.col_num_dict.items():
             tmp_col_num_dict[k] = v*1.0 / self.reset_num
 
-        print(tmp_col_num_dict)
+        print('reset_num', self.reset_num)
+        print('col_num_dict', self.col_num_dict)
+        print('avg_col_num_dict', tmp_col_num_dict)
 
         return obs
 
@@ -343,7 +352,7 @@ class QuadrotorEnvMulti(gym.Env):
         if unique_collisions.any():
             rew_collisions_raw[unique_collisions] = -1.0
             if scenario_name not in self.col_num_dict:
-                self.col_num_dict[scenario_name] = 0
+                self.col_num_dict[scenario_name] = 1
             else:
                 self.col_num_dict[scenario_name] += 1
 
