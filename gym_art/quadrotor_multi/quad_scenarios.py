@@ -6,7 +6,7 @@ import copy
 from gym_art.quadrotor_multi.quad_utils import generate_points
 
 QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal',
-                   'circular_config', 'ep_lissajous3D', 'ep_rand_bezier', 'swarm_vs_swarm', 'dynamic_formations']
+                   'circular_config', 'ep_lissajous3D', 'ep_rand_bezier', 'swarm_vs_swarm', 'swap_goals', 'dynamic_formations']
 
 QUADS_FORMATION_LIST = ['circle_xz_vertical', 'circle_yz_vertical', 'circle_horizontal', 'sphere',
                         'grid_xz_vertical', 'grid_yz_vertical', 'grid_horizontal']
@@ -36,7 +36,7 @@ class QuadrotorScenario:
         # Aux variables for settle, mainly for scenarios:
         # circular configuration && swarm vs swarm
         self.settle_count = np.zeros(self.num_agents)
-        self.metric_of_settle = self.envs[0].dynamics.arm
+        self.metric_of_settle = 2 * self.envs[0].dynamics.arm
 
         # Generate goals
         self.goals = None
@@ -65,7 +65,7 @@ class QuadrotorScenario:
         # The highest formation size means the formation size that we set, which can control
         # the distance between the goals of any two quadrotors should be large than 12.0 * quads_arm_size
         quad_arm_size = self.envs[0].dynamics.arm  # arm length: 4.6 centimeters
-        highest_formation_size = 12.0 * quad_arm_size * np.sin(np.pi / 2 - np.pi / num_agents) / np.sin(
+        highest_formation_size = 8.0 * quad_arm_size * np.sin(np.pi / 2 - np.pi / num_agents) / np.sin(
             2 * np.pi / num_agents)
 
         # The lowest formation size means the formation size that we set, which can control
@@ -328,6 +328,30 @@ class Scenario_circular_config(QuadrotorScenario):
 
         return infos, rewards
 
+class Scenario_swap_goals(QuadrotorScenario):
+    def __init__(self, envs, num_agents, room_dims, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(envs, num_agents, room_dims, rew_coeff, quads_formation, quads_formation_size)
+        self.swap_interval = int(5 * self.envs[0].control_freq)  # 5 seconds
+
+    def update_goals(self):
+        np.random.shuffle(self.goals)
+        for env, goal in zip(self.envs, self.goals):
+            env.goal = goal
+
+    def step(self, infos, rewards, pos):
+        tick = self.envs[0].tick
+        control_step_for_sec = int(self.swap_interval * self.envs[0].control_freq)
+        # Switch every seconds [2., 6.]
+        if tick % control_step_for_sec == 0 and tick > 0:
+            self.update_goals()
+
+        return infos, rewards
+
+    def reset(self):
+        self.swap_interval = np.random.uniform(low=2.0, high=6.0)
+        self.formation_size = max(0.0, self.formation_size)
+        # Generate goals
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center)
 
 class Scenario_dynamic_formations(QuadrotorScenario):
     def __init__(self, envs, num_agents, room_dims, rew_coeff, quads_formation, quads_formation_size):
@@ -464,13 +488,14 @@ class Scenario_mix(QuadrotorScenario):
         self.quads_formation_and_size_dict = {
             "static_same_goal": [["circle_horizontal"], [0.0, 0.0], 16.0, str_dynamic_obstacles],
             "dynamic_same_goal": [["circle_horizontal"], [0.0, 0.0], 16.0, str_no_obstacles],
-            "static_diff_goal": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 16.0, str_dynamic_obstacles], # [23, 46] centimeters
-            "dynamic_diff_goal": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 16.0, str_no_obstacles], # [23, 46] centimeters
+            "static_diff_goal": [QUADS_FORMATION_LIST, [4 * quad_arm_size, 8 * quad_arm_size], 16.0, str_dynamic_obstacles], # [23, 46] centimeters
+            "dynamic_diff_goal": [QUADS_FORMATION_LIST, [4 * quad_arm_size, 8 * quad_arm_size], 16.0, str_no_obstacles], # [23, 46] centimeters
             "ep_lissajous3D": [["circle_horizontal"], [0.0, 0.0], 16.0, str_no_obstacles],
             "ep_rand_bezier": [["circle_horizontal"], [0.0, 0.0], 16.0, str_no_obstacles],
             "circular_config": [QUADS_FORMATION_LIST, [self._lowest_formation_size, self._highest_formation_size], 16.0, str_no_obstacles],
             "swarm_vs_swarm": [QUADS_FORMATION_LIST, [self.swarm_lowest_formation_size, self.swarm_highest_formation_size], 16.0, str_no_obstacles],
-            "dynamic_formations": [QUADS_FORMATION_LIST, [4 * quad_arm_size, 30 * quad_arm_size], 16.0, str_dynamic_obstacles]
+            "swap_goals": [QUADS_FORMATION_LIST,[self.swarm_lowest_formation_size, self.swarm_highest_formation_size], 16.0, str_no_obstacles],
+            "dynamic_formations": [QUADS_FORMATION_LIST, [4 * quad_arm_size, 8 * quad_arm_size], 16.0, str_dynamic_obstacles]
         }
 
     def step(self, infos, rewards, pos):
