@@ -505,11 +505,10 @@ class Scenario_mix(QuadrotorScenario):
     def reset(self, mode_id=None):
         # reset mode
         if mode_id is None:
-            mode_index = round(np.random.uniform(low=0, high=len(QUADS_MODE_LIST)-1))
-            mode = QUADS_MODE_LIST[mode_index]
-        else:  # Use Curriculum
-            mode = QUADS_MODE_LIST[mode_id]
-            self.mode_id = mode_id
+            mode_id = round(np.random.uniform(low=0, high=len(QUADS_MODE_LIST)-1))
+
+        mode = QUADS_MODE_LIST[mode_id]
+        self.mode_id = mode_id
 
         # reset formation
         formation_index = round(np.random.uniform(low=0, high=len(self.quads_formation_and_size_dict[mode][0])-1))

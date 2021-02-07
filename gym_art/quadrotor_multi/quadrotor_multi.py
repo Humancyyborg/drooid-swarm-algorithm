@@ -115,10 +115,10 @@ class QuadrotorEnvMulti(gym.Env):
         self.goal_central = np.array([0., 0., 2.])
         self.curriculum_mode = curriculum_mode
         self.scenarios_num = len(QUADS_MODE_LIST)
+        self.curriculum_counts = np.zeros(self.scenarios_num)
         if self.curriculum_mode != "none":
             assert self.quads_mode == "mix"
             self.curriculum_start_count = False  # Only count after all drones learn to fly or the collision number after settle of any scenario that > 0
-            self.curriculum_counts = np.zeros(self.scenarios_num)
             # curriculum_eps (float): the probability to explore at each time step.
             self.curriculum_eps = epsilon
             self.curriculum_estimates = np.zeros(self.scenarios_num)
@@ -279,6 +279,8 @@ class QuadrotorEnvMulti(gym.Env):
             self.scenario.reset(mode_id=mode_id)
         else:
             self.scenario.reset()
+            mode_id = self.scenario.mode_id
+            self.curriculum_counts[mode_id] += 1
 
     def reset(self):
         obs, rewards, dones, infos = [], [], [], []
@@ -468,7 +470,7 @@ class QuadrotorEnvMulti(gym.Env):
         # DONES
         if any(dones):
             curriculum_counts_dict = {}
-            if self.curriculum_mode != "none" and self.curriculum_start_count:
+            if self.curriculum_start_count:
                 for mode_id, mode in enumerate(QUADS_MODE_LIST):
                     curriculum_counts_dict["scenario_num_" + mode] = self.curriculum_counts[mode_id]
             for i in range(len(infos)):
