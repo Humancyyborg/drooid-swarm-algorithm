@@ -248,8 +248,8 @@ class QuadrotorEnvMulti(gym.Env):
         self.crash_list.append(self.crash_for_one_episode)
         self.crash_counter += 1
         self.crash_for_one_episode = 0.0
-        if self.crash_counter % 1000 == 0 and self.crash_counter > 1:
-            assert len(self.crash_list) == 1000
+        if self.crash_counter % 10000 == 0 and self.crash_counter > 1:
+            assert len(self.crash_list) == 10000
             avg_rew_crash = np.mean(self.crash_list)
             if avg_rew_crash < 1.0:
                 self.curriculum_start_count = True
@@ -357,7 +357,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Aux for curriculum
         if self.curriculum_mode != "none" and self.curriculum_start_count is False:
-            self.crash_for_one_episode += infos[0]["rewards"]["rew_crash"]
+            self.crash_for_one_episode += (infos[0]["rewards"]["rew_crash"] + infos[-1]["rewards"]["rew_crash"])/2
 
         if self.swarm_obs != 'none' and self.num_agents > 1:
             if self.num_use_neighbor_obs == (self.num_agents - 1):
