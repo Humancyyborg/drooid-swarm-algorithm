@@ -117,14 +117,14 @@ class QuadrotorEnvMulti(gym.Env):
         self.scenarios_num = len(QUADS_MODE_LIST)
         self.curriculum_counts = np.zeros(self.scenarios_num)
         self.curriculum_start_count = False  # Only count after all drones learn to fly or the collision number after settle of any scenario that > 0
-        if self.curriculum_mode != "none":
-            assert self.quads_mode == "mix"
-            # curriculum_eps (float): the probability to explore at each time step.
-            self.curriculum_eps = epsilon
-            self.curriculum_estimates = np.zeros(self.scenarios_num)
-            self.crash_for_one_episode = 0.0
-            self.crash_list = []
-            self.crash_counter = 0
+        # if self.curriculum_mode != "none":
+        # assert self.quads_mode == "mix"
+        # curriculum_eps (float): the probability to explore at each time step.
+        self.curriculum_eps = epsilon
+        self.curriculum_estimates = np.zeros(self.scenarios_num)
+        self.crash_for_one_episode = 0.0
+        self.crash_list = []
+        self.crash_counter = 0
         if self.curriculum_mode == "UCB1":
             self.curriculum_episode_num = 0
 
@@ -251,7 +251,7 @@ class QuadrotorEnvMulti(gym.Env):
         if self.crash_counter % 100 == 0 and self.crash_counter > 1:
             assert len(self.crash_list) == 100
             avg_rew_crash = np.mean(self.crash_list)
-            if avg_rew_crash < 1.0:
+            if abs(avg_rew_crash) < 1.0:
                 self.curriculum_start_count = True
             self.crash_counter = 0
             self.crash_list = []
@@ -469,9 +469,12 @@ class QuadrotorEnvMulti(gym.Env):
         # DONES
         if any(dones):
             curriculum_counts_dict = {}
-            if self.curriculum_start_count:
+            if self.curriculum_start_count or self.curriculum_mode == "none":
+                scenaio_total_num = 0
                 for mode_id, mode in enumerate(QUADS_MODE_LIST):
                     curriculum_counts_dict["scenario_num_" + mode] = self.curriculum_counts[mode_id]
+                    scenaio_total_num += self.curriculum_counts[mode_id]
+                curriculum_counts_dict["scenario_total_num"] = scenaio_total_num
             for i in range(len(infos)):
                 infos[i]['episode_extra_stats'] = {
                     'num_collisions': self.collisions_per_episode,
