@@ -178,55 +178,29 @@ class QuadrotorEnvMulti(gym.Env):
 
     def build_occupancy_maps(self, id, cell_size, cell_num):
         occupancy_maps = []
-        for index, env in enumerate(self.envs):
+        for index in range(self.num_agents):
             if index == id:
                 continue
-            cur_pos, cur_vel = self.envs[index].dynamics.pos, self.envs[index].dynamics.vel
-            cur_vel_magnitude = max(1e-6, np.linalg.norm(cur_vel))
-            cur_vel_theta = np.arccos(cur_vel[2] / cur_vel_magnitude)
-            cur_vel_phi = np.arctan2(cur_vel[1], cur_vel[0])
 
             obs_neighbor_rel, pos_neighbors_rel, vel_neighbors_rel = self.get_obs_neighbor_pos_vel(id=index)
-            other_pos_magnitude = np.clip(np.linalg.norm(pos_neighbors_rel, axis=1), 1e-6, np.sqrt(3) * self.envs[0].room_length)
-            other_pos_theta = np.arccos(pos_neighbors_rel[:, 2] / other_pos_magnitude)
-            other_pos_phi = np.arctan2(pos_neighbors_rel[:, 1], pos_neighbors_rel[:, 0])
-            rotation_bearing_theta = other_pos_theta - cur_vel_theta
-            rotation_bearing_phi = other_pos_phi - cur_vel_phi
-
-            other_pos = other_pos_magnitude * np.array([np.sin(rotation_bearing_theta) * np.cos(rotation_bearing_phi),
-                                                        np.sin(rotation_bearing_theta) * np.sin(rotation_bearing_phi),
-                                                        np.cos(rotation_bearing_theta)])
-            other_pos = other_pos.T
-
-            other_pos_index = np.floor(other_pos / cell_size + cell_num / 2)
+            other_pos_index = np.floor(pos_neighbors_rel / cell_size + cell_num / 2)
             other_pos_index[other_pos_index < 0] = float('-inf')
             other_pos_index[other_pos_index >= cell_num] = float('-inf')
+
             grid_indices = np.square(cell_num) * other_pos_index[:, 2] + cell_num * other_pos_index[:, 1] + other_pos_index[:, 0]
+            dm = [list() for _ in range(cell_num ** 3)]
 
-            # calculate relative velocity for other agents
-            other_vel_magnitude = np.linalg.norm(vel_neighbors_rel, axis=1)
-            other_vel_theta = np.arccos(vel_neighbors_rel[:, 2] / other_vel_magnitude)
-            other_vel_phi = np.arctan2(vel_neighbors_rel[:, 1], vel_neighbors_rel[:, 0])
-            rotation_rel_vel_theta = other_vel_theta - cur_vel_theta
-            rotation_rel_vel_phi = other_vel_phi - cur_vel_phi
-            other_vel = other_vel_magnitude * np.array([np.sin(rotation_rel_vel_theta) * np.cos(rotation_rel_vel_phi),
-                                                        np.sin(rotation_rel_vel_theta) * np.sin(rotation_rel_vel_phi),
-                                                        np.cos(rotation_rel_vel_theta)])
+            for i in range(self.num_agents-1):
+                if 0 <= grid_indices[i] < cell_num ** 3:
+                    dm[int(grid_indices[i])].append(vel_neighbors_rel[i])
 
-            other_vel = other_vel.T
-            # 3 means the channels, which is the size of pos
-            # 4 means the channel size: (vx, vy, vz, 1)
-            dm = [list() for _ in range(cell_num ** 3 * 4)]
-            for i, index in np.ndenumerate(grid_indices):
-                if index in range(cell_num ** 3):
-                    dm[4 * int(index)].append(other_vel[i][0])
-                    dm[4 * int(index) + 1].append(other_vel[i][1])
-                    dm[4 * int(index) + 2].append(other_vel[i][2])
-                    dm[4 * int(index) + 3].append(1)
-
-            for i, cell in enumerate(dm):
-                dm[i] = sum(dm[i]) / len(dm[i]) if len(dm[i]) != 0 else 0
-            occupancy_maps.append([dm])
+            for i in range(len(dm)):
+                if len(dm[i]) == 0:
+                    dm[i] = np.zeros(4)
+                else:
+                    dm[i] = np.append(np.mean(dm[i], axis=0), len(dm[i]))
+            dm = np.array(dm).reshape(1, -1)
+            occupancy_maps.append(dm)
 
         return np.concatenate(occupancy_maps, axis=0)
 
