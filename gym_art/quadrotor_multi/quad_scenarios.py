@@ -447,9 +447,9 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
 
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
-        control_step_for_eight_sec = int(8 * self.envs[0].control_freq)
+        control_step_for_five_sec = int(5 * self.envs[0].control_freq)
         # Switch every 8th second
-        if tick % control_step_for_eight_sec == 0 and tick > 0:
+        if tick % control_step_for_five_sec == 0 and tick > 0:
             self.update_goals()
         return infos, rewards
 
