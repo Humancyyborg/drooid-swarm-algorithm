@@ -28,7 +28,7 @@ class QuadrotorEnvMulti(gym.Env):
                  quads_vel_reward_out_range=0.8, quads_obstacle_mode='no_obstacles', quads_view_mode='local',
                  quads_obstacle_num=0, quads_obstacle_type='sphere', quads_obstacle_size=0.0, collision_force=True,
                  adaptive_env=False, obstacle_traj='gravity', local_obs=-1, collision_hitbox_radius=2.0,
-                 collision_falloff_radius=3.0, collision_smooth_max_penalty=3.0, local_alpha=0.8):
+                 collision_falloff_radius=3.0, collision_smooth_max_penalty=3.0, local_metric='dist', local_coeff=1.0):
 
         super().__init__()
 
@@ -40,7 +40,8 @@ class QuadrotorEnvMulti(gym.Env):
         else:
             self.num_use_neighbor_obs = local_obs
 
-        self.local_alpha = local_alpha
+        self.local_metric = local_metric
+        self.local_coeff = local_coeff
         # Set to True means that sample_factory will treat it as a multi-agent vectorized environment even with
         # num_agents=1. More info, please look at sample-factory: envs/quadrotors/wrappers/reward_shaping.py
         self.is_multiagent = True
@@ -214,7 +215,12 @@ class QuadrotorEnvMulti(gym.Env):
             rel_vel = obs_neighbor_rel[:, 3:6]
             # new relative distance is a new metric that combines relative position and relative velocity
             # F = alpha * distance + (1 - alpha) * dot(normalized_direction_to_other_drone, relative_vel)
-            new_rel_dist = self.local_alpha * rel_dist + (1 - self.local_alpha) * np.sum(rel_pos_unit * rel_vel, axis=1)
+            if self.local_metric == 'dist':
+                # the smaller the new_rel_dist, the closer the drones
+                new_rel_dist = rel_dist + self.local_coeff * np.sum(rel_pos_unit * rel_vel, axis=1)
+            elif self.local_metric == 'dist_inverse':
+                new_rel_dist = 1.0 / rel_dist - self.local_coeff * np.sum(rel_pos_unit * rel_vel, axis=1)
+                new_rel_dist = -1.0 * new_rel_dist
 
             rel_pos_index = new_rel_dist.argsort()
             obs_neighbor_rel_n_close = np.array(
