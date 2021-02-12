@@ -221,6 +221,8 @@ class QuadrotorEnvMulti(gym.Env):
             elif self.local_metric == 'dist_inverse':
                 new_rel_dist = 1.0 / rel_dist - self.local_coeff * np.sum(rel_pos_unit * rel_vel, axis=1)
                 new_rel_dist = -1.0 * new_rel_dist
+            else:
+                raise NotImplementedError(f'Unknown local metric {self.local_metric}')
 
             rel_pos_index = new_rel_dist.argsort()
             obs_neighbor_rel_n_close = np.array(
