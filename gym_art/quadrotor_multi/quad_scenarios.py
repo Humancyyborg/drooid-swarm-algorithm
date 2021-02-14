@@ -130,9 +130,10 @@ class Scenario_static_diff_goal(QuadrotorScenario):
 class QuadrotorScenario_Dynamic_Goal(QuadrotorScenario):
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
-        # teleport every 5 secs
-        control_step_for_five_sec = int(5.0 * self.envs[0].control_freq)
-        if tick % control_step_for_five_sec == 0 and tick > 0:
+        # teleport every [4.0, 6.0] secs
+        duration_time = np.random.uniform(low=4.0, high=6.0)
+        control_step_for_sec = int(duration_time * self.envs[0].control_freq)
+        if tick % control_step_for_sec == 0 and tick > 0:
             box_size = self.envs[0].box
             x, y = np.random.uniform(low=-box_size, high=box_size, size=(2,))
             z = np.random.uniform(low=-0.5 * box_size, high=0.5 * box_size) + 2.0
@@ -305,12 +306,12 @@ class Scenario_dynamic_formations(QuadrotorScenario):
             env.goal = goal
 
     def step(self, infos, rewards, pos):
-        if self.formation_size <= self.lowest_formation_size:
+        if self.formation_size <= -self.highest_formation_size:
             self.increase_formation_size = True
-            self.control_speed = np.random.uniform(low=1.0, high=10.0)
+            self.control_speed = np.random.uniform(low=2.0, high=6.0)
         elif self.formation_size >= self.highest_formation_size:
             self.increase_formation_size = False
-            self.control_speed = np.random.uniform(low=1.0, high=10.0)
+            self.control_speed = np.random.uniform(low=2.0, high=6.0)
 
         if self.increase_formation_size:
             self.formation_size += 0.001 * self.control_speed
@@ -383,9 +384,10 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
 
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
-        control_step_for_eight_sec = int(8 * self.envs[0].control_freq)
-        # Switch every 8th second
-        if tick % control_step_for_eight_sec == 0 and tick > 0:
+        duration_time = np.random.uniform(low=4.0, high=6.0)
+        control_step_for_sec = int(duration_time * self.envs[0].control_freq)
+        # Switch every [4, 6] seconds
+        if tick % control_step_for_sec == 0 and tick > 0:
             self.update_goals()
         return infos, rewards
 
@@ -427,7 +429,7 @@ class Scenario_mix(QuadrotorScenario):
                 "static_diff_goal": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 8.0, str_dynamic_obstacles],  # [23, 46] centimeters
                 "dynamic_diff_goal": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 12.0, str_no_obstacles],  # [23, 46] centimeters
                 "circular_config": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 16.0, str_no_obstacles],
-                "dynamic_formations": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 30 * quad_arm_size], 12.0, str_dynamic_obstacles]
+                "dynamic_formations": [QUADS_FORMATION_LIST, [0.0, 15 * quad_arm_size], 12.0, str_dynamic_obstacles]
             },
             "swap_goals":{
                 "swarm_vs_swarm": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 16.0, str_no_obstacles],
