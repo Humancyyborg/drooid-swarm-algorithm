@@ -273,9 +273,9 @@ def calculate_drone_proximity_penalties(distance_matrix, arm, dt, penalty_fall_o
 
         penalty_denominator = np.maximum(penalty_denominator, 1e-2)
         penalty_radius = penalty_fall_off * arm
-        penalties = max_penalty * (penalty_radius - distance_matrix) / penalty_denominator
+        penalties = (penalty_radius - distance_matrix) / penalty_denominator
         np.fill_diagonal(penalties, 0.0)
-        penalties = np.maximum(penalties, 0.0)
+        penalties = np.clip(penalties, 0.0, max_penalty)
         penalties = np.sum(penalties, axis=0)
 
     return dt * penalties  # actual penalties per tick to be added to the overall reward
