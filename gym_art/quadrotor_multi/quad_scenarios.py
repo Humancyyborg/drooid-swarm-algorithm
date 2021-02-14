@@ -8,6 +8,12 @@ from gym_art.quadrotor_multi.quad_utils import generate_points, get_circle_radiu
 QUADS_MODE_LIST = ['static_same_goal', 'dynamic_same_goal', 'dynamic_diff_goal', 'circular_config', 'ep_lissajous3D',
                    'ep_rand_bezier', 'swarm_vs_swarm', 'dynamic_formations', 'swap_goals', 'static_diff_goal']
 
+QUADS_MODE_DICT = {
+            'fix_size': ['static_same_goal', 'dynamic_same_goal', 'ep_lissajous3D', 'ep_rand_bezier'],
+            'dynamic_size': ['static_diff_goal', 'dynamic_diff_goal'],
+            'swap_goals': ['swarm_vs_swarm', 'swap_goals', 'dynamic_formations', 'circular_config']
+}
+
 QUADS_FORMATION_LIST = ['circle_xz_vertical', 'circle_yz_vertical', 'circle_horizontal', 'sphere',
                         'grid_xz_vertical', 'grid_yz_vertical', 'grid_horizontal']
 
@@ -536,12 +542,12 @@ class Scenario_mix(QuadrotorScenario):
             "dynamic_size": {
                 "static_diff_goal": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 8.0, str_dynamic_obstacles],  # [23, 46] centimeters
                 "dynamic_diff_goal": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 12.0, str_no_obstacles],  # [23, 46] centimeters
-                "circular_config": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 16.0, str_no_obstacles],
-                "dynamic_formations": [QUADS_FORMATION_LIST, [0.0, 15 * quad_arm_size], 12.0, str_dynamic_obstacles]
             },
             "swap_goals":{
                 "swarm_vs_swarm": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 16.0, str_no_obstacles],
                 "swap_goals": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 16.0, str_no_obstacles],
+                "dynamic_formations": [QUADS_FORMATION_LIST, [0.0, 15 * quad_arm_size], 16.0, str_dynamic_obstacles],
+                "circular_config": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 16.0, str_no_obstacles],
             }
         }
 
@@ -571,8 +577,16 @@ class Scenario_mix(QuadrotorScenario):
 
     def reset(self):
         # reset mode
-        mode_index = round(np.random.uniform(low=0, high=len(QUADS_MODE_LIST)-1))
-        mode = QUADS_MODE_LIST[mode_index]
+        mode_dict_prob = np.random.uniform(low=0, high=1)
+        if mode_dict_prob <= 0.2:
+            mode_dict = QUADS_MODE_DICT["fix_size"]
+        elif 0.2 < mode_dict_prob <= 0.3:
+            mode_dict = QUADS_MODE_DICT["dynamic_size"]
+        else:
+            mode_dict = QUADS_MODE_DICT["swap_goals"]
+
+        mode_index = round(np.random.uniform(low=-0.499, high=len(mode_dict)-0.501))
+        mode = mode_dict[mode_index]
 
         if mode in self.quads_formation_and_size_dict["fix_size"]:
             quads_dict = self.quads_formation_and_size_dict["fix_size"]
