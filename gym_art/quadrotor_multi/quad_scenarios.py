@@ -164,13 +164,30 @@ class QuadrotorScenario_Dynamic_Goal(QuadrotorScenario):
 
 
 # Inherent from QuadrotorScenario_Dynamic_Goal
-class Scenario_dynamic_same_goal(QuadrotorScenario_Dynamic_Goal):
-    # TODO: Maybe try increasing the difficuly by changing the pos of formation_center
-    def future_func(self):
-        pass
+class Scenario_dynamic_same_goal(QuadrotorScenario):
+    def __init__(self, envs, num_agents, room_dims, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(envs, num_agents, room_dims, rew_coeff, quads_formation, quads_formation_size)
+        # teleport every [4.0, 6.0] secs
+        duration_time = 5.0
+        self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
 
     def update_formation_size(self, new_formation_size):
         pass
+
+    def step(self, infos, rewards, pos):
+        tick = self.envs[0].tick
+        if tick % self.control_step_for_sec == 0 and tick > 0:
+            box_size = self.envs[0].box
+            x, y = np.random.uniform(low=-box_size, high=box_size, size=(2,))
+            z = np.random.uniform(low=-0.5 * box_size, high=0.5 * box_size) + 2.0
+            z = max(0.25, z)
+            self.formation_center = np.array([x, y, z])
+
+            self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center)
+            for i, env in enumerate(self.envs):
+                env.goal = self.goals[i]
+
+        return infos, rewards
 
     def reset(self):
         # Update duration time
@@ -182,11 +199,47 @@ class Scenario_dynamic_same_goal(QuadrotorScenario_Dynamic_Goal):
 
 
 # Inherent from QuadrotorScenario_Dynamic_Goal
-class Scenario_dynamic_diff_goal(QuadrotorScenario_Dynamic_Goal):
-    # TODO: Maybe try increasing the difficuly by changing the pos of formation_center
-    def future_func(self):
-        pass
+class Scenario_dynamic_diff_goal(QuadrotorScenario):
+    def __init__(self, envs, num_agents, room_dims, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(envs, num_agents, room_dims, rew_coeff, quads_formation, quads_formation_size)
+        # teleport every [4.0, 6.0] secs
+        duration_time = 5.0
+        self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
 
+    def update_goals(self):
+        # reset formation
+        formation_index = round(np.random.uniform(low=0, high=len(QUADS_FORMATION_LIST) - 1))
+        self.formation = QUADS_FORMATION_LIST[formation_index]
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center)
+        np.random.shuffle(self.goals)
+        for i, env in enumerate(self.envs):
+            env.goal = self.goals[i]
+
+    def step(self, infos, rewards, pos):
+        tick = self.envs[0].tick
+        if tick % self.control_step_for_sec == 0 and tick > 0:
+            box_size = self.envs[0].box
+            x, y = np.random.uniform(low=-box_size, high=box_size, size=(2,))
+            z = np.random.uniform(low=-0.5 * box_size, high=0.5 * box_size) + 2.0
+            z_lower_bound = 0.25
+            if self.formation == "sphere":
+                z_lower_bound = self.formation_size + 0.25
+            elif self.formation == "grid_horizontal":
+                z_lower_bound = np.ceil(np.sqrt(self.num_agents)) * self.formation_size + 0.25
+
+            z = max(z_lower_bound, z)
+            self.formation_center = np.array([x, y, z])
+            self.update_goals()
+
+        return infos, rewards
+
+    def reset(self):
+        # Update duration time
+        duration_time = np.random.uniform(low=4.0, high=6.0)
+        self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
+        self.formation_size = max(0.0, self.formation_size)
+        # Generate goals
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center)
 
 class Scenario_ep_lissajous3D(QuadrotorScenario):
     # Based on https://mathcurve.com/courbes3d.gb/lissajous3d/lissajous3d.shtml
@@ -421,11 +474,17 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
         self.goals = np.concatenate([self.goals_1, self.goals_2])
 
     def update_goals(self):
-        # Switch goals
-        tmp_goals_1 = copy.deepcopy(self.goals_1)
-        tmp_goals_2 = copy.deepcopy(self.goals_2)
-        self.goals_1 = tmp_goals_2
-        self.goals_2 = tmp_goals_1
+        tmp_goal_center_1 = copy.deepcopy(self.goal_center_1)
+        tmp_goal_center_2 = copy.deepcopy(self.goal_center_2)
+        self.goal_center_1 = tmp_goal_center_2
+        self.goal_center_2 = tmp_goal_center_1
+
+        formation_index = round(np.random.uniform(low=0, high=len(QUADS_FORMATION_LIST) - 1))
+        self.formation = QUADS_FORMATION_LIST[formation_index]
+        self.create_formations(self.goal_center_1, self.goal_center_2)
+        # Shuffle goals
+        np.random.shuffle(self.goals_1)
+        np.random.shuffle(self.goals_2)
         self.goals = np.concatenate([self.goals_1, self.goals_2])
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
