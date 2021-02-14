@@ -3,7 +3,7 @@ import random
 import bezier
 import copy
 
-from gym_art.quadrotor_multi.quad_utils import generate_points
+from gym_art.quadrotor_multi.quad_utils import generate_points, get_circle_radius, get_sphere_radius
 
 QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal',
                    'circular_config', 'ep_lissajous3D', 'ep_rand_bezier', 'swarm_vs_swarm', 'dynamic_formations']
@@ -28,60 +28,20 @@ class QuadrotorScenario:
         self.interp = None
 
         # Aux variables for goals of quadrotors
+        quad_arm = self.envs[0].dynamics.arm
         self.formation = quads_formation
-        self._formation_size = quads_formation_size
-        self._lowest_formation_size, self._highest_formation_size = self.init_formation_sizes()
+        self.formation_size = quads_formation_size
+        self.lowest_formation_size = 5 * quad_arm
+        self.highest_formation_size = 10 * quad_arm
         self.formation_center = np.array([0.0, 0.0, 2.0])
 
         # Aux variables for settle, mainly for scenarios:
         # circular configuration && swarm vs swarm
         self.settle_count = np.zeros(self.num_agents)
-        self.metric_of_settle = self.envs[0].dynamics.arm
+        self.metric_of_settle = 2.0 * quad_arm
 
         # Generate goals
         self.goals = None
-
-    @property
-    def lowest_formation_size(self):
-        return self._lowest_formation_size
-
-    @lowest_formation_size.setter
-    def lowest_formation_size(self, lfs):
-        self._lowest_formation_size = lfs
-
-    @property
-    def highest_formation_size(self):
-        return self._highest_formation_size
-
-    @highest_formation_size.setter
-    def highest_formation_size(self, hfs):
-        self._highest_formation_size = hfs
-
-    def init_formation_sizes(self, split=False):
-        if split:  # divide num agents by 2 for swarm_vs_swarm type scenarios
-            num_agents = self.num_agents // 2
-        else:
-            num_agents = self.num_agents
-        # The highest formation size means the formation size that we set, which can control
-        # the distance between the goals of any two quadrotors should be large than 12.0 * quads_arm_size
-        quad_arm_size = self.envs[0].dynamics.arm  # arm length: 4.6 centimeters
-        highest_formation_size = 12.0 * quad_arm_size * np.sin(np.pi / 2 - np.pi / num_agents) / np.sin(
-            2 * np.pi / num_agents)
-
-        # The lowest formation size means the formation size that we set, which can control
-        # the distance between the goals of any two quadrotors should be large than 4.0 * quads_arm_size
-        quad_arm_size = self.envs[0].dynamics.arm  # arm length: 4.6 centimeters
-        lowest_formation_size = 4.0 * quad_arm_size * np.sin(np.pi / 2 - np.pi / num_agents) / np.sin(
-            2 * np.pi / num_agents)
-        return lowest_formation_size, highest_formation_size
-
-    @property
-    def formation_size(self):
-        return self._formation_size
-
-    @formation_size.setter
-    def formation_size(self, fs):
-        self._formation_size = fs
 
     def get_goal_by_formation(self, pos_0, pos_1):
         if self.formation.endswith("horizontal"):
@@ -446,7 +406,6 @@ class Scenario_mix(QuadrotorScenario):
     def __init__(self, envs, num_agents, room_dims, rew_coeff, quads_formation, quads_formation_size):
         super().__init__(envs, num_agents, room_dims, rew_coeff, quads_formation, quads_formation_size)
         quad_arm_size = self.envs[0].dynamics.arm # 4.6 centimeters
-        self.swarm_lowest_formation_size, self.swarm_highest_formation_size = self.init_formation_sizes(split=True)
         str_no_obstacles = "no_obstacles"
         str_dynamic_obstacles = "dynamic"
         self.obstacle_number = self.envs[0].obstacle_num
@@ -458,16 +417,42 @@ class Scenario_mix(QuadrotorScenario):
         # key: quads_mode
         # value: 0. formation, 1: [formation_low_size, formation_high_size], 2: episode_time, 3: obstacle_mode
         self.quads_formation_and_size_dict = {
-            "static_same_goal": [["circle_horizontal"], [0.0, 0.0], 16.0, str_dynamic_obstacles],
-            "dynamic_same_goal": [["circle_horizontal"], [0.0, 0.0], 16.0, str_no_obstacles],
-            "static_diff_goal": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 16.0, str_dynamic_obstacles], # [23, 46] centimeters
-            "dynamic_diff_goal": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 16.0, str_no_obstacles], # [23, 46] centimeters
-            "ep_lissajous3D": [["circle_horizontal"], [0.0, 0.0], 16.0, str_no_obstacles],
-            "ep_rand_bezier": [["circle_horizontal"], [0.0, 0.0], 16.0, str_no_obstacles],
-            "circular_config": [QUADS_FORMATION_LIST, [self._lowest_formation_size, self._highest_formation_size], 16.0, str_no_obstacles],
-            "swarm_vs_swarm": [QUADS_FORMATION_LIST, [self.swarm_lowest_formation_size, self.swarm_highest_formation_size], 16.0, str_no_obstacles],
-            "dynamic_formations": [QUADS_FORMATION_LIST, [4 * quad_arm_size, 30 * quad_arm_size], 16.0, str_dynamic_obstacles]
+            "fix_size": {
+                "static_same_goal": [["circle_horizontal"], [0.0, 0.0], 8.0, str_dynamic_obstacles],
+                "dynamic_same_goal": [["circle_horizontal"], [0.0, 0.0], 12.0, str_no_obstacles],
+                "ep_lissajous3D": [["circle_horizontal"], [0.0, 0.0], 12.0, str_no_obstacles],
+                "ep_rand_bezier": [["circle_horizontal"], [0.0, 0.0], 12.0, str_no_obstacles],
+            },
+            "dynamic_size": {
+                "static_diff_goal": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 8.0, str_dynamic_obstacles],  # [23, 46] centimeters
+                "dynamic_diff_goal": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 12.0, str_no_obstacles],  # [23, 46] centimeters
+                "circular_config": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 16.0, str_no_obstacles],
+                "dynamic_formations": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 30 * quad_arm_size], 12.0, str_dynamic_obstacles]
+            },
+            "swap_goals":{
+                "swarm_vs_swarm": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 16.0, str_no_obstacles],
+            }
         }
+
+    def get_formation_range(self, mode, low, high):
+        if mode == 'swarm_vs_swarm':
+            n = self.num_agents // 2
+        else:
+            n = self.num_agents
+
+        if self.formation.startswith("circle"):
+            formation_size_low = get_circle_radius(n, low)
+            formation_size_high = get_circle_radius(n, high)
+        elif self.formation.startswith("grid"):
+            formation_size_low = low
+            formation_size_high = high
+        elif self.formation.startswith("sphere"):
+            formation_size_low = get_sphere_radius(n, low)
+            formation_size_high = get_sphere_radius(n, high)
+        else:
+            raise NotImplementedError(f'{self.formation} is not supported!')
+
+        return formation_size_low, formation_size_high
 
     def step(self, infos, rewards, pos):
         infos, rewards = self.scenario.step(infos=infos, rewards=rewards, pos=pos)
@@ -478,12 +463,28 @@ class Scenario_mix(QuadrotorScenario):
         mode_index = round(np.random.uniform(low=0, high=len(QUADS_MODE_LIST)-1))
         mode = QUADS_MODE_LIST[mode_index]
 
-        # reset formation
-        formation_index = round(np.random.uniform(low=0, high=len(self.quads_formation_and_size_dict[mode][0])-1))
-        self.formation = QUADS_FORMATION_LIST[formation_index]
-        # reset formation size
-        formation_size_low, formation_size_high = self.quads_formation_and_size_dict[mode][1]
-        self.formation_size = np.random.uniform(low=formation_size_low, high=formation_size_high)
+        if mode in self.quads_formation_and_size_dict["fix_size"]:
+            quads_dict = self.quads_formation_and_size_dict["fix_size"]
+            # reset formation
+            self.formation = QUADS_FORMATION_LIST[0]
+            # reset formation size
+            self.formation_size = quads_dict[mode][1][0]
+            formation_size_low, formation_size_high = 0.0, 0.0
+        elif mode in self.quads_formation_and_size_dict["dynamic_size"] or mode in self.quads_formation_and_size_dict["swap_goals"]:
+            if mode in self.quads_formation_and_size_dict["dynamic_size"]:
+                quads_dict = self.quads_formation_and_size_dict["dynamic_size"]
+            else:
+                quads_dict = self.quads_formation_and_size_dict["swap_goals"]
+            # reset formation
+            formation_index = round(np.random.uniform(low=0, high=len(quads_dict[mode][0]) - 1))
+            self.formation = QUADS_FORMATION_LIST[formation_index]
+            # reset formation size
+            lowest_dist, highest_dist = quads_dict[mode][1]
+            formation_size_low, formation_size_high = self.get_formation_range(mode=mode, low=lowest_dist, high=highest_dist)
+            self.formation_size = np.random.uniform(low=formation_size_low, high=formation_size_high)
+        else:
+            raise NotImplementedError(f'{self.mode} is not supported!')
+
 
         # init the scenario
         self.scenario = create_scenario(quads_mode=mode, envs=self.envs, num_agents=self.num_agents,
@@ -497,7 +498,8 @@ class Scenario_mix(QuadrotorScenario):
         self.goals = self.scenario.goals
         for env in self.envs:
             # reset episode time
-            env.reset_ep_len(self.quads_formation_and_size_dict[mode][2])
+            ep_time = quads_dict[mode][2]
+            env.reset_ep_len(ep_time=ep_time)
             # reset obstacle mode and number
-            obstacle_mode = self.quads_formation_and_size_dict[mode][3]
+            obstacle_mode = quads_dict[mode][3]
             env.reset_obstacle_mode(obstacle_mode=obstacle_mode, obstacle_num=self.obstacle_number)
