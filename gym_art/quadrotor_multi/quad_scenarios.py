@@ -5,8 +5,8 @@ import copy
 
 from gym_art.quadrotor_multi.quad_utils import generate_points, get_circle_radius, get_sphere_radius
 
-QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal',
-                   'circular_config', 'ep_lissajous3D', 'ep_rand_bezier', 'swarm_vs_swarm', 'dynamic_formations']
+QUADS_MODE_LIST = ['static_same_goal', 'dynamic_same_goal', 'dynamic_diff_goal', 'circular_config', 'ep_lissajous3D',
+                   'ep_rand_bezier', 'swarm_vs_swarm', 'dynamic_formations', 'swap_goals', 'static_diff_goal']
 
 QUADS_FORMATION_LIST = ['circle_xz_vertical', 'circle_yz_vertical', 'circle_horizontal', 'sphere',
                         'grid_xz_vertical', 'grid_yz_vertical', 'grid_horizontal']
@@ -128,12 +128,15 @@ class Scenario_static_diff_goal(QuadrotorScenario):
 
 
 class QuadrotorScenario_Dynamic_Goal(QuadrotorScenario):
+    def __init__(self, envs, num_agents, room_dims, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(envs, num_agents, room_dims, rew_coeff, quads_formation, quads_formation_size)
+        # teleport every [4.0, 6.0] secs
+        duration_time = 5.0
+        self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
+
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
-        # teleport every [4.0, 6.0] secs
-        duration_time = np.random.uniform(low=4.0, high=6.0)
-        control_step_for_sec = int(duration_time * self.envs[0].control_freq)
-        if tick % control_step_for_sec == 0 and tick > 0:
+        if tick % self.control_step_for_sec == 0 and tick > 0:
             box_size = self.envs[0].box
             x, y = np.random.uniform(low=-box_size, high=box_size, size=(2,))
             z = np.random.uniform(low=-0.5 * box_size, high=0.5 * box_size) + 2.0
@@ -151,6 +154,14 @@ class QuadrotorScenario_Dynamic_Goal(QuadrotorScenario):
 
         return infos, rewards
 
+    def reset(self):
+        # Update duration time
+        duration_time = np.random.uniform(low=4.0, high=6.0)
+        self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
+        self.formation_size = max(0.0, self.formation_size)
+        # Generate goals
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center)
+
 
 # Inherent from QuadrotorScenario_Dynamic_Goal
 class Scenario_dynamic_same_goal(QuadrotorScenario_Dynamic_Goal):
@@ -162,6 +173,9 @@ class Scenario_dynamic_same_goal(QuadrotorScenario_Dynamic_Goal):
         pass
 
     def reset(self):
+        # Update duration time
+        duration_time = np.random.uniform(low=4.0, high=6.0)
+        self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
         self.formation_size = 0.0
         # Generate goals
         self.goals = self.generate_goals(self.num_agents)
@@ -256,6 +270,34 @@ class Scenario_ep_rand_bezier(QuadrotorScenario):
         # Generate goals
         self.goals = self.generate_goals(self.num_agents)
 
+class Scenario_swap_goals(QuadrotorScenario):
+    def __init__(self, envs, num_agents, room_dims, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(envs, num_agents, room_dims, rew_coeff, quads_formation, quads_formation_size)
+        # teleport every [4.0, 6.0] secs
+        duration_time = 5.0
+        self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
+
+    def update_goals(self):
+        np.random.shuffle(self.goals)
+        for env, goal in zip(self.envs, self.goals):
+            env.goal = goal
+
+    def step(self, infos, rewards, pos):
+        tick = self.envs[0].tick
+        # Switch every [4, 6] seconds
+        if tick % self.control_step_for_sec == 0 and tick > 0:
+            self.update_goals()
+
+        return infos, rewards
+
+    def reset(self):
+        # Update duration time
+        duration_time = np.random.uniform(low=4.0, high=6.0)
+        self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
+        self.formation_size = max(0.0, self.formation_size)
+        # Generate goals
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center)
+
 class Scenario_circular_config(QuadrotorScenario):
     def update_goals(self):
         np.random.shuffle(self.goals)
@@ -335,6 +377,12 @@ class Scenario_dynamic_formations(QuadrotorScenario):
 
 
 class Scenario_swarm_vs_swarm(QuadrotorScenario):
+    def __init__(self, envs, num_agents, room_dims, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(envs, num_agents, room_dims, rew_coeff, quads_formation, quads_formation_size)
+        # teleport every [4.0, 6.0] secs
+        duration_time = 5.0
+        self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
+
     def formation_centers(self):
         if self.formation_center is None:
             self.formation_center = np.array([0., 0., 2.])
@@ -384,17 +432,18 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
 
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
-        duration_time = np.random.uniform(low=4.0, high=6.0)
-        control_step_for_sec = int(duration_time * self.envs[0].control_freq)
         # Switch every [4, 6] seconds
-        if tick % control_step_for_sec == 0 and tick > 0:
+        if tick % self.control_step_for_sec == 0 and tick > 0:
             self.update_goals()
+
         return infos, rewards
 
     def reset(self):
         # Reset the formation size and the goals of swarms
         self.goal_center_1, self.goal_center_2 = self.formation_centers()
         self.create_formations(self.goal_center_1, self.goal_center_2)
+        duration_time = np.random.uniform(low=4.0, high=6.0)
+        self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
 
     def update_formation_size(self, new_formation_size):
         if new_formation_size != self.formation_size:
@@ -433,6 +482,7 @@ class Scenario_mix(QuadrotorScenario):
             },
             "swap_goals":{
                 "swarm_vs_swarm": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 16.0, str_no_obstacles],
+                "swap_goals": [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], 16.0, str_no_obstacles],
             }
         }
 
