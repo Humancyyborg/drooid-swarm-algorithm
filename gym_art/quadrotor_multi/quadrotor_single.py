@@ -963,6 +963,7 @@ class QuadrotorSingle:
             "roxyz": [-(self.room_box[1] - self.room_box[0]), self.room_box[1] - self.room_box[0]], # roxyz stands for relative pos between quadrotor and obstacle
             "rovxyz": [-20.0 * np.ones(3), 20.0 * np.ones(3)], # rovxyz stands for relative velocity between quadrotor and obstacle
             "goal": [-(self.room_box[1] - self.room_box[0]), self.room_box[1] - self.room_box[0]],
+            "wall": [np.zeros(6), 5.0 * np.ones(6)]
         }
         self.obs_comp_names = list(self.obs_space_low_high.keys())
         self.obs_comp_sizes = [self.obs_space_low_high[name][1].size for name in self.obs_comp_names]
