@@ -1,6 +1,5 @@
 import copy
 import numpy as np
-from scipy import spatial
 import time
 import gym
 
@@ -140,8 +139,6 @@ class QuadrotorEnvMulti(gym.Env):
         self.dt = 1.0 / sim_freq
         self.obstacle_mode = quads_obstacle_mode
         self.obstacle_num = quads_obstacle_num
-        self.obstacle_type = quads_obstacle_type
-        self.obstacle_size = quads_obstacle_size
         self.set_obstacles = False
         self.obstacle_settle_count = np.zeros(self.num_agents)
         self.obstacle_obs_len = 6  # pos and vel
@@ -149,8 +146,8 @@ class QuadrotorEnvMulti(gym.Env):
 
         self.obstacles = MultiObstacles(
             mode=self.obstacle_mode, num_obstacles=self.obstacle_num, max_init_vel=self.obstacle_max_init_vel,
-            init_box=self.obstacle_init_box, dt=self.dt, quad_size=self.quad_arm, type=self.obstacle_type,
-            size=self.obstacle_size, traj=obstacle_traj
+            init_box=self.obstacle_init_box, dt=self.dt, quad_size=self.quad_arm, type=quads_obstacle_type,
+            size=quads_obstacle_size, traj=obstacle_traj
         )
 
         # set render

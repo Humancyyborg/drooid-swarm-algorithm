@@ -2,8 +2,9 @@ import numpy as np
 import bezier
 import copy
 
-from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_MODE_DICT, QUADS_FORMATION_LIST, QUADS_PARAMS_DICT, \
-    update_formation_and_max_agent_per_layer, update_layer_dist, get_formation_range, get_goal_by_formation, get_z_value
+from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_MODE_DICT, QUADS_PARAMS_DICT, \
+    update_formation_and_max_agent_per_layer, update_layer_dist, get_formation_range, get_goal_by_formation, \
+    get_z_value, QUADS_FORMATION_AND_SIZE_DICT, QUADS_FORMATION_AND_SIZE_DICT_OBST
 from gym_art.quadrotor_multi.quad_utils import generate_points, get_grid_dim_number
 
 
@@ -570,37 +571,18 @@ class Scenario_tunnel(QuadrotorScenario):
 class Scenario_mix(QuadrotorScenario):
     def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
         super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
-        quad_arm_size = self.envs[0].dynamics.arm  # 4.6 centimeters
-        str_no_obstacles = "no_obstacles"
-        str_dynamic_obstacles = "dynamic"
-        self.obstacle_number = self.envs[0].obstacle_num
         self.room_dims_callback = room_dims_callback
 
-        if self.envs[0].obstacle_mode == "no_obstacles":
-            str_dynamic_obstacles = "no_obstacles"
-            self.obstacle_number = 0
+        self.obst_mode = self.envs[0].obstacle_mode
+        self.obst_num = self.envs[0].obstacle_num
 
-        # key: quads_mode
-        # value: 0. formation, 1: [formation_low_size, formation_high_size], 2: episode_time, 3: obstacle_mode
         # Once change the parameter here, should also update QUADS_PARAMS_DICT to make sure it is same as run a single scenario
-        self.quads_formation_and_size_dict = {
-            "fix_size": {
-                "static_same_goal": [["circle_horizontal"], [0.0, 0.0], 8.0, str_dynamic_obstacles],
-                "dynamic_same_goal": [["circle_horizontal"], [0.0, 0.0], 12.0, str_no_obstacles],
-                "ep_lissajous3D": [["circle_horizontal"], [0.0, 0.0], 12.0, str_no_obstacles],
-                "ep_rand_bezier": [["circle_horizontal"], [0.0, 0.0], 12.0, str_no_obstacles],
-            },
-            "dynamic_size": {
-                "static_diff_goal": [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 8.0, str_dynamic_obstacles],  # [36, 72] centimeters
-                "dynamic_diff_goal": [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 12.0, str_no_obstacles],  # [36, 72] centimeters
-            },
-            "swap_goals": {
-                "swarm_vs_swarm": [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 16.0, str_no_obstacles],
-                "swap_goals": [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 16.0, str_no_obstacles],
-                "dynamic_formations": [QUADS_FORMATION_LIST, [0.0, 20 * quad_arm_size], 16.0, str_dynamic_obstacles],
-                "circular_config": [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 16.0, str_no_obstacles],
-            }
-        }
+        # key: quads_mode
+        # value: 0. formation, 1: [formation_low_size, formation_high_size], 2: episode_time
+        if self.obst_mode == 'no_obstacles':
+            self.quads_formation_and_size_dict = QUADS_FORMATION_AND_SIZE_DICT
+        else:
+            self.quads_formation_and_size_dict = QUADS_FORMATION_AND_SIZE_DICT_OBST
 
         # actual scenario being used
         self.scenario = None
@@ -628,7 +610,7 @@ class Scenario_mix(QuadrotorScenario):
         mode_index = np.random.randint(low=0, high=len(mode_dict))
         mode = mode_dict[mode_index]
 
-        # init the scenario
+        # Init the scenario
         self.scenario = create_scenario(quads_mode=mode, envs=self.envs, num_agents=self.num_agents,
                                         room_dims=self.room_dims, room_dims_callback=self.room_dims_callback,
                                         rew_coeff=self.rew_coeff, quads_formation=self.formation, quads_formation_size=self.formation_size)
@@ -636,3 +618,8 @@ class Scenario_mix(QuadrotorScenario):
         self.scenario.reset()
         self.goals = self.scenario.goals
         self.formation_size = self.scenario.goals
+
+        if self.obst_mode != 'no_obstacles':
+            # reset obstacle mode and number
+            for env in self.envs:
+                env.reset_obstacle_mode(obstacle_mode=self.obst_mode, obstacle_num=self.obst_num)

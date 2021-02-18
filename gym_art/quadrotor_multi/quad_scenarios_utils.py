@@ -30,6 +30,43 @@ QUADS_PARAMS_DICT = {
                 'circular_config': [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 16.0],
 }
 
+QUADS_FORMATION_AND_SIZE_DICT = {
+    "fix_size": {
+        "static_same_goal": [["circle_horizontal"], [0.0, 0.0], 8.0],
+        "dynamic_same_goal": [["circle_horizontal"], [0.0, 0.0], 12.0],
+        "ep_lissajous3D": [["circle_horizontal"], [0.0, 0.0], 12.0],
+        "ep_rand_bezier": [["circle_horizontal"], [0.0, 0.0], 12.0],
+    },
+    "dynamic_size": {
+        "static_diff_goal": [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 8.0],
+        # [36, 72] centimeters
+        "dynamic_diff_goal": [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 12.0],
+        # [36, 72] centimeters
+    },
+    "swap_goals": {
+        "swarm_vs_swarm": [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 16.0],
+        "swap_goals": [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 16.0],
+        "dynamic_formations": [QUADS_FORMATION_LIST, [0.0, 20 * quad_arm_size], 16.0],
+        "circular_config": [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 16.0],
+    }
+}
+
+QUADS_FORMATION_AND_SIZE_DICT_OBST = {
+    "fix_size": {
+        "static_same_goal": [["circle_horizontal"], [0.0, 0.0], 16.0],
+    },
+    "dynamic_size": {
+        "static_diff_goal": [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 16.0],
+        # [36, 72] centimeters
+    },
+    "swap_goals": {
+        "swarm_vs_swarm": [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 16.0],
+        "swap_goals": [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 16.0],
+        "dynamic_formations": [QUADS_FORMATION_LIST, [0.0, 20 * quad_arm_size], 16.0],
+        "circular_config": [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 16.0],
+    }
+}
+
 
 def update_formation_and_max_agent_per_layer(mode):
     formation_index = np.random.randint(low=0, high=len(QUADS_PARAMS_DICT[mode][0]))
