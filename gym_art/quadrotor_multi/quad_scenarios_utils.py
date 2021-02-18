@@ -45,18 +45,6 @@ def update_formation_and_max_agent_per_layer(mode):
     return formation, num_agents_per_layer
 
 
-def update_max_agent_per_layer(formation):
-    if formation.startswith("circle"):
-        num_agents_per_layer = 8
-    elif formation.startswith("grid"):
-        num_agents_per_layer = 50
-    else:
-        # for 3D formations. Specific formations override this
-        num_agents_per_layer = 8
-
-    return num_agents_per_layer
-
-
 def update_layer_dist(low, high):
     layer_dist = np.random.uniform(low=low, high=high)
     return layer_dist
