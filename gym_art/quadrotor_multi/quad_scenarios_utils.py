@@ -1,8 +1,8 @@
 import numpy as np
 from gym_art.quadrotor_multi.quad_utils import get_circle_radius, get_sphere_radius, get_grid_dim_number
 
-QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal', 'circular_config', 'ep_lissajous3D',
-                   'ep_rand_bezier', 'swarm_vs_swarm', 'dynamic_formations', 'swap_goals']
+QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal', 'circular_config',
+                   'ep_lissajous3D', 'ep_rand_bezier', 'swarm_vs_swarm', 'dynamic_formations', 'swap_goals']
 
 QUADS_MODE_DICT = {
             'fix_size': ['static_same_goal', 'dynamic_same_goal', 'ep_lissajous3D', 'ep_rand_bezier'],
@@ -11,8 +11,8 @@ QUADS_MODE_DICT = {
 }
 
 
-QUADS_FORMATION_LIST = ['circle_vertical_xz', 'circle_vertical_yz', 'circle_horizontal', 'sphere',
-                        'grid_vertical_xz', 'grid_vertical_yz', 'grid_horizontal', 'cube']
+QUADS_FORMATION_LIST = ['circle_horizontal', 'circle_vertical_xz', 'circle_vertical_yz', 'sphere', 'grid_horizontal',
+                        'grid_vertical_xz', 'grid_vertical_yz', 'cube']
 
 # key: quads_mode
 # value: 0. formation, 1: [formation_low_size, formation_high_size], 2: episode_time
