@@ -4,58 +4,49 @@ import bezier
 import copy
 
 from gym_art.quadrotor_multi.quad_utils import generate_points, get_circle_radius, get_sphere_radius, get_grid_dim_number
-
-QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal', 'circular_config', 'ep_lissajous3D',
-                   'ep_rand_bezier', 'swarm_vs_swarm', 'dynamic_formations', 'swap_goals']
-
-QUADS_MODE_DICT = {
-            'fix_size': ['static_same_goal', 'dynamic_same_goal', 'ep_lissajous3D', 'ep_rand_bezier'],
-            'dynamic_size': ['static_diff_goal', 'dynamic_diff_goal'],
-            'swap_goals': ['swarm_vs_swarm', 'swap_goals', 'dynamic_formations', 'circular_config']
-}
-
-QUADS_FORMATION_LIST = ['circle_vertical_xz', 'circle_vertical_yz', 'circle_horizontal', 'sphere',
-                        'grid_vertical_xz', 'grid_vertical_yz', 'grid_horizontal', 'cube']
+from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_MODE_LIST, QUADS_MODE_DICT, QUADS_FORMATION_LIST, \
+    QUADS_PARAMS_DICT, update_formation_and_max_agent_per_layer, update_max_agent_per_layer, update_layer_dist, get_formation_range, \
+    get_goal_by_formation, get_z_value
 
 
 def create_scenario(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
     cls = eval('Scenario_' + quads_mode)
-    scenario = cls(envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    scenario = cls(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
     return scenario
 
 
 class QuadrotorScenario:
-    def __init__(self, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+        self.quads_mode = quads_mode
         self.envs = envs
         self.num_agents = num_agents
         self.room_dims = room_dims
         self.set_room_dims = room_dims_callback  # usage example: self.set_room_dims((10, 10, 10))
         self.rew_coeff = rew_coeff
-
-        self.interp = None
-
-        # Aux variables for goals of quadrotors
-        quad_arm = self.envs[0].dynamics.arm
-        self.formation = quads_formation
-        # Aux for scalibility
-        self.update_formation()
-
-        self.formation_size = quads_formation_size
-        lowest_dist, highest_dist = 8 * quad_arm, 16 * quad_arm
-        self.lowest_formation_size, self.highest_formation_size = self.get_formation_range(mode=None, low=lowest_dist, high=highest_dist)
-
-        self.formation_center = np.array([0.0, 0.0, 2.0])
-
-        # Aux variables for settle, mainly for scenarios:
-        # circular configuration && swarm vs swarm
-        self.settle_count = np.zeros(self.num_agents)
-        self.metric_of_settle = 2.0 * quad_arm
-
-        # Generate goals
         self.goals = None
 
-        # for 3D formations. Specific formations override this
+        #  Set formation, num_agents_per_layer, lowest_formation_size, highest_formation_size, formation_size,
+        #  layer_dist, formation_center
+        #  Note: num_agents_per_layer for scalability, the maximum number of agent per layer
+
+        self.formation = quads_formation
         self.num_agents_per_layer = 8
+        quad_arm = self.envs[0].dynamics.arm
+        self.lowest_formation_size, self.highest_formation_size = 8 * quad_arm, 16 * quad_arm
+        self.formation_size = quads_formation_size
+        self.layer_dist = self.lowest_formation_size
+        self.formation_center = np.array([0.0, 0.0, 2.0])
+
+        # Reset episode time
+        ep_time = QUADS_PARAMS_DICT[quads_mode][2]
+        for env in self.envs:
+            env.reset_ep_len(ep_time=ep_time)
+
+        # Aux variables for scenario: circular configuration
+        self.settle_count = np.zeros(self.num_agents)
+        self.metric_of_settle = 2.0 * quad_arm
+        # Aux variables for scenario: pursuit evasion
+        self.interp = None
 
     def name(self):
         """
@@ -63,42 +54,7 @@ class QuadrotorScenario:
         """
         return self.__class__.__name__
 
-    def get_formation_range(self, mode, low, high):
-        if mode == 'swarm_vs_swarm':
-            n = self.num_agents // 2
-        else:
-            n = self.num_agents
-
-        if self.formation.startswith("circle"):
-            formation_size_low = get_circle_radius(self.num_agents_per_layer, low)
-            formation_size_high = get_circle_radius(self.num_agents_per_layer, high)
-        elif self.formation.startswith("grid"):
-            formation_size_low = low
-            formation_size_high = high
-        elif self.formation.startswith("sphere"):
-            formation_size_low = get_sphere_radius(n, low)
-            formation_size_high = get_sphere_radius(n, high)
-        elif self.formation.startswith("cube"):
-            formation_size_low = low
-            formation_size_high = high
-        else:
-            raise NotImplementedError(f'{self.formation} is not supported!')
-
-        return formation_size_low, formation_size_high
-
-    def get_goal_by_formation(self, pos_0, pos_1, layer_pos=0.):
-        if self.formation.endswith("horizontal"):
-            goal = np.array([pos_0, pos_1, layer_pos])
-        elif self.formation.endswith("vertical_xz"):
-            goal = np.array([pos_0, layer_pos, pos_1])
-        elif self.formation.endswith("vertical_yz"):
-            goal = np.array([layer_pos, pos_0, pos_1])
-        else:
-            raise NotImplementedError("Unknown formation")
-
-        return goal
-
-    def generate_goals(self, num_agents, formation_center=None):
+    def generate_goals(self, num_agents, formation_center=None, layer_dist=0.0):
         if formation_center is None:
             formation_center = np.array([0., 0., 2.])
 
@@ -114,13 +70,12 @@ class QuadrotorScenario:
 
             pi = np.pi
             goals = []
-            layer_dist = np.random.uniform(low=self.lowest_formation_size, high=self.highest_formation_size)
             for i in range(num_agents):
                 cur_layer_num_agents = real_num_per_layer[i // self.num_agents_per_layer]
-                degree = 2 * pi * i / cur_layer_num_agents
+                degree = 2 * pi * (i % cur_layer_num_agents) / cur_layer_num_agents
                 pos_0 = self.formation_size * np.cos(degree)
                 pos_1 = self.formation_size * np.sin(degree)
-                goal = self.get_goal_by_formation(pos_0, pos_1, layer_pos=(i//self.num_agents_per_layer) * layer_dist)
+                goal = get_goal_by_formation(formation=self.formation, pos_0=pos_0, pos_1=pos_1, layer_pos=(i//self.num_agents_per_layer) * layer_dist)
                 goals.append(goal)
 
             goals = np.array(goals)
@@ -147,12 +102,11 @@ class QuadrotorScenario:
                     dim_size_each_layer.append([dim_1, dim_2])
 
             goals = []
-            layer_dist = np.random.uniform(low=self.lowest_formation_size, high=self.highest_formation_size)
             for i in range(num_agents):
                 dim_1, dim_2 = dim_size_each_layer[i//self.num_agents_per_layer]
                 pos_0 = self.formation_size * (i % dim_2)
                 pos_1 = self.formation_size * (int(i / dim_2) % dim_1)
-                goal = self.get_goal_by_formation(pos_0, pos_1, layer_pos=(i//self.num_agents_per_layer) * layer_dist)
+                goal = get_goal_by_formation(formation=self.formation, pos_0=pos_0, pos_1=pos_1, layer_pos=(i//self.num_agents_per_layer) * layer_dist)
                 goals.append(goal)
 
             mean_pos = np.mean(goals, axis=0)
@@ -177,7 +131,7 @@ class QuadrotorScenario:
     def update_formation_size(self, new_formation_size):
         if new_formation_size != self.formation_size:
             self.formation_size = new_formation_size if new_formation_size > 0.0 else 0.0
-            self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center)
+            self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=self.layer_dist)
             for i, env in enumerate(self.envs):
                 env.goal = self.goals[i]
 
@@ -185,19 +139,22 @@ class QuadrotorScenario:
         raise NotImplementedError("Implemented in a specific scenario")
 
     def reset(self):
-        self.formation_size = max(0.0, self.formation_size)
-        # Generate goals
-        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center)
+        # Reset formation, num_agents_per_layer, lowest & highest formation_size, formation_size, layer_dist
+        self.formation, self.num_agents_per_layer = update_formation_and_max_agent_per_layer(mode=self.quads_mode)
+        # QUADS_PARAMS_DICT:
+        # Key: quads_mode; Value: 0. formation, 1: [formation_low_size, formation_high_size], 2: episode_time
+        lowest_dist, highest_dist = QUADS_PARAMS_DICT[self.quads_mode][1]
+        self.lowest_formation_size, self.highest_formation_size = \
+            get_formation_range(mode=self.quads_mode, formation=self.formation, num_agents=self.num_agents,
+                                low=lowest_dist, high=highest_dist, num_agents_per_layer=self.num_agents_per_layer)
 
-    def update_formation(self):
-        formation_index = np.random.randint(low=0, high=len(QUADS_FORMATION_LIST))
-        self.formation = QUADS_FORMATION_LIST[formation_index]
-
-        # Aux for scalibility
-        if self.formation.startswith("circle"):
-            self.num_agents_per_layer = 8
-        elif self.formation.startswith("grid"):
-            self.num_agents_per_layer = 50
+        self.formation_size = np.random.uniform(low=self.lowest_formation_size, high=self.highest_formation_size)
+        self.layer_dist = update_layer_dist(low=self.lowest_formation_size, high=self.highest_formation_size)
+        self.formation_center = np.array([0.0, 0.0, 2.0])
+        # Regenerate goals, we don't have to assign goals to the envs,
+        # the reset function in quadrotor_multi.py would do that
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=self.layer_dist)
+        np.random.shuffle(self.goals)
 
 
 class Scenario_static_same_goal(QuadrotorScenario):
@@ -209,7 +166,9 @@ class Scenario_static_same_goal(QuadrotorScenario):
 
     def reset(self):
         self.formation_size = 0.0
-        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center)
+        # Regenerate goals, we don't have to assign goals to the envs,
+        # the reset function in quadrotor_multi.py would do that
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=0.0)
 
 
 class Scenario_static_diff_goal(QuadrotorScenario):
@@ -218,8 +177,8 @@ class Scenario_static_diff_goal(QuadrotorScenario):
 
 
 class Scenario_dynamic_same_goal(QuadrotorScenario):
-    def __init__(self, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
         # teleport every [4.0, 6.0] secs
         duration_time = 5.0
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
@@ -235,7 +194,7 @@ class Scenario_dynamic_same_goal(QuadrotorScenario):
             z = np.random.uniform(low=-0.5 * box_size, high=0.5 * box_size) + 2.0
             z = max(0.25, z)
             self.formation_center = np.array([x, y, z])
-            self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center)
+            self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=0.0)
             for i, env in enumerate(self.envs):
                 env.goal = self.goals[i]
 
@@ -247,20 +206,21 @@ class Scenario_dynamic_same_goal(QuadrotorScenario):
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
         self.formation_size = 0.0
         # Generate goals
-        self.goals = self.generate_goals(self.num_agents)
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=0.0)
 
 
 class Scenario_dynamic_diff_goal(QuadrotorScenario):
-    def __init__(self, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
         # teleport every [4.0, 6.0] secs
         duration_time = 5.0
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
 
     def update_goals(self):
         # reset formation
-        self.update_formation()
-        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center)
+        self.formation, self.num_agents_per_layer = update_formation_and_max_agent_per_layer(mode='dynamic_diff_goal')
+        self.layer_dist = update_layer_dist(low=self.lowest_formation_size, high=self.highest_formation_size)
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=self.layer_dist)
         np.random.shuffle(self.goals)
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
@@ -270,16 +230,11 @@ class Scenario_dynamic_diff_goal(QuadrotorScenario):
         if tick % self.control_step_for_sec == 0 and tick > 0:
             box_size = self.envs[0].box
             x, y = np.random.uniform(low=-box_size, high=box_size, size=(2,))
-            z = np.random.uniform(low=-0.5 * box_size, high=0.5 * box_size) + 2.0
-            z_lower_bound = 0.25
-            if self.formation == "sphere" or self.formation.startswith("circle_vertical"):
-                z_lower_bound = self.formation_size + 0.25
-            elif self.formation.startswith("grid_vertical"):
-                real_num_per_layer = np.minimum(self.num_agents, self.num_agents_per_layer)
-                dim_1, _ = get_grid_dim_number(real_num_per_layer)
-                z_lower_bound = dim_1 * self.formation_size + 0.25
 
-            z = max(z_lower_bound, z)
+            # Get z value, and make sure all goals will above the ground
+            z = get_z_value(num_agents=self.num_agents, num_agents_per_layer=self.num_agents_per_layer,
+                            box_size=box_size, formation=self.formation, formation_size=self.formation_size)
+
             self.formation_center = np.array([x, y, z])
             self.update_goals()
 
@@ -291,7 +246,8 @@ class Scenario_dynamic_diff_goal(QuadrotorScenario):
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
         self.formation_size = max(0.0, self.formation_size)
         # Generate goals
-        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center)
+        self.update_goals()
+
 
 class Scenario_ep_lissajous3D(QuadrotorScenario):
     # Based on https://mathcurve.com/courbes3d.gb/lissajous3d/lissajous3d.shtml
@@ -322,7 +278,7 @@ class Scenario_ep_lissajous3D(QuadrotorScenario):
         self.formation_size = 0.0
         # Generate goals
         formation_center = np.array([-2.0, 0.0, 2.0])  # prevent drones from crashing into the wall
-        self.goals = self.generate_goals(self.num_agents, formation_center)
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=formation_center, layer_dist=0.0)
 
 
 class Scenario_ep_rand_bezier(QuadrotorScenario):
@@ -373,11 +329,12 @@ class Scenario_ep_rand_bezier(QuadrotorScenario):
     def reset(self):
         self.formation_size = 0.0
         # Generate goals
-        self.goals = self.generate_goals(self.num_agents)
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=0.0)
+
 
 class Scenario_swap_goals(QuadrotorScenario):
-    def __init__(self, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
         # teleport every [4.0, 6.0] secs
         duration_time = 5.0
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
@@ -401,7 +358,9 @@ class Scenario_swap_goals(QuadrotorScenario):
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
         self.formation_size = max(0.0, self.formation_size)
         # Generate goals
-        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center)
+        self.layer_dist = update_layer_dist(low=self.lowest_formation_size, high=self.highest_formation_size)
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=self.layer_dist)
+
 
 class Scenario_circular_config(QuadrotorScenario):
     def update_goals(self):
@@ -438,27 +397,27 @@ class Scenario_circular_config(QuadrotorScenario):
 
 
 class Scenario_dynamic_formations(QuadrotorScenario):
-    def __init__(self, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
         # if increase_formation_size is True, increase the formation size
         # else, decrease the formation size
         self.increase_formation_size = True
-        # low = 0.001: change 0.2m/s, high = 0.01: change 2.0m/s
-        self.control_speed = np.random.uniform(low=1.0, high=10.0)
+        # low: 0.1m/s, high: 0.3m/s
+        self.control_speed = np.random.uniform(low=1.0, high=3.0)
 
     # change formation sizes on the fly
     def update_goals(self):
-        self.goals = self.generate_goals(self.num_agents, self.formation_center)
+        self.goals = self.generate_goals(self.num_agents, self.formation_center, layer_dist=self.layer_dist)
         for env, goal in zip(self.envs, self.goals):
             env.goal = goal
 
     def step(self, infos, rewards, pos):
         if self.formation_size <= -self.highest_formation_size:
             self.increase_formation_size = True
-            self.control_speed = np.random.uniform(low=2.0, high=6.0)
+            self.control_speed = np.random.uniform(low=1.0, high=3.0)
         elif self.formation_size >= self.highest_formation_size:
             self.increase_formation_size = False
-            self.control_speed = np.random.uniform(low=2.0, high=6.0)
+            self.control_speed = np.random.uniform(low=1.0, high=3.0)
 
         if self.increase_formation_size:
             self.formation_size += 0.001 * self.control_speed
@@ -471,9 +430,10 @@ class Scenario_dynamic_formations(QuadrotorScenario):
     def reset(self):
         self.formation_size = np.random.uniform(low=self.lowest_formation_size, high=self.highest_formation_size)
         self.increase_formation_size = True if np.random.uniform(low=0.0, high=1.0) < 0.5 else False
-        self.control_speed = np.random.uniform(low=1.0, high=10.0)
+        self.control_speed = np.random.uniform(low=1.0, high=3.0)
         # Generate goals
-        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center)
+        self.layer_dist = update_layer_dist(low=self.lowest_formation_size, high=self.highest_formation_size)
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=self.layer_dist)
 
     def update_formation_size(self, new_formation_size):
         if new_formation_size != self.formation_size:
@@ -482,15 +442,11 @@ class Scenario_dynamic_formations(QuadrotorScenario):
 
 
 class Scenario_swarm_vs_swarm(QuadrotorScenario):
-    def __init__(self, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
         # teleport every [4.0, 6.0] secs
         duration_time = 5.0
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
-        quad_arm = self.envs[0].dynamics.arm
-        lowest_dist, highest_dist = 8 * quad_arm, 16 * quad_arm
-        self.lowest_formation_size, self.highest_formation_size = \
-            self.get_formation_range(mode='swarm_vs_swarm', low=lowest_dist, high=highest_dist)
 
     def formation_centers(self):
         if self.formation_center is None:
@@ -500,8 +456,12 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
         box_size = self.envs[0].box
         dist_low_bound = self.lowest_formation_size
         # Get the 1st goal center
-        x, y = np.random.uniform(low=-box_size, high=box_size, size=(2,)) + self.formation_center[:2]
-        z = np.random.uniform(low=-0.5 * box_size, high=0.5 * box_size) + self.formation_center[2]
+        x, y = np.random.uniform(low=-box_size, high=box_size, size=(2,))
+        # Get z value, and make sure all goals will above the ground
+        z = get_z_value(num_agents=self.num_agents, num_agents_per_layer=self.num_agents_per_layer,
+                        box_size=box_size, formation=self.formation, formation_size=self.formation_size)
+
+
         goal_center_1 = np.array([x, y, z])
 
         # Get the 2nd goal center
@@ -525,8 +485,8 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
         return goal_center_1, goal_center_2
 
     def create_formations(self, goal_center_1, goal_center_2):
-        self.goals_1 = self.generate_goals(self.num_agents // 2, goal_center_1)
-        self.goals_2 = self.generate_goals(self.num_agents - self.num_agents // 2, goal_center_2)
+        self.goals_1 = self.generate_goals(num_agents=self.num_agents // 2, formation_center=goal_center_1, layer_dist=self.layer_dist)
+        self.goals_2 = self.generate_goals(num_agents=self.num_agents - self.num_agents // 2, formation_center=goal_center_2, layer_dist=self.layer_dist)
         self.goals = np.concatenate([self.goals_1, self.goals_2])
 
     def update_goals(self):
@@ -535,7 +495,9 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
         self.goal_center_1 = tmp_goal_center_2
         self.goal_center_2 = tmp_goal_center_1
 
-        self.update_formation()
+        self.formation, self.num_agents_per_layer = update_formation_and_max_agent_per_layer(mode='swarm_vs_swarm')
+        # We can not move update layer_dist into self.create_formations, since update_formation_size (interactive) also use create_formations function
+        self.layer_dist = update_layer_dist(low=self.lowest_formation_size, high=self.highest_formation_size)
         self.create_formations(self.goal_center_1, self.goal_center_2)
         # Shuffle goals
         np.random.shuffle(self.goals_1)
@@ -554,6 +516,7 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
     def reset(self):
         # Reset the formation size and the goals of swarms
         self.goal_center_1, self.goal_center_2 = self.formation_centers()
+        self.layer_dist = update_layer_dist(low=self.lowest_formation_size, high=self.highest_formation_size)
         self.create_formations(self.goal_center_1, self.goal_center_2)
         duration_time = np.random.uniform(low=4.0, high=6.0)
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
@@ -569,7 +532,9 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
 class Scenario_tunnel(QuadrotorScenario):
 
     def update_goals(self, formation_center):
-        self.goals = self.generate_goals(self.num_agents, formation_center)
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=formation_center, layer_dist=self.layer_dist)
+        for env, goal in zip(self.envs, self.goals):
+            env.goal = goal
 
     def step(self, infos, rewards, pos):
         # hack to make drones and goals be on opposite sides of the tunnel
@@ -595,8 +560,8 @@ class Scenario_tunnel(QuadrotorScenario):
 
 
 class Scenario_mix(QuadrotorScenario):
-    def __init__(self, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
         quad_arm_size = self.envs[0].dynamics.arm # 4.6 centimeters
         str_no_obstacles = "no_obstacles"
         str_dynamic_obstacles = "dynamic"
@@ -609,6 +574,7 @@ class Scenario_mix(QuadrotorScenario):
 
         # key: quads_mode
         # value: 0. formation, 1: [formation_low_size, formation_high_size], 2: episode_time, 3: obstacle_mode
+        # Once change the parameter here, should also update QUADS_PARAMS_DICT to make sure it is same as run a single scenario
         self.quads_formation_and_size_dict = {
             "fix_size": {
                 "static_same_goal": [["circle_horizontal"], [0.0, 0.0], 8.0, str_dynamic_obstacles],
@@ -659,7 +625,7 @@ class Scenario_mix(QuadrotorScenario):
             # reset formation
             self.formation = QUADS_FORMATION_LIST[0]
             # reset formation size
-            self.formation_size = quads_dict[mode][1][0]
+            self.formation_size = 0.0
             formation_size_low, formation_size_high = 0.0, 0.0
         elif mode in self.quads_formation_and_size_dict["dynamic_size"] or mode in self.quads_formation_and_size_dict["swap_goals"]:
             if mode in self.quads_formation_and_size_dict["dynamic_size"]:
@@ -670,28 +636,28 @@ class Scenario_mix(QuadrotorScenario):
             formation_index = np.random.randint(low=0, high=len(quads_dict[mode][0]))
             self.formation = QUADS_FORMATION_LIST[formation_index]
             # Aux for scalibility
-            if self.formation.startswith("circle"):
-                self.num_agents_per_layer = 8
-            elif self.formation.startswith("grid"):
-                self.num_agents_per_layer = 50
+            self.num_agents_per_layer = update_max_agent_per_layer(formation=self.formation)
 
             # reset formation size
             lowest_dist, highest_dist = quads_dict[mode][1]
-            formation_size_low, formation_size_high = self.get_formation_range(mode=mode, low=lowest_dist, high=highest_dist)
+            formation_size_low, formation_size_high = \
+                get_formation_range(mode=mode, formation=self.formation, num_agents=self.num_agents, low=lowest_dist,
+                                    high=highest_dist, num_agents_per_layer=self.num_agents_per_layer)
             self.formation_size = np.random.uniform(low=formation_size_low, high=formation_size_high)
         else:
             raise NotImplementedError(f'{mode} is not supported!')
 
         # init the scenario
         self.scenario = create_scenario(quads_mode=mode, envs=self.envs, num_agents=self.num_agents,
-                                        room_dims=self.room_dims, room_dims_callback=self.room_dims_callback, rew_coeff=self.rew_coeff,
-                                        quads_formation=self.formation, quads_formation_size=self.formation_size)
+                                        room_dims=self.room_dims, room_dims_callback=self.room_dims_callback,
+                                        rew_coeff=self.rew_coeff, quads_formation=self.formation, quads_formation_size=self.formation_size)
 
         self.scenario.lowest_formation_size = formation_size_low
         self.scenario.highest_formation_size = formation_size_high
 
         self.scenario.reset()
         self.goals = self.scenario.goals
+        self.formation_size = self.scenario.goals
         for env in self.envs:
             # reset episode time
             ep_time = quads_dict[mode][2]
