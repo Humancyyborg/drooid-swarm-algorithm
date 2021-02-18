@@ -157,6 +157,17 @@ class QuadrotorScenario:
         self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=self.layer_dist)
         np.random.shuffle(self.goals)
 
+    def standard_reset(self):
+        # Reset formation and related parameters
+        self.update_formation_and_relate_param()
+
+        # Reset formation center
+        self.formation_center = np.array([0.0, 0.0, 2.0])
+
+        # Regenerate goals, we don't have to assign goals to the envs,
+        # the reset function in quadrotor_multi.py would do that
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=self.layer_dist)
+        np.random.shuffle(self.goals)
 
 class Scenario_static_same_goal(QuadrotorScenario):
     def update_formation_size(self, new_formation_size):
@@ -200,15 +211,8 @@ class Scenario_dynamic_same_goal(QuadrotorScenario):
         duration_time = np.random.uniform(low=4.0, high=6.0)
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
 
-        # Reset formation and related parameters
-        self.update_formation_and_relate_param()
-
-        # Reset formation center
-        self.formation_center = np.array([0.0, 0.0, 2.0])
-
-        # Reset goals
-        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=self.layer_dist)
-        np.random.shuffle(self.goals)
+        # Reset formation, and parameters related to the formation; formation center; goals
+        self.standard_reset()
 
 
 class Scenario_dynamic_diff_goal(QuadrotorScenario):
@@ -250,11 +254,8 @@ class Scenario_dynamic_diff_goal(QuadrotorScenario):
         duration_time = np.random.uniform(low=4.0, high=6.0)
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
 
-        # Reset formation center
-        self.formation_center = np.array([0.0, 0.0, 2.0])
-
-        # Update goals
-        self.update_goals()
+        # Reset formation, and parameters related to the formation; formation center; goals
+        self.standard_reset()
 
 
 class Scenario_ep_lissajous3D(QuadrotorScenario):
@@ -287,8 +288,8 @@ class Scenario_ep_lissajous3D(QuadrotorScenario):
         self.update_formation_and_relate_param()
 
         # Generate goals
-        formation_center = np.array([-2.0, 0.0, 2.0])  # prevent drones from crashing into the wall
-        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=formation_center, layer_dist=0.0)
+        self.formation_center = np.array([-2.0, 0.0, 2.0])  # prevent drones from crashing into the wall
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=0.0)
 
 
 class Scenario_ep_rand_bezier(QuadrotorScenario):
@@ -362,15 +363,8 @@ class Scenario_swap_goals(QuadrotorScenario):
         duration_time = np.random.uniform(low=4.0, high=6.0)
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
 
-        # Reset formation and related parameters
-        self.update_formation_and_relate_param()
-
-        # Reset formation center
-        self.formation_center = np.array([0.0, 0.0, 2.0])
-
-        # Reset goals
-        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=self.layer_dist)
-        np.random.shuffle(self.goals)
+        # Reset formation, and parameters related to the formation; formation center; goals
+        self.standard_reset()
 
 
 class Scenario_circular_config(QuadrotorScenario):
@@ -442,15 +436,8 @@ class Scenario_dynamic_formations(QuadrotorScenario):
         self.increase_formation_size = True if np.random.uniform(low=0.0, high=1.0) < 0.5 else False
         self.control_speed = np.random.uniform(low=1.0, high=3.0)
 
-        # Reset formation and related parameters
-        self.update_formation_and_relate_param()
-
-        # Reset formation center
-        self.formation_center = np.array([0.0, 0.0, 2.0])
-
-        # Reset goals
-        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=self.layer_dist)
-        np.random.shuffle(self.goals)
+        # Reset formation, and parameters related to the formation; formation center; goals
+        self.standard_reset()
 
     def update_formation_size(self, new_formation_size):
         if new_formation_size != self.formation_size:
@@ -583,7 +570,7 @@ class Scenario_tunnel(QuadrotorScenario):
 class Scenario_mix(QuadrotorScenario):
     def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
         super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
-        quad_arm_size = self.envs[0].dynamics.arm # 4.6 centimeters
+        quad_arm_size = self.envs[0].dynamics.arm  # 4.6 centimeters
         str_no_obstacles = "no_obstacles"
         str_dynamic_obstacles = "dynamic"
         self.obstacle_number = self.envs[0].obstacle_num
