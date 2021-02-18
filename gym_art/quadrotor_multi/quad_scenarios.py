@@ -1,5 +1,4 @@
 import numpy as np
-import random
 import bezier
 import copy
 
@@ -82,20 +81,17 @@ class QuadrotorScenario:
             goals = self.formation_size * np.array(generate_points(num_agents)) + formation_center
         elif self.formation.startswith("grid"):
             if num_agents <= self.num_agents_per_layer:
-                real_num_per_layer = [num_agents]
                 dim_1, dim_2 = get_grid_dim_number(num_agents)
                 dim_size_each_layer = [[dim_1, dim_2]]
             else:
                 # whole layer
                 whole_layer_num = num_agents // self.num_agents_per_layer
                 max_dim_1, max_dim_2 = get_grid_dim_number(self.num_agents_per_layer)
-                real_num_per_layer = [self.num_agents_per_layer for _ in range(whole_layer_num)]
                 dim_size_each_layer = [[max_dim_1, max_dim_2] for _ in range(whole_layer_num)]
 
                 # deal with the rest of the drones
                 rest_num = num_agents % self.num_agents_per_layer
                 if rest_num > 0:
-                    real_num_per_layer.append(rest_num)
                     dim_1, dim_2 = get_grid_dim_number(rest_num)
                     dim_size_each_layer.append([dim_1, dim_2])
 
@@ -445,6 +441,8 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
         # teleport every [4.0, 6.0] secs
         duration_time = 5.0
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
+        self.goals_1, self.goals_2 = None, None
+        self.goal_center_1, self.goal_center_2 = None, None
 
     def formation_centers(self):
         if self.formation_center is None:
@@ -527,7 +525,6 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
 
 
 class Scenario_tunnel(QuadrotorScenario):
-
     def update_goals(self, formation_center):
         self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=formation_center, layer_dist=self.layer_dist)
         for env, goal in zip(self.envs, self.goals):
@@ -583,7 +580,7 @@ class Scenario_mix(QuadrotorScenario):
                 "static_diff_goal": [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 8.0, str_dynamic_obstacles],  # [36, 72] centimeters
                 "dynamic_diff_goal": [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 12.0, str_no_obstacles],  # [36, 72] centimeters
             },
-            "swap_goals":{
+            "swap_goals": {
                 "swarm_vs_swarm": [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 16.0, str_no_obstacles],
                 "swap_goals": [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 16.0, str_no_obstacles],
                 "dynamic_formations": [QUADS_FORMATION_LIST, [0.0, 20 * quad_arm_size], 16.0, str_dynamic_obstacles],

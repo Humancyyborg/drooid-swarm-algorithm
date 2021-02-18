@@ -30,6 +30,7 @@ QUADS_PARAMS_DICT = {
                 'circular_config': [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], 16.0],
 }
 
+
 def update_formation_and_max_agent_per_layer(mode):
     formation_index = np.random.randint(low=0, high=len(QUADS_PARAMS_DICT[mode][0]))
     formation = QUADS_FORMATION_LIST[formation_index]
@@ -42,6 +43,7 @@ def update_formation_and_max_agent_per_layer(mode):
         num_agents_per_layer = 8
 
     return formation, num_agents_per_layer
+
 
 def update_max_agent_per_layer(formation):
     if formation.startswith("circle"):
@@ -95,6 +97,7 @@ def get_goal_by_formation(formation, pos_0, pos_1, layer_pos=0.):
         raise NotImplementedError("Unknown formation")
 
     return goal
+
 
 def get_z_value(num_agents, num_agents_per_layer, box_size, formation, formation_size):
     z = np.random.uniform(low=-0.5 * box_size, high=0.5 * box_size) + 2.0
