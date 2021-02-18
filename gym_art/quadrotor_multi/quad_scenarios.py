@@ -622,9 +622,6 @@ class Scenario_mix(QuadrotorScenario):
                                         room_dims=self.room_dims, room_dims_callback=self.room_dims_callback,
                                         rew_coeff=self.rew_coeff, quads_formation=self.formation, quads_formation_size=self.formation_size)
 
-        self.scenario.lowest_formation_size = formation_size_low
-        self.scenario.highest_formation_size = formation_size_high
-
         self.scenario.reset()
         self.goals = self.scenario.goals
         self.formation_size = self.scenario.goals
