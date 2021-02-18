@@ -3,10 +3,9 @@ import random
 import bezier
 import copy
 
-from gym_art.quadrotor_multi.quad_utils import generate_points, get_circle_radius, get_sphere_radius, get_grid_dim_number
-from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_MODE_LIST, QUADS_MODE_DICT, QUADS_FORMATION_LIST, \
-    QUADS_PARAMS_DICT, update_formation_and_max_agent_per_layer, update_max_agent_per_layer, update_layer_dist, get_formation_range, \
-    get_goal_by_formation, get_z_value
+from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_MODE_DICT, QUADS_FORMATION_LIST, QUADS_PARAMS_DICT, \
+    update_formation_and_max_agent_per_layer, update_layer_dist, get_formation_range, get_goal_by_formation, get_z_value
+from gym_art.quadrotor_multi.quad_utils import generate_points, get_grid_dim_number
 
 
 def create_scenario(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
@@ -28,7 +27,6 @@ class QuadrotorScenario:
         #  Set formation, num_agents_per_layer, lowest_formation_size, highest_formation_size, formation_size,
         #  layer_dist, formation_center
         #  Note: num_agents_per_layer for scalability, the maximum number of agent per layer
-
         self.formation = quads_formation
         self.num_agents_per_layer = 8
         quad_arm = self.envs[0].dynamics.arm
@@ -461,7 +459,6 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
         z = get_z_value(num_agents=self.num_agents, num_agents_per_layer=self.num_agents_per_layer,
                         box_size=box_size, formation=self.formation, formation_size=self.formation_size)
 
-
         goal_center_1 = np.array([x, y, z])
 
         # Get the 2nd goal center
@@ -620,33 +617,6 @@ class Scenario_mix(QuadrotorScenario):
         mode_index = np.random.randint(low=0, high=len(mode_dict))
         mode = mode_dict[mode_index]
 
-        if mode in self.quads_formation_and_size_dict["fix_size"]:
-            quads_dict = self.quads_formation_and_size_dict["fix_size"]
-            # reset formation
-            self.formation = QUADS_FORMATION_LIST[0]
-            # reset formation size
-            self.formation_size = 0.0
-            formation_size_low, formation_size_high = 0.0, 0.0
-        elif mode in self.quads_formation_and_size_dict["dynamic_size"] or mode in self.quads_formation_and_size_dict["swap_goals"]:
-            if mode in self.quads_formation_and_size_dict["dynamic_size"]:
-                quads_dict = self.quads_formation_and_size_dict["dynamic_size"]
-            else:
-                quads_dict = self.quads_formation_and_size_dict["swap_goals"]
-            # reset formation
-            formation_index = np.random.randint(low=0, high=len(quads_dict[mode][0]))
-            self.formation = QUADS_FORMATION_LIST[formation_index]
-            # Aux for scalibility
-            self.num_agents_per_layer = update_max_agent_per_layer(formation=self.formation)
-
-            # reset formation size
-            lowest_dist, highest_dist = quads_dict[mode][1]
-            formation_size_low, formation_size_high = \
-                get_formation_range(mode=mode, formation=self.formation, num_agents=self.num_agents, low=lowest_dist,
-                                    high=highest_dist, num_agents_per_layer=self.num_agents_per_layer)
-            self.formation_size = np.random.uniform(low=formation_size_low, high=formation_size_high)
-        else:
-            raise NotImplementedError(f'{mode} is not supported!')
-
         # init the scenario
         self.scenario = create_scenario(quads_mode=mode, envs=self.envs, num_agents=self.num_agents,
                                         room_dims=self.room_dims, room_dims_callback=self.room_dims_callback,
@@ -658,10 +628,3 @@ class Scenario_mix(QuadrotorScenario):
         self.scenario.reset()
         self.goals = self.scenario.goals
         self.formation_size = self.scenario.goals
-        for env in self.envs:
-            # reset episode time
-            ep_time = quads_dict[mode][2]
-            env.reset_ep_len(ep_time=ep_time)
-            # reset obstacle mode and number
-            obstacle_mode = quads_dict[mode][3]
-            env.reset_obstacle_mode(obstacle_mode=obstacle_mode, obstacle_num=self.obstacle_number)
