@@ -11,7 +11,7 @@ class SingleObstacle:
         self.init_box = init_box  # means the size of initial space that the obstacles spawn at
         self.mode = mode
         self.type = type
-        self.size = size
+        self.size = size  # sphere: diameter, cube: edge length
         self.quad_size = quad_size
         self.dt = dt
         self.traj = traj
@@ -23,6 +23,7 @@ class SingleObstacle:
     def reset(self, set_obstacle=False, formation_size=0.0, goal_central=np.array([0., 0., 2.])):
         self.formation_size = formation_size
         self.goal_central = goal_central
+        self.size = np.random.uniform(low=0.15, high=0.5)
         if set_obstacle:
             if self.mode == 'static':
                 self.static_obstacle()
