@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import spatial
 
 from gym_art.quadrotor_multi.quadrotor_single_obstacle import SingleObstacle
 from gym_art.quadrotor_multi.quad_obstacle_utils import OBSTACLES_TYPE_LIST
@@ -54,14 +55,24 @@ class MultiObstacles:
         if set_obstacles is None:
             raise ValueError('set_obstacles is None')
 
-        collision_arr = np.zeros((len(self.obstacles), len(pos_quads)))
+        # Shape: (num_agents, num_obstacles)
+        collision_matrix = np.zeros((len(pos_quads), self.num_obstacles))
 
         for i, obstacle in enumerate(self.obstacles):
             if set_obstacles[i]:
                 col_arr = obstacle.collision_detection(pos_quads=pos_quads)
-                collision_arr[i] = col_arr
+                collision_matrix[:, i] = col_arr
 
-        return collision_arr
+        # check which drone collide with obstacle(s)
+        all_collisions = []
+        col_w1 = np.where(collision_matrix >= 1)
+        for i, val in enumerate(col_w1[0]):
+            all_collisions.append((col_w1[0][i], col_w1[1][i]))
+
+        obst_positions = np.stack([self.obstacles[i].pos for i in range(self.num_obstacles)])
+        distance_matrix = spatial.distance_matrix(x=pos_quads, y=obst_positions)
+
+        return collision_matrix, all_collisions, distance_matrix
 
     def get_type_list(self):
         all_types = np.array(self.type_list)

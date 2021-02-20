@@ -211,7 +211,6 @@ class Quadrotor3DSceneMulti:
     def reset(self, goals, dynamics, multi_obstacles, collisions):
         self.goals = goals
         self.dynamics = dynamics
-        self.multi_obstacles = multi_obstacles
         self.vector_array = [[] for _ in range(self.num_agents)]
 
         if self.viewpoint == 'global':
@@ -222,7 +221,7 @@ class Quadrotor3DSceneMulti:
             self.chase_cam.reset(goal[0:3], dynamics[self.camera_drone_index].pos, dynamics[self.camera_drone_index].vel)
 
 
-        self.update_state(dynamics, goals, obstacles, collisions)
+        self.update_state(dynamics, goals, multi_obstacles, collisions)
 
     def update_state(self, all_dynamics, goals, multi_obstacles, collisions):
         if self.scene:
@@ -292,7 +291,6 @@ class Quadrotor3DSceneMulti:
                     self.collision_transforms[i].set_transform_and_color(matrix, (0, 0, 0, 0.0))
 
     def render_chase(self, all_dynamics, goals, collisions, mode='human', multi_obstacles=None):
-        self.multi_obstacles = multi_obstacles
         if mode == 'human':
             if self.window_target is None:
                 self.window_target = r3d.WindowTarget(self.window_w, self.window_h, resizable=self.resizable)
@@ -302,7 +300,7 @@ class Quadrotor3DSceneMulti:
                 self._make_scene()
 
             self.window_smooth_change_view()
-            self.update_state(all_dynamics=all_dynamics, goals=goals, multi_obstacles=self.multi_obstacles, collisions=collisions)
+            self.update_state(all_dynamics=all_dynamics, goals=goals, multi_obstacles=multi_obstacles, collisions=collisions)
             self.cam3p.look_at(*self.chase_cam.look_at())
             r3d.draw(self.scene, self.cam3p, self.window_target)
             return None
@@ -310,7 +308,7 @@ class Quadrotor3DSceneMulti:
             if self.video_target is None:
                 self.video_target = r3d.FBOTarget(self.window_h, self.window_h)
                 self._make_scene()
-            self.update_state(all_dynamics=all_dynamics, goals=goals, multi_obstacles=self.multi_obstacles, collisions=collisions)
+            self.update_state(all_dynamics=all_dynamics, goals=goals, multi_obstacles=multi_obstacles, collisions=collisions)
             self.cam3p.look_at(*self.chase_cam.look_at())
             r3d.draw(self.scene, self.cam3p, self.video_target)
             return np.flipud(self.video_target.read())
