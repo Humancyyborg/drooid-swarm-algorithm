@@ -1,15 +1,10 @@
 import copy
-import numpy as np
 
-import gym_art.quadrotor_multi.rendering3d as r3d
-
-from gym_art.quadrotor_multi.quadrotor_visualization import ChaseCamera, SideCamera, quadrotor_simple_3dmodel, \
-    quadrotor_3dmodel
 from gym_art.quadrotor_multi.params import quad_color
 from gym_art.quadrotor_multi.quad_utils import *
-from gym_art.quadrotor_multi.quad_utils import calculate_collision_matrix
-from scipy import spatial
-from pyglet.window import key
+from gym_art.quadrotor_multi.quadrotor_visualization import ChaseCamera, SideCamera, quadrotor_simple_3dmodel, \
+    quadrotor_3dmodel
+
 
 # Global Camera
 class GlobalCamera(object):
@@ -39,6 +34,9 @@ class Quadrotor3DSceneMulti:
             viewpoint='chase', obs_hw=None, obstacle_mode='no_obstacles', room_dims=(10, 10, 10), num_agents=8,
             render_speed=1.0, formation_size=-1.0, vector_render_type='acceleration'
     ):
+        self.pygl_window = __import__('pyglet.window', fromlist=['key'])
+        self.keys = None  # keypress handler, initialized later
+
         if obs_hw is None:
             obs_hw = [64, 64]
 
@@ -94,7 +92,10 @@ class Quadrotor3DSceneMulti:
         self.formation_size = formation_size
         self.vector_render_type = vector_render_type
         self.vector_array = [[] for _ in range(num_agents)]
-
+        self.store_path_every_n = 1
+        self.store_path_count = 0
+        self.path_length = 25
+        self.path_store = [[] for _ in range(num_agents)]
 
     def update_goal_diameter(self):
         if self.quad_arm is not None:
@@ -112,11 +113,21 @@ class Quadrotor3DSceneMulti:
         self._make_scene()
 
     def _make_scene(self):
+        import gym_art.quadrotor_multi.rendering3d as r3d
+
         self.cam1p = r3d.Camera(fov=90.0)
         self.cam3p = r3d.Camera(fov=45.0)
 
-        self.quad_transforms, self.shadow_transforms, self.goal_transforms, self.collision_transforms,\
-        self.obstacle_transforms, self.vec_cyl_transforms, self.vec_cone_transforms = [], [], [], [], [], [], []
+        self.quad_transforms, self.shadow_transforms, self.goal_transforms, self.collision_transforms = [], [], [], []
+        self.obstacle_transforms, self.vec_cyl_transforms, self.vec_cone_transforms = [], [], []
+        self.path_transforms = [[] for _ in range(self.num_agents)]
+
+        shadow_circle = r3d.circle(0.75 * self.diameter, 32)
+        collision_sphere = r3d.sphere(0.75 * self.diameter, 32)
+
+        arrow_cylinder = r3d.cylinder(0.005, 0.12, 16)
+        arrow_cone = r3d.cone(0.01, 0.04, 16)
+        path_sphere = r3d.sphere(0.1 * self.diameter, 16)
 
         for i, model in enumerate(self.models):
             if model is not None:
@@ -126,17 +137,23 @@ class Quadrotor3DSceneMulti:
             self.quad_transforms.append(quad_transform)
 
             self.shadow_transforms.append(
-                r3d.transform_and_color(np.eye(4), (0, 0, 0, 0.4), r3d.circle(0.75 * self.diameter, 32))
+                r3d.transform_and_color(np.eye(4), (0, 0, 0, 0.4), shadow_circle)
             )
             self.collision_transforms.append(
-                r3d.transform_and_color(np.eye(4), (0, 0, 0, 0.0), r3d.sphere(0.75 * self.diameter, 32))
+                r3d.transform_and_color(np.eye(4), (0, 0, 0, 0.0), collision_sphere)
             )
             self.vec_cyl_transforms.append(
-                r3d.transform_and_color(np.eye(4), (1, 1, 1), r3d.cylinder(0.005, 0.12, 32))
+                r3d.transform_and_color(np.eye(4), (1, 1, 1), arrow_cylinder)
             )
             self.vec_cone_transforms.append(
-                r3d.transform_and_color(np.eye(4), (1, 1, 1), r3d.cone(0.01, 0.04, 32))
+                r3d.transform_and_color(np.eye(4), (1, 1, 1), arrow_cone)
             )
+            color = quad_color[i % len(quad_color)] + (0.2,)
+            for j in range(self.path_length):
+                self.path_transforms[i].append(r3d.transform_and_color(np.eye(4), color, path_sphere))
+                # self.path_transforms[i].append(quad_transform)
+
+
 
         # TODO make floor size or walls to indicate world_box
         floor = r3d.ProceduralTexture(r3d.random_textype(), (0.15, 0.25),
@@ -151,6 +168,8 @@ class Quadrotor3DSceneMulti:
         bodies.extend(self.quad_transforms)
         bodies.extend(self.vec_cyl_transforms)
         bodies.extend(self.vec_cone_transforms)
+        for path in self.path_transforms:
+            bodies.extend(path)
         # visualize walls of the room if True
         if self.visible:
             room = r3d.ProceduralTexture(r3d.random_textype(), (0.15, 0.25), r3d.envBox(*self.room_dims))
@@ -175,6 +194,8 @@ class Quadrotor3DSceneMulti:
         self.scene.batches.extend([batch])
 
     def create_obstacles(self):
+        import gym_art.quadrotor_multi.rendering3d as r3d
+
         for item in self.multi_obstacles.obstacles:
             color = quad_color[14]
             if item.shape == 'cube':
@@ -187,16 +208,22 @@ class Quadrotor3DSceneMulti:
             self.obstacle_transforms.append(obstacle_transform)
 
     def update_obstacles(self, multi_obstacles):
+        import gym_art.quadrotor_multi.rendering3d as r3d
+
         for i, g in enumerate(multi_obstacles.obstacles):
             self.obstacle_transforms[i].set_transform(r3d.translate(g.pos))
 
     def create_goals(self):
+        import gym_art.quadrotor_multi.rendering3d as r3d
+
         for i in range(len(self.models)):
             color = quad_color[i % len(quad_color)]
             goal_transform = r3d.transform_and_color(np.eye(4), color, r3d.sphere(self.goal_diameter / 2, 18))
             self.goal_transforms.append(goal_transform)
 
     def update_goals(self, goals):
+        import gym_art.quadrotor_multi.rendering3d as r3d
+
         for i, g in enumerate(goals):
             self.goal_transforms[i].set_transform(r3d.translate(g[0:3]))
 
@@ -216,6 +243,7 @@ class Quadrotor3DSceneMulti:
         self.goals = goals
         self.dynamics = dynamics
         self.vector_array = [[] for _ in range(self.num_agents)]
+        self.path_store = [[] for _ in range(self.num_agents)]
 
         if self.viewpoint == 'global':
             goal = np.mean(goals, axis=0)
@@ -228,6 +256,7 @@ class Quadrotor3DSceneMulti:
         self.update_state(dynamics, goals, multi_obstacles, collisions)
 
     def update_state(self, all_dynamics, goals, multi_obstacles, collisions):
+        import gym_art.quadrotor_multi.rendering3d as r3d
 
         if self.scene:
             if self.viewpoint == 'global':
@@ -243,7 +272,7 @@ class Quadrotor3DSceneMulti:
             # batch = r3d.Batch()
             # world.build(batch)
             # self.scene.batches.extend([batch])
-
+            self.store_path_count += 1
             self.update_goals(goals=goals)
             if self.obstacle_mode != 'no_obstacles':
                 self.update_obstacles(multi_obstacles=multi_obstacles)
@@ -252,6 +281,15 @@ class Quadrotor3DSceneMulti:
                 matrix = r3d.trans_and_rot(dyn.pos, dyn.rot)
                 self.quad_transforms[i].set_transform_nocollide(matrix)
 
+                if self.store_path_count % self.store_path_every_n == 0:
+                    if len(self.path_store[i]) >= self.path_length:
+                        self.path_store[i].pop(0)
+                    self.path_store[i].append(matrix)
+                    color = quad_color[i % len(quad_color)]
+                    path_storage_length = len(self.path_store[i])
+                    for k in range(path_storage_length):
+                        color_wa = color + (k/path_storage_length + 0.3, )
+                        self.path_transforms[i][k].set_transform_and_color(self.path_store[i][k], color_wa)
                 shadow_pos = 0 + dyn.pos
                 shadow_pos[2] = 0.001  # avoid z-fighting
                 matrix = r3d.translate(shadow_pos)
@@ -289,7 +327,6 @@ class Quadrotor3DSceneMulti:
                     self.vec_cyl_transforms[i].set_transform_nocollide(cyl_mat)
                     self.vec_cone_transforms[i].set_transform_nocollide(cone_mat)
 
-
                 matrix = r3d.translate(dyn.pos)
                 if collisions['drone'][i] > 0.0 or collisions['obstacle'][i] > 0.0 or collisions['ground'][i] > 0.0:
                     # Multiplying by 1 converts bool into float
@@ -300,10 +337,12 @@ class Quadrotor3DSceneMulti:
                     self.collision_transforms[i].set_transform_and_color(matrix, (0, 0, 0, 0.0))
 
     def render_chase(self, all_dynamics, goals, collisions, mode='human', multi_obstacles=None):
+        import gym_art.quadrotor_multi.rendering3d as r3d
+
         if mode == 'human':
             if self.window_target is None:
                 self.window_target = r3d.WindowTarget(self.window_w, self.window_h, resizable=self.resizable)
-                self.keys = key.KeyStateHandler()
+                self.keys = self.pygl_window.key.KeyStateHandler()
                 self.window_target.window.push_handlers(self.keys)
                 self.window_target.window.on_key_release = self.window_on_key_release
                 self._make_scene()
@@ -325,6 +364,8 @@ class Quadrotor3DSceneMulti:
     def window_smooth_change_view(self):
         if len(self.keys) == 0:
             return
+
+        key = self.pygl_window.key
 
         symbol = list(self.keys)
         if key.NUM_0 <= symbol[0] <= key.NUM_9:
@@ -407,7 +448,8 @@ class Quadrotor3DSceneMulti:
         elif self.keys[key.NUM_SUBTRACT]:
             self.formation_size -= 0.1
 
-
     def window_on_key_release(self, symbol, modifiers):
+        key = self.pygl_window.key
+
         self.keys = key.KeyStateHandler()
         self.window_target.window.push_handlers(self.keys)

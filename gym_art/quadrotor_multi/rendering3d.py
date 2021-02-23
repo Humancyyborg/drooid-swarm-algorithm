@@ -19,6 +19,8 @@ if "Apple" in sys.version:
 from gym import error
 import matplotlib.pyplot as plt
 
+print('IMPORTING OPENGL RENDERING MODULE. THIS SHOULD NOT BE IMPORTED IN HEADLESS MODE!')
+
 try:
     import pyglet
     pyglet.options['debug_gl'] = False
