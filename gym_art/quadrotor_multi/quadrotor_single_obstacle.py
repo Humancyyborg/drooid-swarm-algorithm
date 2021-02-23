@@ -51,7 +51,7 @@ class SingleObstacle:
             self.pos = np.array([5., 5., -5.])
             self.vel = np.array([0., 0., 0.])
 
-        obs = self.update_obs(quads_pos=quads_pos, quads_vel=quads_vel)
+        obs = self.update_obs(quads_pos=quads_pos, quads_vel=quads_vel, set_obstacle=set_obstacle)
         return obs
 
     def static_obstacle(self):
@@ -128,10 +128,15 @@ class SingleObstacle:
         vel = vel_magn * vel_direct / (np.linalg.norm(vel_direct) + EPS)
         return vel
 
-    def update_obs(self, quads_pos=None, quads_vel=None):
+    def update_obs(self, quads_pos, quads_vel, set_obstacle):
         # Add rel_pos, rel_vel, size, shape to obs, shape: num_agents * 10
-        rel_pos = self.pos - quads_pos
-        rel_vel = self.vel - quads_vel
+        if not set_obstacle:
+            rel_pos = self.pos - np.zeros((len(quads_pos), 3))
+            rel_vel = self.vel - np.zeros((len(quads_pos), 3))
+        else:
+            rel_pos = self.pos - quads_pos
+            rel_vel = self.vel - quads_vel
+
         # obst_size: in xyz axis: radius for sphere, half edge length for cube
         obst_size = (self.size / 2) * np.ones((len(quads_pos), 3))
         obst_shape = self.shape_list.index(self.shape) * np.ones((len(quads_pos), 1))
@@ -144,19 +149,19 @@ class SingleObstacle:
             raise ValueError('set_obstacle is None')
 
         if not set_obstacle:
-            obs = self.update_obs(quads_pos=quads_pos, quads_vel=quads_vel)
+            obs = self.update_obs(quads_pos=quads_pos, quads_vel=quads_vel, set_obstacle=set_obstacle)
             return obs
 
         if self.traj == 'electron':
-            obs = self.step_electron(quads_pos=quads_pos, quads_vel=quads_vel)
+            obs = self.step_electron(quads_pos=quads_pos, quads_vel=quads_vel, set_obstacle=set_obstacle)
             return obs
         elif self.traj == 'gravity':
-            obs = self.step_gravity(quads_pos=quads_pos, quads_vel=quads_vel)
+            obs = self.step_gravity(quads_pos=quads_pos, quads_vel=quads_vel, set_obstacle=set_obstacle)
             return obs
         else:
             raise NotImplementedError()
 
-    def step_electron(self, quads_pos=None, quads_vel=None):
+    def step_electron(self, quads_pos, quads_vel, set_obstacle):
         # Generate force, mimic force between electron, F = k*q1*q2 / r^2,
         # Here, F = r^2, k = 1, q1 = q2 = 1
         force_pos = 2 * self.goal_central - self.pos
@@ -175,16 +180,16 @@ class SingleObstacle:
         self.vel += self.dt * acc
         self.pos += self.dt * self.vel
 
-        obs = self.update_obs(quads_pos=quads_pos, quads_vel=quads_vel)
+        obs = self.update_obs(quads_pos=quads_pos, quads_vel=quads_vel, set_obstacle=set_obstacle)
         return obs
 
-    def step_gravity(self, quads_pos=None, quads_vel=None):
+    def step_gravity(self, quads_pos, quads_vel, set_obstacle):
         acc = np.array([0., 0., -GRAV])  # 9.81
         # Calculate velocity
         self.vel += self.dt * acc
         self.pos += self.dt * self.vel
 
-        obs = self.update_obs(quads_pos=quads_pos, quads_vel=quads_vel)
+        obs = self.update_obs(quads_pos=quads_pos, quads_vel=quads_vel, set_obstacle=set_obstacle)
         return obs
 
     def cube_detection(self, pos_quads=None):
