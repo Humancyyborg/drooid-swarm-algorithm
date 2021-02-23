@@ -8,7 +8,7 @@ GRAV = 9.81  # default gravitational constant
 
 class SingleObstacle:
     def __init__(self, max_init_vel=1., init_box=2.0, mode='no_obstacles', shape='sphere', size=0.0, quad_size=0.04,
-                 dt=0.05, traj='gravity'):
+                 dt=0.05, traj='gravity', obs_mode='relative'):
         self.max_init_vel = max_init_vel
         self.init_box = init_box  # means the size of initial space that the obstacles spawn at
         self.mode = mode
@@ -22,6 +22,7 @@ class SingleObstacle:
         self.formation_size = 0.0
         self.goal_central = np.array([0., 0., 2.])
         self.shape_list = OBSTACLES_SHAPE_LIST
+        self.obs_mode = obs_mode
 
     def reset(self, set_obstacle=None, formation_size=0.0, goal_central=np.array([0., 0., 2.]), shape='sphere', quads_pos=None, quads_vel=None):
         if set_obstacle is None:
@@ -130,16 +131,23 @@ class SingleObstacle:
 
     def update_obs(self, quads_pos, quads_vel, set_obstacle):
         # Add rel_pos, rel_vel, size, shape to obs, shape: num_agents * 10
-        if not set_obstacle:
+        if (not set_obstacle) and self.obs_mode == 'absolute':
             rel_pos = self.pos - np.zeros((len(quads_pos), 3))
             rel_vel = self.vel - np.zeros((len(quads_pos), 3))
-        else:
+            obst_size = np.zeros((len(quads_pos), 3))
+            obst_shape = np.zeros((len(quads_pos), 1))
+        elif (not set_obstacle) and self.obs_mode == 'half_relative':
+            rel_pos = self.pos - np.zeros((len(quads_pos), 3))
+            rel_vel = self.vel - np.zeros((len(quads_pos), 3))
+            obst_size = (self.size / 2) * np.ones((len(quads_pos), 3))
+            obst_shape = self.shape_list.index(self.shape) * np.ones((len(quads_pos), 1))
+        else:  # False, relative; True
             rel_pos = self.pos - quads_pos
             rel_vel = self.vel - quads_vel
+            # obst_size: in xyz axis: radius for sphere, half edge length for cube
+            obst_size = (self.size / 2) * np.ones((len(quads_pos), 3))
+            obst_shape = self.shape_list.index(self.shape) * np.ones((len(quads_pos), 1))
 
-        # obst_size: in xyz axis: radius for sphere, half edge length for cube
-        obst_size = (self.size / 2) * np.ones((len(quads_pos), 3))
-        obst_shape = self.shape_list.index(self.shape) * np.ones((len(quads_pos), 1))
         obs = np.concatenate((rel_pos, rel_vel, obst_size, obst_shape), axis=1)
 
         return obs

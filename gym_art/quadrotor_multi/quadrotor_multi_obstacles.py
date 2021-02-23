@@ -9,7 +9,7 @@ EPS = 1e-6
 
 class MultiObstacles:
     def __init__(self, mode='no_obstacles', num_obstacles=0, max_init_vel=1., init_box=2.0,
-                 dt=0.005, quad_size=0.046, shape='sphere', size=0.0, traj='gravity'):
+                 dt=0.005, quad_size=0.046, shape='sphere', size=0.0, traj='gravity', obs_mode='relative'):
         self.num_obstacles = num_obstacles
         self.obstacles = []
         self.shape = shape
@@ -17,7 +17,7 @@ class MultiObstacles:
 
         for _ in range(num_obstacles):
             obstacle = SingleObstacle(max_init_vel=max_init_vel, init_box=init_box, mode=mode, shape=shape, size=size,
-                                      quad_size=quad_size, dt=dt, traj=traj)
+                                      quad_size=quad_size, dt=dt, traj=traj, obs_mode=obs_mode)
             self.obstacles.append(obstacle)
 
     def reset(self, obs=None, quads_pos=None, quads_vel=None, set_obstacles=None, formation_size=0.0, goal_central=np.array([0., 0., 2.])):

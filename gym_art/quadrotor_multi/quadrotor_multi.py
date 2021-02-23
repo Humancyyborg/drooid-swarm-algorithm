@@ -35,7 +35,8 @@ class QuadrotorEnvMulti(gym.Env):
                  quads_obstacle_num=0, quads_obstacle_type='sphere', quads_obstacle_size=0.0, collision_force=True,
                  adaptive_env=False, obstacle_traj='gravity', local_obs=-1, collision_hitbox_radius=2.0,
                  collision_falloff_radius=2.0, collision_smooth_max_penalty=10.0,
-                 local_metric='dist', local_coeff=0.0, use_replay_buffer=False, vector_render_type='acceleration'):
+                 local_metric='dist', local_coeff=0.0, use_replay_buffer=False, vector_render_type='acceleration',
+                 obstacle_obs_mode='relative'):
 
         super().__init__()
 
@@ -161,7 +162,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.multi_obstacles = MultiObstacles(
                 mode=self.obstacle_mode, num_obstacles=self.obstacle_num, max_init_vel=obstacle_max_init_vel,
                 init_box=obstacle_init_box, dt=dt, quad_size=self.quad_arm, shape=self.obstacle_shape,
-                size=quads_obstacle_size, traj=obstacle_traj
+                size=quads_obstacle_size, traj=obstacle_traj, obs_mode=obstacle_obs_mode
             )
 
             # collisions between obstacles and quadrotors
