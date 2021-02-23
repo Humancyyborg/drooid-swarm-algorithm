@@ -148,16 +148,6 @@ class QuadrotorEnvMulti(gym.Env):
             self.obstacle_room = self.envs[0].room_box  # [[-5, -5, 0], [5, 5, 10]]
             dt = 1.0 / sim_freq
             self.set_obstacles = np.zeros(self.obstacle_num, dtype=bool)
-            self.obstacle_settle_count = np.zeros(self.num_agents)
-            metric_dist_throw_obst = collision_falloff_radius * self.quad_arm
-            self.metric_dist_quads_settle_with_obstacle = {
-                'static_same_goal': get_sphere_radius(num=self.num_agents, dist=metric_dist_throw_obst + self.quad_arm),
-                'static_diff_goal': metric_dist_throw_obst,
-                'swarm_vs_swarm': metric_dist_throw_obst,
-                'swap_goals': metric_dist_throw_obst,
-                'dynamic_formations': metric_dist_throw_obst,
-                'circular_config': metric_dist_throw_obst,
-            }
             self.obstacle_shape = quads_obstacle_type
             self.multi_obstacles = MultiObstacles(
                 mode=self.obstacle_mode, num_obstacles=self.obstacle_num, max_init_vel=obstacle_max_init_vel,
@@ -363,7 +353,6 @@ class QuadrotorEnvMulti(gym.Env):
         # Reset Obstacles
         if self.use_obstacles:
             self.set_obstacles = np.zeros(self.obstacle_num, dtype=bool)
-            self.obstacle_settle_count = np.zeros(self.num_agents)
             quads_pos = np.array([e.dynamics.pos for e in self.envs])
             quads_vel = np.array([e.dynamics.vel for e in self.envs])
             obs = self.multi_obstacles.reset(obs=obs, quads_pos=quads_pos, quads_vel=quads_vel,
@@ -529,27 +518,11 @@ class QuadrotorEnvMulti(gym.Env):
                                        goal_central=self.goal_central, shape=obst_shape, quads_pos=self.pos,
                                        quads_vel=quads_vel)
 
-                # If all drones hit the floor, we should reset the counter,
-                # which is used for deciding when to throw the obstacles
-                if not self.set_obstacles.all():
-                    self.obstacle_settle_count = np.zeros(self.num_agents)
-
-            # If all obstacles are NOT threw out, we use the code block below to decide when to throw the obstacle
-            # The metric is given the drones' distance to their own goals.
+            # Throw obstacles every one second
             if not self.set_obstacles.all():
-                for i, e in enumerate(self.envs):
-                    dis = np.linalg.norm(self.pos[i] - e.goal)
-                    scenario_name = self.scenario.quads_mode if self.quads_mode != 'mix' else self.scenario.scenario.quads_mode
-                    if abs(dis) < self.metric_dist_quads_settle_with_obstacle[scenario_name]:
-                        self.obstacle_settle_count[i] += 1
-                    else:
-                        self.obstacle_settle_count = np.zeros(self.num_agents)
-                        break
-
-                # drones settled at the goal for 1 sec
+                tick = self.envs[0].tick
                 control_step_for_one_sec = int(self.control_freq)
-                tmp_count = self.obstacle_settle_count >= control_step_for_one_sec
-                if all(tmp_count):
+                if tick % control_step_for_one_sec == 0 and tick > 0:
                     self.set_obstacles = np.ones(self.obstacle_num, dtype=bool)
                     self.quads_formation_size = self.scenario.formation_size
                     self.goal_central = np.mean(self.scenario.goals, axis=0)
@@ -579,6 +552,7 @@ class QuadrotorEnvMulti(gym.Env):
                     }
                     if self.use_obstacles:
                         infos[i]['episode_extra_stats']['num_collisions_obst_quad'] = self.obst_quad_collisions_per_episode
+                        infos[i]['episode_extra_stats'][f'num_collisions_obst_{self.scenario.name()}'] = self.obst_quad_collisions_per_episode
 
             obs = self.reset()
             dones = [True] * len(dones)  # terminate the episode for all "sub-envs"
