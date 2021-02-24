@@ -419,20 +419,18 @@ class QuadrotorEnvMulti(gym.Env):
 
         # COLLISION BETWEEN QUAD AND OBSTACLE(S)
         if self.use_obstacles:
-            obst_quad_col_matrix, curr_obst_quad_collisions, obst_quad_distance_matrix \
+            obst_quad_col_matrix, curr_obst_quad_collisions, curr_all_collisions, obst_quad_distance_matrix \
                 = self.multi_obstacles.collision_detection(pos_quads=self.pos, set_obstacles=self.set_obstacles)
             obst_quad_last_step_unique_collisions = np.setdiff1d(curr_obst_quad_collisions, self.prev_obst_quad_collisions)
-            self.obst_quad_collisions_per_episode += len(obst_quad_last_step_unique_collisions) // 2
+            self.obst_quad_collisions_per_episode += len(obst_quad_last_step_unique_collisions)
             self.prev_obst_quad_collisions = curr_obst_quad_collisions
 
             rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
             if obst_quad_last_step_unique_collisions.any():
                 # We assign penalties to the drones which collide with the obstacles
-                # In obst_quad_last_step_unique_collisions, 2*i is quad_id, 2*i+1 is obstacle_id, i >= 0
-                # and we only penalize drones
-                for i in range(len(obst_quad_last_step_unique_collisions) // 2):
-                    quad_id = int(2 * i)
-                    rew_obst_quad_collisions_raw[quad_id] = -1.0
+                # And obst_quad_last_step_unique_collisions only include drones' id
+                rew_obst_quad_collisions_raw[obst_quad_last_step_unique_collisions] = -1.0
+
             rew_collisions_obst_quad = self.rew_coeff["quadcol_bin_obst"] * rew_obst_quad_collisions_raw
 
             # penalties for low distance between obstacles and drones
@@ -440,13 +438,14 @@ class QuadrotorEnvMulti(gym.Env):
             rew_obst_quad_proximity = -1.0 * calculate_obst_drone_proximity_penalties(
                 distance_matrix=obst_quad_distance_matrix, arm=self.quad_arm, dt=self.control_dt,
                 penalty_fall_off=self.collision_falloff_radius,
-                max_penalty=self.rew_coeff["quadcol_bin_smooth_max"],
+                max_penalty=self.rew_coeff["quadcol_bin_obst_smooth_max"],
                 num_agents=self.num_agents,
                 obstacles_radius=obstacles_radius
             )
         else:
             obst_quad_col_matrix = np.zeros((self.num_agents, self.obstacle_num))
             curr_obst_quad_collisions = []
+            curr_all_collisions = []
             rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
             rew_collisions_obst_quad = np.zeros(self.num_agents)
             rew_obst_quad_proximity = np.zeros(self.num_agents)
@@ -461,7 +460,7 @@ class QuadrotorEnvMulti(gym.Env):
         if self.apply_collision_force:
             for val in self.curr_drone_collisions:
                 perform_collision_between_drones(self.envs[val[0]].dynamics, self.envs[val[1]].dynamics)
-            for val in curr_obst_quad_collisions:
+            for val in curr_all_collisions:
                 perform_collision_with_obstacle(
                     drone_dyn=self.envs[val[0]].dynamics, obstacle_dyn=self.multi_obstacles.obstacles[val[1]],
                     quad_arm=self.quad_arm)

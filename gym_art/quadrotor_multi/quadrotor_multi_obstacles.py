@@ -64,15 +64,17 @@ class MultiObstacles:
                 collision_matrix[:, i] = col_arr
 
         # check which drone collide with obstacle(s)
+        drone_collisions = []
         all_collisions = []
         col_w1 = np.where(collision_matrix >= 1)
         for i, val in enumerate(col_w1[0]):
+            drone_collisions.append(col_w1[0][i])
             all_collisions.append((col_w1[0][i], col_w1[1][i]))
 
         obst_positions = np.stack([self.obstacles[i].pos for i in range(self.num_obstacles)])
         distance_matrix = spatial.distance_matrix(x=pos_quads, y=obst_positions)
 
-        return collision_matrix, all_collisions, distance_matrix
+        return collision_matrix, drone_collisions, all_collisions, distance_matrix
 
     def get_shape_list(self):
         all_shapes = np.array(self.shape_list)
