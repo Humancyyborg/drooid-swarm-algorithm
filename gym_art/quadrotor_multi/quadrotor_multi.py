@@ -8,8 +8,7 @@ import gym
 from copy import deepcopy
 
 from gym_art.quadrotor_multi.quad_utils import perform_collision_between_drones, perform_collision_with_obstacle, \
-    calculate_collision_matrix, calculate_drone_proximity_penalties, calculate_obst_drone_proximity_penalties, \
-    get_sphere_radius
+    calculate_collision_matrix, calculate_drone_proximity_penalties, calculate_obst_drone_proximity_penalties
 
 from gym_art.quadrotor_multi.quadrotor_multi_obstacles import MultiObstacles
 from gym_art.quadrotor_multi.quadrotor_single import GRAV, QuadrotorSingle
