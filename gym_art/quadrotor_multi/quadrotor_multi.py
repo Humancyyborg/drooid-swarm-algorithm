@@ -35,7 +35,7 @@ class QuadrotorEnvMulti(gym.Env):
                  adaptive_env=False, obstacle_traj='gravity', local_obs=-1, collision_hitbox_radius=2.0,
                  collision_falloff_radius=2.0, collision_smooth_max_penalty=10.0,
                  local_metric='dist', local_coeff=0.0, use_replay_buffer=False, vector_render_type='acceleration',
-                 obstacle_obs_mode='relative'):
+                 obstacle_obs_mode='relative', obst_penalty_fall_off=10.0):
 
         super().__init__()
 
@@ -82,7 +82,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.rew_coeff = dict(
             pos=1., effort=0.05, action_change=0., crash=1., orient=1., yaw=0., rot=0., attitude=0., spin=0.1, vel=0.,
             quadcol_bin=0., quadcol_bin_smooth_max=0.,
-            quadsettle=0., quadcol_bin_obst=0.,
+            quadsettle=0., quadcol_bin_obst=0., quadcol_bin_obst_smooth_max=0.0
         )
         rew_coeff_orig = copy.deepcopy(self.rew_coeff)
 
@@ -148,6 +148,7 @@ class QuadrotorEnvMulti(gym.Env):
             dt = 1.0 / sim_freq
             self.set_obstacles = np.zeros(self.obstacle_num, dtype=bool)
             self.obstacle_shape = quads_obstacle_type
+            self.obst_penalty_fall_off = obst_penalty_fall_off
             self.multi_obstacles = MultiObstacles(
                 mode=self.obstacle_mode, num_obstacles=self.obstacle_num, max_init_vel=obstacle_max_init_vel,
                 init_box=obstacle_init_box, dt=dt, quad_size=self.quad_arm, shape=self.obstacle_shape,
@@ -437,7 +438,7 @@ class QuadrotorEnvMulti(gym.Env):
             obstacles_radius = np.stack([self.multi_obstacles.obstacles[i].size / 2 for i in range(self.obstacle_num)])
             rew_obst_quad_proximity = -1.0 * calculate_obst_drone_proximity_penalties(
                 distance_matrix=obst_quad_distance_matrix, arm=self.quad_arm, dt=self.control_dt,
-                penalty_fall_off=self.collision_falloff_radius,
+                penalty_fall_off=self.obst_penalty_fall_off,
                 max_penalty=self.rew_coeff["quadcol_bin_obst_smooth_max"],
                 num_agents=self.num_agents,
                 obstacles_radius=obstacles_radius
@@ -519,7 +520,7 @@ class QuadrotorEnvMulti(gym.Env):
             # Throw obstacles every one second
             if not self.set_obstacles.all():
                 tick = self.envs[0].tick
-                control_step_for_one_sec = int(self.control_freq)
+                control_step_for_one_sec = int(0.1 * self.control_freq)
                 if tick % control_step_for_one_sec == 0 and tick > 0:
                     self.set_obstacles = np.ones(self.obstacle_num, dtype=bool)
                     self.quads_formation_size = self.scenario.formation_size
