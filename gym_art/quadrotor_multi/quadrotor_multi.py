@@ -519,20 +519,17 @@ class QuadrotorEnvMulti(gym.Env):
 
             # Throw obstacles every one second
             if not self.set_obstacles.all():
-                tick = self.envs[0].tick
-                control_step_for_one_sec = int(0.1 * self.control_freq)
-                if tick % control_step_for_one_sec == 0 and tick > 0:
-                    self.set_obstacles = np.ones(self.obstacle_num, dtype=bool)
-                    self.quads_formation_size = self.scenario.formation_size
-                    self.goal_central = np.mean(self.scenario.goals, axis=0)
-                    tmp_obs = self.multi_obstacles.reset(
-                        obs=obs, quads_pos=self.pos, quads_vel=quads_vel, set_obstacles=self.set_obstacles,
-                        formation_size=self.quads_formation_size, goal_central=self.goal_central)
+                self.set_obstacles = np.ones(self.obstacle_num, dtype=bool)
+                self.quads_formation_size = self.scenario.formation_size
+                self.goal_central = np.mean(self.scenario.goals, axis=0)
+                tmp_obs = self.multi_obstacles.reset(
+                    obs=obs, quads_pos=self.pos, quads_vel=quads_vel, set_obstacles=self.set_obstacles,
+                    formation_size=self.quads_formation_size, goal_central=self.goal_central)
 
-                    # In testing mode, which means reset the scene, and this in visualization would make people feel
-                    # the screen stuck around one second
-                    if self.obstacle_num > 1:
-                        self.reset_scene = True
+                # In testing mode, which means reset the scene, and this in visualization would make people feel
+                # the screen stuck around one second
+                if self.obstacle_num > 1:
+                    self.reset_scene = True
 
             obs = tmp_obs
 

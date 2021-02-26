@@ -40,12 +40,17 @@ class SingleObstacle:
                 self.static_obstacle()
             elif self.mode == 'dynamic':
                 # Try 1 + 3 times, make sure initial vel, both vx and vy < 5.0
-                self.dynamic_obstacle()
-                for _ in range(3):
-                    if abs(self.vel[0]) > 5.0 or abs(self.vel[1]) > 5.0:
-                        self.dynamic_obstacle()
-                    else:
-                        break
+                if self.traj == "electron":
+                    self.dynamic_obstacle_electron()
+                elif self.traj == "gravity":
+                    self.dynamic_obstacle()
+                    for _ in range(200):
+                        if abs(self.vel[0]) > 2.0 or abs(self.vel[1]) > 2.0:
+                            self.dynamic_obstacle()
+                        else:
+                            break
+                else:
+                    raise NotImplementedError(f'{self.traj} not supported!')
             else:
                 raise NotImplementedError(f'{self.mode} not supported!')
         else:
@@ -85,6 +90,27 @@ class SingleObstacle:
             self.vel = self.get_grav_init_vel()
         elif self.traj == "electron":
             self.vel = self.get_electron_init_vel()
+
+    def dynamic_obstacle_electron(self):
+        # Init position for an obstacle
+        x, y = np.random.uniform(-self.init_box, self.init_box, size=(2,))
+        z = np.random.uniform(-self.init_box, self.init_box) + self.goal_central[2]
+        z = max(self.size / 2 + 0.5, z)
+
+        # Make the position of obstacles out of the space of goals
+        formation_range = self.formation_size + self.size / 2
+        rel_x = abs(x) - formation_range
+        rel_y = abs(y) - formation_range
+        if rel_x <= 0:
+            x += np.sign(x) * np.random.uniform(low=abs(rel_x) + 0.5,
+                                                high=abs(rel_x) + 1.0)
+        if rel_y <= 0:
+            y += np.sign(y) * np.random.uniform(low=abs(rel_y) + 0.5,
+                                                high=abs(rel_y) + 1.0)
+        self.pos = np.array([x, y, z])
+
+        # Init velocity for an obstacle
+        self.vel = self.get_electron_init_vel()
 
     def get_grav_init_vel(self):
         # Calculate the initial position of the obstacle, which can make it finally fly through the center of the
@@ -177,11 +203,8 @@ class SingleObstacle:
         force_noise = np.random.uniform(low=-0.5 * rel_force_goal, high=0.5 * rel_force_goal)
         force_pos = force_pos + force_noise
         rel_force_obstacle = force_pos - self.pos
-        radius = 2.0 * np.linalg.norm(rel_force_obstacle)
-        radius = max(EPS, radius)
 
-        force_direction = rel_force_obstacle / radius
-        force = radius * radius * force_direction
+        force = rel_force_obstacle
         # Calculate acceleration, F = ma, here, m = 1.0
         acc = force
         # Calculate position and velocity
