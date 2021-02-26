@@ -4,7 +4,7 @@ from gym_art.quadrotor_multi.quad_obstacle_utils import OBSTACLES_SHAPE_LIST
 
 EPS = 1e-6
 GRAV = 9.81  # default gravitational constant
-
+TRAJ_LIST = ['gravity', 'electron']
 
 class SingleObstacle:
     def __init__(self, max_init_vel=1., init_box=2.0, mode='no_obstacles', shape='sphere', size=0.0, quad_size=0.04,
@@ -17,6 +17,7 @@ class SingleObstacle:
         self.quad_size = quad_size
         self.dt = dt
         self.traj = traj
+        self.tmp_traj = traj
         self.pos = np.array([5., 5., -5.])
         self.vel = np.array([0., 0., 0.])
         self.formation_size = 0.0
@@ -39,10 +40,16 @@ class SingleObstacle:
             if self.mode == 'static':
                 self.static_obstacle()
             elif self.mode == 'dynamic':
-                # Try 1 + 3 times, make sure initial vel, both vx and vy < 5.0
-                if self.traj == "electron":
+                if self.traj == "mix":
+                    traj_id = np.random.randint(low=0, high=len(TRAJ_LIST))
+                    self.tmp_traj = TRAJ_LIST[traj_id]
+                else:
+                    self.tmp_traj = self.traj
+
+                if self.tmp_traj == "electron":
                     self.dynamic_obstacle_electron()
-                elif self.traj == "gravity":
+                elif self.tmp_traj == "gravity":
+                    # Try 1 + 100 times, make sure initial vel, both vx and vy < 3.0
                     self.dynamic_obstacle_grav()
                     for _ in range(100):
                         if abs(self.vel[0]) > 3.0 or abs(self.vel[1]) > 3.0:
@@ -94,7 +101,7 @@ class SingleObstacle:
     def dynamic_obstacle_electron(self):
         # Init position for an obstacle
         x, y = np.random.uniform(-self.init_box, self.init_box, size=(2,))
-        z = np.random.uniform(-self.init_box, self.init_box) + self.goal_central[2]
+        z = np.random.uniform(low=-0.5 * self.init_box, high=0.5 * self.init_box) + self.goal_central[2]
         z = max(self.size / 2 + 0.5, z)
 
         # Make the position of obstacles out of the space of goals
@@ -187,10 +194,10 @@ class SingleObstacle:
             obs = self.update_obs(quads_pos=quads_pos, quads_vel=quads_vel, set_obstacle=set_obstacle)
             return obs
 
-        if self.traj == 'electron':
+        if self.tmp_traj == 'electron':
             obs = self.step_electron(quads_pos=quads_pos, quads_vel=quads_vel, set_obstacle=set_obstacle)
             return obs
-        elif self.traj == 'gravity':
+        elif self.tmp_traj == 'gravity':
             obs = self.step_gravity(quads_pos=quads_pos, quads_vel=quads_vel, set_obstacle=set_obstacle)
             return obs
         else:

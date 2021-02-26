@@ -498,23 +498,30 @@ class QuadrotorEnvMulti(gym.Env):
                     if not self.set_obstacles[obst_i]:
                         continue
 
-                    obstacle_pos = copy.deepcopy(obstacle.pos)
-                    obstacle_pos[2] = obstacle.pos[2] - obstacle.size / 2
-                    if not np.array_equal(obstacle_pos,
-                                          np.clip(obstacle_pos,
-                                                  a_min=self.obstacle_room[0],  # [-5, -5, 0]
-                                                  a_max=self.obstacle_room[1])):  # [5, 5, 10]
-                        self.set_obstacles[obst_i] = False
-                        self.quads_formation_size = self.scenario.formation_size
-                        self.goal_central = np.mean(self.scenario.goals, axis=0)
-                        obst_shape = obstacle.shape
-                        if self.obstacle_shape == 'random':
-                            obst_shape_id = np.random.randint(low=0, high=len(OBSTACLES_SHAPE_LIST))
-                            obst_shape = OBSTACLES_SHAPE_LIST[obst_shape_id]
+                    if self.multi_obstacles.obstacles[obst_i].tmp_traj == "gravity":
+                        obstacle_pos = copy.deepcopy(obstacle.pos)
+                        obstacle_pos[2] = obstacle.pos[2] - obstacle.size / 2
+                        if not np.array_equal(obstacle_pos,
+                                              np.clip(obstacle_pos,
+                                                      a_min=self.obstacle_room[0],  # [-5, -5, 0]
+                                                      a_max=self.obstacle_room[1])):  # [5, 5, 10]
+                            self.set_obstacles[obst_i] = False
+                            self.quads_formation_size = self.scenario.formation_size
+                            self.goal_central = np.mean(self.scenario.goals, axis=0)
+                            obst_shape = obstacle.shape
+                            if self.obstacle_shape == 'random':
+                                obst_shape_id = np.random.randint(low=0, high=len(OBSTACLES_SHAPE_LIST))
+                                obst_shape = OBSTACLES_SHAPE_LIST[obst_shape_id]
 
-                        obstacle.reset(set_obstacle=False, formation_size=self.quads_formation_size,
-                                       goal_central=self.goal_central, shape=obst_shape, quads_pos=self.pos,
-                                       quads_vel=quads_vel)
+                            obstacle.reset(set_obstacle=False, formation_size=self.quads_formation_size,
+                                           goal_central=self.goal_central, shape=obst_shape, quads_pos=self.pos,
+                                           quads_vel=quads_vel)
+                    elif self.multi_obstacles.obstacles[obst_i].tmp_traj == "electron":
+                        tick = self.envs[0].tick
+                        control_step_for_sec = int(7.0 * self.control_freq)
+                        if tick % control_step_for_sec == 0 and tick > 0:
+                            self.set_obstacles[obst_i] = False
+
 
             # Throw obstacles every one second
             if not self.set_obstacles.all():
