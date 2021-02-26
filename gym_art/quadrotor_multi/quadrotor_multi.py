@@ -445,7 +445,6 @@ class QuadrotorEnvMulti(gym.Env):
             )
         else:
             obst_quad_col_matrix = np.zeros((self.num_agents, self.obstacle_num))
-            curr_obst_quad_collisions = []
             curr_all_collisions = []
             rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
             rew_collisions_obst_quad = np.zeros(self.num_agents)

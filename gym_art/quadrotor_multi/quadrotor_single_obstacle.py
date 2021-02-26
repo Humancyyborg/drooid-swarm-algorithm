@@ -43,10 +43,10 @@ class SingleObstacle:
                 if self.traj == "electron":
                     self.dynamic_obstacle_electron()
                 elif self.traj == "gravity":
-                    self.dynamic_obstacle()
-                    for _ in range(200):
-                        if abs(self.vel[0]) > 2.0 or abs(self.vel[1]) > 2.0:
-                            self.dynamic_obstacle()
+                    self.dynamic_obstacle_grav()
+                    for _ in range(100):
+                        if abs(self.vel[0]) > 3.0 or abs(self.vel[1]) > 3.0:
+                            self.dynamic_obstacle_grav()
                         else:
                             break
                 else:
@@ -63,33 +63,33 @@ class SingleObstacle:
     def static_obstacle(self):
         pass
 
-    def dynamic_obstacle(self):
+    def dynamic_obstacle_grav(self):
         # Init position for an obstacle
-        x, y = np.random.uniform(-2 * self.init_box, 2 * self.init_box, size=(2,))
-        z = np.random.uniform(-self.init_box, self.init_box) + self.goal_central[2]
+        x = np.random.uniform(low=-self.init_box, high=self.init_box)
+        y = np.random.uniform(low=0.67 * x, high=1.5 * x)
+        sign_y = np.random.uniform(low=0.0, high=1.0)
+        if sign_y < 0.5:
+            y = -y
+
+        z = np.random.uniform(low=-0.5 * self.init_box, high=0.5 * self.init_box) + self.goal_central[2]
         z = max(self.size / 2 + 0.5, z)
-        diff_z = z - self.goal_central[2]
-        if abs(diff_z) <= 0.5:
-            z = z + np.sign(diff_z) * 0.5
 
         # Make the position of obstacles out of the space of goals
         formation_range = self.formation_size + self.size / 2
+        formation_range = max(formation_range, 0.5)
         rel_x = abs(x) - formation_range
         rel_y = abs(y) - formation_range
         if rel_x <= 0:
-            x += np.sign(x) * np.random.uniform(low=abs(rel_x) + 0.1,
-                                                high=abs(rel_x) + 0.3)
+            x += np.sign(x) * np.random.uniform(low=abs(rel_x) + 0.5,
+                                                high=abs(rel_x) + 1.0)
         if rel_y <= 0:
-            y += np.sign(y) * np.random.uniform(low=abs(rel_y) + 0.1,
-                                                high=abs(rel_y) + 0.3)
+            y += np.sign(y) * np.random.uniform(low=abs(rel_y) + 0.5,
+                                                high=abs(rel_y) + 1.0)
         self.pos = np.array([x, y, z])
 
         # Init velocity for an obstacle
         # obstacle_vel = np.random.uniform(low=-self.max_init_vel, high=self.max_init_vel, size=(3,))
-        if self.traj == 'gravity':
-            self.vel = self.get_grav_init_vel()
-        elif self.traj == "electron":
-            self.vel = self.get_electron_init_vel()
+        self.vel = self.get_grav_init_vel()
 
     def dynamic_obstacle_electron(self):
         # Init position for an obstacle
@@ -127,14 +127,15 @@ class SingleObstacle:
         vz = np.sqrt(2 * GRAV * abs(dz)) + vz_noise
         delta = np.sqrt(vz * vz - 2 * GRAV * dz)
         if dz > 0:
-            t_list = [(vz + delta) / GRAV, (vz - delta) / GRAV]
-            t_index = round(np.random.uniform(low=0, high=1))
-            t = t_list[t_index]
+            # t_list = [(vz + delta) / GRAV, (vz - delta) / GRAV]
+            # t_index = round(np.random.uniform(low=0, high=1))
+            # t = t_list[t_index]
+            t = (vz + delta) / GRAV
         elif dz < 0:
             # vz_index = 0, vz < 0; vz_index = 1, vz > 0;
-            vz_index = round(np.random.uniform(low=0, high=1))
-            if vz_index == 0:  # vz < 0
-                vz = - vz
+            # vz_index = round(np.random.uniform(low=0, high=1))
+            # if vz_index == 0:  # vz < 0
+            #     vz = - vz
 
             t = (vz + delta) / GRAV
         else:  # dz = 0, vz > 0
