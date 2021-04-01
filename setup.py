@@ -12,9 +12,9 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 # Fields marked as "Optional" may be commented out.
 
 setup(
-    name='gym_art',  # Required
+    name='gym_art_swarm_rl',  # Required
 
-    version='0.0.1',  # Required
+    version='0.1.0',  # Required
 
     description='Quadrotor gym envs',  # Optional
 
@@ -68,5 +68,6 @@ setup(
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
         'pytest', 'numpy>1.15', 'matplotlib>3', 'gym>=0.17', 'transforms3d', 'noise', 'tqdm', 'bezier<=2020.5.19', 'numba', 'scipy',
+        'sample-factory>=1.0.5',
     ],
 )

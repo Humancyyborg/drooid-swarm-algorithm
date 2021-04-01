@@ -45,7 +45,7 @@ class TestMultiEnv(TestCase):
         obs = env.reset()
         self.assertIsNotNone(obs)
 
-        for i in range(1000):
+        for i in range(100):
             obs, rewards, dones, infos = env.step([env.action_space.sample() for i in range(num_agents)])
             try:
                 self.assertIsInstance(obs, list)
@@ -67,7 +67,7 @@ class TestMultiEnv(TestCase):
         time.sleep(0.1)
 
         num_steps = 0
-        render_n_frames = 500
+        render_n_frames = 100
 
         render_start = None
         while num_steps < render_n_frames:
@@ -90,7 +90,7 @@ class TestMultiEnv(TestCase):
 
         env.reset()
 
-        for i in range(1000):
+        for i in range(100):
             obs, rewards, dones, infos = env.step([env.action_space.sample() for i in range(num_agents)])
 
         env.close()
@@ -108,7 +108,7 @@ class TestReplayBuffer(TestCase):
         time.sleep(0.01)
 
         num_steps = 0
-        render_n_frames = 1500
+        render_n_frames = 150
 
         while num_steps < render_n_frames:
             obs, rewards, dones, infos = env.step([env.action_space.sample() for _ in range(num_agents)])

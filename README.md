@@ -17,6 +17,12 @@ cd ~/prj
 git clone https://github.com/amolchanov86/gym_art.git
 ```
 
+```
+INSTALL PYTORCH
+pip install -e .
+
+```
+
 Add it to your `.bashrc`
 ```sh
 export PYTHONPATH=$PYTHONPATH:~/prj/gym_art
