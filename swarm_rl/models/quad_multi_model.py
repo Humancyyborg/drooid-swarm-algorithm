@@ -125,6 +125,8 @@ class QuadMultiEncoder(EncoderBase):
             self.self_obs_dim = 18
         elif cfg.quads_obs_repr == 'xyz_vxyz_R_omega_wall':
             self.self_obs_dim = 24
+        elif cfg.quads_obs_repr == 'xyz_vxyz_R_omega_dfloor':
+            self.self_obs_dim = 19
         else:
             raise NotImplementedError(f'Layer {cfg.quads_obs_repr} not supported!')
 

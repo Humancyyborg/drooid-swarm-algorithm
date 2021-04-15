@@ -104,12 +104,12 @@ class QuadrotorEnvMulti(gym.Env):
         self.control_dt = 1.0 / self.control_freq
         self.pos = np.zeros([self.num_agents, 3])  # Matrix containing all positions
         self.quads_mode = quads_mode
-        if obs_repr == 'xyz_vxyz_R_omega':
-            obs_self_size = 18
-        elif obs_repr == 'xyz_vxyz_R_omega_wall':
-            obs_self_size = 24
-        else:
-            raise NotImplementedError(f'{obs_repr} not supported!')
+
+        obs_comps = obs_repr.split("_")
+        obs_self_size = 0
+        for obs_name in obs_comps:
+            obs_space = self.envs[0].obs_space_low_high[obs_name]
+            obs_self_size += len(obs_space[0])
 
         if self.swarm_obs == 'pos_vel':
             self.neighbor_obs_size = 6

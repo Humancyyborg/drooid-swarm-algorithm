@@ -22,6 +22,8 @@ import logging
 import sys
 import time
 
+import numpy as np
+
 import gym_art.quadrotor_multi.get_state as get_state
 
 # MY LIBS
@@ -117,6 +119,9 @@ class QuadrotorDynamics:
             self.room_box = np.array([[0., 0., 0.], [10., 10., 10.]])
         else:
             self.room_box = np.array(room_box).copy()
+
+        ## Aux for crash
+        self.crashed_wall = False
 
         ## Selecting 1D, Planar or Full 3D modes
         self.dim_mode = dim_mode
@@ -429,6 +434,12 @@ class QuadrotorDynamics:
 
         # Clipping if met the obstacle and nullify velocities (not sure what to do about accelerations)
         self.pos_before_clip = self.pos.copy()
+
+        self.crashed_wall = not np.array_equal(self.pos[:2],
+                                               np.clip(self.pos[:2],
+                                                       a_min=self.room_box[0][:2],
+                                                       a_max=self.room_box[1][:2]))
+
         self.pos = np.clip(self.pos, a_min=self.room_box[0], a_max=self.room_box[1])
         # self.vel[np.equal(self.pos, self.pos_before_clip)] = 0.
 
@@ -586,7 +597,8 @@ class QuadrotorDynamics:
 
 # reasonable reward function for hovering at a goal and not flying too high
 def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, rew_coeff, action_prev,
-                            quads_settle=False, quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8):
+                            quads_settle=False, quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8,
+                            crashed_floor=False, crashed_wall=False, crashed_wall_or_floor=False):
     ##################################################
     ## log to create a sharp peak at the goal
     dist = np.linalg.norm(goal - dynamics.pos)
@@ -641,6 +653,13 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
     cost_crash_raw = float(crashed)
     cost_crash = rew_coeff["crash"] * cost_crash_raw
 
+    # loss crash wall
+    cost_crash_wall_raw = float(crashed_wall)
+    cost_crash_wall = rew_coeff["crash"] * cost_crash_wall_raw
+    # loss crash floor
+    cost_crash_floor_raw = float(crashed_floor)
+    cost_crash_floor = rew_coeff["crash"] * cost_crash_floor_raw
+
     reward = -dt * np.sum([
         cost_pos,
         cost_effort,
@@ -659,6 +678,8 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
         'rew_pos': -cost_pos,
         'rew_action': -cost_effort,
         'rew_crash': -cost_crash,
+        'rew_crash_wall': -cost_crash_wall,
+        'rew_crash_floor': -cost_crash_floor,
         "rew_orient": -cost_orient,
         "rew_yaw": -cost_yaw,
         "rew_rot": -cost_rotation,
@@ -671,6 +692,8 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
         'rewraw_pos': -cost_pos_raw,
         'rewraw_action': -cost_effort_raw,
         'rewraw_crash': -cost_crash_raw,
+        'rewraw_crash_wall': -cost_crash_wall_raw,
+        'rewraw_crash_floor': -cost_crash_floor_raw,
         "rewraw_orient": -cost_orient_raw,
         "rewraw_yaw": -cost_yaw_raw,
         "rewraw_rot": -cost_rotation_raw,
@@ -987,6 +1010,7 @@ class QuadrotorSingle:
             "nbr_dist": [np.zeros(1), room_max_dist],
             "nbr_goal_dist": [np.zeros(1), room_max_dist],
             "wall": [np.zeros(6), 5.0 * np.ones(6)],
+            "dfloor": [np.zeros(1), np.ones(1) * room_range[2]]
         }
         self.obs_comp_names = list(self.obs_space_low_high.keys())
         self.obs_comp_sizes = [self.obs_space_low_high[name][1].size for name in self.obs_comp_names]
@@ -1044,17 +1068,24 @@ class QuadrotorSingle:
             self.crashed = self.obstacles.detect_collision(self.dynamics)
         else:
             self.crashed = self.dynamics.pos[2] <= self.dynamics.arm
-        self.crashed = self.crashed or not np.array_equal(self.dynamics.pos,
-                                                          np.clip(self.dynamics.pos,
-                                                                  a_min=self.room_box[0],
-                                                                  a_max=self.room_box[1]))
+        # self.crashed = self.crashed or not np.array_equal(self.dynamics.pos,
+        #                                                   np.clip(self.dynamics.pos,
+        #                                                           a_min=self.room_box[0],
+        #                                                           a_max=self.room_box[1]))
+        # crash floor
+        crashed_floor = self.dynamics.pos[2] <= self.dynamics.arm
+        crashed_wall = self.dynamics.crashed_wall
+        crashed_wall_or_floor = crashed_floor or crashed_wall
+        self.crashed = crashed_wall_or_floor
 
         self.time_remain = self.ep_len - self.tick
         reward, rew_info = compute_reward_weighted(self.dynamics, self.goal, action, self.dt, self.crashed,
                                                    self.time_remain,
                                                    rew_coeff=self.rew_coeff, action_prev=self.actions[1], quads_settle=self.quads_settle,
                                                    quads_settle_range_meters=self.quads_settle_range_meters,
-                                                   quads_vel_reward_out_range=self.quads_vel_reward_out_range
+                                                   quads_vel_reward_out_range=self.quads_vel_reward_out_range,
+                                                   crashed_floor = crashed_floor, crashed_wall = crashed_wall,
+                                                   crashed_wall_or_floor=crashed_wall_or_floor
         )
         self.tick += 1
         done = self.tick > self.ep_len  # or self.crashed
