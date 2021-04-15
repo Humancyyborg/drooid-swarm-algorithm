@@ -465,6 +465,12 @@ class QuadrotorDynamics:
                          self.eye, self.since_last_svd, self.since_last_svd_limit, self.inertia,
                          self.damp_omega_quadratic, self.omega_max, self.pos, self.vel)
 
+
+        # Crashed to the wall or not
+        self.crashed_wall = not np.array_equal(self.pos[:2],
+                                               np.clip(self.pos[:2],
+                                                       a_min=self.room_box[0][:2],
+                                                       a_max=self.room_box[1][:2]))
         # Clipping if met the obstacle and nullify velocities (not sure what to do about accelerations)
         self.pos = np.clip(self.pos, a_min=self.room_box[0], a_max=self.room_box[1])
 
