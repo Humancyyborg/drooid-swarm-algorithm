@@ -604,7 +604,7 @@ class QuadrotorDynamics:
 # reasonable reward function for hovering at a goal and not flying too high
 def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, rew_coeff, action_prev,
                             quads_settle=False, quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8,
-                            crashed_floor=False, crashed_wall=False, crashed_wall_or_floor=False):
+                            crashed_floor=False, crashed_wall=False):
     ##################################################
     ## log to create a sharp peak at the goal
     dist = np.linalg.norm(goal - dynamics.pos)
@@ -1079,10 +1079,12 @@ class QuadrotorSingle:
         #                                                           a_min=self.room_box[0],
         #                                                           a_max=self.room_box[1]))
         # crash floor
-        crashed_floor = self.dynamics.pos[2] <= self.dynamics.arm
-        crashed_wall = self.dynamics.crashed_wall
-        crashed_wall_or_floor = crashed_floor or crashed_wall
-        self.crashed = crashed_wall_or_floor
+        tmp_crashed_floor = self.dynamics.pos[2] <= self.dynamics.arm
+
+        only_crashed_floor = tmp_crashed_floor and not self.dynamics.crashed_wall
+        only_crashed_wall = not tmp_crashed_floor and self.dynamics.crashed_wall
+
+        self.crashed = only_crashed_floor or only_crashed_wall
 
         self.time_remain = self.ep_len - self.tick
         reward, rew_info = compute_reward_weighted(self.dynamics, self.goal, action, self.dt, self.crashed,
@@ -1090,9 +1092,8 @@ class QuadrotorSingle:
                                                    rew_coeff=self.rew_coeff, action_prev=self.actions[1], quads_settle=self.quads_settle,
                                                    quads_settle_range_meters=self.quads_settle_range_meters,
                                                    quads_vel_reward_out_range=self.quads_vel_reward_out_range,
-                                                   crashed_floor = crashed_floor, crashed_wall = crashed_wall,
-                                                   crashed_wall_or_floor=crashed_wall_or_floor
-        )
+                                                   crashed_floor=only_crashed_floor, crashed_wall=only_crashed_wall
+                                                   )
         self.tick += 1
         done = self.tick > self.ep_len  # or self.crashed
         sv = self.state_vector(self)
