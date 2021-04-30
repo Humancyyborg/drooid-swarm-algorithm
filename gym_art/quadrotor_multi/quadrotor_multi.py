@@ -482,8 +482,9 @@ class QuadrotorEnvMulti(gym.Env):
             infos[i]["rewards"]["rew_quadcol"] = rew_collisions[i]
             infos[i]["rewards"]["rewraw_quadcol"] = rew_collisions_raw[i]
 
-            infos[i]["rewards"]["rew_quadcol_speed"] = rew_col_speed_raw[i]
-            infos[i]["rewards"]["rewraw_quadcol_speed"] = rew_collisions_speed[i]
+            rewards[i] += rew_collisions_speed[i]
+            infos[i]["rewards"]["rew_quadcol_speed"] = rew_collisions_speed[i]
+            infos[i]["rewards"]["rewraw_quadcol_speed"] = rew_col_speed_raw[i]
 
             rewards[i] += rew_proximity[i]
             infos[i]["rewards"]["rew_proximity"] = rew_proximity[i]
