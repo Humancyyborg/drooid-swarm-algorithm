@@ -258,17 +258,20 @@ def calculate_collision_matrix(positions, arm, hitbox_radius):
     return collision_matrix, all_collisions, dist
 
 
-def collision_speed_penalties(vels, collision_pairs, pre_collision_pairs):
+def collision_speed_penalties(vels, collision_pairs, pre_collision_pairs, pos_clip_flags):
     col_pairs = get_difference_pairs(collision_pairs, pre_collision_pairs)
     rew_col_speed_raw = np.zeros(len(vels))
     for pair in col_pairs:
         id_0 = pair[0]
         id_1 = pair[1]
-        rel_vel = vels[id_0] - vels[id_1]
-        rel_vel_value = np.linalg.norm(rel_vel)
-        # Add raw penalty
-        rew_col_speed_raw[id_0] -= rel_vel_value
-        rew_col_speed_raw[id_1] -= rel_vel_value
+        if pos_clip_flags[id_0] or pos_clip_flags[id_1]:
+            continue
+        else:
+            rel_vel = vels[id_0] - vels[id_1]
+            rel_vel_value = np.linalg.norm(rel_vel)
+            # Add raw penalty
+            rew_col_speed_raw[id_0] -= rel_vel_value
+            rew_col_speed_raw[id_1] -= rel_vel_value
 
     return rew_col_speed_raw
 
