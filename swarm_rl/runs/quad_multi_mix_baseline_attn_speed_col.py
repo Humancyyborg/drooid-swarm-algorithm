@@ -4,7 +4,8 @@ from swarm_rl.runs.quad_multi_mix_baseline import QUAD_BASELINE_CLI
 
 _params = ParamGrid([
     ('quads_neighbor_encoder_type', ['attention']),
-    ('seed', [0000, 1111, 2222, 3333]),
+    ('anneal_collision_steps', [0]),
+    ('seed', [1111, 3333]),
     ('quads_collision_speed_reward', [0.0, 5.0]),
 ])
 
