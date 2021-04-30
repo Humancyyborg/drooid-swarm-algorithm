@@ -258,6 +258,30 @@ def calculate_collision_matrix(positions, arm, hitbox_radius):
     return collision_matrix, all_collisions, dist
 
 
+def collision_speed_penalties(vels, collision_pairs, pre_collision_pairs):
+    col_pairs = get_difference_pairs(collision_pairs, pre_collision_pairs)
+    rew_col_speed_raw = np.zeros(len(vels))
+    for pair in col_pairs:
+        id_0 = pair[0]
+        id_1 = pair[1]
+        rel_vel = vels[id_0] - vels[id_1]
+        rel_vel_value = np.linalg.norm(rel_vel)
+        # Add raw penalty
+        rew_col_speed_raw[id_0] -= rel_vel_value
+        rew_col_speed_raw[id_1] -= rel_vel_value
+
+    return rew_col_speed_raw
+
+
+def get_difference_pairs(collision_pairs, pre_collision_pairs):
+    pair_list = []
+    for pair in collision_pairs:
+        if pair not in pre_collision_pairs:
+            pair_list.append(pair)
+
+    return pair_list
+
+
 def calculate_drone_proximity_penalties(distance_matrix, arm, dt, penalty_fall_off, max_penalty, num_agents):
     if not penalty_fall_off:
         # smooth penalties is disabled, so noop

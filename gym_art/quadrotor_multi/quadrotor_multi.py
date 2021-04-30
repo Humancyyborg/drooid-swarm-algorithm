@@ -8,7 +8,8 @@ import gym
 from copy import deepcopy
 
 from gym_art.quadrotor_multi.quad_utils import perform_collision_between_drones, perform_collision_with_obstacle, \
-    calculate_collision_matrix, calculate_drone_proximity_penalties, calculate_obst_drone_proximity_penalties
+    calculate_collision_matrix, calculate_drone_proximity_penalties, calculate_obst_drone_proximity_penalties, \
+    collision_speed_penalties
 
 from gym_art.quadrotor_multi.quadrotor_multi_obstacles import MultiObstacles
 from gym_art.quadrotor_multi.quadrotor_single import GRAV, QuadrotorSingle
@@ -83,7 +84,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.rew_coeff = dict(
             pos=1., effort=0.05, action_change=0., crash=1., orient=1., yaw=0., rot=0., attitude=0., spin=0.1, vel=0.,
             quadcol_bin=0., quadcol_bin_smooth_max=0.,
-            quadsettle=0., quadcol_bin_obst=0., quadcol_bin_obst_smooth_max=0.0
+            quadsettle=0., quadcol_bin_obst=0., quadcol_bin_obst_smooth_max=0.0, quadcol_speed=0.
         )
         rew_coeff_orig = copy.deepcopy(self.rew_coeff)
 
@@ -395,6 +396,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.crashes_last_episode += infos[0]["rewards"]["rew_crash"]
 
         # Calculating collisions between drones
+        quads_vel = np.array([e.dynamics.vel for e in self.envs])
         drone_col_matrix, self.curr_drone_collisions, distance_matrix = calculate_collision_matrix(self.pos, self.quad_arm, self.collision_hitbox_radius)
 
         self.last_step_unique_collisions = np.setdiff1d(self.curr_drone_collisions, self.prev_drone_collisions)
@@ -406,6 +408,12 @@ class QuadrotorEnvMulti(gym.Env):
         if collisions_curr_tick > 0:
             if self.envs[0].tick >= self.collisions_grace_period_seconds * self.control_freq:
                 self.collisions_after_settle += collisions_curr_tick
+
+        # Penalty for collision speed
+        rew_col_speed_raw = collision_speed_penalties(vels=quads_vel, collision_pairs=self.curr_drone_collisions,
+                                                      pre_collision_pairs=self.prev_drone_collisions)
+
+        rew_collisions_speed = self.rew_coeff["quadcol_speed"] * rew_col_speed_raw
 
         self.prev_drone_collisions = self.curr_drone_collisions
 
@@ -473,6 +481,9 @@ class QuadrotorEnvMulti(gym.Env):
             rewards[i] += rew_collisions[i]
             infos[i]["rewards"]["rew_quadcol"] = rew_collisions[i]
             infos[i]["rewards"]["rewraw_quadcol"] = rew_collisions_raw[i]
+
+            infos[i]["rewards"]["rew_quadcol_speed"] = rew_col_speed_raw[i]
+            infos[i]["rewards"]["rewraw_quadcol_speed"] = rew_collisions_speed[i]
 
             rewards[i] += rew_proximity[i]
             infos[i]["rewards"]["rew_proximity"] = rew_proximity[i]

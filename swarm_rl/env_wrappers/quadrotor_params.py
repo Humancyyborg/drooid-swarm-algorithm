@@ -25,6 +25,8 @@ def add_quadrotors_env_args(env, parser):
 
     # TODO: better default values for collision rewards
     p.add_argument('--quads_collision_reward', default=0.0, type=float, help='Override default value for quadcol_bin reward, which means collisions between quadrotors')
+    p.add_argument('--quads_collision_speed_reward', default=0.0, type=float, help='Override default value for quadcol_speed reward, which means collisions for the relative speed between quadrotors')
+
     p.add_argument('--quads_collision_obstacle_reward', default=0.0, type=float, help='Override default value for quadcol_bin_obst reward, which means collisions between quadrotor and obstacle')
     p.add_argument('--quads_settle_reward', default=0.0, type=float, help='Override default value for quadsettle reward')
     p.add_argument('--quads_settle', default=False, type=str2bool, help='Use velocity penalty and equal distance rewards when drones are within a certain radius of the goal')
