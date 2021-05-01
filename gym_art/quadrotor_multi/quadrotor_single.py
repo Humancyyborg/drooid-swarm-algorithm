@@ -1747,13 +1747,11 @@ def calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, eps, 
 @njit
 def compute_velocity_and_acceleration(vel, grav_cnst_arr, mass, rot, sum_thr_drag, vel_damp, dt, rot_tpose,
                                       grav_arr, pos_clip_flag):
+    # Computing accelerations
+    acc = grav_cnst_arr + ((1.0 / mass) * (rot @ sum_thr_drag))
     if pos_clip_flag:
-        acc = np.float64([0.0, 0.0, 0.0])
         vel = np.float64([0.0, 0.0, 0.0])
     else:
-        # Computing accelerations
-        acc = grav_cnst_arr + ((1.0 / mass) * (rot @ sum_thr_drag))
-
         # Computing velocities
         vel = (1.0 - vel_damp) * vel + dt * acc
 
