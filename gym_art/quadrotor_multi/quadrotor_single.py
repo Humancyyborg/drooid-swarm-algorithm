@@ -472,11 +472,6 @@ class QuadrotorDynamics:
                                                        a_min=self.room_box[0][:2],
                                                        a_max=self.room_box[1][:2]))
         # Clipping if met the obstacle and nullify velocities (not sure what to do about accelerations)
-        self.pos_clip_flag = not np.array_equal(self.pos,
-                                           np.clip(self.pos,
-                                                   a_min=self.room_box[0],
-                                                   a_max=self.room_box[1]))
-
         self.pos = np.clip(self.pos, a_min=self.room_box[0], a_max=self.room_box[1])
 
         # Set constant variables up for numba
@@ -485,7 +480,7 @@ class QuadrotorDynamics:
         grav_arr = np.float64([0, 0, self.gravity])
         self.vel, self.acc, self.accelerometer = compute_velocity_and_acceleration(self.vel, grav_cnst_arr, self.mass, self.rot,
                                                                          sum_thr_drag, self.vel_damp, dt, self.rot.T,
-                                                                         grav_arr, self.pos_clip_flag)
+                                                                         grav_arr)
 
     def reset(self):
         self.thrust_cmds_damp = np.zeros([4])
@@ -1746,14 +1741,12 @@ def calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, eps, 
 
 @njit
 def compute_velocity_and_acceleration(vel, grav_cnst_arr, mass, rot, sum_thr_drag, vel_damp, dt, rot_tpose,
-                                      grav_arr, pos_clip_flag):
+                                      grav_arr):
     # Computing accelerations
     acc = grav_cnst_arr + ((1.0 / mass) * (rot @ sum_thr_drag))
-    if pos_clip_flag:
-        vel = np.float64([0.0, 0.0, 0.0])
-    else:
-        # Computing velocities
-        vel = (1.0 - vel_damp) * vel + dt * acc
+
+    # Computing velocities
+    vel = (1.0 - vel_damp) * vel + dt * acc
 
     # Accelerometer measures so called "proper acceleration" that includes gravity with the opposite sign
     accm = rot_tpose @ (acc + grav_arr)

@@ -410,7 +410,7 @@ class QuadrotorEnvMulti(gym.Env):
                 self.collisions_after_settle += collisions_curr_tick
 
         # Penalty for collision speed
-        pos_clip_flags = np.array([e.dynamics.pos_clip_flag for e in self.envs])
+        pos_clip_flags = np.array([e.crashed for e in self.envs])
         rew_col_speed_raw = collision_speed_penalties(vels=quads_vel, collision_pairs=self.curr_drone_collisions,
                                                       pre_collision_pairs=self.prev_drone_collisions,
                                                       pos_clip_flags=pos_clip_flags)
