@@ -3,6 +3,7 @@
 A codebase for training reinforcement learning policies for quadrotor swarms.
 
 **Paper:** https://openreview.net/pdf?id=ofioIEZvJRG
+
 **Website:** https://sites.google.com/view/swarm-rl
 
 Includes:
