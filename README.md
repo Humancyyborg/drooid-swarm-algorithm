@@ -1,6 +1,10 @@
-# quad-swarm-rl
+# Decentralized Control of Quadrotor Swarms with End-to-end Deep Reinforcement Learning
 
 A codebase for training reinforcement learning policies for quadrotor swarms.
+
+**Paper:** https://openreview.net/pdf?id=ofioIEZvJRG
+**Website:** https://sites.google.com/view/swarm-rl
+
 Includes:
 * Flight dynamics simulator forked from https://github.com/amolchanov86/gym_art
 and extended to support swarms of quadrotor drones
