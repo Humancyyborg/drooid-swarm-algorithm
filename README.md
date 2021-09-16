@@ -16,14 +16,14 @@ https://github.com/alex-petrenko/sample-factory
 Same Goal &nbsp; &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; Swarm vs Swarm
 
 <p align="middle">
-<img src="https://github.com/Zhehui-Huang/quad-swarm-rl/tree/master/swarm_rl/gifs/Static_Same_Goal.gif?raw=true" width="400">
-<img src="https://github.com/Zhehui-Huang/quad-swarm-rl/tree/master/swarm_rl/gifs/Swarm_vs_Swarm.gif?raw=true" width="400">
+<img src="https://github.com/Zhehui-Huang/quad-swarm-rl/blob/master/swarm_rl/gifs/Static_Same_Goal.gif?raw=true" width="400">
+<img src="https://github.com/Zhehui-Huang/quad-swarm-rl/blob/master/swarm_rl/gifs/Swarm_vs_Swarm.gif?raw=true" width="400">
 </p> 
 
 One dynamic Obstacle + Same Goal &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; 32 drones + Same Goal
 <p align="middle">
-<img src="https://github.com/Zhehui-Huang/quad-swarm-rl/tree/master/swarm_rl/gifs/Obstacles_Static_Same_Goal.gif?raw=true" width="400">
-<img src="https://github.com/Zhehui-Huang/quad-swarm-rl/tree/master/swarm_rl/gifs/Scale_32_Static_Same_Goal.gif?raw=true" width="400">
+<img src="https://github.com/Zhehui-Huang/quad-swarm-rl/blob/master/swarm_rl/gifs/Obstacles_Static_Same_Goal.gif?raw=true" width="400">
+<img src="https://github.com/Zhehui-Huang/quad-swarm-rl/blob/master/swarm_rl/gifs/Scale_32_Static_Same_Goal.gif?raw=true" width="400">
 </p> 
 
 ## Installation
