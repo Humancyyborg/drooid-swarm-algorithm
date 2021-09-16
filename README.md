@@ -11,7 +11,7 @@ https://github.com/alex-petrenko/sample-factory
 
 **Website:** https://sites.google.com/view/swarm-rl
 
-&nbsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; Same Goal (8 drones, 1.5x real time) &nbsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; Swarm vs Swarm (8 drones, 1.5x real time)
+&nbsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; Same Goal (8 drones, 1.5x real time) &nbsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; Swarm vs Swarm (8 drones, 1.5x real time)
 
 <p align="middle">
 <img src="https://github.com/Zhehui-Huang/quad-swarm-rl/blob/master/swarm_rl/gifs/Static_Same_Goal.gif?raw=true" width="400">
@@ -19,7 +19,7 @@ https://github.com/alex-petrenko/sample-factory
 <img src="https://github.com/Zhehui-Huang/quad-swarm-rl/blob/master/swarm_rl/gifs/Swarm_vs_Swarm.gif?raw=true" width="400">
 </p> 
 
-&nbsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; One Dynamic Obstacle + Same Goal (8 drones, 1.5x real time) &nbsp;&nbsp;&emsp;&emsp;&emsp; Same Goal (32 drones, 1.5x real time)
+&nbsp;&emsp;&emsp;&emsp;&emsp;&emsp; One Dynamic Obstacle + Same Goal (8 drones, 1.5x real time) &nbsp;&nbsp;&emsp;&emsp;&emsp; Same Goal (32 drones, 1.5x real time)
 
 <p align="middle">
 <img src="https://github.com/Zhehui-Huang/quad-swarm-rl/blob/master/swarm_rl/gifs/Obstacles_Static_Same_Goal.gif?raw=true" width="400">
