@@ -17,7 +17,7 @@ Same Goal &nbsp; &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&em
 
 <p align="middle">
 <img src="https://github.com/Zhehui-Huang/quad-swarm-rl/tree/master/swarm_rl/gifs/Static_Same_Goal.gif?raw=true" width="400">
-<img src="https://github.com/Zhehui-Huang/quad-swarm-rl/tree/master/swarm_rl/gifs/Swarm_vs_Swarm?raw=true" width="400">
+<img src="https://github.com/Zhehui-Huang/quad-swarm-rl/tree/master/swarm_rl/gifs/Swarm_vs_Swarm.gif?raw=true" width="400">
 </p> 
 
 One dynamic Obstacle + Same Goal &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; 32 drones + Same Goal
