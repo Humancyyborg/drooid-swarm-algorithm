@@ -84,6 +84,12 @@ python -m sample_factory.runner.run --run=swarm_rl.runs.quad_multi_mix_baseline_
 This command will start training four different seeds in parallel on a 4-GPU server. Adjust the parameters accordingly to match
 your hardware setup.
 
+To monitor the experiments, go to the experiment folder, and run the following command:
+
+```
+tensorboard --logdir=./
+```
+
 ### Test
 To test the trained model, run the following command:
 
