@@ -1,16 +1,30 @@
 # Decentralized Control of Quadrotor Swarms with End-to-end Deep Reinforcement Learning
 
 A codebase for training reinforcement learning policies for quadrotor swarms.
-
-**Paper:** https://openreview.net/pdf?id=ofioIEZvJRG
-
-**Website:** https://sites.google.com/view/swarm-rl
-
 Includes:
 * Flight dynamics simulator forked from https://github.com/amolchanov86/gym_art
 and extended to support swarms of quadrotor drones
 * Scripts and the necessary wrappers to facilitate training of control policies with Sample Factory
 https://github.com/alex-petrenko/sample-factory
+
+**Paper:** https://openreview.net/pdf?id=ofioIEZvJRG
+
+**Website:** https://sites.google.com/view/swarm-rl
+
+***
+## All gifs below are based on 8 drones and 1.5x real time without additional illustration
+Same Goal &nbsp; &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; Swarm vs Swarm
+
+<p align="middle">
+<img src="https://github.com/Zhehui-Huang/quad-swarm-rl/tree/master/swarm_rl/gifs/Static_Same_Goal.gif?raw=true" width="400">
+<img src="https://github.com/Zhehui-Huang/quad-swarm-rl/tree/master/swarm_rl/gifs/Swarm_vs_Swarm?raw=true" width="400">
+</p> 
+
+One dynamic Obstacle + Same Goal &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp; 32 drones + Same Goal
+<p align="middle">
+<img src="https://github.com/Zhehui-Huang/quad-swarm-rl/tree/master/swarm_rl/gifs/Obstacles_Static_Same_Goal.gif?raw=true" width="400">
+<img src="https://github.com/Zhehui-Huang/quad-swarm-rl/tree/master/swarm_rl/gifs/Scale_32_Static_Same_Goal.gif?raw=true" width="400">
+</p> 
 
 ## Installation
 
