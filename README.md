@@ -48,6 +48,8 @@ This should pull and install all the necessary dependencies, including Sample Fa
 
 ## Running experiments
 
+### Train
+
 This will run the baseline experiment.
 Change the number of workers appropriately to match the number of logical CPU cores on your machine, but it is advised that
 the total number of simulated environments is close to that in the original command:
@@ -82,7 +84,14 @@ python -m sample_factory.runner.run --run=swarm_rl.runs.quad_multi_mix_baseline_
 This command will start training four different seeds in parallel on a 4-GPU server. Adjust the parameters accordingly to match
 your hardware setup.
 
-## Tests
+### Test
+To test the trained model, run the following command:
+
+```
+python -m swarm_rl.enjoy --algo=APPO --env=quadrotor_multi --replay_buffer_sample_prob=0 --continuous_actions_sample=False --quads_use_numba=False --train_dir=PATH_TO_PROJECT/swarm_rl/train_dir --experiments_root=EXPERIMENT_ROOT --experiment=EXPERIMENT_NAME
+```
+
+## Unit Tests
 
 To run unit tests:
 
