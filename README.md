@@ -7,7 +7,7 @@ and extended to support swarms of quadrotor drones
 * Scripts and the necessary wrappers to facilitate training of control policies with Sample Factory
 https://github.com/alex-petrenko/sample-factory
 
-**Paper:** https://openreview.net/pdf?id=ofioIEZvJRG
+**Paper:** https://arxiv.org/abs/2109.07735
 
 **Website:** https://sites.google.com/view/swarm-rl
 
