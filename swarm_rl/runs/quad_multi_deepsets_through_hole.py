@@ -1,21 +1,14 @@
 from sample_factory.runner.run_description import RunDescription, Experiment, ParamGrid
 
-from swarm_rl.runs.quad_multi_deepsets_through_hole_obstacle import QUAD_OBSTACLE_BASELINE_CLI
+from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_OBSTACLE_THROUGH_HOLE_BASELINE_CLI
 
 _params = ParamGrid([
-    ('seed', [2222]),
-    ('quads_obstacle_num', [8]),
-    ('quads_mode', ['through_hole']),
-    ('quads_neighbor_encoder_type', ['mean_embed']),
-    ('train_for_env_steps', [5000000000]),
-    ('quads_local_obst_obs', [8]),
-    ('obst_obs_type', ['pos_size', 'pos_vel_size_shape']),
-    ('quads_obstacle_mode', ['static_door_fixsize', 'no_obstacles']),
+    ('seed', [0000, 1111, 2222, 3333]),
 ])
 
 _experiment = Experiment(
-    'gridsearch-obst_obs_type-obst_mode',
-    QUAD_OBSTACLE_BASELINE_CLI,
+    'through_hole',
+    QUAD_OBSTACLE_THROUGH_HOLE_BASELINE_CLI,
     _params.generate_params(randomize=False),
 )
 
@@ -33,4 +26,4 @@ RUN_DESCRIPTION = RunDescription('quads_multi_obst_through_hole_8a_v116', experi
 # python -m runner.run --run=quad_multi_through_hole_obstacle --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
 
 # Slurm
-# srun --exclusive -c72 -N1 --gres=gpu:4 python -m sample_factory.runner.run --run=swarm_rl.runs.quad_multi_deepsets_through_hole_obstacle_v5 --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
+# srun --exclusive -c72 -N1 --gres=gpu:4 python -m sample_factory.runner.run --run=swarm_rl.runs.quad_multi_deepsets_through_hole_obstacle_v6 --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4

@@ -1,21 +1,15 @@
 from sample_factory.runner.run_description import RunDescription, Experiment, ParamGrid
 
-from swarm_rl.runs.quad_multi_deepsets_through_hole_obstacle import QUAD_OBSTACLE_BASELINE_CLI
+from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_OBSTACLE_RANDOM_BASELINE_CLI
 
+# quads_obstacle_num: 16
 _params = ParamGrid([
-    ('seed', [2222, 4444]),
-    ('quads_obstacle_num', [16]),
-    ('quads_mode', ['through_random_obstacles']),
-    ('quads_neighbor_encoder_type', ['mean_embed']),
-    ('train_for_env_steps', [5000000000]),
-    ('quads_local_obst_obs', [16]),
-    ('obst_obs_type', ['pos_size', 'pos_vel_size']),
-    ('quads_obstacle_mode', ['static_random_place_fixsize']),
+    ('seed', [0000, 1111, 2222, 3333]),
 ])
 
 _experiment = Experiment(
-    'gridsearch-obst_obs_type',
-    QUAD_OBSTACLE_BASELINE_CLI,
+    'random_place',
+    QUAD_OBSTACLE_RANDOM_BASELINE_CLI,
     _params.generate_params(randomize=False),
 )
 
