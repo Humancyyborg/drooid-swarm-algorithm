@@ -20,10 +20,10 @@ RUN_DESCRIPTION = RunDescription('quads_multi_obst_through_hole_8a_v116', experi
 # export USE_SIMPLE_THREADED_LEVEL3=1
 
 # Command to use this script on server:
-# xvfb-run python -m runner.run --run=quad_multi_through_hole_obstacle --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
+# xvfb-run python -m runner.run --run=quad_multi_deepsets_through_hole --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
 # Command to use this script on local machine:
 # Please change num_workers to the physical cores of your local machine
-# python -m runner.run --run=quad_multi_through_hole_obstacle --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
+# python -m runner.run --run=quad_multi_deepsets_through_hole --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
 
 # Slurm
-# srun --exclusive -c72 -N1 --gres=gpu:4 python -m sample_factory.runner.run --run=swarm_rl.runs.quad_multi_deepsets_through_hole_obstacle_v6 --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
+# srun --exclusive -c72 -N1 --gres=gpu:4 python -m sample_factory.runner.run --run=swarm_rl.runs.quad_multi_deepsets_through_hole --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
