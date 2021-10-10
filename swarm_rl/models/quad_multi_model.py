@@ -133,10 +133,21 @@ class QuadMultiEncoder(EncoderBase):
         self.neighbor_obs_type = cfg.neighbor_obs_type
         self.use_spectral_norm = cfg.use_spectral_norm
         self.obstacle_mode = cfg.quads_obstacle_mode
+        self.local_obstacle_num = cfg.quads_local_obst_obs
         if cfg.quads_local_obs == -1:
             self.num_use_neighbor_obs = cfg.quads_num_agents - 1
         else:
             self.num_use_neighbor_obs = cfg.quads_local_obs
+        if cfg.obst_obs_type == 'none':
+            self.obstacle_obs_dim = 0
+        elif cfg.obst_obs_type == 'pos_size':
+            self.obstacle_obs_dim = 6
+        elif cfg.obst_obs_type == 'pos_vel_size':
+            self.obstacle_obs_dim = 9
+        elif cfg.obst_obs_type == 'pos_vel_size_shape':
+            self.obstacle_obs_dim = 10
+        else:
+            raise NotImplementedError(f'{cfg.obst_obs_type} not supported!')
 
         if self.neighbor_obs_type == 'pos_vel_goals':
             self.neighbor_obs_dim = 9  # include goal pos info
@@ -190,7 +201,6 @@ class QuadMultiEncoder(EncoderBase):
         # encode the obstacle observations
         obstacle_encoder_out_size = 0
         if self.obstacle_mode != 'no_obstacles':
-            self.obstacle_obs_dim = 10  # internal param, pos_vel_size_type, 3 * 3 + 1, note: for size, we should consider it's length in xyz direction
             self.obstacle_hidden_size = cfg.quads_obstacle_hidden_size  # internal param
             self.obstacle_encoder = nn.Sequential(
                 fc_layer(self.obstacle_obs_dim, self.obstacle_hidden_size, spec_norm=self.use_spectral_norm),

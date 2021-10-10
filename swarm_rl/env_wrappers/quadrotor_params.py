@@ -37,8 +37,9 @@ def add_quadrotors_env_args(env, parser):
 
     p.add_argument('--neighbor_obs_type', default='none', type=str, choices=['none', 'pos_vel', 'pos_vel_goals', 'pos_vel_goals_ndist_gdist'], help='Choose what kind of obs to send to encoder.')
     p.add_argument('--quads_use_numba', default=False, type=str2bool, help='Whether to use numba for jit or not')
-    p.add_argument('--quads_obstacle_mode', default='no_obstacles', type=str, choices=['no_obstacles', 'static', 'dynamic'], help='Choose which obstacle mode to run')
+    p.add_argument('--quads_obstacle_mode', default='no_obstacles', type=str, choices=['no_obstacles', 'static', 'dynamic', 'static_door', 'static_door_fixsize', 'static_random_place_fixsize'], help='Choose which obstacle mode to run')
     p.add_argument('--quads_obstacle_num', default=0, type=int, help='Choose the number of obstacle(s)')
+    p.add_argument('--quads_local_obst_obs', default=-1, type=int, help='Number of obstacles to consider. -1=all obstacles. 0=blind agents, 0<n<num_obstacles-1 = nonzero number of obstacles')
     p.add_argument('--quads_obstacle_type', default='sphere', type=str, choices=['sphere', 'cube', 'random'], help='Choose the type of obstacle(s)')
     p.add_argument('--quads_obstacle_size', default=0.0, type=float, help='Choose the size of obstacle(s)')
     p.add_argument('--quads_obstacle_traj', default='gravity', type=str, choices=['gravity', 'electron', 'mix'],  help='Choose the type of force to use')
@@ -49,10 +50,12 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_view_mode', default='local', type=str, choices=['local', 'global'], help='Choose which kind of view/camera to use')
     p.add_argument('--quads_adaptive_env', default=False, type=str2bool, help='Iteratively shrink the environment into a tunnel to increase obstacle density based on statistics')
 
-    p.add_argument('--quads_mode', default='static_same_goal', type=str, choices=['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal', 'circular_config', 'ep_lissajous3D', 'ep_rand_bezier', 'swarm_vs_swarm', 'swap_goals', 'dynamic_formations', 'mix', 'tunnel'], help='Choose which scenario to run. Ep = evader pursuit')
+    p.add_argument('--quads_mode', default='static_same_goal', type=str, choices=['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal', 'circular_config', 'ep_lissajous3D', 'ep_rand_bezier', 'swarm_vs_swarm', 'swap_goals', 'dynamic_formations', 'through_hole', 'through_random_obstacles', 'mix', 'tunnel'], help='Choose which scenario to run. Ep = evader pursuit')
     p.add_argument('--quads_formation', default='circle_horizontal', type=str, choices=['circle_xz_vertical', 'circle_yz_vertical', 'circle_horizontal', 'sphere', 'grid_xz_vertical', 'grid_yz_vertical', 'grid_horizontal'], help='Choose the swarm formation at the goal')
     p.add_argument('--quads_formation_size', default=-1.0, type=float, help='The size of the formation, interpreted differently depending on the formation type. Default (-1) means it is determined by the mode')
-    p.add_argument('--room_dims', nargs='+', default=[10, 10, 10], type=float, help='Length, width, and height dimensions respectively of the quadrotor env')
+    p.add_argument('--room_length', default=10, type=float, help='Length, width, and height dimensions respectively of the quadrotor env')
+    p.add_argument('--room_width', default=10, type=float, help='Length, width, and height dimensions respectively of the quadrotor env')
+    p.add_argument('--room_height', default=10, type=float, help='Length, width, and height dimensions respectively of the quadrotor env')
     p.add_argument('--quads_obs_repr', default='xyz_vxyz_R_omega', type=str, help='obs space for drone itself')
     p.add_argument('--replay_buffer_sample_prob', default=0.0, type=float, help='Probability at which we sample from it rather than resetting the env. Set to 0.0 (default) to disable the replay. Set to value in (0.0, 1.0] to use replay buffer')
 
@@ -61,3 +64,5 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obstacle_hidden_size', default=32, type=int, help='Choose the type of force to use')
     p.add_argument('--quads_collision_obst_smooth_max_penalty', default=10.0, type=float, help='The upper bound of the collision function given distance among drones')
     p.add_argument('--quads_obst_penalty_fall_off', default=10.0, type=float, help='The upper bound of the collision function given distance among drones')
+    p.add_argument('--quads_obst_enable_sim', default=True, type=str2bool, help='That parameter is for testing, True: Enable simulation for collision with obstacles, False: Ignore obstacles even collide with that')
+    p.add_argument('--obst_obs_type', default='none', type=str, choices=['none', 'pos_size', 'pos_vel_size', 'pos_vel_size_shape'], help='Choose what kind of obs to send to encoder.')

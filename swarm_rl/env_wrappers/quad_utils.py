@@ -82,8 +82,8 @@ def make_quadrotor_env_multi(cfg, **kwargs):
         num_agents=cfg.quads_num_agents,
         dynamics_params=quad, raw_control=raw_control, raw_control_zero_middle=raw_control_zero_middle,
         dynamics_randomize_every=dyn_randomize_every, dynamics_change=dynamics_change, dyn_sampler_1=sampler_1,
-        sense_noise=sense_noise, init_random_state=True, ep_time=episode_duration, room_length=cfg.room_dims[0],
-        room_width=cfg.room_dims[1], room_height=cfg.room_dims[2], rew_coeff=rew_coeff,
+        sense_noise=sense_noise, init_random_state=True, ep_time=episode_duration, room_length=cfg.room_length,
+        room_width=cfg.room_width, room_height=cfg.room_height, rew_coeff=rew_coeff,
         quads_mode=cfg.quads_mode, quads_formation=cfg.quads_formation, quads_formation_size=cfg.quads_formation_size,
         swarm_obs=extended_obs, quads_use_numba=cfg.quads_use_numba, quads_settle=cfg.quads_settle, quads_settle_range_meters=cfg.quads_settle_range_meters,
         quads_vel_reward_out_range=cfg.quads_vel_reward_out_range, quads_obstacle_mode=cfg.quads_obstacle_mode,
@@ -93,7 +93,8 @@ def make_quadrotor_env_multi(cfg, **kwargs):
         local_metric=cfg.quads_local_metric,
         local_coeff=cfg.quads_local_coeff,  # how much velocity matters in "distance" calculation
         use_replay_buffer=use_replay_buffer, obstacle_obs_mode=cfg.quads_obstacle_obs_mode,
-        obst_penalty_fall_off=cfg.quads_obst_penalty_fall_off,
+        obst_penalty_fall_off=cfg.quads_obst_penalty_fall_off, local_obst_obs=cfg.quads_local_obst_obs,
+        obst_enable_sim=cfg.quads_obst_enable_sim, obst_obs_type=cfg.obst_obs_type
     )
 
     if use_replay_buffer:

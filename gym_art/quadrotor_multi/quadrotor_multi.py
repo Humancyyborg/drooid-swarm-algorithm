@@ -36,7 +36,7 @@ class QuadrotorEnvMulti(gym.Env):
                  collision_falloff_radius=2.0, collision_smooth_max_penalty=10.0,
                  local_metric='dist', local_coeff=0.0, use_replay_buffer=False,
                  obstacle_obs_mode='relative', obst_penalty_fall_off=10.0, vis_acc_arrows=False,
-                 viz_traces=25, viz_trace_nth_step=1):
+                 viz_traces=25, viz_trace_nth_step=1, local_obst_obs=-1, obst_enable_sim=True, obst_obs_type='none'):
 
         super().__init__()
 
@@ -67,7 +67,7 @@ class QuadrotorEnvMulti(gym.Env):
                 rew_coeff, sense_noise, verbose, gravity, t2w_std, t2t_std, excite, dynamics_simplification,
                 quads_use_numba, self.swarm_obs, self.num_agents, quads_settle, quads_settle_range_meters,
                 quads_vel_reward_out_range, quads_view_mode, quads_obstacle_mode, quads_obstacle_num,
-                self.num_use_neighbor_obs
+                self.num_use_neighbor_obs, local_obst_obs, obst_obs_type
             )
             self.envs.append(e)
 
@@ -140,6 +140,8 @@ class QuadrotorEnvMulti(gym.Env):
         self.multi_obstacles = None
         self.obstacle_mode = quads_obstacle_mode
         self.obstacle_num = quads_obstacle_num
+        self.obst_enable_sim = obst_enable_sim
+        self.obst_obs_type = obst_obs_type
         self.use_obstacles = self.obstacle_mode != 'no_obstacles' and self.obstacle_num > 0
         if self.use_obstacles:
             obstacle_max_init_vel = 4.0 * self.envs[0].max_init_vel
@@ -147,13 +149,17 @@ class QuadrotorEnvMulti(gym.Env):
             # This parameter is used to judge whether obstacles are out of room, and then, we can reset the obstacles
             self.obstacle_room = self.envs[0].room_box  # [[-5, -5, 0], [5, 5, 10]]
             dt = 1.0 / sim_freq
-            self.set_obstacles = np.zeros(self.obstacle_num, dtype=bool)
+            if self.obstacle_mode.startswith('dynamic'):
+                self.set_obstacles = np.zeros(self.obstacle_num, dtype=bool)
+            else:
+                self.set_obstacles = np.ones(self.obstacle_num, dtype=bool)
             self.obstacle_shape = quads_obstacle_type
             self.obst_penalty_fall_off = obst_penalty_fall_off
             self.multi_obstacles = MultiObstacles(
                 mode=self.obstacle_mode, num_obstacles=self.obstacle_num, max_init_vel=obstacle_max_init_vel,
                 init_box=obstacle_init_box, dt=dt, quad_size=self.quad_arm, shape=self.obstacle_shape,
-                size=quads_obstacle_size, traj=obstacle_traj, obs_mode=obstacle_obs_mode
+                size=quads_obstacle_size, traj=obstacle_traj, obs_mode=obstacle_obs_mode, num_local_obst=local_obst_obs,
+                obs_type=self.obst_obs_type, drone_env=self.envs[0]
             )
 
             # collisions between obstacles and quadrotors
@@ -356,7 +362,11 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Reset Obstacles
         if self.use_obstacles:
-            self.set_obstacles = np.zeros(self.obstacle_num, dtype=bool)
+            if self.obstacle_mode.startswith('dynamic'):
+                self.set_obstacles = np.zeros(self.obstacle_num, dtype=bool)
+            else:
+                self.set_obstacles = np.ones(self.obstacle_num, dtype=bool)
+
             quads_pos = np.array([e.dynamics.pos for e in self.envs])
             quads_vel = np.array([e.dynamics.vel for e in self.envs])
             obs = self.multi_obstacles.reset(obs=obs, quads_pos=quads_pos, quads_vel=quads_vel,
@@ -465,9 +475,10 @@ class QuadrotorEnvMulti(gym.Env):
             for val in self.curr_drone_collisions:
                 perform_collision_between_drones(self.envs[val[0]].dynamics, self.envs[val[1]].dynamics)
             for val in curr_all_collisions:
-                perform_collision_with_obstacle(
-                    drone_dyn=self.envs[val[0]].dynamics, obstacle_dyn=self.multi_obstacles.obstacles[val[1]],
-                    quad_arm=self.quad_arm)
+                if self.obst_enable_sim:
+                    perform_collision_with_obstacle(
+                        drone_dyn=self.envs[val[0]].dynamics, obstacle_dyn=self.multi_obstacles.obstacles[val[1]],
+                        quad_arm=self.quad_arm)
 
         for i in range(self.num_agents):
             rewards[i] += rew_collisions[i]
@@ -497,7 +508,7 @@ class QuadrotorEnvMulti(gym.Env):
 
             # If there are still at least one obstacle flying in the air, we should check the function below
             # and reset the counter only if all obstacles hit the floor
-            if self.set_obstacles.any():
+            if self.obstacle_mode.startswith('dynamic') and self.set_obstacles.any():
                 for obst_i, obstacle in enumerate(self.multi_obstacles.obstacles):
                     if not self.set_obstacles[obst_i]:
                         continue
@@ -541,6 +552,10 @@ class QuadrotorEnvMulti(gym.Env):
                     self.reset_scene = True
 
             obs = tmp_obs
+        elif self.obstacle_mode.startswith('static'):
+            obs = self.multi_obstacles.step(obs=obs, quads_pos=self.pos, quads_vel=quads_vel,
+                                            set_obstacles=self.set_obstacles)
+
 
         # DONES
         if any(dones):

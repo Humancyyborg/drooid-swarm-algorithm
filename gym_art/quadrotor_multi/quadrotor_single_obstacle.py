@@ -1,6 +1,6 @@
 import numpy as np
 
-from gym_art.quadrotor_multi.quad_obstacle_utils import OBSTACLES_SHAPE_LIST
+from gym_art.quadrotor_multi.quad_obstacle_utils import OBSTACLES_SHAPE_LIST, STATIC_OBSTACLE_DOOR
 
 EPS = 1e-6
 GRAV = 9.81  # default gravitational constant
@@ -8,7 +8,9 @@ TRAJ_LIST = ['gravity', 'electron']
 
 class SingleObstacle:
     def __init__(self, max_init_vel=1., init_box=2.0, mode='no_obstacles', shape='sphere', size=0.0, quad_size=0.04,
-                 dt=0.05, traj='gravity', obs_mode='relative'):
+                 dt=0.05, traj='gravity', obs_mode='relative', index=0, obs_type='pos_size', all_pos_arr=None):
+        if all_pos_arr is None:
+            all_pos_arr = []
         self.max_init_vel = max_init_vel
         self.init_box = init_box  # means the size of initial space that the obstacles spawn at
         self.mode = mode
@@ -24,8 +26,12 @@ class SingleObstacle:
         self.goal_central = np.array([0., 0., 2.])
         self.shape_list = OBSTACLES_SHAPE_LIST
         self.obs_mode = obs_mode
+        self.index = index
+        self.obs_type = obs_type
+        self.all_pos_arr = all_pos_arr
 
     def reset(self, set_obstacle=None, formation_size=0.0, goal_central=np.array([0., 0., 2.]), shape='sphere', quads_pos=None, quads_vel=None):
+        # Initial position and velocity
         if set_obstacle is None:
             raise ValueError('set_obstacle is None')
 
@@ -34,10 +40,11 @@ class SingleObstacle:
 
         # Reset shape and size
         self.shape = shape
-        self.size = np.random.uniform(low=0.15, high=0.5)
+        if 'fixsize' not in self.mode:
+            self.size = np.random.uniform(low=0.15, high=0.5)
 
         if set_obstacle:
-            if self.mode == 'static':
+            if self.mode.startswith('static'):
                 self.static_obstacle()
             elif self.mode == 'dynamic':
                 if self.traj == "mix":
@@ -68,7 +75,15 @@ class SingleObstacle:
         return obs
 
     def static_obstacle(self):
-        pass
+        # Init position for an obstacle
+        self.vel = np.array([0., 0., 0.])
+        if 'static_door' in self.mode:
+            self.pos = STATIC_OBSTACLE_DOOR[self.index]
+        elif 'static_random_place' in self.mode:
+            self.pos = self.all_pos_arr[self.index]
+        else:
+            raise NotImplementedError(f'{self.mode} is not supported!')
+
 
     def dynamic_obstacle_grav(self):
         # Init position for an obstacle
@@ -164,25 +179,42 @@ class SingleObstacle:
         return vel
 
     def update_obs(self, quads_pos, quads_vel, set_obstacle):
-        # Add rel_pos, rel_vel, size, shape to obs, shape: num_agents * 10
-        if (not set_obstacle) and self.obs_mode == 'absolute':
-            rel_pos = self.pos - np.zeros((len(quads_pos), 3))
-            rel_vel = self.vel - np.zeros((len(quads_pos), 3))
-            obst_size = np.zeros((len(quads_pos), 3))
-            obst_shape = np.zeros((len(quads_pos), 1))
-        elif (not set_obstacle) and self.obs_mode == 'half_relative':
-            rel_pos = self.pos - np.zeros((len(quads_pos), 3))
-            rel_vel = self.vel - np.zeros((len(quads_pos), 3))
-            obst_size = (self.size / 2) * np.ones((len(quads_pos), 3))
-            obst_shape = self.shape_list.index(self.shape) * np.ones((len(quads_pos), 1))
-        else:  # False, relative; True
+        obs = None
+        if 'dynamic' in self.mode:
+            # Add rel_pos, rel_vel, size, shape to obs, shape: num_agents * 10
+            if (not set_obstacle) and self.obs_mode == 'absolute':
+                rel_pos = self.pos - np.zeros((len(quads_pos), 3))
+                rel_vel = self.vel - np.zeros((len(quads_pos), 3))
+                obst_size = np.zeros((len(quads_pos), 3))
+                obst_shape = np.zeros((len(quads_pos), 1))
+            elif (not set_obstacle) and self.obs_mode == 'half_relative':
+                rel_pos = self.pos - np.zeros((len(quads_pos), 3))
+                rel_vel = self.vel - np.zeros((len(quads_pos), 3))
+                obst_size = (self.size / 2) * np.ones((len(quads_pos), 3))
+                obst_shape = self.shape_list.index(self.shape) * np.ones((len(quads_pos), 1))
+            else:  # False, relative; True
+                rel_pos = self.pos - quads_pos
+                rel_vel = self.vel - quads_vel
+                # obst_size: in xyz axis: radius for sphere, half edge length for cube
+                obst_size = (self.size / 2) * np.ones((len(quads_pos), 3))
+                obst_shape = self.shape_list.index(self.shape) * np.ones((len(quads_pos), 1))
+            obs = np.concatenate((rel_pos, rel_vel, obst_size, obst_shape), axis=1)
+        elif 'static' in self.mode:
             rel_pos = self.pos - quads_pos
             rel_vel = self.vel - quads_vel
             # obst_size: in xyz axis: radius for sphere, half edge length for cube
             obst_size = (self.size / 2) * np.ones((len(quads_pos), 3))
             obst_shape = self.shape_list.index(self.shape) * np.ones((len(quads_pos), 1))
-
-        obs = np.concatenate((rel_pos, rel_vel, obst_size, obst_shape), axis=1)
+            if self.obs_type == 'pos_vel_size_shape':
+                obs = np.concatenate((rel_pos, rel_vel, obst_size, obst_shape), axis=1)
+            elif self.obs_type == 'pos_size':
+                obs = np.concatenate((rel_pos, obst_size), axis=1)
+            elif self.obs_type == 'pos_vel_size':
+                obs = np.concatenate((rel_pos, rel_vel, obst_size), axis=1)
+            else:
+                raise NotImplementedError(f'{self.obs_type} is not supported!')
+        else:
+            raise NotImplementedError(f'{self.obs_type} is not supported!')
 
         return obs
 
@@ -190,7 +222,7 @@ class SingleObstacle:
         if set_obstacle is None:
             raise ValueError('set_obstacle is None')
 
-        if not set_obstacle:
+        if not set_obstacle or self.mode.startswith('static'):  # dynamic obstacles in the fly
             obs = self.update_obs(quads_pos=quads_pos, quads_vel=quads_vel, set_obstacle=set_obstacle)
             return obs
 

@@ -712,7 +712,8 @@ class QuadrotorSingle:
                  rew_coeff=None, sense_noise=None, verbose=False, gravity=GRAV,
                  t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False, swarm_obs='none', num_agents=1,quads_settle=False,
                  quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8,
-                 view_mode='local', obstacle_mode='no_obstacles', obstacle_num=0, num_use_neighbor_obs=0):
+                 view_mode='local', obstacle_mode='no_obstacles', obstacle_num=0, num_use_neighbor_obs=0, num_local_obst=0,
+                 obst_obs_type='none'):
         np.seterr(under='ignore')
         """
         Args:
@@ -783,6 +784,11 @@ class QuadrotorSingle:
         # self.pitch_max = 1. #rad
         # self.roll_max = 1.  #rad
         # self.yaw_max = np.pi   #rad
+        ## Obstacle Mode
+        self.obstacle_mode = obstacle_mode
+        self.obstacle_num = obstacle_num
+        self.num_local_obst = num_local_obst
+        self.obst_obs_type = obst_obs_type
 
         self.room_box = np.array(
             [[-self.room_length/2, -self.room_width/2, 0], [self.room_length/2, self.room_width/2, self.room_height]]) # diagonal coordinates of box (?)
@@ -802,9 +808,6 @@ class QuadrotorSingle:
         ## View / Camera mode
         self.view_mode = view_mode
 
-        ## Obstacle Mode
-        self.obstacle_mode = obstacle_mode
-        self.obstacle_num = obstacle_num
 
         ###############################################################################
         ## DYNAMICS (and randomization)
@@ -999,7 +1002,28 @@ class QuadrotorSingle:
         elif self.swarm_obs == 'pos_vel_goals_ndist_gdist' and self.num_agents > 1:
             obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['goal'] + ['nbr_dist'] + ['nbr_goal_dist']) * self.num_use_neighbor_obs
         if self.obstacle_mode != 'no_obstacles' and self.obstacle_num > 0:
-            obs_comps = obs_comps + (['roxyz'] + ['rovxyz'] + ['osize'] + ['otype']) * self.obstacle_num
+            if self.num_local_obst == -1:
+                obstacle_num = self.obstacle_num
+            else:
+                obstacle_num = self.num_local_obst
+
+            if 'static' in self.obstacle_mode:
+                if self.obst_obs_type == 'none':
+                    raise NotImplementedError(f'{self.obst_obs_type} is not supported!')
+                elif self.obst_obs_type == 'pos_size':
+                    obst_obs_comps = (['roxyz'] + ['osize']) * obstacle_num
+                elif self.obst_obs_type == 'pos_vel_size':
+                    obst_obs_comps = (['roxyz'] + ['rovxyz'] + ['osize']) * obstacle_num
+                elif self.obst_obs_type == 'pos_vel_size_shape':
+                    obst_obs_comps = (['roxyz'] + ['rovxyz'] + ['osize'] + ['otype']) * obstacle_num
+                else:
+                    raise NotImplementedError(f'{self.obst_obs_type} is not supported!')
+            elif 'dynamic' in self.obstacle_mode:
+                obst_obs_comps = (['roxyz'] + ['rovxyz'] + ['osize'] + ['otype']) * obstacle_num
+            else:
+                raise NotImplementedError(f'{self.obstacle_mode} is not supported!')
+
+            obs_comps = obs_comps + obst_obs_comps
 
         print("Observation components:", obs_comps)
         obs_low, obs_high = [], []
@@ -1150,6 +1174,8 @@ class QuadrotorSingle:
             y = self.goal[1]
         # Since being near the groud means crash we have to start above
         if z < 0.25: z = 0.25
+        x = np.clip(x, a_min=-1.0 * self.room_length / 2 + 0.25, a_max=self.room_length / 2 - 0.25)
+        y = np.clip(y, a_min=-1.0 * self.room_width / 2 + 0.25, a_max=self.room_width / 2 - 0.25)
         pos = npa(x, y, z)
 
         ##############################################################
