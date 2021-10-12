@@ -62,7 +62,7 @@ QUAD_OBSTACLE_RANDOM_BASELINE_CLI = (
     '--replay_buffer_sample_prob=0.0 --anneal_collision_steps=0.0 --quads_obstacle_type=cube '
     '--quads_collision_obstacle_reward=5.0 --quads_collision_obst_smooth_max_penalty=10.0 '
     '--quads_obstacle_hidden_size=256 --quads_obst_penalty_fall_off=3.0 --quads_obstacle_size=1.0 '
-    '--quads_obstacle_num=12 --quads_local_obst_obs=12 --quads_obstacle_mode=static_random_place_fixsize '
+    '--quads_obstacle_num=8 --quads_local_obst_obs=8 --quads_obstacle_mode=static_random_place_fixsize '
     '--obst_obs_type=pos_vel_size --room_length=4.0 --room_height=4.0 --room_width=10.0'
 )
 
