@@ -329,7 +329,7 @@ def perform_collision_between_drones(dyn1, dyn2):
 
 def perform_collision_with_obstacle(drone_dyn, obstacle_dyn, quad_arm):
     v1new, v2new, collision_norm = compute_col_norm_and_new_velocities(obstacle_dyn, drone_dyn)
-    drone_dyn.vel += (v1new - v2new) * collision_norm
+    drone_dyn.vel = (v1new - v2new) * collision_norm
 
     # Now adding two different random components,
     # One that preserves momentum in opposite directions

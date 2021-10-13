@@ -5,6 +5,7 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_OBSTACLE_RA
 # quads_obstacle_num: 16
 _params = ParamGrid([
     ('seed', [0000, 1111, 2222, 3333]),
+    ('obst_obs_type', ['pos_size', 'pos_vel_size']),
 ])
 
 _experiment = Experiment(
