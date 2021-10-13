@@ -681,6 +681,7 @@ class Scenario_through_random_obstacles(QuadrotorScenario):
         self.start_point = np.array([0.0, -3.0, 1.5])
         self.end_point = np.array([0.0, 3.0, 1.5])
         self.duration_time = 0.0
+        self.count = 0
 
     def update_formation_size(self, new_formation_size):
         pass
@@ -699,9 +700,14 @@ class Scenario_through_random_obstacles(QuadrotorScenario):
 
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
+
+        if self.count > 1:
+            return infos, rewards
+
         if tick < int(self.duration_time * self.envs[0].control_freq):
             return infos, rewards
 
+        self.count += 1
         self.set_end_point()
         self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.end_point,
                                          layer_dist=0.0)
@@ -711,6 +717,7 @@ class Scenario_through_random_obstacles(QuadrotorScenario):
         return infos, rewards
 
     def reset(self):
+        self.count = 0
         # Reset formation, and parameters related to the formation; formation center; goals
         x = np.random.uniform(low=-0.5, high=0.5)
         y_flag = np.random.randint(2)
