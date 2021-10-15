@@ -3,8 +3,7 @@ from sample_factory.runner.run_description import RunDescription, Experiment, Pa
 from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_OBSTACLE_THROUGH_HOLE_BASELINE_CLI
 
 _params = ParamGrid([
-    ('seed', [1111, 2222]),
-    ('obst_obs_type', ['pos_size', 'pos_vel_size']),
+    ('seed', [0000, 1111, 2222, 3333]),
 ])
 
 _experiment = Experiment(
