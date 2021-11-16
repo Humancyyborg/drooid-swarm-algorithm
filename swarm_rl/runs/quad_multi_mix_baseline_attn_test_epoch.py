@@ -10,7 +10,7 @@ _params = ParamGrid([
 ])
 
 _experiment = Experiment(
-    'test_kl-quad_mix_baseline-8_mixed_attn',
+    'test_epoch-quad_mix_baseline-8_mixed_attn',
     QUAD_BASELINE_CLI,
     _params.generate_params(randomize=False),
 )
