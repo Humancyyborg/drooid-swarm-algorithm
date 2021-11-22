@@ -61,3 +61,5 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obstacle_hidden_size', default=32, type=int, help='Choose the type of force to use')
     p.add_argument('--quads_collision_obst_smooth_max_penalty', default=10.0, type=float, help='The upper bound of the collision function given distance among drones')
     p.add_argument('--quads_obst_penalty_fall_off', default=10.0, type=float, help='The upper bound of the collision function given distance among drones')
+
+    p.add_argument('--quads_output_hidden_size', default=32, type=int, help='Choose the hidden_size one layer before output (action layer, size=4)')
