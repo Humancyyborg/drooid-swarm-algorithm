@@ -12,12 +12,12 @@ _params = ParamGrid([
 ])
 
 _experiment = Experiment(
-    'quad_mix_baseline-small-8_mixed_attn',
+    'grid_search_output_hid_size',
     QUAD_BASELINE_CLI,
     _params.generate_params(randomize=False),
 )
 
-RUN_DESCRIPTION = RunDescription('paper_quads_multi_mix_baseline_8a_deepsets_small_v116', experiments=[_experiment])
+RUN_DESCRIPTION = RunDescription('output_hid_size_8a_deepsets_small_v116', experiments=[_experiment])
 
 # On Brain server, when you use num_workers = 72, if the system reports: Resource temporarily unavailable,
 # then, try to use two commands below
