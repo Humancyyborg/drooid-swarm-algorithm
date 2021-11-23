@@ -1,5 +1,5 @@
 from sample_factory.runner.run_description import RunDescription, Experiment, ParamGrid
-from swarm_rl.runs.quad_multi_mix_baseline import QUAD_BASELINE_CLI
+from swarm_rl.runs.quad_multi_mix_baseline import QUAD_BASELINE_CLI_8_BRAIN
 
 _params = ParamGrid([
     ('quads_neighbor_encoder_type', ['mean_embed']),
@@ -13,7 +13,7 @@ _params = ParamGrid([
 
 _experiment = Experiment(
     'brain_grid_search_output_hid_size',
-    QUAD_BASELINE_CLI,
+    QUAD_BASELINE_CLI_8_BRAIN,
     _params.generate_params(randomize=False),
 )
 
