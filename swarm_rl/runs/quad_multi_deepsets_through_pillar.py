@@ -1,6 +1,6 @@
 from sample_factory.runner.run_description import RunDescription, Experiment, ParamGrid
 
-from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_OBSTACLE_RANDOM_BASELINE_CLI
+from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_OBSTACLE_PILLAR_BASELINE_CLI
 
 # quads_obstacle_num: 16
 _params = ParamGrid([
@@ -13,7 +13,7 @@ _params = ParamGrid([
 
 _experiment = Experiment(
     'through_pillar',
-    QUAD_OBSTACLE_RANDOM_BASELINE_CLI,
+    QUAD_OBSTACLE_PILLAR_BASELINE_CLI,
     _params.generate_params(randomize=False),
 )
 
