@@ -641,7 +641,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
     cost_crash_raw = float(crashed)
     cost_crash = rew_coeff["crash"] * cost_crash_raw
 
-    reward = -dt * np.sum([
+    reward = -2.0 * dt * np.sum([
         cost_pos,
         cost_effort,
         cost_crash,
@@ -682,7 +682,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
 
     # report rewards in the same format as they are added to the actual agent's reward (easier to debug this way)
     for k, v in rew_info.items():
-        rew_info[k] = dt * v
+        rew_info[k] = 2.0 * dt * v
 
     if np.isnan(reward) or not np.isfinite(reward):
         for key, value in locals().items():
