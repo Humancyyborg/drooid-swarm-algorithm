@@ -81,9 +81,10 @@ class SingleObstacle:
             self.pos = STATIC_OBSTACLE_DOOR[self.index]
         elif 'static_random_place' in self.mode:
             self.pos = self.all_pos_arr[self.index]
+        elif 'static_pillar' in self.mode:
+            self.pos = self.all_pos_arr[self.index]
         else:
             raise NotImplementedError(f'{self.mode} is not supported!')
-
 
     def dynamic_obstacle_grav(self):
         # Init position for an obstacle
@@ -185,25 +186,25 @@ class SingleObstacle:
             if (not set_obstacle) and self.obs_mode == 'absolute':
                 rel_pos = self.pos - np.zeros((len(quads_pos), 3))
                 rel_vel = self.vel - np.zeros((len(quads_pos), 3))
-                obst_size = np.zeros((len(quads_pos), 3))
+                obst_size = np.zeros((len(quads_pos), 1))
                 obst_shape = np.zeros((len(quads_pos), 1))
             elif (not set_obstacle) and self.obs_mode == 'half_relative':
                 rel_pos = self.pos - np.zeros((len(quads_pos), 3))
                 rel_vel = self.vel - np.zeros((len(quads_pos), 3))
-                obst_size = (self.size / 2) * np.ones((len(quads_pos), 3))
+                obst_size = (self.size / 2) * np.ones((len(quads_pos), 1))
                 obst_shape = self.shape_list.index(self.shape) * np.ones((len(quads_pos), 1))
             else:  # False, relative; True
                 rel_pos = self.pos - quads_pos
                 rel_vel = self.vel - quads_vel
                 # obst_size: in xyz axis: radius for sphere, half edge length for cube
-                obst_size = (self.size / 2) * np.ones((len(quads_pos), 3))
+                obst_size = (self.size / 2) * np.ones((len(quads_pos), 1))
                 obst_shape = self.shape_list.index(self.shape) * np.ones((len(quads_pos), 1))
             obs = np.concatenate((rel_pos, rel_vel, obst_size, obst_shape), axis=1)
         elif 'static' in self.mode:
             rel_pos = self.pos - quads_pos
             rel_vel = self.vel - quads_vel
             # obst_size: in xyz axis: radius for sphere, half edge length for cube
-            obst_size = (self.size / 2) * np.ones((len(quads_pos), 3))
+            obst_size = (self.size / 2) * np.ones((len(quads_pos), 1))
             obst_shape = self.shape_list.index(self.shape) * np.ones((len(quads_pos), 1))
             if self.obs_type == 'pos_vel_size_shape':
                 obs = np.concatenate((rel_pos, rel_vel, obst_size, obst_shape), axis=1)

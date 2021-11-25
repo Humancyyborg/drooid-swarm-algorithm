@@ -133,7 +133,12 @@ class QuadMultiEncoder(EncoderBase):
         self.neighbor_obs_type = cfg.neighbor_obs_type
         self.use_spectral_norm = cfg.use_spectral_norm
         self.obstacle_mode = cfg.quads_obstacle_mode
-        self.local_obstacle_num = cfg.quads_local_obst_obs
+
+        if cfg.quads_local_obst_obs == -1:
+            self.local_obstacle_num = cfg.quads_obstacle_num
+        else:
+            self.local_obstacle_num = cfg.quads_local_obst_obs
+
         if cfg.quads_local_obs == -1:
             self.num_use_neighbor_obs = cfg.quads_num_agents - 1
         else:
@@ -141,11 +146,11 @@ class QuadMultiEncoder(EncoderBase):
         if cfg.obst_obs_type == 'none':
             self.obstacle_obs_dim = 0
         elif cfg.obst_obs_type == 'pos_size':
-            self.obstacle_obs_dim = 6
+            self.obstacle_obs_dim = 4
         elif cfg.obst_obs_type == 'pos_vel_size':
-            self.obstacle_obs_dim = 9
+            self.obstacle_obs_dim = 7
         elif cfg.obst_obs_type == 'pos_vel_size_shape':
-            self.obstacle_obs_dim = 10
+            self.obstacle_obs_dim = 8
         else:
             raise NotImplementedError(f'{cfg.obst_obs_type} not supported!')
 

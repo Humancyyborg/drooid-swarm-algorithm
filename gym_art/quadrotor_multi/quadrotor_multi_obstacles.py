@@ -55,6 +55,17 @@ class MultiObstacles:
                     pos_arr.append(tmp_pos_arr)
 
                 pos_block_arr.append(np.array([pos_x, pos_y, 0.5 * size]))
+        elif 'static_pillar' in mode:
+            room_box = drone_env.room_box
+            # 4 = 2 * the inital pos box for drones,
+            # 0.5 * size is to make sure the init pos of drones not inside of obst
+            pos_x = np.random.uniform(low=room_box[0][0] + 0.5 * size, high=room_box[1][0] - 0.5 * size)
+            pos_y = np.random.uniform(low=room_box[0][1] + 3 + 0.5 * size, high=room_box[1][1] - 3 - 0.5 * size)
+
+            # Add pos
+            for i in range(num_obstacles):
+                tmp_pos_arr = np.array([pos_x, pos_y, size * (0.5 + i)])
+                pos_arr.append(tmp_pos_arr)
 
         for i in range(self.num_obstacles):
             obstacle = SingleObstacle(max_init_vel=max_init_vel, init_box=init_box, mode=mode, shape=shape, size=size,

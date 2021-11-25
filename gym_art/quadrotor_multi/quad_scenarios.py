@@ -732,6 +732,65 @@ class Scenario_through_random_obstacles(QuadrotorScenario):
         self.duration_time = 0.0
         self.standard_reset(formation_center=self.start_point)
 
+class Scenario_through_pillar(QuadrotorScenario):
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+        # teleport every [4.0, 6.0] secs
+        self.start_point = np.array([0.0, -3.0, 2.0])
+        self.end_point = np.array([0.0, 3.0, 2.0])
+        self.duration_time = 0.0
+        # self.count = 0
+
+    def update_formation_size(self, new_formation_size):
+        pass
+
+    def set_end_point(self):
+        self.start_point = np.copy(self.end_point)
+        end_x = np.random.uniform(low=-0.5, high=0.5)
+        if self.start_point[1] < 0.0:
+            end_y = np.random.uniform(low=2.0, high=4.0)
+        else:
+            end_y = np.random.uniform(low=-4.0, high=-2.0)
+
+        end_z = np.random.uniform(low=0.5, high=2.5)
+        self.end_point = np.array([end_x, end_y, end_z])
+        self.duration_time += np.random.uniform(low=4.0, high=6.0)
+
+    def step(self, infos, rewards, pos):
+        tick = self.envs[0].tick
+
+        # if self.count > 1:
+        #     return infos, rewards
+
+        if tick < int(self.duration_time * self.envs[0].control_freq):
+            return infos, rewards
+
+        # self.count += 1
+        self.set_end_point()
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.end_point,
+                                         layer_dist=0.0)
+        for i, env in enumerate(self.envs):
+            env.goal = self.goals[i]
+
+        return infos, rewards
+
+    def reset(self):
+        # self.count = 0
+        self.duration_time = 0.0
+        # Reset formation, and parameters related to the formation; formation center; goals
+        x = np.random.uniform(low=-0.5, high=0.5)
+        y_flag = np.random.randint(2)
+        if y_flag == 0:
+            y = np.random.uniform(low=2.75, high=3.0)
+        else:
+            y = np.random.uniform(low=-3.0, high=-2.75)
+
+        z = np.random.uniform(low=0.5, high=2.5)
+        self.start_point = np.array([x, y, z])
+        self.end_point = np.array([x, y, z])
+        self.duration_time += np.random.uniform(low=4.0, high=6.0)
+        self.standard_reset(formation_center=self.start_point)
+
 
 class Scenario_mix(QuadrotorScenario):
     def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
