@@ -82,7 +82,7 @@ QUAD_OBSTACLE_PILLAR_BASELINE_CLI = (
     '--quads_collision_obstacle_reward=5.0 --quads_collision_obst_smooth_max_penalty=10.0 '
     '--quads_obstacle_hidden_size=256 --quads_obst_penalty_fall_off=3.0 --quads_obstacle_size=1.0 '
     '--quads_obstacle_num=3 --quads_local_obst_obs=3 --quads_obstacle_mode=static_pillar_fixsize '
-    '--obst_obs_type=pos_size --room_length=2.5 --room_height=3.0 --room_width=10.0'
+    '--obst_obs_type=pos_size --room_length=2.5 --room_height=3.0 --room_width=10.0 --save_milestones_sec=1000'
 )
 
 _experiment = Experiment(
