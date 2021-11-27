@@ -586,7 +586,8 @@ class QuadrotorDynamics:
 
 # reasonable reward function for hovering at a goal and not flying too high
 def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, rew_coeff, action_prev,
-                            quads_settle=False, quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8):
+                            quads_settle=False, quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8,
+                            quads_reward_ep_len=True):
     ##################################################
     ## log to create a sharp peak at the goal
     dist = np.linalg.norm(goal - dynamics.pos)
@@ -641,7 +642,12 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
     cost_crash_raw = float(crashed)
     cost_crash = rew_coeff["crash"] * cost_crash_raw
 
-    reward = -2.0 * dt * np.sum([
+    dt_coeff = 2.0
+    if quads_reward_ep_len:
+        dt_coeff = 2.0
+    else:
+        dt_coeff = 1.0
+    reward = -dt_coeff * dt * np.sum([
         cost_pos,
         cost_effort,
         cost_crash,
@@ -682,7 +688,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
 
     # report rewards in the same format as they are added to the actual agent's reward (easier to debug this way)
     for k, v in rew_info.items():
-        rew_info[k] = 2.0 * dt * v
+        rew_info[k] = dt_coeff * dt * v
 
     if np.isnan(reward) or not np.isfinite(reward):
         for key, value in locals().items():
@@ -713,7 +719,7 @@ class QuadrotorSingle:
                  t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False, swarm_obs='none', num_agents=1,quads_settle=False,
                  quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8,
                  view_mode='local', obstacle_mode='no_obstacles', obstacle_num=0, num_use_neighbor_obs=0, num_local_obst=0,
-                 obst_obs_type='none'):
+                 obst_obs_type='none', quads_reward_ep_len=True):
         np.seterr(under='ignore')
         """
         Args:
@@ -789,6 +795,9 @@ class QuadrotorSingle:
         self.obstacle_num = obstacle_num
         self.num_local_obst = num_local_obst
         self.obst_obs_type = obst_obs_type
+
+        # Reward scale
+        self.quads_reward_ep_len = quads_reward_ep_len
 
         self.room_box = np.array(
             [[-self.room_length/2, -self.room_width/2, 0], [self.room_length/2, self.room_width/2, self.room_height]]) # diagonal coordinates of box (?)
@@ -1078,7 +1087,8 @@ class QuadrotorSingle:
                                                    self.time_remain,
                                                    rew_coeff=self.rew_coeff, action_prev=self.actions[1], quads_settle=self.quads_settle,
                                                    quads_settle_range_meters=self.quads_settle_range_meters,
-                                                   quads_vel_reward_out_range=self.quads_vel_reward_out_range
+                                                   quads_vel_reward_out_range=self.quads_vel_reward_out_range,
+                                                   quads_reward_ep_len=self.quads_reward_ep_len
         )
         self.tick += 1
         done = self.tick > self.ep_len  # or self.crashed

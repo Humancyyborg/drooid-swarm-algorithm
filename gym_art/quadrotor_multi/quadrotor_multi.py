@@ -36,7 +36,8 @@ class QuadrotorEnvMulti(gym.Env):
                  collision_falloff_radius=2.0, collision_smooth_max_penalty=10.0,
                  local_metric='dist', local_coeff=0.0, use_replay_buffer=False,
                  obstacle_obs_mode='relative', obst_penalty_fall_off=10.0, vis_acc_arrows=False,
-                 viz_traces=25, viz_trace_nth_step=1, local_obst_obs=-1, obst_enable_sim=True, obst_obs_type='none'):
+                 viz_traces=25, viz_trace_nth_step=1, local_obst_obs=-1, obst_enable_sim=True, obst_obs_type='none',
+                 quads_reward_ep_len=True):
 
         super().__init__()
 
@@ -67,7 +68,7 @@ class QuadrotorEnvMulti(gym.Env):
                 rew_coeff, sense_noise, verbose, gravity, t2w_std, t2t_std, excite, dynamics_simplification,
                 quads_use_numba, self.swarm_obs, self.num_agents, quads_settle, quads_settle_range_meters,
                 quads_vel_reward_out_range, quads_view_mode, quads_obstacle_mode, quads_obstacle_num,
-                self.num_use_neighbor_obs, local_obst_obs, obst_obs_type
+                self.num_use_neighbor_obs, local_obst_obs, obst_obs_type, quads_reward_ep_len
             )
             self.envs.append(e)
 
