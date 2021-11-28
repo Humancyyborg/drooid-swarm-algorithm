@@ -134,6 +134,8 @@ class QuadMultiEncoder(EncoderBase):
         self.use_spectral_norm = cfg.use_spectral_norm
         self.obstacle_mode = cfg.quads_obstacle_mode
 
+        self.quads_obst_model_type = cfg.quads_obst_model_type
+
         if cfg.quads_local_obst_obs == -1:
             self.local_obstacle_num = cfg.quads_obstacle_num
         else:
@@ -215,6 +217,14 @@ class QuadMultiEncoder(EncoderBase):
             )
             obstacle_encoder_out_size = calc_num_elements(self.obstacle_encoder, (self.obstacle_obs_dim,))
 
+        if self.quads_obst_model_type == 'nei_obst':
+            in_size = neighbor_encoder_out_size + obstacle_encoder_out_size
+            out_size = neighbor_encoder_out_size + obstacle_encoder_out_size
+            self.feed_forward_nei_obst = nn.Sequential(
+                fc_layer(in_size, out_size, spec_norm=self.use_spectral_norm),
+                nn.Tanh(),
+            )
+
         total_encoder_out_size = self_encoder_out_size + neighbor_encoder_out_size + obstacle_encoder_out_size
 
         # this is followed by another fully connected layer in the action parameterization, so we add a nonlinearity here
@@ -234,17 +244,36 @@ class QuadMultiEncoder(EncoderBase):
         batch_size = obs_self.shape[0]
         # relative xyz and vxyz for the entire minibatch (batch dimension is batch_size * num_neighbors)
         all_neighbor_obs_size = self.neighbor_obs_dim * self.num_use_neighbor_obs
-        if self.num_use_neighbor_obs > 0 and self.neighbor_encoder:
-            neighborhood_embedding = self.neighbor_encoder(obs_self, obs, all_neighbor_obs_size, batch_size)
-            embeddings = torch.cat((embeddings, neighborhood_embedding), dim=1)
 
-        if self.obstacle_mode != 'no_obstacles':
+        if self.quads_obst_model_type == 'nei_obst':
+            neighborhood_embedding = self.neighbor_encoder(obs_self, obs, all_neighbor_obs_size, batch_size)
+            # embeddings = torch.cat((embeddings, neighborhood_embedding), dim=1)
+
             obs_obstacles = obs[:, self.self_obs_dim + all_neighbor_obs_size:]
             obs_obstacles = obs_obstacles.reshape(-1, self.obstacle_obs_dim)
             obstacle_embeds = self.obstacle_encoder(obs_obstacles)
             obstacle_embeds = obstacle_embeds.reshape(batch_size, -1, self.obstacle_hidden_size)
             obstacle_mean_embed = torch.mean(obstacle_embeds, dim=1)
-            embeddings = torch.cat((embeddings, obstacle_mean_embed), dim=1)
+            # embeddings = torch.cat((embeddings, obstacle_mean_embed), dim=1)
+
+            neighbot_obst_embeddings = torch.cat((neighborhood_embedding, obstacle_mean_embed), dim=1)
+
+            out_nei_obst = self.feed_forward_nei_obst(neighbot_obst_embeddings)
+
+            embeddings = torch.cat((embeddings, out_nei_obst), dim=1)
+
+        else:
+            if self.num_use_neighbor_obs > 0 and self.neighbor_encoder:
+                neighborhood_embedding = self.neighbor_encoder(obs_self, obs, all_neighbor_obs_size, batch_size)
+                embeddings = torch.cat((embeddings, neighborhood_embedding), dim=1)
+
+            if self.obstacle_mode != 'no_obstacles':
+                obs_obstacles = obs[:, self.self_obs_dim + all_neighbor_obs_size:]
+                obs_obstacles = obs_obstacles.reshape(-1, self.obstacle_obs_dim)
+                obstacle_embeds = self.obstacle_encoder(obs_obstacles)
+                obstacle_embeds = obstacle_embeds.reshape(batch_size, -1, self.obstacle_hidden_size)
+                obstacle_mean_embed = torch.mean(obstacle_embeds, dim=1)
+                embeddings = torch.cat((embeddings, obstacle_mean_embed), dim=1)
 
         out = self.feed_forward(embeddings)
         return out
