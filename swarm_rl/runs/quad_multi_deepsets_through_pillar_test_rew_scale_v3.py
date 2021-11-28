@@ -8,7 +8,7 @@ _params = ParamGrid([
     ('hidden_size', [256]),
     ('quads_neighbor_hidden_size', [128]),
     ('quads_obstacle_hidden_size', [128]),
-    ('reward_scale', [0.25]),
+    ('reward_scale', [1.0]),
 ])
 
 _experiment = Experiment(
