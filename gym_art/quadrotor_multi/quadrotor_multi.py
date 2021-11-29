@@ -37,7 +37,7 @@ class QuadrotorEnvMulti(gym.Env):
                  local_metric='dist', local_coeff=0.0, use_replay_buffer=False,
                  obstacle_obs_mode='relative', obst_penalty_fall_off=10.0, vis_acc_arrows=False,
                  viz_traces=25, viz_trace_nth_step=1, local_obst_obs=-1, obst_enable_sim=True, obst_obs_type='none',
-                 quads_reward_ep_len=True):
+                 quads_reward_ep_len=True, obst_level=-1):
 
         super().__init__()
 
@@ -144,6 +144,14 @@ class QuadrotorEnvMulti(gym.Env):
         self.obst_enable_sim = obst_enable_sim
         self.obst_obs_type = obst_obs_type
         self.use_obstacles = self.obstacle_mode != 'no_obstacles' and self.obstacle_num > 0
+
+        # Control different level, curriculum learning
+        self.obst_level = obst_level
+        self.crash_counter = 0
+        self.crash_value = 0.0
+        self.crash_counter_threshold = 5
+        self.episode_id = 0
+
         if self.use_obstacles:
             obstacle_max_init_vel = 4.0 * self.envs[0].max_init_vel
             obstacle_init_box = self.envs[0].box  # box of env is: 2 meters
@@ -160,7 +168,7 @@ class QuadrotorEnvMulti(gym.Env):
                 mode=self.obstacle_mode, num_obstacles=self.obstacle_num, max_init_vel=obstacle_max_init_vel,
                 init_box=obstacle_init_box, dt=dt, quad_size=self.quad_arm, shape=self.obstacle_shape,
                 size=quads_obstacle_size, traj=obstacle_traj, obs_mode=obstacle_obs_mode, num_local_obst=local_obst_obs,
-                obs_type=self.obst_obs_type, drone_env=self.envs[0]
+                obs_type=self.obst_obs_type, drone_env=self.envs[0], level=self.obst_level
             )
 
             # collisions between obstacles and quadrotors
@@ -372,7 +380,7 @@ class QuadrotorEnvMulti(gym.Env):
             quads_vel = np.array([e.dynamics.vel for e in self.envs])
             obs = self.multi_obstacles.reset(obs=obs, quads_pos=quads_pos, quads_vel=quads_vel,
                                              set_obstacles=self.set_obstacles, formation_size=self.quads_formation_size,
-                                             goal_central=self.goal_central)
+                                             goal_central=self.goal_central, level=self.obst_level)
             self.obst_quad_collisions_per_episode = 0
             self.prev_obst_quad_collisions = []
 
@@ -404,6 +412,12 @@ class QuadrotorEnvMulti(gym.Env):
 
         if self.use_replay_buffer and not self.activate_replay_buffer:
             self.crashes_last_episode += infos[0]["rewards"]["rew_crash"]
+
+        tmp_crash_value = 0.0
+        for i in range(len(self.envs)):
+            tmp_crash_value += infos[i]["rewards"]["rew_crash"]
+
+        self.crash_value += tmp_crash_value / self.num_agents
 
         # Calculating collisions between drones
         drone_col_matrix, self.curr_drone_collisions, distance_matrix = calculate_collision_matrix(self.pos, self.quad_arm, self.collision_hitbox_radius)
@@ -560,6 +574,17 @@ class QuadrotorEnvMulti(gym.Env):
 
         # DONES
         if any(dones):
+            self.episode_id += 1
+            if self.crash_value >= -1.0:
+                self.crash_counter += 1
+                if self.crash_counter >= self.crash_counter_threshold:
+                    self.obst_level += 1
+                    self.crash_counter = 0
+            else:
+                self.crash_counter = 0
+
+            self.crash_value = 0.0
+
             for i in range(len(infos)):
                 if self.saved_in_replay_buffer:
                     infos[i]['episode_extra_stats'] = {
@@ -574,6 +599,9 @@ class QuadrotorEnvMulti(gym.Env):
                     if self.use_obstacles:
                         infos[i]['episode_extra_stats']['num_collisions_obst_quad'] = self.obst_quad_collisions_per_episode
                         infos[i]['episode_extra_stats'][f'num_collisions_obst_{self.scenario.name()}'] = self.obst_quad_collisions_per_episode
+
+                        infos[i]['episode_extra_stats']['episode_id'] = self.episode_id
+                        infos[i]['episode_extra_stats']['obst_level'] = self.obst_level
 
             obs = self.reset()
             dones = [True] * len(dones)  # terminate the episode for all "sub-envs"

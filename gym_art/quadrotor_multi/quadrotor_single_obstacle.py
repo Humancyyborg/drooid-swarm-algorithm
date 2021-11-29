@@ -30,7 +30,8 @@ class SingleObstacle:
         self.obs_type = obs_type
         self.all_pos_arr = all_pos_arr
 
-    def reset(self, set_obstacle=None, formation_size=0.0, goal_central=np.array([0., 0., 2.]), shape='sphere', quads_pos=None, quads_vel=None):
+    def reset(self, set_obstacle=None, formation_size=0.0, goal_central=np.array([0., 0., 2.]), shape='sphere',
+              quads_pos=None, quads_vel=None, new_pos=None):
         # Initial position and velocity
         if set_obstacle is None:
             raise ValueError('set_obstacle is None')
@@ -45,7 +46,7 @@ class SingleObstacle:
 
         if set_obstacle:
             if self.mode.startswith('static'):
-                self.static_obstacle()
+                self.static_obstacle(new_pos=new_pos)
             elif self.mode == 'dynamic':
                 if self.traj == "mix":
                     traj_id = np.random.randint(low=0, high=len(TRAJ_LIST))
@@ -74,7 +75,7 @@ class SingleObstacle:
         obs = self.update_obs(quads_pos=quads_pos, quads_vel=quads_vel, set_obstacle=set_obstacle)
         return obs
 
-    def static_obstacle(self):
+    def static_obstacle(self, new_pos=None):
         # Init position for an obstacle
         self.vel = np.array([0., 0., 0.])
         if 'static_door' in self.mode:
@@ -82,7 +83,10 @@ class SingleObstacle:
         elif 'static_random_place' in self.mode:
             self.pos = self.all_pos_arr[self.index]
         elif 'static_pillar' in self.mode:
-            self.pos = self.all_pos_arr[self.index]
+            if new_pos is None:
+                self.pos = self.all_pos_arr[self.index]
+            else:
+                self.pos = new_pos
         else:
             raise NotImplementedError(f'{self.mode} is not supported!')
 

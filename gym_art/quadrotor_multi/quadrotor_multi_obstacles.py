@@ -10,7 +10,7 @@ EPS = 1e-6
 class MultiObstacles:
     def __init__(self, mode='no_obstacles', num_obstacles=0, max_init_vel=1., init_box=2.0, dt=0.005,
                  quad_size=0.046, shape='sphere', size=0.0, traj='gravity', obs_mode='relative', num_local_obst=-1,
-                 obs_type='pos_size', drone_env=None):
+                 obs_type='pos_size', drone_env=None, level=-1):
         if 'static_door' in mode:
             self.num_obstacles = len(STATIC_OBSTACLE_DOOR)
         else:
@@ -20,6 +20,9 @@ class MultiObstacles:
         self.shape = shape
         self.shape_list = OBSTACLES_SHAPE_LIST
         self.num_local_obst = num_local_obst
+        self.size = size
+        self.mode = mode
+        self.drone_env = drone_env
 
         pos_arr = []
         if 'static_random_place' in mode:
@@ -56,18 +59,7 @@ class MultiObstacles:
 
                 pos_block_arr.append(np.array([pos_x, pos_y, 0.5 * size]))
         elif 'static_pillar' in mode:
-            # room_box = drone_env.room_box
-            # # 4 = 2 * the inital pos box for drones,
-            # # 0.5 * size is to make sure the init pos of drones not inside of obst
-            # pos_x = np.random.uniform(low=room_box[0][0] + 0.5 * size, high=room_box[1][0] - 0.5 * size)
-            # pos_y = np.random.uniform(low=room_box[0][1] + 3 + 0.5 * size, high=room_box[1][1] - 3 - 0.5 * size)
-            pos_x = 0.0
-            pos_y = 0.0
-
-            # # Add pos
-            for i in range(num_obstacles):
-                tmp_pos_arr = np.array([pos_x, pos_y, -5.0 + size * (0.5 + i)])
-                pos_arr.append(tmp_pos_arr)
+            pos_arr = self.generate_pos_by_level(level=level)
 
         for i in range(self.num_obstacles):
             obstacle = SingleObstacle(max_init_vel=max_init_vel, init_box=init_box, mode=mode, shape=shape, size=size,
@@ -75,7 +67,8 @@ class MultiObstacles:
                                       obs_type=obs_type, all_pos_arr=pos_arr)
             self.obstacles.append(obstacle)
 
-    def reset(self, obs=None, quads_pos=None, quads_vel=None, set_obstacles=None, formation_size=0.0, goal_central=np.array([0., 0., 2.])):
+    def reset(self, obs=None, quads_pos=None, quads_vel=None, set_obstacles=None, formation_size=0.0, goal_central=np.array([0., 0., 2.]),
+              level=-1):
         if self.num_obstacles <= 0:
             return obs
         if set_obstacles is None:
@@ -88,10 +81,14 @@ class MultiObstacles:
             shape_list = np.array(shape_list)
 
         all_obst_obs = []
+        pos_arr = [None for _ in range(self.num_obstacles)]
+        if 'static_pillar' in self.mode:
+            pos_arr = self.generate_pos_by_level(level=level)
+
         for i, obstacle in enumerate(self.obstacles):
             obst_obs = obstacle.reset(set_obstacle=set_obstacles[i], formation_size=formation_size,
                                       goal_central=goal_central, shape=shape_list[i], quads_pos=quads_pos,
-                                      quads_vel=quads_vel)
+                                      quads_vel=quads_vel, new_pos=pos_arr[i])
             all_obst_obs.append(obst_obs)
 
         all_obst_obs = np.stack(all_obst_obs)
@@ -212,3 +209,22 @@ class MultiObstacles:
         obs_ext = self.extend_obs_space(obs, closest_indices=indices, all_obst_obs=all_obst_obs)
         return obs_ext
 
+    def generate_pos_by_level(self, level=-1):
+        pos_arr = []
+        if level <= 6:
+            pos_x = 0.0
+            pos_y = 0.0
+        else:
+            room_box = self.drone_env.room_box
+            pos_x = np.random.uniform(low=-0.5, high=0.5)
+            pos_y = np.random.uniform(low=room_box[0][1] + 3 + 0.5 * self.size, high=room_box[1][1] - 3 - 0.5 * self.size)
+
+        level_z = np.clip(level, -1, 6)
+        pos_z_bottom = 0.5 * self.size * level_z - self.size * self.num_obstacles
+
+        # Add pos
+        for i in range(self.num_obstacles):
+            tmp_pos_arr = np.array([pos_x, pos_y, pos_z_bottom + self.size * (0.5 + i)])
+            pos_arr.append(tmp_pos_arr)
+
+        return pos_arr

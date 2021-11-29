@@ -752,7 +752,7 @@ class Scenario_through_pillar(QuadrotorScenario):
         else:
             end_y = np.random.uniform(low=-4.0, high=-2.0)
 
-        end_z = np.random.uniform(low=0.5, high=2.5)
+        end_z = np.random.uniform(low=1.0, high=3.0)
         self.end_point = np.array([end_x, end_y, end_z])
         self.duration_time += np.random.uniform(low=4.0, high=6.0)
 
@@ -785,7 +785,7 @@ class Scenario_through_pillar(QuadrotorScenario):
         else:
             y = np.random.uniform(low=-3.0, high=-2.75)
 
-        z = np.random.uniform(low=0.5, high=2.5)
+        z = np.random.uniform(low=1.0, high=3.0)
         self.start_point = np.array([x, y, z])
         self.end_point = np.array([x, y, z])
         self.duration_time += np.random.uniform(low=4.0, high=6.0)

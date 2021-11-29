@@ -69,3 +69,4 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obst_model_type', default='whole', type=str, help='Whole: self, neighbor, obstacle, we use seperate model deal with them, then concate them together. nei_obst, we concate nei_obst first, then concate with self_encoder')
 
     p.add_argument('--quads_reward_ep_len', default=True, type=str2bool, help='For each drone, reward scale is same as ep_len or not. For example, ep_len=1600, then rew_crash should equals to 16')
+    p.add_argument('--quads_obst_level', default=-1, type=int, help='Obstacle start level, -1 means underearth')
