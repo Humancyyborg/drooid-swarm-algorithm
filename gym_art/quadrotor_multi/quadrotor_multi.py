@@ -348,7 +348,7 @@ class QuadrotorEnvMulti(gym.Env):
         if self.adaptive_env or (2.0 * self.obstacle_num < tmp_obst_level <= 4.0 * self.obstacle_num):
             # TODO: introduce logic to choose the new room dims i.e. based on statistics from last N episodes, etc
             # e.g. self.room_dims = ....
-            new_size = 10 - 1.0 * (self.obst_level - 2.0 * self.obstacle_num)
+            new_size = 10 - 1.0 * (tmp_obst_level - 2.0 * self.obstacle_num)
             new_length, new_width, new_height = new_size, new_size, self.room_dims[2]
             self.room_dims = (new_length, new_width, new_height)
 
