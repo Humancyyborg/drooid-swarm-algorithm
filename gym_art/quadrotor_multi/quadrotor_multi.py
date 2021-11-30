@@ -343,7 +343,16 @@ class QuadrotorEnvMulti(gym.Env):
 
     def reset(self):
         obs, rewards, dones, infos = [], [], [], []
-        self.scenario.reset()
+
+        tmp_obst_level = np.clip(self.obst_level, -1, 4.0 * self.obstacle_num)
+        if self.adaptive_env or (2.0 * self.obstacle_num < tmp_obst_level <= 4.0 * self.obstacle_num):
+            # TODO: introduce logic to choose the new room dims i.e. based on statistics from last N episodes, etc
+            # e.g. self.room_dims = ....
+            new_size = 10 - 1.0 * (self.obst_level - 2.0 * self.obstacle_num)
+            new_length, new_width, new_height = new_size, new_size, self.room_dims[2]
+            self.room_dims = (new_length, new_width, new_height)
+
+        self.scenario.reset(room_dims=self.room_dims)
         self.quads_formation_size = self.scenario.formation_size
         self.goal_central = np.mean(self.scenario.goals, axis=0)
 
@@ -351,12 +360,6 @@ class QuadrotorEnvMulti(gym.Env):
         if self.use_replay_buffer and not self.activate_replay_buffer:
             self.crashes_in_recent_episodes.append(self.crashes_last_episode)
             self.activate_replay_buffer = self.can_drones_fly()
-
-        if self.adaptive_env:
-            # TODO: introduce logic to choose the new room dims i.e. based on statistics from last N episodes, etc
-            # e.g. self.room_dims = ....
-            new_length, new_width, new_height = np.random.randint(1, 31, 3)
-            self.room_dims = (new_length, new_width, new_height)
 
         for i, e in enumerate(self.envs):
             e.goal = self.scenario.goals[i]
@@ -380,7 +383,8 @@ class QuadrotorEnvMulti(gym.Env):
             quads_vel = np.array([e.dynamics.vel for e in self.envs])
             obs = self.multi_obstacles.reset(obs=obs, quads_pos=quads_pos, quads_vel=quads_vel,
                                              set_obstacles=self.set_obstacles, formation_size=self.quads_formation_size,
-                                             goal_central=self.goal_central, level=self.obst_level)
+                                             goal_central=self.goal_central, level=self.obst_level,
+                                             room_dims=self.room_dims)
             self.obst_quad_collisions_per_episode = 0
             self.prev_obst_quad_collisions = []
 

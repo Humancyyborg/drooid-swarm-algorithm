@@ -150,7 +150,7 @@ class QuadrotorScenario:
     def step(self, infos, rewards, pos):
         raise NotImplementedError("Implemented in a specific scenario")
 
-    def reset(self):
+    def reset(self, room_dims=None):
         # Reset formation and related parameters
         self.update_formation_and_relate_param()
 
@@ -215,7 +215,7 @@ class Scenario_dynamic_same_goal(QuadrotorScenario):
 
         return infos, rewards
 
-    def reset(self):
+    def reset(self, room_dims=None):
         # Update duration time
         duration_time = np.random.uniform(low=4.0, high=6.0)
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
@@ -258,7 +258,7 @@ class Scenario_dynamic_diff_goal(QuadrotorScenario):
 
         return infos, rewards
 
-    def reset(self):
+    def reset(self, room_dims=None):
         # Update duration time
         duration_time = np.random.uniform(low=4.0, high=6.0)
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
@@ -292,7 +292,7 @@ class Scenario_ep_lissajous3D(QuadrotorScenario):
     def update_formation_size(self, new_formation_size):
         pass
 
-    def reset(self):
+    def reset(self, room_dims=None):
         # Reset formation and related parameters
         self.update_formation_and_relate_param()
 
@@ -367,7 +367,7 @@ class Scenario_swap_goals(QuadrotorScenario):
 
         return infos, rewards
 
-    def reset(self):
+    def reset(self, room_dims=None):
         # Update duration time
         duration_time = np.random.uniform(low=4.0, high=6.0)
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
@@ -441,7 +441,7 @@ class Scenario_dynamic_formations(QuadrotorScenario):
         self.update_goals()
         return infos, rewards
 
-    def reset(self):
+    def reset(self, room_dims=None):
         self.increase_formation_size = True if np.random.uniform(low=0.0, high=1.0) < 0.5 else False
         self.control_speed = np.random.uniform(low=1.0, high=3.0)
 
@@ -525,7 +525,7 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
             self.update_goals()
         return infos, rewards
 
-    def reset(self):
+    def reset(self, room_dims=None):
         # Update duration time
         duration_time = np.random.uniform(low=4.0, high=6.0)
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
@@ -565,7 +565,7 @@ class Scenario_tunnel(QuadrotorScenario):
                     env.goal[1] = -env.goal[1]
         return infos, rewards
 
-    def reset(self):
+    def reset(self, room_dims=None):
         # tunnel could be in the x or y direction
         p = np.random.uniform(0, 1)
         if p <= 0.5:
@@ -599,7 +599,7 @@ class Scenario_run_away(QuadrotorScenario):
 
         return infos, rewards
 
-    def reset(self):
+    def reset(self, room_dims=None):
         # Reset formation and related parameters
         self.update_formation_and_relate_param()
         # Reset formation center
@@ -657,7 +657,7 @@ class Scenario_through_hole(QuadrotorScenario):
 
         return infos, rewards
 
-    def reset(self):
+    def reset(self, room_dims=None):
         self.count = 0
         # Reset formation, and parameters related to the formation; formation center; goals
         x = np.random.uniform(low=-0.5, high=0.5)
@@ -716,7 +716,7 @@ class Scenario_through_random_obstacles(QuadrotorScenario):
 
         return infos, rewards
 
-    def reset(self):
+    def reset(self, room_dims=None):
         self.count = 0
         # Reset formation, and parameters related to the formation; formation center; goals
         x = np.random.uniform(low=-0.5, high=0.5)
@@ -732,6 +732,7 @@ class Scenario_through_random_obstacles(QuadrotorScenario):
         self.duration_time = 0.0
         self.standard_reset(formation_center=self.start_point)
 
+
 class Scenario_through_pillar(QuadrotorScenario):
     def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
         super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
@@ -739,18 +740,21 @@ class Scenario_through_pillar(QuadrotorScenario):
         self.start_point = np.array([0.0, -3.0, 2.0])
         self.end_point = np.array([0.0, 3.0, 2.0])
         self.duration_time = 0.0
+        self.room_dims = room_dims
         # self.count = 0
 
     def update_formation_size(self, new_formation_size):
         pass
 
     def set_end_point(self):
+        room_width = self.room_dims[1]
         self.start_point = np.copy(self.end_point)
         end_x = np.random.uniform(low=-0.5, high=0.5)
+        y_high = 0.5 * room_width
         if self.start_point[1] < 0.0:
-            end_y = np.random.uniform(low=2.0, high=4.0)
+            end_y = np.random.uniform(low=0.5, high=y_high)
         else:
-            end_y = np.random.uniform(low=-4.0, high=-2.0)
+            end_y = np.random.uniform(low=-1.0 * y_high, high=-0.5)
 
         end_z = np.random.uniform(low=1.0, high=3.0)
         self.end_point = np.array([end_x, end_y, end_z])
@@ -774,16 +778,19 @@ class Scenario_through_pillar(QuadrotorScenario):
 
         return infos, rewards
 
-    def reset(self):
+    def reset(self, room_dims=None):
         # self.count = 0
+        self.room_dims = room_dims
+        room_width = self.room_dims[1]
         self.duration_time = 0.0
         # Reset formation, and parameters related to the formation; formation center; goals
         x = np.random.uniform(low=-0.5, high=0.5)
         y_flag = np.random.randint(2)
+        y_high = 0.5 * room_width
         if y_flag == 0:
-            y = np.random.uniform(low=2.75, high=3.0)
+            y = np.random.uniform(low=0.5, high=y_high)
         else:
-            y = np.random.uniform(low=-3.0, high=-2.75)
+            y = np.random.uniform(low=-1.0 * y_high, high=-0.5)
 
         z = np.random.uniform(low=1.0, high=3.0)
         self.start_point = np.array([x, y, z])
@@ -823,7 +830,7 @@ class Scenario_mix(QuadrotorScenario):
         self.formation_size = self.scenario.formation_size
         return infos, rewards
 
-    def reset(self):
+    def reset(self, room_dims=None):
         mode_index = np.random.randint(low=0, high=len(self.quads_mode_list))
         mode = self.quads_mode_list[mode_index]
 

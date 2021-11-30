@@ -23,6 +23,7 @@ class MultiObstacles:
         self.size = size
         self.mode = mode
         self.drone_env = drone_env
+        self.room_dims = None
 
         pos_arr = []
         if 'static_random_place' in mode:
@@ -68,7 +69,8 @@ class MultiObstacles:
             self.obstacles.append(obstacle)
 
     def reset(self, obs=None, quads_pos=None, quads_vel=None, set_obstacles=None, formation_size=0.0, goal_central=np.array([0., 0., 2.]),
-              level=-1):
+              level=-1, room_dims=None):
+        self.room_dims = room_dims
         if self.num_obstacles <= 0:
             return obs
         if set_obstacles is None:
@@ -211,15 +213,12 @@ class MultiObstacles:
 
     def generate_pos_by_level(self, level=-1):
         pos_arr = []
-        if level <= 6:
-            pos_x = 0.0
-            pos_y = 0.0
-        else:
-            room_box = self.drone_env.room_box
-            pos_x = np.random.uniform(low=-0.5, high=0.5)
-            pos_y = np.random.uniform(low=room_box[0][1] + 3 + 0.5 * self.size, high=room_box[1][1] - 3 - 0.5 * self.size)
 
-        level_z = np.clip(level, -1, 6)
+        room_length, room_width, room_height = self.room_dims
+        pos_x = np.random.uniform(low=-0.5 * room_length + 0.5 * self.size, high=0.5 * room_length - 0.5 * self.size)
+        pos_y = np.random.uniform(low=-0.5 * room_width + 0.5 * self.size, high=0.5 * room_width - 0.5 * self.size)
+
+        level_z = np.clip(level, -1, 2.0 * self.num_obstacles)
         pos_z_bottom = 0.5 * self.size * level_z - self.size * self.num_obstacles
 
         # Add pos
