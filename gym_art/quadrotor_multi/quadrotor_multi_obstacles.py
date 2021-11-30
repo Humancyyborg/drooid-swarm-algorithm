@@ -211,20 +211,39 @@ class MultiObstacles:
 
     def generate_pos_by_level(self, level=-1):
         pos_arr = []
-        if level <= 6:
-            pos_x = 0.0
-            pos_y = 0.0
-        else:
-            room_box = self.drone_env.room_box
-            pos_x = np.random.uniform(low=-0.5, high=0.5)
-            pos_y = np.random.uniform(low=room_box[0][1] + 3 + 0.5 * self.size, high=room_box[1][1] - 3 - 0.5 * self.size)
 
-        level_z = np.clip(level, -1, 6)
-        pos_z_bottom = 0.5 * self.size * level_z - self.size * self.num_obstacles
+        obst_stack_num = int(self.num_obstacles / 4)
+        if obst_stack_num == 1:
+            if level <= 8:
+                pos_x = np.random.uniform(low=-1.0, high=1.0)
+                pos_y = np.random.uniform(low=-1.0, high=1.0)
+            else:
+                pos_x = np.random.uniform(low=-3.0, high=3.0)
+                pos_y = np.random.uniform(low=-3.0, high=3.0)
 
-        # Add pos
-        for i in range(self.num_obstacles):
-            tmp_pos_arr = np.array([pos_x, pos_y, pos_z_bottom + self.size * (0.5 + i)])
-            pos_arr.append(tmp_pos_arr)
+            level_z = np.clip(level, -1, 8)
+            pos_z_bottom = 0.5 * self.size * level_z - self.size * self.num_obstacles
+
+            # Add pos
+            for i in range(self.num_obstacles):
+                tmp_pos_arr = np.array([pos_x, pos_y, pos_z_bottom + self.size * (0.5 + i)])
+                pos_arr.append(tmp_pos_arr)
+
+        elif obst_stack_num == 2:
+            pos_x_0 = np.random.uniform(low=-2.0, high=-0.5)
+            pos_y_0 = np.random.uniform(low=-1.0, high=1.0)
+
+            pos_x_1 = np.random.uniform(low=0.5, high=2.0)
+            pos_y_1 = np.random.uniform(low=-1.0, high=1.0)
+
+            level_z = np.clip(level, -1, 8)
+            pos_z_bottom = 0.5 * self.size * level_z - self.size * (self.num_obstacles/2)
+
+            # Add pos
+            for i in range(int(self.num_obstacles/2)):
+                tmp_pos_arr_0 = np.array([pos_x_0, pos_y_0, pos_z_bottom + self.size * (0.5 + i)])
+                tmp_pos_arr_1 = np.array([pos_x_1, pos_y_1, pos_z_bottom + self.size * (0.5 + i)])
+                pos_arr.append(tmp_pos_arr_0)
+                pos_arr.append(tmp_pos_arr_1)
 
         return pos_arr
