@@ -10,7 +10,7 @@ EPS = 1e-6
 class MultiObstacles:
     def __init__(self, mode='no_obstacles', num_obstacles=0, max_init_vel=1., init_box=2.0, dt=0.005,
                  quad_size=0.046, shape='sphere', size=0.0, traj='gravity', obs_mode='relative', num_local_obst=-1,
-                 obs_type='pos_size', drone_env=None, level=-1):
+                 obs_type='pos_size', drone_env=None, level=-1, room_dims=None):
         if 'static_door' in mode:
             self.num_obstacles = len(STATIC_OBSTACLE_DOOR)
         else:
@@ -23,7 +23,7 @@ class MultiObstacles:
         self.size = size
         self.mode = mode
         self.drone_env = drone_env
-        self.room_dims = None
+        self.room_dims = room_dims
 
         pos_arr = []
         if 'static_random_place' in mode:

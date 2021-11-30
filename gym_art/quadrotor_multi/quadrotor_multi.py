@@ -168,7 +168,7 @@ class QuadrotorEnvMulti(gym.Env):
                 mode=self.obstacle_mode, num_obstacles=self.obstacle_num, max_init_vel=obstacle_max_init_vel,
                 init_box=obstacle_init_box, dt=dt, quad_size=self.quad_arm, shape=self.obstacle_shape,
                 size=quads_obstacle_size, traj=obstacle_traj, obs_mode=obstacle_obs_mode, num_local_obst=local_obst_obs,
-                obs_type=self.obst_obs_type, drone_env=self.envs[0], level=self.obst_level
+                obs_type=self.obst_obs_type, drone_env=self.envs[0], level=self.obst_level, room_dims=self.room_dims
             )
 
             # collisions between obstacles and quadrotors
