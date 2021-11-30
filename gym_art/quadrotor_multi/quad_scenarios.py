@@ -749,7 +749,7 @@ class Scenario_through_pillar(QuadrotorScenario):
     def set_end_point(self):
         room_width = self.room_dims[1]
         self.start_point = np.copy(self.end_point)
-        end_x = np.random.uniform(low=-0.5, high=0.5)
+        end_x = np.random.uniform(low=-1.0, high=1.0)
         y_high = 0.5 * room_width
         if self.start_point[1] < 0.0:
             end_y = np.random.uniform(low=0.5, high=y_high)
@@ -784,7 +784,7 @@ class Scenario_through_pillar(QuadrotorScenario):
         room_width = self.room_dims[1]
         self.duration_time = 0.0
         # Reset formation, and parameters related to the formation; formation center; goals
-        x = np.random.uniform(low=-0.5, high=0.5)
+        x = np.random.uniform(low=-1.0, high=1.0)
         y_flag = np.random.randint(2)
         y_high = 0.5 * room_width
         if y_flag == 0:

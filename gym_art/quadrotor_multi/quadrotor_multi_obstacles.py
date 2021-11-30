@@ -215,8 +215,21 @@ class MultiObstacles:
         pos_arr = []
 
         room_length, room_width, room_height = self.room_dims
-        pos_x = np.random.uniform(low=-0.5 * room_length + 0.5 * self.size, high=0.5 * room_length - 0.5 * self.size)
-        pos_y = np.random.uniform(low=-0.5 * room_width + 0.5 * self.size, high=0.5 * room_width - 0.5 * self.size)
+
+        if level <= 2.0 * self.num_obstacles:
+            pos_x = np.random.uniform(low=-1.0, high=1.0)
+            pos_y = np.random.uniform(low=-1.0, high=1.0)
+        elif 2.0 * self.num_obstacles < level <= 3.0 * self.num_obstacles:
+            pos_x = np.random.uniform(low=-2.0, high=2.0)
+            pos_y = np.random.uniform(low=-2.0, high=2.0)
+        elif level > 3.0 * self.num_obstacles:
+            pos_x = np.random.uniform(low=-0.5 * room_length + 0.5 * self.size,
+                                      high=0.5 * room_length - 0.5 * self.size)
+            pos_y = np.random.uniform(low=-0.5 * room_width + 0.5 * self.size,
+                                      high=0.5 * room_width - 0.5 * self.size)
+        else:
+            pos_x, pos_y = 0.0, 0.0
+            raise NotImplementedError(f'{level} is not supported!')
 
         level_z = np.clip(level, -1, 2.0 * self.num_obstacles)
         pos_z_bottom = 0.5 * self.size * level_z - self.size * self.num_obstacles
