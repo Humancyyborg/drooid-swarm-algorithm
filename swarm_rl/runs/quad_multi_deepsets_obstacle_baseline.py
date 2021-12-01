@@ -104,6 +104,27 @@ QUAD_OBSTACLE_PILLAR_TWO_STACKS_CLI = (
     '--obst_obs_type=pos_size --room_length=10.0 --room_width=10.0 --room_height=4.0 --save_milestones_sec=1000'
 )
 
+QUAD_OBSTACLE_PILLAR_TWO_STACKS_SIX_CLI = (
+    'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=5000000000 --algo=APPO --use_rnn=False '
+    '--num_workers=36 --num_envs_per_worker=4 --learning_rate=0.0001 --ppo_clip_value=5.0 --recurrence=1 '
+    '--nonlinearity=tanh --actor_critic_share_weights=False --policy_initialization=xavier_uniform '
+    '--adaptive_stddev=False --with_vtrace=False --max_policy_lag=100000000 --hidden_size=256 '
+    '--gae_lambda=1.00 --max_grad_norm=5.0 --exploration_loss_coeff=0.0 --rollout=128 --batch_size=1024 '
+    '--quads_use_numba=True --quads_mode=through_pillar --quads_episode_duration=15.0 --quads_formation_size=0.0 '
+    '--encoder_custom=quad_multi_encoder --with_pbt=False --quads_collision_reward=5.0 '
+    '--quads_neighbor_hidden_size=256 --neighbor_obs_type=pos_vel '
+    '--quads_settle_reward=0.0 --quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
+    '--quads_local_obs=6 --quads_local_metric=dist --quads_local_coeff=1.0 --quads_num_agents=8 '
+    '--quads_collision_reward=5.0 --quads_collision_smooth_max_penalty=10.0 --quads_neighbor_encoder_type=mean_embed '
+    '--replay_buffer_sample_prob=0.0 --anneal_collision_steps=0.0 --quads_obstacle_type=cube '
+    '--quads_collision_obstacle_reward=5.0 --quads_collision_obst_smooth_max_penalty=10.0 '
+    '--quads_obstacle_hidden_size=256 --quads_obst_penalty_fall_off=10.0 --quads_obstacle_size=1.0 '
+    '--quads_obstacle_num=6 --quads_local_obst_obs=6 --quads_obstacle_mode=static_pillar_fixsize '
+    '--obst_obs_type=pos_size --room_length=10.0 --room_width=10.0 --room_height=3.0 --quads_obstacle_stack_num=3 '
+    '--save_milestones_sec=1000'
+)
+
+
 _experiment = Experiment(
     'neighbor_deepsets_cube_fix_size',
     QUAD_OBSTACLE_BASELINE_CLI,

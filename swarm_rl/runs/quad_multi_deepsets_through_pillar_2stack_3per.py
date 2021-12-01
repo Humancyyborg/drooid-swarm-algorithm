@@ -1,6 +1,6 @@
 from sample_factory.runner.run_description import RunDescription, Experiment, ParamGrid
 
-from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_OBSTACLE_PILLAR_TWO_STACKS_CLI
+from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_OBSTACLE_PILLAR_TWO_STACKS_SIX_CLI
 
 # quads_obstacle_num: 16
 _params = ParamGrid([
@@ -9,19 +9,15 @@ _params = ParamGrid([
     ('quads_neighbor_hidden_size', [128]),
     ('quads_obstacle_hidden_size', [128]),
     ('reward_scale', [0.2]),
-    ('quads_obstacle_num', [6]),
-    ('quads_local_obst_obs', [6]),
-    ('quads_obstacle_stack_num', [3]),
-
 ])
 
 _experiment = Experiment(
-    'two_stacks_through_pillar',
-    QUAD_OBSTACLE_PILLAR_TWO_STACKS_CLI,
+    '6_two_stacks_through_pillar',
+    QUAD_OBSTACLE_PILLAR_TWO_STACKS_SIX_CLI,
     _params.generate_params(randomize=False),
 )
 
-RUN_DESCRIPTION = RunDescription('two_stacks_quads_multi_obst_through_pillar_8a_v116', experiments=[_experiment])
+RUN_DESCRIPTION = RunDescription('6_two_stacks_quads_multi_obst_through_pillar_8a_v116', experiments=[_experiment])
 
 # On Brain server, when you use num_workers = 72, if the system reports: Resource temporarily unavailable,
 # then, try to use two commands below
