@@ -70,3 +70,5 @@ def add_quadrotors_env_args(env, parser):
 
     p.add_argument('--quads_reward_ep_len', default=True, type=str2bool, help='For each drone, reward scale is same as ep_len or not. For example, ep_len=1600, then rew_crash should equals to 16')
     p.add_argument('--quads_obst_level', default=-1, type=int, help='Obstacle start level, -1 means underearth')
+    p.add_argument('--quads_obstacle_stack_num', default=4, type=int, help='Choose the number of obstacle(s) per stack')
+

@@ -1183,9 +1183,11 @@ class QuadrotorSingle:
         elif self.dim_mode == '2D':
             y = self.goal[1]
         # Since being near the groud means crash we have to start above
-        if z < 0.25: z = 0.25
+        # if z < 0.25: z = 0.25
         x = np.clip(x, a_min=-1.0 * self.room_length / 2 + 0.25, a_max=self.room_length / 2 - 0.25)
         y = np.clip(y, a_min=-1.0 * self.room_width / 2 + 0.25, a_max=self.room_width / 2 - 0.25)
+        z = np.clip(z, a_min=0.25, a_max=self.room_height - 0.25)
+
         pos = npa(x, y, z)
 
         ##############################################################

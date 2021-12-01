@@ -10,7 +10,7 @@ EPS = 1e-6
 class MultiObstacles:
     def __init__(self, mode='no_obstacles', num_obstacles=0, max_init_vel=1., init_box=2.0, dt=0.005,
                  quad_size=0.046, shape='sphere', size=0.0, traj='gravity', obs_mode='relative', num_local_obst=-1,
-                 obs_type='pos_size', drone_env=None, level=-1):
+                 obs_type='pos_size', drone_env=None, level=-1, stack_num=4):
         if 'static_door' in mode:
             self.num_obstacles = len(STATIC_OBSTACLE_DOOR)
         else:
@@ -23,6 +23,7 @@ class MultiObstacles:
         self.size = size
         self.mode = mode
         self.drone_env = drone_env
+        self.stack_num = stack_num
 
         pos_arr = []
         if 'static_random_place' in mode:
@@ -212,16 +213,17 @@ class MultiObstacles:
     def generate_pos_by_level(self, level=-1):
         pos_arr = []
 
-        obst_stack_num = int(self.num_obstacles / 4)
+        obst_stack_num = int(self.num_obstacles / self.stack_num)
+        level_split = 2.0 * self.stack_num
         if obst_stack_num == 1:
-            if level <= 8:
+            if level <= level_split:
                 pos_x = np.random.uniform(low=-1.0, high=1.0)
                 pos_y = np.random.uniform(low=-1.0, high=1.0)
             else:
                 pos_x = np.random.uniform(low=-3.0, high=3.0)
                 pos_y = np.random.uniform(low=-3.0, high=3.0)
 
-            level_z = np.clip(level, -1, 8)
+            level_z = np.clip(level, -1, level_split)
             pos_z_bottom = 0.5 * self.size * level_z - self.size * self.num_obstacles
 
             # Add pos
@@ -236,8 +238,8 @@ class MultiObstacles:
             pos_x_1 = np.random.uniform(low=0.5, high=2.0)
             pos_y_1 = np.random.uniform(low=-1.0, high=1.0)
 
-            level_z = np.clip(level, -1, 8)
-            pos_z_bottom = 0.5 * self.size * level_z - self.size * (self.num_obstacles/2)
+            level_z = np.clip(level, -1, level_split)
+            pos_z_bottom = 0.5 * self.size * level_z - self.size * self.stack_num
 
             # Add pos
             for i in range(int(self.num_obstacles/2)):
