@@ -765,7 +765,6 @@ class Scenario_o_dynamic_same_goal(QuadrotorScenario):
         rel_pos = pos - self.goals
         rel_dist = np.linalg.norm(rel_pos, axis=1)
         avg_dist = np.mean(rel_dist)
-        print(avg_dist)
         if avg_dist < 0.8:
             self.count += 1
 
