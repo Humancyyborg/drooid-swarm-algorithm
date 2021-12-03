@@ -3,15 +3,13 @@ from gym_art.quadrotor_multi.quad_utils import get_circle_radius, get_sphere_rad
 
 QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal', 'circular_config',
                    'ep_lissajous3D', 'ep_rand_bezier', 'swarm_vs_swarm', 'dynamic_formations', 'swap_goals',
-                   'through_hole', 'through_random_obstacles', 'through_pillar']
+                   'through_hole', 'through_random_obstacles', 'o_dynamic_same_goal']
 
-QUADS_MODE_LIST_OBSTACLES = ['static_same_goal', 'static_diff_goal', 'swarm_vs_swarm',
-                             'swap_goals', 'dynamic_formations', 'circular_config', 'through_hole',
-                             'through_random_obstacles', 'through_pillar']
+QUADS_MODE_LIST_OBSTACLES = ['o_dynamic_same_goal''swarm_vs_swarm', 'swap_goals', 'dynamic_formations', 'circular_config' 'o_dynamic_same_goal']
 
 QUADS_MODE_DICT = {
             'fix_size': ['static_same_goal', 'dynamic_same_goal', 'ep_lissajous3D', 'ep_rand_bezier', 'through_hole',
-                         'through_random_obstacles', 'through_pillar'],
+                         'through_random_obstacles', 'o_dynamic_same_goal'],
             'dynamic_size': ['static_diff_goal', 'dynamic_diff_goal'],
             'swap_goals': ['swarm_vs_swarm', 'swap_goals', 'dynamic_formations', 'circular_config']
 }
@@ -37,7 +35,7 @@ QUADS_PARAMS_DICT = {
                 'run_away': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], duration],  # [36, 72] centimeters
                 'through_hole': [['circle_horizontal'], [0.0, 0.0], duration],
                 'through_random_obstacles': [['circle_horizontal'], [0.0, 0.0], duration],
-                'through_pillar': [['circle_horizontal'], [0.0, 0.0], duration],
+                'o_dynamic_same_goal': [['circle_horizontal'], [0.0, 0.0], duration],
 }
 
 

@@ -220,8 +220,8 @@ class MultiObstacles:
                 pos_x = np.random.uniform(low=-1.0, high=1.0)
                 pos_y = np.random.uniform(low=-1.0, high=1.0)
             else:
-                pos_x = np.random.uniform(low=-3.0, high=3.0)
-                pos_y = np.random.uniform(low=-3.0, high=3.0)
+                pos_x = np.random.uniform(low=-2.0, high=2.0)
+                pos_y = np.random.uniform(low=-2.0, high=2.0)
 
             level_z = np.clip(level, -1, level_split)
             pos_z_bottom = 0.5 * self.size * level_z - self.size * self.num_obstacles
@@ -233,10 +233,10 @@ class MultiObstacles:
 
         elif obst_stack_num == 2:
             pos_x_0 = np.random.uniform(low=-2.0, high=-0.5)
-            pos_y_0 = np.random.uniform(low=-1.0, high=1.0)
+            pos_y_0 = np.random.uniform(low=-2.0, high=2.0)
 
             pos_x_1 = np.random.uniform(low=0.5, high=2.0)
-            pos_y_1 = np.random.uniform(low=-1.0, high=1.0)
+            pos_y_1 = np.random.uniform(low=-2.0, high=2.0)
 
             level_z = np.clip(level, -1, level_split)
             pos_z_bottom = 0.5 * self.size * level_z - self.size * self.stack_num

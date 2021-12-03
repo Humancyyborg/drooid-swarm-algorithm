@@ -1176,7 +1176,7 @@ class QuadrotorSingle:
         # from 0.5 to 10 after 100k episodes (a form of curriculum)
         if self.box < 10:
             self.box = self.box * self.box_scale
-        x, y, z = self.np_random.uniform(-self.box, self.box, size=(3,)) + self.goal
+        x, y, z = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box, size=(3,)) + self.goal
 
         if self.dim_mode == '1D':
             x, y = self.goal[0], self.goal[1]
@@ -1186,7 +1186,10 @@ class QuadrotorSingle:
         # if z < 0.25: z = 0.25
         x = np.clip(x, a_min=-1.0 * self.room_length / 2 + 0.25, a_max=self.room_length / 2 - 0.25)
         y = np.clip(y, a_min=-1.0 * self.room_width / 2 + 0.25, a_max=self.room_width / 2 - 0.25)
-        z = np.clip(z, a_min=0.25, a_max=self.room_height - 0.25)
+
+        z_low_shift = np.random.uniform(low=0.25, high=0.75)
+        z_high_shift = np.random.uniform(low=0.25, high=0.75)
+        z = np.clip(z, a_min=z_low_shift, a_max=self.room_height - z_high_shift)
 
         pos = npa(x, y, z)
 

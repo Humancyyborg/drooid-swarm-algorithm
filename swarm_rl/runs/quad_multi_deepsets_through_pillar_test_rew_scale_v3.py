@@ -12,12 +12,12 @@ _params = ParamGrid([
 ])
 
 _experiment = Experiment(
-    'v3_test_scale_through_pillar',
+    'v3_test_scale_o_dynamic_same_goal',
     QUAD_OBSTACLE_PILLAR_BASELINE_CLI,
     _params.generate_params(randomize=False),
 )
 
-RUN_DESCRIPTION = RunDescription('v3_test_scale_quads_multi_obst_through_pillar_8a_v116', experiments=[_experiment])
+RUN_DESCRIPTION = RunDescription('v3_test_scale_quads_multi_obst_o_dynamic_same_goal_8a_v116', experiments=[_experiment])
 
 # On Brain server, when you use num_workers = 72, if the system reports: Resource temporarily unavailable,
 # then, try to use two commands below
