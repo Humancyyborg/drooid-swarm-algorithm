@@ -747,11 +747,16 @@ class Scenario_o_dynamic_same_goal(QuadrotorScenario):
     def set_end_point(self):
         self.count = 0
         self.start_point = np.copy(self.end_point)
-        end_x = np.random.uniform(low=-3.0, high=3.0)
-        if self.start_point[1] < 0.0:
-            end_y = np.random.uniform(low=0.5, high=3.5)
+
+        if self.start_point[0] < 0.0:
+            end_x = np.random.uniform(low=0.1, high=3.5)
         else:
-            end_y = np.random.uniform(low=-3.5, high=-0.5)
+            end_x = np.random.uniform(low=-3.5, high=-0.1)
+
+        if self.start_point[1] < 0.0:
+            end_y = np.random.uniform(low=0.1, high=3.5)
+        else:
+            end_y = np.random.uniform(low=-3.5, high=-0.1)
 
         end_z = np.random.uniform(low=1.0, high=2.5)
         self.end_point = np.array([end_x, end_y, end_z])
@@ -779,12 +784,17 @@ class Scenario_o_dynamic_same_goal(QuadrotorScenario):
     def reset(self):
         self.count = 0
         # Reset formation, and parameters related to the formation; formation center; goals
-        x = np.random.uniform(low=-3.0, high=3.0)
+        x_flag = np.random.randint(2)
+        if x_flag == 0:
+            x = np.random.uniform(low=3.6, high=3.9)  # drones spawn [2.6, 4.9]
+        else:
+            x = np.random.uniform(low=-3.9, high=-3.6)
+
         y_flag = np.random.randint(2)
         if y_flag == 0:
-            y = np.random.uniform(low=2.75, high=3.0)
+            y = np.random.uniform(low=3.6, high=3.9)  # drones spawn [2.6, 4.9]
         else:
-            y = np.random.uniform(low=-3.0, high=-2.75)
+            y = np.random.uniform(low=-3.9, high=-3.6)
 
         z = np.random.uniform(low=1.0, high=2.0)
         self.start_point = np.array([x, y, z])
