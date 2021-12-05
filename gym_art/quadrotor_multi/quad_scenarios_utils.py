@@ -2,10 +2,10 @@ import numpy as np
 from gym_art.quadrotor_multi.quad_utils import get_circle_radius, get_sphere_radius, get_grid_dim_number
 
 QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal', 'circular_config',
-                   'ep_lissajous3D', 'ep_rand_bezier', 'swarm_vs_swarm', 'dynamic_formations', 'swap_goals',
-                   'through_hole', 'through_random_obstacles', 'o_dynamic_same_goal']
+                   'ep_lissajous3D', 'ep_rand_bezier', 'swarm_vs_swarm', 'dynamic_formations', 'swap_goals']
 
-QUADS_MODE_LIST_OBSTACLES = ['o_dynamic_same_goal''swarm_vs_swarm', 'swap_goals', 'dynamic_formations', 'circular_config' 'o_dynamic_same_goal']
+QUADS_MODE_LIST_OBSTACLES = ['o_dynamic_same_goal', 'o_dynamic_diff_goal', 'o_swarm_vs_swarm', 'o_swap_goals',
+                             'o_dynamic_formations', 'o_ep_lissajous3D', 'o_dynamic_roller']
 
 QUADS_MODE_DICT = {
             'fix_size': ['static_same_goal', 'dynamic_same_goal', 'ep_lissajous3D', 'ep_rand_bezier', 'through_hole',
@@ -36,6 +36,12 @@ QUADS_PARAMS_DICT = {
                 'through_hole': [['circle_horizontal'], [0.0, 0.0], duration],
                 'through_random_obstacles': [['circle_horizontal'], [0.0, 0.0], duration],
                 'o_dynamic_same_goal': [['circle_horizontal'], [0.0, 0.0], duration],
+                'o_dynamic_diff_goal': [QUADS_FORMATION_LIST, [0.4, 0.8], duration],
+                'o_swarm_vs_swarm': [QUADS_FORMATION_LIST, [0.4, 0.8], duration],
+                'o_swap_goals': [QUADS_FORMATION_LIST, [0.4, 0.8], duration],
+                'o_dynamic_formations': [QUADS_FORMATION_LIST, [0.0, 1.0], duration],
+                'o_ep_lissajous3D': [['circle_horizontal'], [0.0, 0.0], duration],
+                'o_dynamic_roller': [QUADS_FORMATION_LIST, [0.4, 0.8], duration],
 }
 
 

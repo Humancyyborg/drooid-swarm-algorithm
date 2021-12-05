@@ -328,28 +328,61 @@ def perform_collision_between_drones(dyn1, dyn2):
 
 
 def perform_collision_with_obstacle(drone_dyn, obstacle_dyn, quad_arm):
-    v1new, v2new, collision_norm = compute_col_norm_and_new_velocities(obstacle_dyn, drone_dyn)
-    drone_dyn.vel = (v1new - v2new) * collision_norm
+    if obstacle_dyn.shape == 'cube':
+        rel_pos = drone_dyn.pos - obstacle_dyn.pos
+        obst_range = 0.5 * obstacle_dyn.size + 0.001
+        if abs(rel_pos[0]) <= obst_range and abs(rel_pos[1]) <= obst_range:
+            collision_norm = drone_dyn.pos - obstacle_dyn.pos
+            collision_norm[2] = 0.0
+            coll_norm_mag = np.linalg.norm(collision_norm)
+            collision_norm = collision_norm / (coll_norm_mag + 0.00001 if coll_norm_mag == 0.0 else coll_norm_mag)
+            drone_dyn.vel = 10.0 * collision_norm
+        else:
+            v1new, v2new, collision_norm = compute_col_norm_and_new_velocities(obstacle_dyn, drone_dyn)
+            drone_dyn.vel = (v1new - v2new) * collision_norm
 
-    # Now adding two different random components,
-    # One that preserves momentum in opposite directions
-    # Second that does not preserve momentum
-    cons_rand_val = np.random.normal(0, 0.8, 3)
-    drone_dyn.vel += cons_rand_val + np.random.normal(0, 0.15, 3)
+            # Now adding two different random components,
+            # One that preserves momentum in opposite directions
+            # Second that does not preserve momentum
+            cons_rand_val = np.random.normal(0, 0.8, 3)
+            drone_dyn.vel += cons_rand_val + np.random.normal(0, 0.15, 3)
 
-    # Random forces for omega
-    omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
-    eps = 1e-5
-    new_omega = np.random.uniform(low=-1, high=1, size=(3,)) + eps  # random direction in 3D space
+            # Random forces for omega
+            omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
+            eps = 1e-5
+            new_omega = np.random.uniform(low=-1, high=1, size=(3,)) + eps  # random direction in 3D space
 
-    new_omega /= np.linalg.norm(new_omega) + eps  # normalize
+            new_omega /= np.linalg.norm(new_omega) + eps  # normalize
 
-    new_omega_magn = np.random.uniform(low=omega_max / 2, high=omega_max)  # random magnitude of the force
-    new_omega *= new_omega_magn
+            new_omega_magn = np.random.uniform(low=omega_max / 2, high=omega_max)  # random magnitude of the force
+            new_omega *= new_omega_magn
 
-    # add the disturbance to drone's angular velocities while preserving angular momentum
-    # Currently, our obstacle doesn't support omega / angle velocity, we only change omega of drone
-    drone_dyn.omega += new_omega
+            # add the disturbance to drone's angular velocities while preserving angular momentum
+            # Currently, our obstacle doesn't support omega / angle velocity, we only change omega of drone
+            drone_dyn.omega += new_omega
+    else:
+        v1new, v2new, collision_norm = compute_col_norm_and_new_velocities(obstacle_dyn, drone_dyn)
+        drone_dyn.vel = (v1new - v2new) * collision_norm
+
+        # Now adding two different random components,
+        # One that preserves momentum in opposite directions
+        # Second that does not preserve momentum
+        cons_rand_val = np.random.normal(0, 0.8, 3)
+        drone_dyn.vel += cons_rand_val + np.random.normal(0, 0.15, 3)
+
+        # Random forces for omega
+        omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
+        eps = 1e-5
+        new_omega = np.random.uniform(low=-1, high=1, size=(3,)) + eps  # random direction in 3D space
+
+        new_omega /= np.linalg.norm(new_omega) + eps  # normalize
+
+        new_omega_magn = np.random.uniform(low=omega_max / 2, high=omega_max)  # random magnitude of the force
+        new_omega *= new_omega_magn
+
+        # add the disturbance to drone's angular velocities while preserving angular momentum
+        # Currently, our obstacle doesn't support omega / angle velocity, we only change omega of drone
+        drone_dyn.omega += new_omega
 
 
 def perform_collision_with_obstacle_v2(drone_dyn, obstacle_dyn, quad_arm=0.046):

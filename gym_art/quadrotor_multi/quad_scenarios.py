@@ -125,6 +125,12 @@ class QuadrotorScenario:
         else:
             raise NotImplementedError("Unknown formation")
 
+        # need to update self.envs when update room size / room_dims
+        room_box = copy.deepcopy(self.envs[0].room_box)
+        room_box[0][2] += 0.25
+        room_box[1][2] -= 0.25
+        goals = np.clip(goals, a_min=room_box[0], a_max=room_box[1])
+
         return goals
 
     def update_formation_size(self, new_formation_size):
@@ -736,68 +742,455 @@ class Scenario_through_random_obstacles(QuadrotorScenario):
 class Scenario_o_dynamic_same_goal(QuadrotorScenario):
     def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
         super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
-        # teleport every [4.0, 6.0] secs
         self.start_point = np.array([0.0, -3.0, 2.0])
         self.end_point = np.array([0.0, 3.0, 2.0])
-        self.count = 0
+        self.duration_time = 5.0
+        self.explore_epsilon = 0.1
 
     def update_formation_size(self, new_formation_size):
         pass
 
     def set_end_point(self):
-        self.count = 0
         self.start_point = np.copy(self.end_point)
-
-        if self.start_point[0] < 0.0:
-            end_x = np.random.uniform(low=0.1, high=3.5)
-        else:
-            end_x = np.random.uniform(low=-3.5, high=-0.1)
-
+        end_x = np.random.uniform(low=-3.0, high=3.0)
+        explore_prob = np.random.uniform(low=0.0, high=1.0)
         if self.start_point[1] < 0.0:
-            end_y = np.random.uniform(low=0.1, high=3.5)
+            if explore_prob < self.explore_epsilon:
+                # explore
+                end_y = np.random.uniform(low=-4.0, high=-0.0)
+            else:
+                end_y = np.random.uniform(low=0.5, high=3.5)
         else:
-            end_y = np.random.uniform(low=-3.5, high=-0.1)
+            if explore_prob < self.explore_epsilon:
+                # explore
+                end_y = np.random.uniform(low=0.0, high=4.0)
+            else:
+                end_y = np.random.uniform(low=-3.5, high=-0.5)
 
         end_z = np.random.uniform(low=1.0, high=2.5)
         self.end_point = np.array([end_x, end_y, end_z])
+        self.duration_time += np.random.uniform(low=4.0, high=6.0)
 
     def step(self, infos, rewards, pos):
-        rel_pos = pos - self.goals
-        rel_dist = np.linalg.norm(rel_pos, axis=1)
-        avg_dist = np.mean(rel_dist)
-        if avg_dist < 0.8:
-            self.count += 1
+        tick = self.envs[0].tick
 
-        # 0.5 seconds
-        if self.count < 50:
+        if tick < int(self.duration_time * self.envs[0].control_freq):
             return infos, rewards
 
         self.set_end_point()
-        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.end_point,
-                                         layer_dist=0.0)
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.end_point, layer_dist=0.0)
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
 
         return infos, rewards
 
     def reset(self):
-        self.count = 0
-        # Reset formation, and parameters related to the formation; formation center; goals
+        self.duration_time = 0.0
+        self.explore_epsilon = np.random.uniform(low=0.1, high=0.2)
         x_flag = np.random.randint(2)
         if x_flag == 0:
-            x = np.random.uniform(low=3.6, high=3.9)  # drones spawn [2.6, 4.9]
+            x = np.random.uniform(low=1.0, high=3.0)
         else:
-            x = np.random.uniform(low=-3.9, high=-3.6)
+            x = np.random.uniform(low=-3.0, high=-1.0)
 
         y_flag = np.random.randint(2)
         if y_flag == 0:
-            y = np.random.uniform(low=3.6, high=3.9)  # drones spawn [2.6, 4.9]
+            y = np.random.uniform(low=1.0, high=3.0)
         else:
-            y = np.random.uniform(low=-3.9, high=-3.6)
+            y = np.random.uniform(low=-3.0, high=-1.0)
 
         z = np.random.uniform(low=1.0, high=2.0)
         self.start_point = np.array([x, y, z])
         self.end_point = np.array([x, y, z])
+        self.duration_time += np.random.uniform(low=4.0, high=6.0)
+        self.standard_reset(formation_center=self.start_point)
+
+
+class Scenario_o_dynamic_diff_goal(QuadrotorScenario):
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+        self.start_point = np.array([0.0, -3.0, 2.0])
+        self.end_point = np.array([0.0, 3.0, 2.0])
+        self.duration_time = 0.0
+        self.explore_epsilon = 0.1
+
+    def update_goals(self):
+        # Reset formation and related parameters
+        self.update_formation_and_relate_param()
+
+        # Reset goals
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.end_point, layer_dist=0.0)
+        np.random.shuffle(self.goals)
+
+    def set_end_point(self):
+        self.start_point = np.copy(self.end_point)
+        end_x = np.random.uniform(low=-3.0, high=3.0)
+        explore_prob = np.random.uniform(low=0.0, high=1.0)
+        if self.start_point[1] < 0.0:
+            if explore_prob < self.explore_epsilon:
+                # explore
+                end_y = np.random.uniform(low=-4.0, high=-0.0)
+            else:
+                end_y = np.random.uniform(low=0.5, high=3.5)
+        else:
+            if explore_prob < self.explore_epsilon:
+                # explore
+                end_y = np.random.uniform(low=0.0, high=4.0)
+            else:
+                end_y = np.random.uniform(low=-3.5, high=-0.5)
+
+        end_z = np.random.uniform(low=1.0, high=2.5)
+        self.end_point = np.array([end_x, end_y, end_z])
+        self.duration_time += np.random.uniform(low=4.0, high=6.0)
+
+    def step(self, infos, rewards, pos):
+        tick = self.envs[0].tick
+
+        if tick < int(self.duration_time * self.envs[0].control_freq):
+            return infos, rewards
+
+        self.set_end_point()
+        self.update_goals()
+        for i, env in enumerate(self.envs):
+            env.goal = self.goals[i]
+
+        return infos, rewards
+
+    def reset(self):
+        self.duration_time = 0.0
+        self.explore_epsilon = np.random.uniform(low=0.1, high=0.2)
+        x_flag = np.random.randint(2)
+        if x_flag == 0:
+            x = np.random.uniform(low=1.0, high=3.0)
+        else:
+            x = np.random.uniform(low=-3.0, high=-1.0)
+
+        y_flag = np.random.randint(2)
+        if y_flag == 0:
+            y = np.random.uniform(low=1.0, high=3.0)
+        else:
+            y = np.random.uniform(low=-3.0, high=-1.0)
+
+        z = np.random.uniform(low=1.0, high=2.0)
+        self.start_point = np.array([x, y, z])
+        self.end_point = np.array([x, y, z])
+        self.duration_time += np.random.uniform(low=4.0, high=6.0)
+        self.standard_reset(formation_center=self.start_point)
+
+
+class Scenario_o_swarm_vs_swarm(QuadrotorScenario):
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+        self.goals_1, self.goals_2 = None, None
+        self.goal_center_1, self.goal_center_2 = None, None
+        self.duration_time = 0.0
+
+    def update_formation_size(self, new_formation_size):
+        if new_formation_size != self.formation_size:
+            self.formation_size = new_formation_size if new_formation_size > 0.0 else 0.0
+            self.create_formations(self.goal_center_1, self.goal_center_2)
+            for i, env in enumerate(self.envs):
+                env.goal = self.goals[i]
+
+    def formation_centers(self):
+        x_1 = np.random.uniform(low=-3.0, high=3.0)
+        x_2 = np.random.uniform(low=-3.0, high=3.0)
+
+        y_flag = np.random.randint(2)
+        if y_flag == 0:
+            y_1 = np.random.uniform(low=1.0, high=3.0)
+            y_2 = np.random.uniform(low=-3.0, high=-1.0)
+        else:
+            y_1 = np.random.uniform(low=-3.0, high=-1.0)
+            y_2 = np.random.uniform(low=1.0, high=3.0)
+
+        z_1 = np.random.uniform(low=1.0, high=2.0)
+        z_2 = np.random.uniform(low=1.0, high=2.0)
+
+        goal_center_1 = np.array([x_1, y_1, z_1])
+        goal_center_2 = np.array([x_2, y_2, z_2])
+
+        return goal_center_1, goal_center_2
+
+    def create_formations(self, goal_center_1, goal_center_2):
+        self.goals_1 = self.generate_goals(num_agents=self.num_agents // 2, formation_center=goal_center_1, layer_dist=self.layer_dist)
+        self.goals_2 = self.generate_goals(num_agents=self.num_agents - self.num_agents // 2, formation_center=goal_center_2, layer_dist=self.layer_dist)
+        # Shuffle goals
+        np.random.shuffle(self.goals_1)
+        np.random.shuffle(self.goals_2)
+        self.goals = np.concatenate([self.goals_1, self.goals_2])
+
+    def update_goals(self):
+        self.duration_time += np.random.uniform(low=4.0, high=6.0)
+        tmp_goal_center_1 = copy.deepcopy(self.goal_center_1)
+        tmp_goal_center_2 = copy.deepcopy(self.goal_center_2)
+        self.goal_center_1 = tmp_goal_center_2
+        self.goal_center_2 = tmp_goal_center_1
+
+        self.update_formation_and_relate_param()
+        self.create_formations(self.goal_center_1, self.goal_center_2)
+        for i, env in enumerate(self.envs):
+            env.goal = self.goals[i]
+
+    def step(self, infos, rewards, pos):
+        tick = self.envs[0].tick
+
+        if tick < int(self.duration_time * self.envs[0].control_freq):
+            return infos, rewards
+
+        self.update_goals()
+        return infos, rewards
+
+    def reset(self):
+        self.duration_time = np.random.uniform(low=4.0, high=6.0)
+        # Reset formation and related parameters
+        self.update_formation_and_relate_param()
+
+        # Reset the formation size and the goals of swarms
+        self.goal_center_1, self.goal_center_2 = self.formation_centers()
+        self.create_formations(self.goal_center_1, self.goal_center_2)
+
+        self.formation_center = (self.goal_center_1 + self.goal_center_2) / 2
+
+
+class Scenario_o_swap_goals(QuadrotorScenario):
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+        self.duration_time = 3.0
+
+    def update_goals(self):
+        np.random.shuffle(self.goals)
+        for env, goal in zip(self.envs, self.goals):
+            env.goal = goal
+
+    def step(self, infos, rewards, pos):
+        tick = self.envs[0].tick
+
+        if tick < int(self.duration_time * self.envs[0].control_freq):
+            return infos, rewards
+
+        self.update_goals()
+        self.duration_time += np.random.uniform(low=3.0, high=5.0)
+        return infos, rewards
+
+    def reset(self):
+        # Update duration time
+        self.duration_time = np.random.uniform(low=3.0, high=5.0)
+
+        x = np.random.uniform(low=-1.5, high=1.5)
+        y = np.random.uniform(low=-1.5, high=1.5)
+        z = np.random.uniform(low=1.0, high=2.0)
+        self.formation_center = np.array([x, y, z])
+        # Reset formation, and parameters related to the formation; formation center; goals
+        self.standard_reset(formation_center=self.formation_center)
+
+
+class Scenario_o_dynamic_formations(QuadrotorScenario):
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+        # if increase_formation_size is True, increase the formation size
+        # else, decrease the formation size
+        self.increase_formation_size = True
+        # low: 0.05m/s, high: 0.1m/s
+        self.control_speed = np.random.uniform(low=0.5, high=1.0)
+
+    def update_formation_size(self, new_formation_size):
+        if new_formation_size != self.formation_size:
+            self.formation_size = new_formation_size if new_formation_size > 0.0 else 0.0
+            self.update_goals()
+
+    def set_formation_center(self):
+        x_flag = np.random.randint(2)
+        if x_flag == 0:
+            x = np.random.uniform(low=0.01, high=2.0)
+        else:
+            x = np.random.uniform(low=-2.0, high=-0.01)
+
+        y_flag = np.random.randint(2)
+        if y_flag == 0:
+            y = np.random.uniform(low=0.01, high=2.0)
+        else:
+            y = np.random.uniform(low=-2.0, high=-0.01)
+
+        z = np.random.uniform(low=1.0, high=2.0)
+        self.formation_center = np.array([x, y, z])
+
+    def update_goals(self):
+        self.goals = self.generate_goals(self.num_agents, self.formation_center, layer_dist=self.layer_dist)
+        for env, goal in zip(self.envs, self.goals):
+            env.goal = goal
+
+    def step(self, infos, rewards, pos):
+        if self.formation_size <= -self.highest_formation_size:
+            self.increase_formation_size = True
+            self.control_speed = np.random.uniform(low=0.5, high=1.0)
+
+        elif self.formation_size >= self.highest_formation_size:
+            self.increase_formation_size = False
+            self.control_speed = np.random.uniform(low=0.5, high=1.0)
+
+        if self.increase_formation_size:
+            self.formation_size += 0.001 * self.control_speed
+        else:
+            self.formation_size -= 0.001 * self.control_speed
+
+        self.update_goals()
+        return infos, rewards
+
+    def reset(self):
+        self.increase_formation_size = True if np.random.uniform(low=0.0, high=1.0) < 0.5 else False
+        self.control_speed = np.random.uniform(low=0.5, high=1.0)
+        self.set_formation_center()
+        # Reset formation, and parameters related to the formation; formation center; goals
+        self.standard_reset(formation_center=self.formation_center)
+
+
+class Scenario_o_ep_lissajous3D(QuadrotorScenario):
+    # Based on https://mathcurve.com/courbes3d.gb/lissajous3d/lissajous3d.shtml
+    @staticmethod
+    def lissajous3D(tick, a=0.03, b=0.01, c=0.01, n=2, m=2, phi=90, psi=90):
+        x = a * np.sin(tick)
+        y = b * np.sin(n * tick + phi)
+        z = c * np.sin(m * tick + psi)
+        return x, y, z
+
+    def step(self, infos, rewards, pos):
+        control_freq = self.envs[0].control_freq
+        tick = self.envs[0].tick / control_freq
+        x, y, z = self.lissajous3D(tick)
+        goal_x, goal_y, goal_z = self.goals[0]
+        x_new, y_new, z_new = x + goal_x, y + goal_y, z + goal_z
+        self.goals = np.array([[x_new, y_new, z_new] for _ in range(self.num_agents)])
+
+        for i, env in enumerate(self.envs):
+            env.goal = self.goals[i]
+
+        return infos, rewards
+
+    def update_formation_size(self, new_formation_size):
+        pass
+
+    def reset(self):
+        # Reset formation and related parameters
+        self.update_formation_and_relate_param()
+
+        # Generate goals
+        x = np.random.uniform(low=-3.0, high=-2.0)
+        y = np.random.uniform(low=-2.0, high=2.0)
+        z = np.random.uniform(low=1.5, high=2.5)
+        self.formation_center = np.array([x, y, z])  # prevent drones from crashing into the wall
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=0.0)
+
+
+class Scenario_o_dynamic_roller(QuadrotorScenario):
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+        self.start_point = np.array([0.0, -3.0, 2.0])
+        self.end_point = np.array([0.0, 3.0, 2.0])
+        self.duration_time = 0.0
+        self.update_direction = 0  # [0, 1, 2] means update in [x, y, z] direction
+        self.direction_flag = 0 # [0, 1] means update in [+, -] direction
+
+    def update_goals(self):
+        # Reset formation and related parameters
+        self.update_formation_and_relate_param()
+
+        # Reset goals
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.end_point, layer_dist=0.0)
+        np.random.shuffle(self.goals)
+
+    def set_end_point(self):
+        self.start_point = np.copy(self.end_point)
+        pre_x, pre_y, pre_z = self.start_point
+        if self.update_direction == 0:
+            if self.direction_flag == 0:
+                end_x = pre_x + np.random.uniform(low=1.0, high=2.0)
+                if end_x >= 4.0:
+                    end_x = pre_x - np.random.uniform(low=1.0, high=2.0)
+            else:
+                end_x = pre_x - np.random.uniform(low=1.0, high=2.0)
+                if end_x <= -4.0:
+                    end_x = pre_x + np.random.uniform(low=1.0, high=2.0)
+
+            end_y = np.random.uniform(low=-3.0, high=3.0)
+            end_z = np.random.uniform(low=1.0, high=2.5)
+        elif self.update_direction == 1:
+            if self.direction_flag == 0:
+                end_y = pre_y + np.random.uniform(low=1.0, high=2.0)
+                if end_y >= 4.0:
+                    end_y = pre_y - np.random.uniform(low=1.0, high=2.0)
+            else:
+                end_y = pre_y - np.random.uniform(low=1.0, high=2.0)
+                if end_y <= -4.0:
+                    end_y = pre_y + np.random.uniform(low=1.0, high=2.0)
+
+            end_x = np.random.uniform(low=-3.0, high=3.0)
+            end_z = np.random.uniform(low=1.0, high=2.5)
+        else:
+            if self.direction_flag == 0:
+                end_z = pre_z + np.random.uniform(low=0.2, high=0.4)
+                if end_z >= 2.5:
+                    end_z = pre_z - np.random.uniform(low=0.2, high=0.4)
+            else:
+                end_z = pre_z - np.random.uniform(low=0.2, high=0.4)
+                if end_z <= 0.5:
+                    end_z = pre_z + np.random.uniform(low=0.2, high=0.4)
+
+            end_x = np.random.uniform(low=-3.0, high=3.0)
+            end_y = np.random.uniform(low=-3.0, high=3.0)
+
+        self.end_point = np.array([end_x, end_y, end_z])
+        self.duration_time += np.random.uniform(low=3.0, high=5.0)
+
+    def step(self, infos, rewards, pos):
+
+        tick = self.envs[0].tick
+
+        if tick < int(self.duration_time * self.envs[0].control_freq):
+            return infos, rewards
+
+        self.set_end_point()
+        self.update_goals()
+        for i, env in enumerate(self.envs):
+            env.goal = self.goals[i]
+
+        return infos, rewards
+
+    def reset(self):
+        self.duration_time = 0.0
+        self.update_direction = np.random.randint(3)
+        self.direction_flag = np.random.randint(2)
+
+        if self.update_direction == 0:
+            if self.direction_flag == 0:
+                x = np.random.uniform(low=-3.5, high=-2.5)
+            else:
+                x = np.random.uniform(low=2.5, high=3.5)
+
+            y = np.random.uniform(low=-3.0, high=3.0)
+            z = np.random.uniform(low=1.0, high=2.0)
+
+        elif self.update_direction == 1:
+            if self.direction_flag == 0:
+                y = np.random.uniform(low=-3.5, high=-2.5)
+            else:
+                y = np.random.uniform(low=2.5, high=3.5)
+
+            x = np.random.uniform(low=-3.0, high=3.0)
+            z = np.random.uniform(low=1.0, high=2.0)
+
+        else:
+            if self.direction_flag == 0:
+                z = np.random.uniform(low=0.5, high=1.0)
+            else:
+                z = np.random.uniform(low=2.5, high=2.0)
+
+            x = np.random.uniform(low=-3.0, high=3.0)
+            y = np.random.uniform(low=-3.0, high=3.0)
+
+        self.start_point = np.array([x, y, z])
+        self.end_point = np.array([x, y, z])
+        self.duration_time += np.random.uniform(low=4.0, high=6.0)
         self.standard_reset(formation_center=self.start_point)
 
 
