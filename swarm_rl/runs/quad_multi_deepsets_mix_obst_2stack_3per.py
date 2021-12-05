@@ -5,15 +5,16 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_OBSTACLE_PI
 # quads_obstacle_num: 16
 _params = ParamGrid([
     ('seed', [0000, 1111, 2222, 3333]),
+    ('quads_mode', ['mix']),
 ])
 
 _experiment = Experiment(
-    '6_two_stacks_o_dynamic_same_goal',
+    '6_two_stacks_mix',
     QUAD_OBSTACLE_PILLAR_TWO_STACKS_SIX_CLI,
     _params.generate_params(randomize=False),
 )
 
-RUN_DESCRIPTION = RunDescription('6_two_stacks_quads_multi_obst_o_dynamic_same_goal_8a_v116', experiments=[_experiment])
+RUN_DESCRIPTION = RunDescription('6_two_stacks_quads_multi_obst_mix_8a_v116', experiments=[_experiment])
 
 # On Brain server, when you use num_workers = 72, if the system reports: Resource temporarily unavailable,
 # then, try to use two commands below
