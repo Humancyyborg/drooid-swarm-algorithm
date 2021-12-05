@@ -1089,7 +1089,7 @@ class Scenario_o_dynamic_roller(QuadrotorScenario):
         self.end_point = np.array([0.0, 3.0, 2.0])
         self.duration_time = 0.0
         self.update_direction = 0  # [0, 1, 2] means update in [x, y, z] direction
-        self.direction_flag = 0 # [0, 1] means update in [+, -] direction
+        self.direction_flag = 0  # [0, 1] means update in [+, -] direction
 
     def update_goals(self):
         # Reset formation and related parameters
