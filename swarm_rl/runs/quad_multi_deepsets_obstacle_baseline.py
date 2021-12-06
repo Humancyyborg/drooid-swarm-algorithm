@@ -121,7 +121,8 @@ QUAD_OBSTACLE_PILLAR_TWO_STACKS_SIX_CLI = (
     '--quads_obstacle_hidden_size=128 --quads_obst_penalty_fall_off=3.0 --quads_obstacle_size=1.0 '
     '--quads_obstacle_num=6 --quads_local_obst_obs=6 --quads_obstacle_mode=static_pillar_fixsize '
     '--obst_obs_type=pos_size --room_length=10.0 --room_width=10.0 --room_height=3.0 --quads_obstacle_stack_num=3 '
-    '--save_milestones_sec=1000 --reward_scale=0.25'
+    '--save_milestones_sec=1000 --reward_scale=0.25 --quads_obst_level_mode=1 --quads_enable_sim_room=none '
+    '--quads_obst_proximity_mode=1'
 )
 
 
