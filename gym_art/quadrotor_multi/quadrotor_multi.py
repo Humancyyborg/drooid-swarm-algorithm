@@ -506,7 +506,6 @@ class QuadrotorEnvMulti(gym.Env):
                         drone_dyn=self.envs[val[0]].dynamics, obstacle_dyn=self.multi_obstacles.obstacles[val[1]],
                         quad_arm=self.quad_arm)
 
-        print('pos: ', self.pos)
         if self.enable_sim_room != 'none':
             sim_list = self.enable_sim_room.split('-')
             if 'ceiling' in sim_list:
