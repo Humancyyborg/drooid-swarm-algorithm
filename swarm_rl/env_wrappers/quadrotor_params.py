@@ -70,6 +70,8 @@ def add_quadrotors_env_args(env, parser):
 
     p.add_argument('--quads_reward_ep_len', default=True, type=str2bool, help='For each drone, reward scale is same as ep_len or not. For example, ep_len=1600, then rew_crash should equals to 16')
     p.add_argument('--quads_obst_level', default=-1, type=int, help='Obstacle start level, -1 means underearth')
+    p.add_argument('--quads_obst_level_mode', default=0, type=int, help='0: Directly move obsatcles from underground to above ground, 1: Gradually change the location of obstacles')
     p.add_argument('--quads_obstacle_stack_num', default=4, type=int, help='Choose the number of obstacle(s) per stack')
     p.add_argument('--quads_enable_sim_room', default='none', type=str, help='room: simulate crash with ceiling, wall, floor; ceiling: crash with ceiling; wall: crash with wall; floor: crash with floor')
 
+    p.add_argument('--quads_obst_proximity_mode', default=1, type=int, help='0: without dt, 1: with dt, check quad_utils.py, calculate_obst_drone_proximity_penalties')

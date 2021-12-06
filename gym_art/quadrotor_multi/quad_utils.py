@@ -270,7 +270,8 @@ def calculate_drone_proximity_penalties(distance_matrix, arm, dt, penalty_fall_o
     return dt * penalties  # actual penalties per tick to be added to the overall reward
 
 
-def calculate_obst_drone_proximity_penalties(distance_matrix, arm, dt, penalty_fall_off, max_penalty, num_agents, obstacles_radius):
+def calculate_obst_drone_proximity_penalties(distance_matrix, arm, dt, penalty_fall_off, max_penalty, num_agents,
+                                             obstacles_radius, proximity_mode):
     if not penalty_fall_off:
         # smooth penalties is disabled, so noop
         return np.zeros(num_agents)
@@ -278,7 +279,12 @@ def calculate_obst_drone_proximity_penalties(distance_matrix, arm, dt, penalty_f
     penalties = np.maximum(penalties, 0.0)
     penalties = np.sum(penalties, axis=1)
 
-    return dt * penalties  # actual penalties per tick to be added to the overall reward
+    if proximity_mode == 0:
+        return penalties
+    elif proximity_mode == 1:
+        return dt * penalties  # actual penalties per tick to be added to the overall reward
+    else:
+        return dt * penalties  # actual penalties per tick to be added to the overall reward
 
 
 def compute_col_norm_and_new_velocities(dyn1, dyn2):

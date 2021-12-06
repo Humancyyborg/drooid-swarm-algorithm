@@ -38,7 +38,8 @@ class QuadrotorEnvMulti(gym.Env):
                  local_metric='dist', local_coeff=0.0, use_replay_buffer=False,
                  obstacle_obs_mode='relative', obst_penalty_fall_off=10.0, vis_acc_arrows=False,
                  viz_traces=25, viz_trace_nth_step=1, local_obst_obs=-1, obst_enable_sim=True, obst_obs_type='none',
-                 quads_reward_ep_len=True, obst_level=-1, obst_stack_num=4, enable_sim_room='none'):
+                 quads_reward_ep_len=True, obst_level=-1, obst_stack_num=4, enable_sim_room='none', obst_level_mode=0,
+                 obst_proximity_mode=0):
 
         super().__init__()
 
@@ -144,11 +145,13 @@ class QuadrotorEnvMulti(gym.Env):
         self.obstacle_mode = quads_obstacle_mode
         self.obstacle_num = quads_obstacle_num
         self.obst_enable_sim = obst_enable_sim
+        self.obst_proximity_mode = obst_proximity_mode
         self.obst_obs_type = obst_obs_type
         self.use_obstacles = self.obstacle_mode != 'no_obstacles' and self.obstacle_num > 0
 
         # Control different level, curriculum learning
         self.obst_level = obst_level
+        self.obst_level_mode = obst_level_mode
         self.crash_counter = 0
         self.crash_value = 0.0
         self.crash_counter_threshold = 5
@@ -171,7 +174,7 @@ class QuadrotorEnvMulti(gym.Env):
                 init_box=obstacle_init_box, dt=dt, quad_size=self.quad_arm, shape=self.obstacle_shape,
                 size=quads_obstacle_size, traj=obstacle_traj, obs_mode=obstacle_obs_mode, num_local_obst=local_obst_obs,
                 obs_type=self.obst_obs_type, drone_env=self.envs[0], level=self.obst_level,
-                stack_num=obst_stack_num
+                stack_num=obst_stack_num, level_mode=obst_level_mode
             )
 
             # collisions between obstacles and quadrotors
@@ -474,7 +477,8 @@ class QuadrotorEnvMulti(gym.Env):
                 penalty_fall_off=self.obst_penalty_fall_off,
                 max_penalty=self.rew_coeff["quadcol_bin_obst_smooth_max"],
                 num_agents=self.num_agents,
-                obstacles_radius=obstacles_radius
+                obstacles_radius=obstacles_radius,
+                proximity_mode=self.obst_proximity_mode
             )
         else:
             obst_quad_col_matrix = np.zeros((self.num_agents, self.obstacle_num))
@@ -598,7 +602,7 @@ class QuadrotorEnvMulti(gym.Env):
         # DONES
         if any(dones):
             self.episode_id += 1
-            if self.crash_value >= -1.0:
+            if self.crash_value >= -0.5:
                 self.crash_counter += 1
                 if self.crash_counter >= self.crash_counter_threshold:
                     self.obst_level += 1
