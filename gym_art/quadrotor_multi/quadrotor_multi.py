@@ -481,7 +481,7 @@ class QuadrotorEnvMulti(gym.Env):
             rew_obst_quad_proximity = np.zeros(self.num_agents)
 
         # Collisions with ground
-        ground_collisions = [1.0 if pos[2] < 0.25 else 0.0 for pos in self.pos]
+        ground_collisions = [1.0 if pos[2] <= self.quad_arm else 0.0 for pos in self.pos]
 
         self.all_collisions = {'drone': np.sum(drone_col_matrix, axis=1), 'ground': ground_collisions,
                                'obstacle': np.sum(obst_quad_col_matrix, axis=1)}

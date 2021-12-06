@@ -218,7 +218,8 @@ class Quadrotor3DSceneMulti:
         import gym_art.quadrotor_multi.rendering3d as r3d
 
         for i, g in enumerate(multi_obstacles.obstacles):
-            self.obstacle_transforms[i].set_transform(r3d.translate(g.pos))
+            # self.obstacle_transforms[i].set_transform(r3d.translate(g.pos))
+            self.obstacle_transforms[i].set_transform_and_color(r3d.translate(g.pos), (1.0, 0.0, 0.0, 0.25))
 
     def create_goals(self):
         import gym_art.quadrotor_multi.rendering3d as r3d
