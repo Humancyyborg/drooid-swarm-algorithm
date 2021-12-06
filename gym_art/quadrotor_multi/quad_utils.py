@@ -416,6 +416,100 @@ def perform_collision_with_obstacle_v2(drone_dyn, obstacle_dyn, quad_arm=0.046):
     drone_dyn.omega += new_omega
 
 
+def perform_collision_with_wall(drone_dyn, room_box):
+    drone_speed = np.linalg.norm(drone_dyn.vel)
+    real_speed = np.random.uniform(low=0.1 * drone_speed, high=1.0 * drone_speed)
+    real_speed = np.clip(real_speed, a_min=0.1, a_max=10.0)
+
+    drone_pos = drone_dyn.pos
+    x_list = [drone_pos[0] == room_box[0][0], drone_pos[0] == room_box[1][0]]
+    y_list = [drone_pos[1] == room_box[0][1], drone_pos[1] == room_box[1][1]]
+    z_list = [drone_pos[2] == room_box[0][2], drone_pos[2] == room_box[1][2]]
+
+    direction = np.random.uniform(low=-1.0, high=1.0, size=(3,))
+    if x_list[0]:
+        direction[0] = np.random.uniform(low=0.1, high=1.0)
+    elif x_list[1]:
+        direction[0] = np.random.uniform(low=-1.0, high=-0.1)
+
+    if y_list[0]:
+        direction[1] = np.random.uniform(low=0.1, high=1.0)
+    elif y_list[1]:
+        direction[1] = np.random.uniform(low=-1.0, high=-0.1)
+
+    if z_list[0]:
+        direction[2] = np.random.uniform(low=-0.1, high=-0.001)
+    elif z_list[1]:
+        direction[2] = np.random.uniform(low=-1.0, high=-0.5)
+
+    direction_mag = np.linalg.norm(direction)
+    direction_norm = direction / (direction_mag + 0.00001 if direction_mag == 0.0 else direction_mag)
+
+    drone_dyn.vel = real_speed * direction_norm
+
+    # Random forces for omega
+    omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
+    eps = 1e-5
+    new_omega = np.random.uniform(low=-1, high=1, size=(3,))  # random direction in 3D space
+    new_omega /= np.linalg.norm(new_omega) + eps  # normalize
+
+    new_omega_magn = np.random.uniform(low=omega_max / 2, high=omega_max)  # random magnitude of the force
+    new_omega *= new_omega_magn
+
+    # add the disturbance to drone's angular velocities while preserving angular momentum
+    drone_dyn.omega += new_omega
+
+
+def perform_collision_with_ceiling(drone_dyn, room_box):
+    drone_speed = np.linalg.norm(drone_dyn.vel)
+    real_speed = np.random.uniform(low=0.5 * drone_speed, high=1.5 * drone_speed)
+    real_speed = np.clip(real_speed, a_min=1.0, a_max=10.0)
+
+    direction = np.random.uniform(low=-1.0, high=1.0, size=(3,))
+    direction[2] = np.random.uniform(low=-1.0, high=-0.5)
+    direction_mag = np.linalg.norm(direction)
+    direction_norm = direction / (direction_mag + 0.00001 if direction_mag == 0.0 else direction_mag)
+
+    drone_dyn.vel = real_speed * direction_norm
+
+    # Random forces for omega
+    omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
+    eps = 1e-5
+    new_omega = np.random.uniform(low=-1, high=1, size=(3,))  # random direction in 3D space
+    new_omega /= np.linalg.norm(new_omega) + eps  # normalize
+
+    new_omega_magn = np.random.uniform(low=omega_max / 2, high=omega_max)  # random magnitude of the force
+    new_omega *= new_omega_magn
+
+    # add the disturbance to drone's angular velocities while preserving angular momentum
+    drone_dyn.omega += new_omega
+
+
+def perform_collision_with_floor(drone_dyn, room_box):
+    drone_speed = np.linalg.norm(drone_dyn.vel)
+    real_speed = np.random.uniform(low=1.0 * drone_speed, high=1.5 * drone_speed)
+    real_speed = np.clip(real_speed, a_min=1.0, a_max=10.0)
+
+    direction = np.random.uniform(low=-1.0, high=1.0, size=(3,))
+    direction[2] = np.random.uniform(low=-0.001, high=0.001)
+    direction_mag = np.linalg.norm(direction)
+    direction_norm = direction / (direction_mag + 0.00001 if direction_mag == 0.0 else direction_mag)
+
+    drone_dyn.vel = real_speed * direction_norm
+
+    # Random forces for omega
+    omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
+    eps = 1e-5
+    new_omega = np.random.uniform(low=-1, high=1, size=(3,))  # random direction in 3D space
+    new_omega /= np.linalg.norm(new_omega) + eps  # normalize
+
+    new_omega_magn = np.random.uniform(low=omega_max / 2, high=omega_max)  # random magnitude of the force
+    new_omega *= new_omega_magn
+
+    # add the disturbance to drone's angular velocities while preserving angular momentum
+    drone_dyn.omega += new_omega
+
+
 class OUNoise:
     """Ornstein–Uhlenbeck process"""
     def __init__(self, action_dimension, mu=0, theta=0.15, sigma=0.3, use_seed=False):

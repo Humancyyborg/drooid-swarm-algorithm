@@ -8,7 +8,8 @@ import gym
 from copy import deepcopy
 
 from gym_art.quadrotor_multi.quad_utils import perform_collision_between_drones, perform_collision_with_obstacle, \
-    calculate_collision_matrix, calculate_drone_proximity_penalties, calculate_obst_drone_proximity_penalties
+    calculate_collision_matrix, calculate_drone_proximity_penalties, calculate_obst_drone_proximity_penalties, \
+    perform_collision_with_wall, perform_collision_with_ceiling, perform_collision_with_floor
 
 from gym_art.quadrotor_multi.quadrotor_multi_obstacles import MultiObstacles
 from gym_art.quadrotor_multi.quadrotor_single import GRAV, QuadrotorSingle
@@ -37,7 +38,7 @@ class QuadrotorEnvMulti(gym.Env):
                  local_metric='dist', local_coeff=0.0, use_replay_buffer=False,
                  obstacle_obs_mode='relative', obst_penalty_fall_off=10.0, vis_acc_arrows=False,
                  viz_traces=25, viz_trace_nth_step=1, local_obst_obs=-1, obst_enable_sim=True, obst_obs_type='none',
-                 quads_reward_ep_len=True, obst_level=-1, obst_stack_num=4):
+                 quads_reward_ep_len=True, obst_level=-1, obst_stack_num=4, enable_sim_room='none'):
 
         super().__init__()
 
@@ -59,6 +60,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.envs = []
         self.adaptive_env = adaptive_env
         self.quads_view_mode = quads_view_mode
+        self.enable_sim_room = enable_sim_room
 
         for i in range(self.num_agents):
             e = QuadrotorSingle(
@@ -482,9 +484,9 @@ class QuadrotorEnvMulti(gym.Env):
             rew_obst_quad_proximity = np.zeros(self.num_agents)
 
         # Collisions with ground, ceiling, wall
-        ground_collisions = [env.dynamics.crashed_floor for env in self.envs]
-        ceiling_collisions = [env.dynamics.crashed_ceiling for env in self.envs]
-        wall_collisions = [env.dynamics.crashed_wall for env in self.envs]
+        ground_collisions = np.array([env.dynamics.crashed_floor for env in self.envs])
+        ceiling_collisions = np.array([env.dynamics.crashed_ceiling for env in self.envs])
+        wall_collisions = np.array([env.dynamics.crashed_wall for env in self.envs])
 
         self.all_collisions = {'drone': np.sum(drone_col_matrix, axis=1), 'ground': ground_collisions,
                                'obstacle': np.sum(obst_quad_col_matrix, axis=1), 'ceiling': ceiling_collisions,
@@ -499,6 +501,22 @@ class QuadrotorEnvMulti(gym.Env):
                     perform_collision_with_obstacle(
                         drone_dyn=self.envs[val[0]].dynamics, obstacle_dyn=self.multi_obstacles.obstacles[val[1]],
                         quad_arm=self.quad_arm)
+
+        print('pos: ', self.pos)
+        if self.enable_sim_room != 'none':
+            sim_list = self.enable_sim_room.split('-')
+            if 'ceiling' in sim_list:
+                ceiling_crash_list = np.where(ceiling_collisions >= 1)[0]
+                for val in ceiling_crash_list:
+                    perform_collision_with_ceiling(drone_dyn=self.envs[val].dynamics, room_box=self.envs[0].room_box)
+            if 'floor' in sim_list:
+                floor_crash_list = np.where(ground_collisions >= 1)[0]
+                for val in floor_crash_list:
+                    perform_collision_with_floor(drone_dyn=self.envs[val].dynamics, room_box=self.envs[0].room_box)
+            if 'wall' in sim_list:
+                wall_crash_list = np.where(wall_collisions >= 1)[0]
+                for val in wall_crash_list:
+                    perform_collision_with_wall(drone_dyn=self.envs[val].dynamics, room_box=self.envs[0].room_box)
 
         for i in range(self.num_agents):
             rewards[i] += rew_collisions[i]
