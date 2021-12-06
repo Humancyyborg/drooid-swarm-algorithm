@@ -4,10 +4,10 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_OBSTACLE_PI
 
 # quads_obstacle_num: 16
 _params = ParamGrid([
-    ('seed', [0000, 1111, 2222, 3333]),
+    ('seed', [0000, 3333]),
     ('quads_mode', ['mix']),
     ('quads_obst_level_mode', [0]),
-    ('quads_enable_sim_room', ['wall-ceiling']),
+    ('quads_enable_sim_room', ['ceiling', 'wall-ceiling']),
     ('quads_obst_proximity_mode', [0, 1]),
 ])
 
