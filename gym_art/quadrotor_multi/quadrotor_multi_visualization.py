@@ -336,11 +336,12 @@ class Quadrotor3DSceneMulti:
                     self.vec_cone_transforms[i].set_transform_nocollide(cone_mat)
 
                 matrix = r3d.translate(dyn.pos)
-                if collisions['drone'][i] > 0.0 or collisions['obstacle'][i] > 0.0 or collisions['ground'][i] > 0.0:
+                collision_room = collisions['ground'][i] > 0.0 or collisions['wall'][i] > 0.0 or collisions['ceiling'][i] > 0.0
+                if collisions['drone'][i] > 0.0 or collisions['obstacle'][i] > 0.0 or collision_room:
                     # Multiplying by 1 converts bool into float
                     self.collision_transforms[i].set_transform_and_color(matrix, (
                         (collisions['drone'][i] > 0.0) * 1.0, (collisions['obstacle'][i] > 0.0) * 1.0,
-                        (collisions['ground'][i] > 0.0) * 1.0, 0.4))
+                        (collision_room > 0.0) * 1.0, 0.4))
                 else:
                     self.collision_transforms[i].set_transform_and_color(matrix, (0, 0, 0, 0.0))
 

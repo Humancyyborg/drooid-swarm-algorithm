@@ -385,7 +385,8 @@ class QuadrotorEnvMulti(gym.Env):
             self.obst_quad_collisions_per_episode = 0
             self.prev_obst_quad_collisions = []
 
-        self.all_collisions = {val: [0.0 for _ in range(len(self.envs))] for val in ['drone', 'ground', 'obstacle']}
+        self.all_collisions = {val: [0.0 for _ in range(len(self.envs))] for val in
+                               ['drone', 'ground', 'obstacle', 'wall', 'ceiling']}
 
         self.collisions_per_episode = self.collisions_after_settle = 0
         self.prev_drone_collisions, self.curr_drone_collisions = [], []
@@ -480,11 +481,14 @@ class QuadrotorEnvMulti(gym.Env):
             rew_collisions_obst_quad = np.zeros(self.num_agents)
             rew_obst_quad_proximity = np.zeros(self.num_agents)
 
-        # Collisions with ground
-        ground_collisions = [1.0 if pos[2] <= self.quad_arm else 0.0 for pos in self.pos]
+        # Collisions with ground, ceiling, wall
+        ground_collisions = [env.dynamics.crashed_floor for env in self.envs]
+        ceiling_collisions = [env.dynamics.crashed_ceiling for env in self.envs]
+        wall_collisions = [env.dynamics.crashed_wall for env in self.envs]
 
         self.all_collisions = {'drone': np.sum(drone_col_matrix, axis=1), 'ground': ground_collisions,
-                               'obstacle': np.sum(obst_quad_col_matrix, axis=1)}
+                               'obstacle': np.sum(obst_quad_col_matrix, axis=1), 'ceiling': ceiling_collisions,
+                               'wall': wall_collisions}
 
         # Applying random forces for all collisions between drones and obstacles
         if self.apply_collision_force:

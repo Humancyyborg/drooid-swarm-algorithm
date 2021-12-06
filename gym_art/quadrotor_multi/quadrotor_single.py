@@ -118,6 +118,11 @@ class QuadrotorDynamics:
         else:
             self.room_box = np.array(room_box).copy()
 
+        ## crash with wall, ceiling, floor
+        self.crashed_wall = False
+        self.crashed_ceiling = False
+        self.crashed_floor = False
+
         ## Selecting 1D, Planar or Full 3D modes
         self.dim_mode = dim_mode
         if self.dim_mode == '1D':
@@ -429,6 +434,13 @@ class QuadrotorDynamics:
 
         # Clipping if met the obstacle and nullify velocities (not sure what to do about accelerations)
         self.pos_before_clip = self.pos.copy()
+
+        self.crashed_wall = not np.array_equal(
+            self.pos[:2], np.clip(self.pos[:2], a_min=self.room_box[0][:2], a_max=self.room_box[1][:2]))
+
+        self.crashed_ceiling = self.pos[2] >= self.room_box[1][2] - self.arm
+        self.crashed_floor = self.pos[2] <= self.arm
+
         self.pos = np.clip(self.pos, a_min=self.room_box[0], a_max=self.room_box[1])
         # self.vel[np.equal(self.pos, self.pos_before_clip)] = 0.
 
@@ -642,6 +654,15 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
     cost_crash_raw = float(crashed)
     cost_crash = rew_coeff["crash"] * cost_crash_raw
 
+    cost_crash_wall_raw = float(dynamics.crashed_wall)
+    cost_crash_wall = rew_coeff["crash"] * cost_crash_wall_raw
+
+    cost_crash_ceiling_raw = float(dynamics.crashed_ceiling)
+    cost_crash_ceiling = rew_coeff["crash"] * cost_crash_ceiling_raw
+
+    cost_crash_floor_raw = float(dynamics.crashed_floor)
+    cost_crash_floor = rew_coeff["crash"] * cost_crash_floor_raw
+
     dt_coeff = 2.0
     if quads_reward_ep_len:
         dt_coeff = 2.0
@@ -665,6 +686,9 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
         'rew_pos': -cost_pos,
         'rew_action': -cost_effort,
         'rew_crash': -cost_crash,
+        'rew_crash_wall': -cost_crash_wall,
+        'rew_crash_ceiling': -cost_crash_ceiling,
+        'rew_crash_floor': -cost_crash_floor,
         "rew_orient": -cost_orient,
         "rew_yaw": -cost_yaw,
         "rew_rot": -cost_rotation,
@@ -677,6 +701,9 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
         'rewraw_pos': -cost_pos_raw,
         'rewraw_action': -cost_effort_raw,
         'rewraw_crash': -cost_crash_raw,
+        'rewraw_crash_wall': -cost_crash_wall_raw,
+        'rewraw_crash_ceiling': -cost_crash_ceiling_raw,
+        'rewraw_crash_floor': -cost_crash_floor_raw,
         "rewraw_orient": -cost_orient_raw,
         "rewraw_yaw": -cost_yaw_raw,
         "rewraw_rot": -cost_rotation_raw,
@@ -1073,14 +1100,7 @@ class QuadrotorSingle:
         # self.oracle.step(self.dynamics, self.goal, self.dt)
         # self.scene.update_state(self.dynamics, self.goal)
 
-        if self.obstacles is not None:
-            self.crashed = self.obstacles.detect_collision(self.dynamics)
-        else:
-            self.crashed = self.dynamics.pos[2] <= self.dynamics.arm
-        self.crashed = self.crashed or not np.array_equal(self.dynamics.pos,
-                                                          np.clip(self.dynamics.pos,
-                                                                  a_min=self.room_box[0],
-                                                                  a_max=self.room_box[1]))
+        self.crashed = self.dynamics.crashed_wall or self.dynamics.crashed_ceiling or self.dynamics.crashed_floor
 
         self.time_remain = self.ep_len - self.tick
         reward, rew_info = compute_reward_weighted(self.dynamics, self.goal, action, self.dt, self.crashed,
