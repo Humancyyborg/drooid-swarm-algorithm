@@ -199,12 +199,11 @@ class Scenario_o_test(QuadrotorScenario):
         self.start_point = np.copy(self.end_point)
         shift_z = np.random.uniform(low=-0.2, high=0.2)
         self.end_point = np.array([self.obstacle_pos[0], self.obstacle_pos[1], self.start_point[2] + shift_z])
-        print('end_point: ', self.end_point)
         self.duration_time += 1.0
 
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
-        self.obstacle_pos = infos[0]['obstacles']
+        self.obstacle_pos = infos[0]['obstacles'][0].pos
 
         if tick < int(self.duration_time * self.envs[0].control_freq):
             return infos, rewards
@@ -221,7 +220,6 @@ class Scenario_o_test(QuadrotorScenario):
         self.end_point = np.array([0.0, 0.0, 5.5])
         self.duration_time = 1.0
         self.standard_reset(formation_center=self.start_point)
-
 
 
 class Scenario_static_same_goal(QuadrotorScenario):
@@ -1228,6 +1226,68 @@ class Scenario_o_dynamic_roller(QuadrotorScenario):
             x = np.random.uniform(low=-3.0, high=3.0)
             y = np.random.uniform(low=-3.0, high=3.0)
 
+        self.start_point = np.array([x, y, z])
+        self.end_point = np.array([x, y, z])
+        self.duration_time += np.random.uniform(low=4.0, high=6.0)
+        self.standard_reset(formation_center=self.start_point)
+
+
+class Scenario_o_inside_obstacles(QuadrotorScenario):
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+        self.start_point = np.array([0.0, -3.0, 2.0])
+        self.end_point = np.array([0.0, 3.0, 2.0])
+        self.duration_time = 5.0
+        self.obstacle_pos = np.array([0.0, 0.0, 2.0])
+
+    def update_formation_size(self, new_formation_size):
+        pass
+
+    def set_end_point(self):
+        self.start_point = np.copy(self.end_point)
+        obst_x, obst_y = self.obstacle_pos[:2]
+        end_x = obst_x + np.random.uniform(low=-0.5, high=0.5)
+        end_y = obst_y + np.random.uniform(low=-0.5, high=0.5)
+
+        end_z = self.start_point[2] + np.random.uniform(low=-1.0, high=1.0)
+        end_z = np.clip(end_z, a_min=1.0, a_max=5.0)
+        self.end_point = np.array([end_x, end_y, end_z])
+        self.duration_time += np.random.uniform(low=4.0, high=6.0)
+
+    def step(self, infos, rewards, pos):
+        tick = self.envs[0].tick
+
+        if tick < int(self.duration_time * self.envs[0].control_freq):
+            return infos, rewards
+
+        obst_num = len(infos[0]['obstacles'])
+        obst_id = np.random.randint(low=0, high=obst_num)
+        self.obstacle_pos = infos[0]['obstacles'][obst_id].pos
+        self.set_end_point()
+        # Reset formation and related parameters
+        self.update_formation_and_relate_param()
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.end_point, layer_dist=0.0)
+        np.random.shuffle(self.goals)
+        for i, env in enumerate(self.envs):
+            env.goal = self.goals[i]
+
+        return infos, rewards
+
+    def reset(self):
+        self.duration_time = 0.0
+        x_flag = np.random.randint(2)
+        if x_flag == 0:
+            x = np.random.uniform(low=1.0, high=3.0)
+        else:
+            x = np.random.uniform(low=-3.0, high=-1.0)
+
+        y_flag = np.random.randint(2)
+        if y_flag == 0:
+            y = np.random.uniform(low=1.0, high=3.0)
+        else:
+            y = np.random.uniform(low=-3.0, high=-1.0)
+
+        z = np.random.uniform(low=1.0, high=2.0)
         self.start_point = np.array([x, y, z])
         self.end_point = np.array([x, y, z])
         self.duration_time += np.random.uniform(low=4.0, high=6.0)

@@ -541,8 +541,9 @@ class QuadrotorEnvMulti(gym.Env):
                 infos[i]["rewards"]["rew_obst_quad_proximity"] = rew_obst_quad_proximity[i]
 
         # run the scenario passed to self.quads_mode)
-        if self.scenario.quads_mode == 'o_test':
-            infos[0]['obstacles'] = self.multi_obstacles.obstacles[0].pos
+        if self.scenario.quads_mode in ['o_test', 'o_inside_obstacles'] or (
+                self.scenario.quads_mode == 'mix' and self.scenario.scenario.quads_mode == 'o_inside_obstacles'):
+            infos[0]['obstacles'] = self.multi_obstacles.obstacles
         infos, rewards = self.scenario.step(infos=infos, rewards=rewards, pos=self.pos)
 
         # For obstacles
