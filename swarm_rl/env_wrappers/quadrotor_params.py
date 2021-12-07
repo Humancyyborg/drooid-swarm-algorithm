@@ -75,3 +75,4 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_enable_sim_room', default='none', type=str, help='room: simulate crash with ceiling, wall, floor; ceiling: crash with ceiling; wall: crash with wall; floor: crash with floor')
 
     p.add_argument('--quads_obst_proximity_mode', default=1, type=int, help='0: without dt, 1: with dt, check quad_utils.py, calculate_obst_drone_proximity_penalties')
+    p.add_argument('--quads_obst_inf_height', default=False, type=str2bool, help='True: height == room height, False: customized height')

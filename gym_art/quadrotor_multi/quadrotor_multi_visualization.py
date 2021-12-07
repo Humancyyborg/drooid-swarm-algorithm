@@ -32,7 +32,8 @@ class Quadrotor3DSceneMulti:
             self, w, h,
             quad_arm=None, models=None, multi_obstacles=None, walls_visible=True, resizable=True, goal_diameter=None,
             viewpoint='chase', obs_hw=None, obstacle_mode='no_obstacles', room_dims=(10, 10, 10), num_agents=8,
-            render_speed=1.0, formation_size=-1.0, vis_acc_arrows=None, viz_traces=False, viz_trace_nth_step=1
+            render_speed=1.0, formation_size=-1.0, vis_acc_arrows=None, viz_traces=False, viz_trace_nth_step=1,
+            obst_inf_height=False
     ):
         self.pygl_window = __import__('pyglet.window', fromlist=['key'])
         self.keys = None  # keypress handler, initialized later
@@ -52,6 +53,7 @@ class Quadrotor3DSceneMulti:
         self.obstacle_mode = obstacle_mode
         self.models = models
         self.room_dims = room_dims
+        self.obst_inf_height = obst_inf_height
 
         self.quad_transforms, self.shadow_transforms, self.goal_transforms = [], [], []
 
@@ -200,7 +202,13 @@ class Quadrotor3DSceneMulti:
         for item in self.multi_obstacles.obstacles:
             color = quad_color[14]
             if item.shape == 'cube':
-                obstacle_transform = r3d.transform_and_color(np.eye(4), color, r3d.box(item.size, item.size, item.size))
+                if self.obst_inf_height:
+                    obstacle_transform = r3d.transform_and_color(np.eye(4), color,
+                                                                 r3d.box(item.size, item.size, self.room_dims[2]))
+                else:
+                    obstacle_transform = r3d.transform_and_color(np.eye(4), color,
+                                                                 r3d.box(item.size, item.size, item.size))
+
             elif item.shape == 'sphere':
                 num_facets = 18
                 facet_split_value = 10

@@ -10,7 +10,7 @@ EPS = 1e-6
 class MultiObstacles:
     def __init__(self, mode='no_obstacles', num_obstacles=0, max_init_vel=1., init_box=2.0, dt=0.005,
                  quad_size=0.046, shape='sphere', size=0.0, traj='gravity', obs_mode='relative', num_local_obst=-1,
-                 obs_type='pos_size', drone_env=None, level=-1, stack_num=4, level_mode=0):
+                 obs_type='pos_size', drone_env=None, level=-1, stack_num=4, level_mode=0, inf_height=False):
         if 'static_door' in mode:
             self.num_obstacles = len(STATIC_OBSTACLE_DOOR)
         else:
@@ -25,6 +25,8 @@ class MultiObstacles:
         self.drone_env = drone_env
         self.stack_num = stack_num
         self.level_mode = level_mode
+        self.room_height = drone_env.room_box[1][2]
+        self.inf_height = inf_height
 
         pos_arr = []
         if 'static_random_place' in mode:
@@ -61,7 +63,10 @@ class MultiObstacles:
 
                 pos_block_arr.append(np.array([pos_x, pos_y, 0.5 * size]))
         elif 'static_pillar' in mode:
-            pos_arr = self.generate_pos_by_level(level=level)
+            if inf_height:
+                pos_arr = self.generate_inf_pos_by_level(level=level)
+            else:
+                pos_arr = self.generate_pos_by_level(level=level)
 
         for i in range(self.num_obstacles):
             obstacle = SingleObstacle(max_init_vel=max_init_vel, init_box=init_box, mode=mode, shape=shape, size=size,
@@ -85,7 +90,10 @@ class MultiObstacles:
         all_obst_obs = []
         pos_arr = [None for _ in range(self.num_obstacles)]
         if 'static_pillar' in self.mode:
-            pos_arr = self.generate_pos_by_level(level=level)
+            if self.inf_height:
+                pos_arr = self.generate_inf_pos_by_level(level=level)
+            else:
+                pos_arr = self.generate_pos_by_level(level=level)
 
         for i, obstacle in enumerate(self.obstacles):
             obst_obs = obstacle.reset(set_obstacle=set_obstacles[i], formation_size=formation_size,
@@ -262,5 +270,29 @@ class MultiObstacles:
                 tmp_pos_arr_1 = np.array([pos_x_1, pos_y_1, pos_z_bottom + self.size * (0.5 + i)])
                 pos_arr.append(tmp_pos_arr_0)
                 pos_arr.append(tmp_pos_arr_1)
+
+        return pos_arr
+
+    def generate_inf_pos_by_level(self, level=-1):
+        pos_arr = []
+        if level <= -1:
+            pos_z = -0.5 * (self.size + self.room_height)
+        else:
+            pos_z = 0.5 * self.room_height
+
+        if self.num_obstacles == 1:
+            pos_x = np.random.uniform(low=-2.0, high=2.0)
+            pos_y = np.random.uniform(low=-2.0, high=2.0)
+            pos_arr.append(np.array([pos_x, pos_y, pos_z]))
+        elif self.num_obstacles == 2:
+            pos_x_0 = np.random.uniform(low=-2.0, high=-0.5)
+            pos_y_0 = np.random.uniform(low=-2.0, high=2.0)
+            pos_arr.append(np.array([pos_x_0, pos_y_0, pos_z]))
+
+            pos_x_1 = np.random.uniform(low=0.5, high=2.0)
+            pos_y_1 = np.random.uniform(low=-2.0, high=2.0)
+            pos_arr.append(np.array([pos_x_1, pos_y_1, pos_z]))
+        else:
+            raise NotImplementedError(f'{self.num_obstacles} is not supported!')
 
         return pos_arr

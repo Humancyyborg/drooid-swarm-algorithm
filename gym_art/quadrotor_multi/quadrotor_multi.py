@@ -39,7 +39,7 @@ class QuadrotorEnvMulti(gym.Env):
                  obstacle_obs_mode='relative', obst_penalty_fall_off=10.0, vis_acc_arrows=False,
                  viz_traces=25, viz_trace_nth_step=1, local_obst_obs=-1, obst_enable_sim=True, obst_obs_type='none',
                  quads_reward_ep_len=True, obst_level=-1, obst_stack_num=4, enable_sim_room='none', obst_level_mode=0,
-                 obst_proximity_mode=0):
+                 obst_proximity_mode=0, obst_inf_height=False):
 
         super().__init__()
 
@@ -148,7 +148,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.obst_proximity_mode = obst_proximity_mode
         self.obst_obs_type = obst_obs_type
         self.use_obstacles = self.obstacle_mode != 'no_obstacles' and self.obstacle_num > 0
-
+        self.obst_inf_height = obst_inf_height
         # Control different level, curriculum learning
         self.obst_level = obst_level
         self.obst_level_mode = obst_level_mode
@@ -174,7 +174,7 @@ class QuadrotorEnvMulti(gym.Env):
                 init_box=obstacle_init_box, dt=dt, quad_size=self.quad_arm, shape=self.obstacle_shape,
                 size=quads_obstacle_size, traj=obstacle_traj, obs_mode=obstacle_obs_mode, num_local_obst=local_obst_obs,
                 obs_type=self.obst_obs_type, drone_env=self.envs[0], level=self.obst_level,
-                stack_num=obst_stack_num, level_mode=obst_level_mode
+                stack_num=obst_stack_num, level_mode=obst_level_mode, inf_height=obst_inf_height
             )
 
             # collisions between obstacles and quadrotors
@@ -345,6 +345,7 @@ class QuadrotorEnvMulti(gym.Env):
             obstacle_mode=self.obstacle_mode, room_dims=self.room_dims, num_agents=self.num_agents,
             render_speed=self.render_speed, formation_size=self.quads_formation_size,
             vis_acc_arrows=self.vis_acc_arrows, viz_traces=self.viz_traces, viz_trace_nth_step=self.viz_trace_nth_step,
+            obst_inf_height=self.obst_inf_height
         )
 
     def reset(self):
