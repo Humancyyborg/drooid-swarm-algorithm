@@ -98,7 +98,7 @@ def make_quadrotor_env_multi(cfg, **kwargs):
         quads_reward_ep_len=cfg.quads_reward_ep_len, obst_level=cfg.quads_obst_level,
         obst_stack_num=cfg.quads_obstacle_stack_num, enable_sim_room=cfg.quads_enable_sim_room,
         obst_level_mode=cfg.quads_obst_level_mode, obst_proximity_mode=cfg.quads_obst_proximity_mode,
-        obst_inf_height=cfg.quads_obst_inf_height
+        obst_inf_height=cfg.quads_obst_inf_height, obst_level_change_cond=cfg.quads_obst_level_change_cond
     )
 
     if use_replay_buffer:

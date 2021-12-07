@@ -39,7 +39,7 @@ class QuadrotorEnvMulti(gym.Env):
                  obstacle_obs_mode='relative', obst_penalty_fall_off=10.0, vis_acc_arrows=False,
                  viz_traces=25, viz_trace_nth_step=1, local_obst_obs=-1, obst_enable_sim=True, obst_obs_type='none',
                  quads_reward_ep_len=True, obst_level=-1, obst_stack_num=4, enable_sim_room='none', obst_level_mode=0,
-                 obst_proximity_mode=0, obst_inf_height=False):
+                 obst_proximity_mode=0, obst_inf_height=False, obst_level_change_cond=0.5):
 
         super().__init__()
 
@@ -149,6 +149,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.obst_obs_type = obst_obs_type
         self.use_obstacles = self.obstacle_mode != 'no_obstacles' and self.obstacle_num > 0
         self.obst_inf_height = obst_inf_height
+        self.obst_level_change_cond = obst_level_change_cond
         # Control different level, curriculum learning
         self.obst_level = obst_level
         self.obst_level_mode = obst_level_mode
@@ -602,7 +603,7 @@ class QuadrotorEnvMulti(gym.Env):
         # DONES
         if any(dones):
             self.episode_id += 1
-            if self.crash_value >= -0.5:
+            if self.crash_value >= -1.0 * self.obst_level_change_cond:
                 self.crash_counter += 1
                 if self.crash_counter >= self.crash_counter_threshold:
                     self.obst_level += 1
