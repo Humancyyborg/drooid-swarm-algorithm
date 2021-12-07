@@ -184,6 +184,46 @@ class QuadrotorScenario:
         np.random.shuffle(self.goals)
 
 
+class Scenario_o_test(QuadrotorScenario):
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+        self.start_point = np.array([0.0, -3.0, 2.0])
+        self.end_point = np.array([0.0, 3.0, 2.0])
+        self.duration_time = 1.0
+        self.obstacle_pos = np.array([0.0, 0.0, 2.0])
+
+    def update_formation_size(self, new_formation_size):
+        pass
+
+    def set_end_point(self):
+        self.start_point = np.copy(self.end_point)
+        shift_z = np.random.uniform(low=-0.2, high=0.2)
+        self.end_point = np.array([self.obstacle_pos[0], self.obstacle_pos[1], self.start_point[2] + shift_z])
+        print('end_point: ', self.end_point)
+        self.duration_time += 1.0
+
+    def step(self, infos, rewards, pos):
+        tick = self.envs[0].tick
+        self.obstacle_pos = infos[0]['obstacles']
+
+        if tick < int(self.duration_time * self.envs[0].control_freq):
+            return infos, rewards
+
+        self.set_end_point()
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.end_point, layer_dist=0.0)
+        for i, env in enumerate(self.envs):
+            env.goal = self.goals[i]
+
+        return infos, rewards
+
+    def reset(self):
+        self.start_point = np.array([0.0, 0.0, 5.5])
+        self.end_point = np.array([0.0, 0.0, 5.5])
+        self.duration_time = 1.0
+        self.standard_reset(formation_center=self.start_point)
+
+
+
 class Scenario_static_same_goal(QuadrotorScenario):
     def update_formation_size(self, new_formation_size):
         pass

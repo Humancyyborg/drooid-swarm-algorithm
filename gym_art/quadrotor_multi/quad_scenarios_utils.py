@@ -42,6 +42,7 @@ QUADS_PARAMS_DICT = {
                 'o_dynamic_formations': [QUADS_FORMATION_LIST, [0.0, 1.0], duration],
                 'o_ep_lissajous3D': [['circle_horizontal'], [0.0, 0.0], duration],
                 'o_dynamic_roller': [QUADS_FORMATION_LIST, [0.4, 0.8], duration],
+                'o_test': [['circle_horizontal'], [0.0, 0.0], duration],
 }
 
 
