@@ -8,7 +8,8 @@ TRAJ_LIST = ['gravity', 'electron']
 
 class SingleObstacle:
     def __init__(self, max_init_vel=1., init_box=2.0, mode='no_obstacles', shape='sphere', size=0.0, quad_size=0.04,
-                 dt=0.05, traj='gravity', obs_mode='relative', index=0, obs_type='pos_size', all_pos_arr=None):
+                 dt=0.05, traj='gravity', obs_mode='relative', index=0, obs_type='pos_size', all_pos_arr=None,
+                 inf_height=False, room_dims=(10.0, 10.0, 10.0)):
         if all_pos_arr is None:
             all_pos_arr = []
         self.max_init_vel = max_init_vel
@@ -29,6 +30,8 @@ class SingleObstacle:
         self.index = index
         self.obs_type = obs_type
         self.all_pos_arr = all_pos_arr
+        self.inf_height = inf_height
+        self.room_dims = room_dims
 
     def reset(self, set_obstacle=None, formation_size=0.0, goal_central=np.array([0., 0., 2.]), shape='sphere',
               quads_pos=None, quads_vel=None, new_pos=None):
@@ -270,10 +273,18 @@ class SingleObstacle:
 
     def cube_detection(self, pos_quads=None):
         # https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
-        # Sphere vs. AABB
+        # Sphere vs. AABB (Cuboid, not only cube)
         collision_arr = np.zeros(len(pos_quads))
+
+        if self.inf_height:
+            obst_min_pos = self.pos - np.array([0.5 * self.size, 0.5 * self.size, 0.5 * self.room_dims[2]])
+            obst_max_pos = self.pos + np.array([0.5 * self.size, 0.5 * self.size, 0.5 * self.room_dims[2]])
+        else:
+            obst_min_pos = self.pos - 0.5 * self.size
+            obst_max_pos = self.pos + 0.5 * self.size
+
         for i, pos_quad in enumerate(pos_quads):
-            rel_pos = np.maximum(self.pos - 0.5 * self.size, np.minimum(pos_quad, self.pos + 0.5 * self.size))
+            rel_pos = np.maximum(obst_min_pos, np.minimum(pos_quad, obst_max_pos))
             distance = np.dot(rel_pos - pos_quad, rel_pos - pos_quad)
             if distance < self.quad_size ** 2:
                 collision_arr[i] = 1.0
