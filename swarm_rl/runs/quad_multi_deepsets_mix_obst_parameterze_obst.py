@@ -9,12 +9,13 @@ _params = ParamGrid([
     ('quads_obst_level_mode', [0]),
     ('quads_enable_sim_room', ['wall-ceiling']),
     ('quads_obst_inf_height', [True]),
-    ('quads_obst_proximity_mode', [0, 1]),
-
+    ('quads_obst_proximity_mode', [0]),
+    ('quads_local_obst_obs', [-1]),
+    ('quads_obstacle_num', [1, 2]),
 ])
 
 _experiment = Experiment(
-    'inf_height_two_obst_mix',
+    'inf_height_search_num_obst_mix',
     QUAD_OBSTACLE_PARAMETERZE_CLI,
     _params.generate_params(randomize=False),
 )
