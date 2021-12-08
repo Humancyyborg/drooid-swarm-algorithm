@@ -752,7 +752,7 @@ class QuadrotorSingle:
                  t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False, swarm_obs='none', num_agents=1,quads_settle=False,
                  quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8,
                  view_mode='local', obstacle_mode='no_obstacles', obstacle_num=0, num_use_neighbor_obs=0, num_local_obst=0,
-                 obst_obs_type='none', quads_reward_ep_len=True):
+                 obst_obs_type='none', quads_reward_ep_len=True, obst_inf_height=False):
         np.seterr(under='ignore')
         """
         Args:
@@ -828,6 +828,7 @@ class QuadrotorSingle:
         self.obstacle_num = obstacle_num
         self.num_local_obst = num_local_obst
         self.obst_obs_type = obst_obs_type
+        self.obst_inf_height = obst_inf_height
 
         # Reward scale
         self.quads_reward_ep_len = quads_reward_ep_len
@@ -1025,6 +1026,7 @@ class QuadrotorSingle:
             "rxyz": [-room_range, room_range], # rxyz stands for relative pos between quadrotors
             "rvxyz": [-2.0 * self.dynamics.vxyz_max * np.ones(3), 2.0 * self.dynamics.vxyz_max * np.ones(3)], # rvxyz stands for relative velocity between quadrotors
             "roxyz": [-room_range, room_range], # roxyz stands for relative pos between quadrotor and obstacle
+            "roxy": [-room_range[:2], room_range[:2]],  # roxy stands for relative xy pos between quadrotor and obstacle, used when obstacle is inf high
             "rovxyz": [-20.0 * np.ones(3), 20.0 * np.ones(3)], # rovxyz stands for relative velocity between quadrotor and obstacle
             "osize": [np.zeros(1), 20.0 * np.ones(1)],  # obstacle size, [[0., 0., 0.], [20., 20., 20.]]
             "otype": [np.zeros(1), 20.0 * np.ones(1)],  # obstacle type, [[0.], [20.]], which means we can support 21 types of obstacles
@@ -1050,14 +1052,19 @@ class QuadrotorSingle:
                 obstacle_num = self.num_local_obst
 
             if 'static' in self.obstacle_mode:
+                if self.obst_inf_height:
+                    rel_pos = ['roxy']
+                else:
+                    rel_pos = ['roxyz']
+
                 if self.obst_obs_type == 'none':
                     raise NotImplementedError(f'{self.obst_obs_type} is not supported!')
                 elif self.obst_obs_type == 'pos_size':
-                    obst_obs_comps = (['roxyz'] + ['osize']) * obstacle_num
+                    obst_obs_comps = (rel_pos + ['osize']) * obstacle_num
                 elif self.obst_obs_type == 'pos_vel_size':
-                    obst_obs_comps = (['roxyz'] + ['rovxyz'] + ['osize']) * obstacle_num
+                    obst_obs_comps = (rel_pos + ['rovxyz'] + ['osize']) * obstacle_num
                 elif self.obst_obs_type == 'pos_vel_size_shape':
-                    obst_obs_comps = (['roxyz'] + ['rovxyz'] + ['osize'] + ['otype']) * obstacle_num
+                    obst_obs_comps = (rel_pos + ['rovxyz'] + ['osize'] + ['otype']) * obstacle_num
                 else:
                     raise NotImplementedError(f'{self.obst_obs_type} is not supported!')
             elif 'dynamic' in self.obstacle_mode:

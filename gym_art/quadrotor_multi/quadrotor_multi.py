@@ -71,7 +71,7 @@ class QuadrotorEnvMulti(gym.Env):
                 rew_coeff, sense_noise, verbose, gravity, t2w_std, t2t_std, excite, dynamics_simplification,
                 quads_use_numba, self.swarm_obs, self.num_agents, quads_settle, quads_settle_range_meters,
                 quads_vel_reward_out_range, quads_view_mode, quads_obstacle_mode, quads_obstacle_num,
-                self.num_use_neighbor_obs, local_obst_obs, obst_obs_type, quads_reward_ep_len
+                self.num_use_neighbor_obs, local_obst_obs, obst_obs_type, quads_reward_ep_len, obst_inf_height
             )
             self.envs.append(e)
 

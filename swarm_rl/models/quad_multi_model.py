@@ -145,14 +145,19 @@ class QuadMultiEncoder(EncoderBase):
             self.num_use_neighbor_obs = cfg.quads_num_agents - 1
         else:
             self.num_use_neighbor_obs = cfg.quads_local_obs
+
+        obst_pos_shift = 0
+        if cfg.quads_obst_inf_height:
+            obst_pos_shift = -1
+
         if cfg.obst_obs_type == 'none':
             self.obstacle_obs_dim = 0
         elif cfg.obst_obs_type == 'pos_size':
-            self.obstacle_obs_dim = 4
+            self.obstacle_obs_dim = 4 + obst_pos_shift
         elif cfg.obst_obs_type == 'pos_vel_size':
-            self.obstacle_obs_dim = 7
+            self.obstacle_obs_dim = 7 + obst_pos_shift
         elif cfg.obst_obs_type == 'pos_vel_size_shape':
-            self.obstacle_obs_dim = 8
+            self.obstacle_obs_dim = 8 + obst_pos_shift
         else:
             raise NotImplementedError(f'{cfg.obst_obs_type} not supported!')
 

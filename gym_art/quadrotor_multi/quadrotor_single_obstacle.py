@@ -208,8 +208,13 @@ class SingleObstacle:
                 obst_shape = self.shape_list.index(self.shape) * np.ones((len(quads_pos), 1))
             obs = np.concatenate((rel_pos, rel_vel, obst_size, obst_shape), axis=1)
         elif 'static' in self.mode:
-            rel_pos = self.pos - quads_pos
+            if self.inf_height:
+                rel_pos = self.pos[:2] - quads_pos[:, :2]
+            else:
+                rel_pos = self.pos - quads_pos
+
             rel_vel = self.vel - quads_vel
+
             # obst_size: in xyz axis: radius for sphere, half edge length for cube
             obst_size = (self.size / 2) * np.ones((len(quads_pos), 1))
             obst_shape = self.shape_list.index(self.shape) * np.ones((len(quads_pos), 1))
