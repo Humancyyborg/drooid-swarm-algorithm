@@ -288,14 +288,16 @@ class SingleObstacle:
             obst_max_pos = self.pos + 0.5 * self.size
 
         closest_poses = np.maximum(obst_min_pos, np.minimum(pos_quads, obst_max_pos))
+        # dist_arr means the distance between from drones to the closest point on the obstacle
         dist_arr = np.linalg.norm(pos_quads - closest_poses, axis=1)
         collision_arr = (dist_arr <= self.quad_size).astype(np.float32)
 
         return collision_arr, dist_arr
 
     def sphere_detection(self, pos_quads=None):
-        dist_arr = np.linalg.norm(pos_quads - self.pos, axis=1)
-        collision_arr = (dist_arr <= (self.quad_size + 0.5 * self.size)).astype(np.float32)
+        # dist_arr means the distance between from drones to the closest point on the obstacle
+        dist_arr = np.linalg.norm(pos_quads - self.pos, axis=1) - 0.5 * self.size
+        collision_arr = (dist_arr <= self.quad_size).astype(np.float32)
         return collision_arr, dist_arr
 
     def collision_detection(self, pos_quads=None):

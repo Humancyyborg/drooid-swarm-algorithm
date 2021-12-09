@@ -480,7 +480,6 @@ class QuadrotorEnvMulti(gym.Env):
                 penalty_fall_off=self.obst_penalty_fall_off,
                 max_penalty=self.rew_coeff["quadcol_bin_obst_smooth_max"],
                 num_agents=self.num_agents,
-                obstacles_radius=obstacles_radius,
                 proximity_mode=self.obst_proximity_mode
             )
         else:

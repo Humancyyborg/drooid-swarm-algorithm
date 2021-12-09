@@ -271,11 +271,12 @@ def calculate_drone_proximity_penalties(distance_matrix, arm, dt, penalty_fall_o
 
 
 def calculate_obst_drone_proximity_penalties(distance_matrix, arm, dt, penalty_fall_off, max_penalty, num_agents,
-                                             obstacles_radius, proximity_mode):
+                                             proximity_mode):
     if not penalty_fall_off:
         # smooth penalties is disabled, so noop
         return np.zeros(num_agents)
-    penalties = (-max_penalty / (penalty_fall_off * arm + obstacles_radius)) * distance_matrix + max_penalty
+
+    penalties = (-max_penalty / (penalty_fall_off * arm)) * distance_matrix + max_penalty
     penalties = np.maximum(penalties, 0.0)
     penalties = np.sum(penalties, axis=1)
 

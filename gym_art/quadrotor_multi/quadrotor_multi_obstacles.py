@@ -275,7 +275,7 @@ class MultiObstacles:
     def generate_inf_pos_by_level(self, level=-1):
         pos_arr = []
         if level <= -1:
-            pos_z = -0.5 * (self.size + self.room_height)
+            pos_z = -0.5 * self.room_height - 1.0
         else:
             pos_z = 0.5 * self.room_height
 
