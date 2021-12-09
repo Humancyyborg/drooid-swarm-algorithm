@@ -365,6 +365,9 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_dyn, quad_arm, room_dims
                       abs_shift_pos[2] > obst_z_size and shift_pos[2] < 0]
 
             direction = np.random.uniform(low=-1.0, high=1.0, size=(3,))
+            if drone_pos[2] == 0.0:
+                direction[2] = np.random.uniform(low=-0.01, high=0.01)
+
             if x_list[0]:
                 direction[0] = np.random.uniform(low=0.1, high=1.0)
             elif x_list[1]:
@@ -477,7 +480,7 @@ def perform_collision_with_wall(drone_dyn, room_box):
         direction[1] = np.random.uniform(low=-1.0, high=-0.1)
 
     if z_list[0]:
-        direction[2] = np.random.uniform(low=-0.1, high=-0.001)
+        direction[2] = np.random.uniform(low=-0.01, high=0.01)
     elif z_list[1]:
         direction[2] = np.random.uniform(low=-1.0, high=-0.5)
 
