@@ -6,6 +6,7 @@ EPS = 1e-6
 GRAV = 9.81  # default gravitational constant
 TRAJ_LIST = ['gravity', 'electron']
 
+
 class SingleObstacle:
     def __init__(self, max_init_vel=1., init_box=2.0, mode='no_obstacles', shape='sphere', size=0.0, quad_size=0.04,
                  dt=0.05, traj='gravity', obs_mode='relative', index=0, obs_type='pos_size', all_pos_arr=None,
@@ -279,8 +280,6 @@ class SingleObstacle:
     def cube_detection(self, pos_quads=None):
         # https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
         # Sphere vs. AABB (Cuboid, not only cube)
-        collision_arr = np.zeros(len(pos_quads))
-
         if self.inf_height:
             obst_min_pos = self.pos - np.array([0.5 * self.size, 0.5 * self.size, 0.5 * self.room_dims[2]])
             obst_max_pos = self.pos + np.array([0.5 * self.size, 0.5 * self.size, 0.5 * self.room_dims[2]])
@@ -288,25 +287,23 @@ class SingleObstacle:
             obst_min_pos = self.pos - 0.5 * self.size
             obst_max_pos = self.pos + 0.5 * self.size
 
-        for i, pos_quad in enumerate(pos_quads):
-            rel_pos = np.maximum(obst_min_pos, np.minimum(pos_quad, obst_max_pos))
-            distance = np.dot(rel_pos - pos_quad, rel_pos - pos_quad)
-            if distance < self.quad_size ** 2:
-                collision_arr[i] = 1.0
+        closest_poses = np.maximum(obst_min_pos, np.minimum(pos_quads, obst_max_pos))
+        dist_arr = np.linalg.norm(pos_quads - closest_poses, axis=1)
+        collision_arr = (dist_arr <= self.quad_size).astype(np.float32)
 
-        return collision_arr
+        return collision_arr, dist_arr
 
     def sphere_detection(self, pos_quads=None):
-        dist = np.linalg.norm(pos_quads - self.pos, axis=1)
-        collision_arr = (dist < (self.quad_size + 0.5 * self.size)).astype(np.float32)
-        return collision_arr
+        dist_arr = np.linalg.norm(pos_quads - self.pos, axis=1)
+        collision_arr = (dist_arr <= (self.quad_size + 0.5 * self.size)).astype(np.float32)
+        return collision_arr, dist_arr
 
     def collision_detection(self, pos_quads=None):
         if self.shape == 'cube':
-            collision_arr = self.cube_detection(pos_quads)
+            collision_arr, dist_arr = self.cube_detection(pos_quads)
         elif self.shape == 'sphere':
-            collision_arr = self.sphere_detection(pos_quads)
+            collision_arr, dist_arr = self.sphere_detection(pos_quads)
         else:
             raise NotImplementedError()
 
-        return collision_arr
+        return collision_arr, dist_arr
