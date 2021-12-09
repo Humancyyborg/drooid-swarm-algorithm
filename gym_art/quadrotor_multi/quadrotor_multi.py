@@ -507,7 +507,7 @@ class QuadrotorEnvMulti(gym.Env):
                 if self.obst_enable_sim:
                     perform_collision_with_obstacle(
                         drone_dyn=self.envs[val[0]].dynamics, obstacle_dyn=self.multi_obstacles.obstacles[val[1]],
-                        quad_arm=self.quad_arm)
+                        quad_arm=self.quad_arm, room_dims=self.room_dims, inf_height=self.obst_inf_height)
 
         if self.enable_sim_room != 'none':
             sim_list = self.enable_sim_room.split('-')
