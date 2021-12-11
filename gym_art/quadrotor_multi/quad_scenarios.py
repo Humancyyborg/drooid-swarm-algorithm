@@ -782,7 +782,7 @@ class Scenario_o_dynamic_same_goal(QuadrotorScenario):
         super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
         self.start_point = np.array([0.0, -3.0, 2.0])
         self.end_point = np.array([0.0, 3.0, 2.0])
-        self.duration_time = 5.0
+        self.duration_time = 12.5
         self.explore_epsilon = 0.1
 
     def update_formation_size(self, new_formation_size):
@@ -807,7 +807,7 @@ class Scenario_o_dynamic_same_goal(QuadrotorScenario):
 
         end_z = np.random.uniform(low=1.0, high=2.5)
         self.end_point = np.array([end_x, end_y, end_z])
-        self.duration_time += np.random.uniform(low=4.0, high=6.0)
+        self.duration_time += np.random.uniform(low=10.0, high=15.0)
 
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
@@ -823,7 +823,6 @@ class Scenario_o_dynamic_same_goal(QuadrotorScenario):
         return infos, rewards
 
     def reset(self):
-        self.duration_time = 0.0
         self.explore_epsilon = np.random.uniform(low=0.1, high=0.2)
         x_flag = np.random.randint(2)
         if x_flag == 0:
@@ -840,7 +839,7 @@ class Scenario_o_dynamic_same_goal(QuadrotorScenario):
         z = np.random.uniform(low=1.0, high=2.0)
         self.start_point = np.array([x, y, z])
         self.end_point = np.array([x, y, z])
-        self.duration_time += np.random.uniform(low=4.0, high=6.0)
+        self.duration_time = np.random.uniform(low=4.0, high=6.0)
         self.standard_reset(formation_center=self.start_point)
 
 
@@ -849,7 +848,7 @@ class Scenario_o_dynamic_diff_goal(QuadrotorScenario):
         super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
         self.start_point = np.array([0.0, -3.0, 2.0])
         self.end_point = np.array([0.0, 3.0, 2.0])
-        self.duration_time = 0.0
+        self.duration_time = 12.5
         self.explore_epsilon = 0.1
 
     def update_goals(self):
@@ -879,7 +878,7 @@ class Scenario_o_dynamic_diff_goal(QuadrotorScenario):
 
         end_z = np.random.uniform(low=1.0, high=2.5)
         self.end_point = np.array([end_x, end_y, end_z])
-        self.duration_time += np.random.uniform(low=4.0, high=6.0)
+        self.duration_time += np.random.uniform(low=10.0, high=15.0)
 
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
@@ -895,7 +894,6 @@ class Scenario_o_dynamic_diff_goal(QuadrotorScenario):
         return infos, rewards
 
     def reset(self):
-        self.duration_time = 0.0
         self.explore_epsilon = np.random.uniform(low=0.1, high=0.2)
         x_flag = np.random.randint(2)
         if x_flag == 0:
@@ -912,7 +910,7 @@ class Scenario_o_dynamic_diff_goal(QuadrotorScenario):
         z = np.random.uniform(low=1.0, high=2.0)
         self.start_point = np.array([x, y, z])
         self.end_point = np.array([x, y, z])
-        self.duration_time += np.random.uniform(low=4.0, high=6.0)
+        self.duration_time = np.random.uniform(low=4.0, high=6.0)
         self.standard_reset(formation_center=self.start_point)
 
 
@@ -959,7 +957,7 @@ class Scenario_o_swarm_vs_swarm(QuadrotorScenario):
         self.goals = np.concatenate([self.goals_1, self.goals_2])
 
     def update_goals(self):
-        self.duration_time += np.random.uniform(low=4.0, high=6.0)
+        self.duration_time += np.random.uniform(low=10.0, high=15.0)
         tmp_goal_center_1 = copy.deepcopy(self.goal_center_1)
         tmp_goal_center_2 = copy.deepcopy(self.goal_center_2)
         self.goal_center_1 = tmp_goal_center_2
@@ -1050,7 +1048,7 @@ class Scenario_o_dynamic_formations(QuadrotorScenario):
         else:
             y = np.random.uniform(low=-2.0, high=-0.01)
 
-        z = np.random.uniform(low=1.0, high=2.0)
+        z = np.random.uniform(low=1.5, high=2.5)
         self.formation_center = np.array([x, y, z])
 
     def update_goals(self):
@@ -1143,42 +1141,46 @@ class Scenario_o_dynamic_roller(QuadrotorScenario):
         if self.update_direction == 0:
             if self.direction_flag == 0:
                 end_x = pre_x + np.random.uniform(low=1.0, high=2.0)
-                if end_x >= 4.0:
+                if end_x > 3.0:
+                    self.direction_flag = 1
                     end_x = pre_x - np.random.uniform(low=1.0, high=2.0)
             else:
                 end_x = pre_x - np.random.uniform(low=1.0, high=2.0)
-                if end_x <= -4.0:
+                if end_x < -3.0:
+                    self.direction_flag = 0
                     end_x = pre_x + np.random.uniform(low=1.0, high=2.0)
 
-            end_y = np.random.uniform(low=-3.0, high=3.0)
+            end_y = np.random.uniform(low=-2.0, high=2.0)
             end_z = np.random.uniform(low=1.0, high=2.5)
         elif self.update_direction == 1:
             if self.direction_flag == 0:
                 end_y = pre_y + np.random.uniform(low=1.0, high=2.0)
-                if end_y >= 4.0:
+                if end_y > 3.0:
+                    self.direction_flag = 1
                     end_y = pre_y - np.random.uniform(low=1.0, high=2.0)
             else:
                 end_y = pre_y - np.random.uniform(low=1.0, high=2.0)
-                if end_y <= -4.0:
+                if end_y < -3.0:
+                    self.direction_flag = 0
                     end_y = pre_y + np.random.uniform(low=1.0, high=2.0)
 
-            end_x = np.random.uniform(low=-3.0, high=3.0)
+            end_x = np.random.uniform(low=-2.0, high=2.0)
             end_z = np.random.uniform(low=1.0, high=2.5)
         else:
             if self.direction_flag == 0:
                 end_z = pre_z + np.random.uniform(low=0.2, high=0.4)
-                if end_z >= 2.5:
+                if end_z > 2.5:
                     end_z = pre_z - np.random.uniform(low=0.2, high=0.4)
             else:
                 end_z = pre_z - np.random.uniform(low=0.2, high=0.4)
-                if end_z <= 0.5:
+                if end_z < 0.5:
                     end_z = pre_z + np.random.uniform(low=0.2, high=0.4)
 
-            end_x = np.random.uniform(low=-3.0, high=3.0)
-            end_y = np.random.uniform(low=-3.0, high=3.0)
+            end_x = np.random.uniform(low=-2.0, high=2.0)
+            end_y = np.random.uniform(low=-2.0, high=2.0)
 
         self.end_point = np.array([end_x, end_y, end_z])
-        self.duration_time += np.random.uniform(low=3.0, high=5.0)
+        self.duration_time += np.random.uniform(low=6.0, high=10.0)
 
     def step(self, infos, rewards, pos):
 
@@ -1195,7 +1197,6 @@ class Scenario_o_dynamic_roller(QuadrotorScenario):
         return infos, rewards
 
     def reset(self):
-        self.duration_time = 0.0
         self.update_direction = np.random.randint(3)
         self.direction_flag = np.random.randint(2)
 
@@ -1205,7 +1206,7 @@ class Scenario_o_dynamic_roller(QuadrotorScenario):
             else:
                 x = np.random.uniform(low=2.5, high=3.5)
 
-            y = np.random.uniform(low=-3.0, high=3.0)
+            y = np.random.uniform(low=-2.0, high=2.0)
             z = np.random.uniform(low=1.0, high=2.0)
 
         elif self.update_direction == 1:
@@ -1214,7 +1215,7 @@ class Scenario_o_dynamic_roller(QuadrotorScenario):
             else:
                 y = np.random.uniform(low=2.5, high=3.5)
 
-            x = np.random.uniform(low=-3.0, high=3.0)
+            x = np.random.uniform(low=-2.0, high=2.0)
             z = np.random.uniform(low=1.0, high=2.0)
 
         else:
@@ -1223,12 +1224,12 @@ class Scenario_o_dynamic_roller(QuadrotorScenario):
             else:
                 z = np.random.uniform(low=2.5, high=2.0)
 
-            x = np.random.uniform(low=-3.0, high=3.0)
-            y = np.random.uniform(low=-3.0, high=3.0)
+            x = np.random.uniform(low=-2.0, high=2.0)
+            y = np.random.uniform(low=-2.0, high=2.0)
 
         self.start_point = np.array([x, y, z])
         self.end_point = np.array([x, y, z])
-        self.duration_time += np.random.uniform(low=4.0, high=6.0)
+        self.duration_time = np.random.uniform(low=4.0, high=6.0)
         self.standard_reset(formation_center=self.start_point)
 
 
@@ -1252,7 +1253,7 @@ class Scenario_o_inside_obstacles(QuadrotorScenario):
         end_z = self.start_point[2] + np.random.uniform(low=-1.0, high=1.0)
         end_z = np.clip(end_z, a_min=1.0, a_max=5.0)
         self.end_point = np.array([end_x, end_y, end_z])
-        self.duration_time += np.random.uniform(low=4.0, high=6.0)
+        self.duration_time += np.random.uniform(low=8.0, high=12.0)
 
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
@@ -1274,7 +1275,6 @@ class Scenario_o_inside_obstacles(QuadrotorScenario):
         return infos, rewards
 
     def reset(self):
-        self.duration_time = 0.0
         x_flag = np.random.randint(2)
         if x_flag == 0:
             x = np.random.uniform(low=1.0, high=3.0)
@@ -1290,7 +1290,7 @@ class Scenario_o_inside_obstacles(QuadrotorScenario):
         z = np.random.uniform(low=1.0, high=2.0)
         self.start_point = np.array([x, y, z])
         self.end_point = np.array([x, y, z])
-        self.duration_time += np.random.uniform(low=4.0, high=6.0)
+        self.duration_time = np.random.uniform(low=4.0, high=6.0)
         self.standard_reset(formation_center=self.start_point)
 
 

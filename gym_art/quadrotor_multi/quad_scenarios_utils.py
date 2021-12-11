@@ -4,8 +4,8 @@ from gym_art.quadrotor_multi.quad_utils import get_circle_radius, get_sphere_rad
 QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal', 'circular_config',
                    'ep_lissajous3D', 'ep_rand_bezier', 'swarm_vs_swarm', 'dynamic_formations', 'swap_goals']
 
-QUADS_MODE_LIST_OBSTACLES = ['o_dynamic_same_goal', 'o_dynamic_diff_goal', 'o_swarm_vs_swarm', 'o_swap_goals',
-                             'o_dynamic_formations', 'o_ep_lissajous3D', 'o_dynamic_roller', 'o_inside_obstacles']
+QUADS_MODE_LIST_OBSTACLES = ['o_dynamic_same_goal', 'o_dynamic_diff_goal', 'o_swarm_vs_swarm', 'o_dynamic_formations',
+                             'o_dynamic_roller', 'o_inside_obstacles']
 
 QUADS_MODE_DICT = {
             'fix_size': ['static_same_goal', 'dynamic_same_goal', 'ep_lissajous3D', 'ep_rand_bezier', 'through_hole',
@@ -21,6 +21,7 @@ QUADS_FORMATION_LIST = ['circle_horizontal', 'circle_vertical_xz', 'circle_verti
 # value: 0. formation, 1: [formation_low_size, formation_high_size], 2: episode_time
 quad_arm_size = 0.04596194077712559
 duration = 16.0
+obstacle_duration = 40.0
 QUADS_PARAMS_DICT = {
                 'static_same_goal': [['circle_horizontal'], [0.0, 0.0], duration],
                 'dynamic_same_goal': [['circle_horizontal'], [0.0, 0.0], duration],
@@ -35,15 +36,16 @@ QUADS_PARAMS_DICT = {
                 'run_away': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], duration],  # [36, 72] centimeters
                 'through_hole': [['circle_horizontal'], [0.0, 0.0], duration],
                 'through_random_obstacles': [['circle_horizontal'], [0.0, 0.0], duration],
-                'o_dynamic_same_goal': [['circle_horizontal'], [0.0, 0.0], duration],
-                'o_dynamic_diff_goal': [QUADS_FORMATION_LIST, [0.4, 0.8], duration],
-                'o_swarm_vs_swarm': [QUADS_FORMATION_LIST, [0.4, 0.8], duration],
-                'o_swap_goals': [QUADS_FORMATION_LIST, [0.4, 0.8], duration],
-                'o_dynamic_formations': [QUADS_FORMATION_LIST, [0.0, 1.0], duration],
-                'o_ep_lissajous3D': [['circle_horizontal'], [0.0, 0.0], duration],
-                'o_dynamic_roller': [QUADS_FORMATION_LIST, [0.4, 0.8], duration],
-                'o_inside_obstacles': [QUADS_FORMATION_LIST, [-0.5, 0.5], duration],
-                'o_test': [['circle_horizontal'], [0.0, 0.0], duration],
+
+                'o_dynamic_same_goal': [['circle_horizontal'], [0.0, 0.0], obstacle_duration],
+                'o_dynamic_diff_goal': [QUADS_FORMATION_LIST, [0.4, 0.8], obstacle_duration],
+                'o_swarm_vs_swarm': [QUADS_FORMATION_LIST, [0.4, 0.8], obstacle_duration],
+                'o_swap_goals': [QUADS_FORMATION_LIST, [0.4, 0.8], obstacle_duration],
+                'o_dynamic_formations': [QUADS_FORMATION_LIST, [0.0, 1.0], obstacle_duration],
+                'o_ep_lissajous3D': [['circle_horizontal'], [0.0, 0.0], obstacle_duration],
+                'o_dynamic_roller': [QUADS_FORMATION_LIST, [0.4, 0.8], obstacle_duration],
+                'o_inside_obstacles': [QUADS_FORMATION_LIST, [-0.5, 0.5], obstacle_duration],
+                'o_test': [['circle_horizontal'], [0.0, 0.0], obstacle_duration],
 }
 
 
