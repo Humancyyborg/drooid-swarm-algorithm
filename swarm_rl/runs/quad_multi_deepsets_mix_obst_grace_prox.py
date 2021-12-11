@@ -6,11 +6,12 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_OBSTACLE_PA
 _params = ParamGrid([
     ('seed', [0000, 3333]),
     ('quads_obst_collision_enable_grace_period', [True]),
-    ('quads_obst_level_change_cond', [1.0, 2.0, 4.0, 8.0]),
+    ('quads_obst_level_change_cond', [2.0]),
+    ('quads_collision_obst_smooth_max_penalty', [1.0, 2.0, 4.0, 6.0]),
 ])
 
 _experiment = Experiment(
-    'grace_inf_height_two_obst_level_cond_mix',
+    'grace_inf_height_two_obst_prox_penalty_mix',
     QUAD_OBSTACLE_PARAMETERZE_CLI,
     _params.generate_params(randomize=False),
 )
