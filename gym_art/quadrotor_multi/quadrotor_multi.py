@@ -185,6 +185,7 @@ class QuadrotorEnvMulti(gym.Env):
 
             # collisions between obstacles and quadrotors
             self.obst_quad_collisions_per_episode = 0
+            self.obst_quad_collisions_per_episode_after_settle = 0
             self.prev_obst_quad_collisions = []
 
         # set render
@@ -395,6 +396,7 @@ class QuadrotorEnvMulti(gym.Env):
                                              set_obstacles=self.set_obstacles, formation_size=self.quads_formation_size,
                                              goal_central=self.goal_central, level=self.obst_level)
             self.obst_quad_collisions_per_episode = 0
+            self.obst_quad_collisions_per_episode_after_settle = 0
             self.prev_obst_quad_collisions = []
 
         self.all_collisions = {val: [0.0 for _ in range(len(self.envs))] for val in
@@ -468,6 +470,10 @@ class QuadrotorEnvMulti(gym.Env):
             obst_quad_last_step_unique_collisions = np.setdiff1d(curr_obst_quad_collisions, self.prev_obst_quad_collisions)
             self.obst_quad_collisions_per_episode += len(obst_quad_last_step_unique_collisions)
             self.prev_obst_quad_collisions = curr_obst_quad_collisions
+
+            if len(obst_quad_last_step_unique_collisions) > 0:
+                if self.envs[0].tick >= self.obst_collisions_grace_period_seconds * self.control_freq:
+                    self.obst_quad_collisions_per_episode_after_settle += len(obst_quad_last_step_unique_collisions)
 
             rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
             if obst_quad_last_step_unique_collisions.any():
@@ -648,8 +654,15 @@ class QuadrotorEnvMulti(gym.Env):
                         f'num_collisions_{self.scenario.name()}': self.collisions_after_settle,
                     }
                     if self.use_obstacles:
-                        infos[i]['episode_extra_stats']['num_collisions_obst_quad'] = self.obst_quad_collisions_per_episode
-                        infos[i]['episode_extra_stats'][f'num_collisions_obst_{self.scenario.name()}'] = self.obst_quad_collisions_per_episode
+                        infos[i]['episode_extra_stats']['num_collisions_obst_quad'] = \
+                            self.obst_quad_collisions_per_episode
+                        infos[i]['episode_extra_stats'][f'num_collisions_obst_{self.scenario.name()}'] = \
+                            self.obst_quad_collisions_per_episode
+
+                        infos[i]['episode_extra_stats']['after_settle_num_collisions_obst_quad'] = \
+                            self.obst_quad_collisions_per_episode_after_settle
+                        infos[i]['episode_extra_stats'][f'after_settle_num_collisions_obst_{self.scenario.name()}'] = \
+                            self.obst_quad_collisions_per_episode_after_settle
 
                         infos[i]['episode_extra_stats']['episode_id'] = self.episode_id
                         infos[i]['episode_extra_stats']['obst_level'] = self.obst_level
