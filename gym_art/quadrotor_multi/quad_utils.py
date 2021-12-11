@@ -1,5 +1,3 @@
-import copy
-
 import numpy as np
 import numpy.random as nr
 from numba import njit
@@ -349,11 +347,11 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_dyn, quad_arm, room_dims
             collision_norm[2] = np.random.uniform(low=-0.1, high=0.1)
             coll_norm_mag = np.linalg.norm(collision_norm)
             collision_norm = collision_norm / (coll_norm_mag + 0.00001 if coll_norm_mag == 0.0 else coll_norm_mag)
-            drone_dyn.vel = 5.0 * collision_norm
+            drone_dyn.vel = 10.0 * collision_norm
         else:
             drone_speed = np.linalg.norm(drone_dyn.vel)
             real_speed = np.random.uniform(low=0.1 * drone_speed, high=1.0 * drone_speed)
-            real_speed = np.clip(real_speed, a_min=0.1, a_max=5.0)
+            real_speed = np.clip(real_speed, a_min=0.1, a_max=10.0)
 
             drone_pos = drone_dyn.pos
             obst_pos = obstacle_dyn.pos
@@ -461,9 +459,9 @@ def perform_collision_with_obstacle_v2(drone_dyn, obstacle_dyn, quad_arm=0.046):
 
 
 def perform_collision_with_wall(drone_dyn, room_box):
-    cur_drone_speed = np.linalg.norm(drone_dyn.vel)
-    next_drone_speed = np.random.uniform(low=0.1 * cur_drone_speed, high=0.9 * cur_drone_speed)
-    next_drone_speed = np.clip(next_drone_speed, a_min=0.1, a_max=5.0)
+    drone_speed = np.linalg.norm(drone_dyn.vel)
+    real_speed = np.random.uniform(low=0.1 * drone_speed, high=1.0 * drone_speed)
+    real_speed = np.clip(real_speed, a_min=0.1, a_max=10.0)
 
     drone_pos = drone_dyn.pos
     x_list = [drone_pos[0] == room_box[0][0], drone_pos[0] == room_box[1][0]]
@@ -482,35 +480,14 @@ def perform_collision_with_wall(drone_dyn, room_box):
         direction[1] = np.random.uniform(low=-1.0, high=-0.1)
 
     if z_list[0]:
-        direction[2] = np.random.uniform(low=-0.1, high=0.1)
+        direction[2] = np.random.uniform(low=-0.01, high=0.01)
     elif z_list[1]:
         direction[2] = np.random.uniform(low=-1.0, high=-0.5)
 
     direction_mag = np.linalg.norm(direction)
     direction_norm = direction / (direction_mag + 0.00001 if direction_mag == 0.0 else direction_mag)
 
-    cur_drone_vel = copy.deepcopy(drone_dyn.vel)
-    next_drone_vel = next_drone_speed * direction_norm
-    if x_list[0] or x_list[1]:
-        if cur_drone_vel[0] >= 0.0:
-            next_x_vel_min = -0.9 * cur_drone_vel[0]
-            next_x_vel_max = -0.1 * cur_drone_vel[0]
-        else:
-            next_x_vel_min = -0.1 * cur_drone_vel[0]
-            next_x_vel_max = -0.9 * cur_drone_vel[0]
-
-        next_drone_vel[0] = np.clip(next_drone_vel[0], a_min=next_x_vel_min, a_max=next_x_vel_max)
-    if y_list[0] or y_list[1]:
-        if cur_drone_vel[1] >= 0.0:
-            next_y_vel_min = -0.9 * cur_drone_vel[1]
-            next_y_vel_max = -0.1 * cur_drone_vel[1]
-        else:
-            next_y_vel_min = -0.1 * cur_drone_vel[1]
-            next_y_vel_max = -0.9 * cur_drone_vel[1]
-
-        next_drone_vel[1] = np.clip(next_drone_vel[1], a_min=next_y_vel_min, a_max=next_y_vel_max)
-
-    drone_dyn.vel = copy.deepcopy(next_drone_vel)
+    drone_dyn.vel = real_speed * direction_norm
 
     # Random forces for omega
     omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
