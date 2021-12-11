@@ -39,7 +39,8 @@ class QuadrotorEnvMulti(gym.Env):
                  obstacle_obs_mode='relative', obst_penalty_fall_off=10.0, vis_acc_arrows=False,
                  viz_traces=25, viz_trace_nth_step=1, local_obst_obs=-1, obst_enable_sim=True, obst_obs_type='none',
                  quads_reward_ep_len=True, obst_level=-1, obst_stack_num=4, enable_sim_room='none', obst_level_mode=0,
-                 obst_proximity_mode=0, obst_inf_height=False, obst_level_change_cond=0.5):
+                 obst_proximity_mode=0, obst_inf_height=False, obst_level_change_cond=0.5,
+                 obst_collision_enable_grace_period=False):
 
         super().__init__()
 
@@ -157,6 +158,9 @@ class QuadrotorEnvMulti(gym.Env):
         self.crash_value = 0.0
         self.crash_counter_threshold = 5
         self.episode_id = 0
+
+        self.obst_collisions_grace_period_seconds = 1.0
+        self.obst_collision_enable_grace_period = obst_collision_enable_grace_period
 
         if self.use_obstacles:
             obstacle_max_init_vel = 4.0 * self.envs[0].max_init_vel
@@ -474,7 +478,6 @@ class QuadrotorEnvMulti(gym.Env):
             rew_collisions_obst_quad = self.rew_coeff["quadcol_bin_obst"] * rew_obst_quad_collisions_raw
 
             # penalties for low distance between obstacles and drones
-            obstacles_radius = np.stack([self.multi_obstacles.obstacles[i].size / 2 for i in range(self.obstacle_num)])
             rew_obst_quad_proximity = -1.0 * calculate_obst_drone_proximity_penalties(
                 distance_matrix=obst_quad_distance_matrix, arm=self.quad_arm, dt=self.control_dt,
                 penalty_fall_off=self.obst_penalty_fall_off,
@@ -482,12 +485,22 @@ class QuadrotorEnvMulti(gym.Env):
                 num_agents=self.num_agents,
                 proximity_mode=self.obst_proximity_mode
             )
+
+            if self.envs[0].tick >= self.obst_collisions_grace_period_seconds * self.control_freq:
+                rew_collisions_obst_quad_after_settle = copy.deepcopy(rew_collisions_obst_quad)
+                rew_obst_quad_proximity_after_settle = copy.deepcopy(rew_obst_quad_proximity)
+            else:
+                rew_collisions_obst_quad_after_settle = np.zeros(self.num_agents)
+                rew_obst_quad_proximity_after_settle = np.zeros(self.num_agents)
+
         else:
             obst_quad_col_matrix = np.zeros((self.num_agents, self.obstacle_num))
             curr_all_collisions = []
             rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
             rew_collisions_obst_quad = np.zeros(self.num_agents)
             rew_obst_quad_proximity = np.zeros(self.num_agents)
+            rew_collisions_obst_quad_after_settle = np.zeros(self.num_agents)
+            rew_obst_quad_proximity_after_settle = np.zeros(self.num_agents)
 
         # Collisions with ground, ceiling, wall
         ground_collisions = np.array([env.dynamics.crashed_floor for env in self.envs])
@@ -532,12 +545,19 @@ class QuadrotorEnvMulti(gym.Env):
             infos[i]["rewards"]["rew_proximity"] = rew_proximity[i]
 
             if self.use_obstacles:
-                rewards[i] += rew_collisions_obst_quad[i]
+                if self.obst_collision_enable_grace_period:
+                    rewards[i] += rew_collisions_obst_quad_after_settle[i]
+                    rewards[i] += rew_obst_quad_proximity_after_settle[i]
+                else:
+                    rewards[i] += rew_collisions_obst_quad[i]
+                    rewards[i] += rew_obst_quad_proximity[i]
+
                 infos[i]["rewards"]["rew_quadcol_obstacle"] = rew_collisions_obst_quad[i]
                 infos[i]["rewards"]["rewraw_quadcol_obstacle"] = rew_obst_quad_collisions_raw[i]
-
-                rewards[i] += rew_obst_quad_proximity[i]
                 infos[i]["rewards"]["rew_obst_quad_proximity"] = rew_obst_quad_proximity[i]
+
+                infos[i]["rewards"]["rew_quadcol_obstacle_after_settle"] = rew_collisions_obst_quad_after_settle[i]
+                infos[i]["rewards"]["rew_obst_quad_proximity_after_settle"] = rew_obst_quad_proximity_after_settle[i]
 
         # run the scenario passed to self.quads_mode)
         if self.scenario.quads_mode in ['o_test', 'o_inside_obstacles'] or (
