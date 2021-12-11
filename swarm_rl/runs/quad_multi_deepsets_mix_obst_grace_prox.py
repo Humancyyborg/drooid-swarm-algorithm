@@ -7,6 +7,7 @@ _params = ParamGrid([
     ('seed', [0000, 3333]),
     ('quads_obst_collision_enable_grace_period', [True]),
     ('quads_obst_level_change_cond', [2.0]),
+    ('reward_scale', [0.1]),
     ('quads_collision_obst_smooth_max_penalty', [1.0, 2.0, 4.0, 6.0]),
 ])
 
