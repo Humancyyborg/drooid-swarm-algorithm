@@ -1,23 +1,20 @@
 from sample_factory.runner.run_description import RunDescription, Experiment, ParamGrid
 
-from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_OBSTACLE_PARAMETERZE_CLI
+from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_OBSTACLE_PARAMETERZE_LONG_DURATION_CLI
 
 # quads_obstacle_num: 16
 _params = ParamGrid([
     ('seed', [0000, 3333]),
-    ('quads_obst_collision_enable_grace_period', [True]),
-    ('quads_obst_level_change_cond', [2.0]),
-    ('reward_scale', [0.1]),
     ('quads_collision_obst_smooth_max_penalty', [1.0, 2.0, 4.0, 6.0]),
 ])
 
 _experiment = Experiment(
-    'grace_inf_height_two_obst_prox_penalty_mix',
-    QUAD_OBSTACLE_PARAMETERZE_CLI,
+    'dur_40_grace_inf_height_two_obst_prox_penalty_mix',
+    QUAD_OBSTACLE_PARAMETERZE_LONG_DURATION_CLI,
     _params.generate_params(randomize=False),
 )
 
-RUN_DESCRIPTION = RunDescription('grace_quads_multi_obst_mix_8a_v116', experiments=[_experiment])
+RUN_DESCRIPTION = RunDescription('dur_40_grace_quads_multi_obst_mix_8a_v116', experiments=[_experiment])
 
 # On Brain server, when you use num_workers = 72, if the system reports: Resource temporarily unavailable,
 # then, try to use two commands below
