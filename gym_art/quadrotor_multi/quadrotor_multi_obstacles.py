@@ -291,6 +291,23 @@ class MultiObstacles:
             pos_x_1 = np.random.uniform(low=0.5, high=2.0)
             pos_y_1 = np.random.uniform(low=-2.0, high=2.0)
             pos_arr.append(np.array([pos_x_1, pos_y_1, pos_z]))
+        elif self.num_obstacles == 4:
+            pos_x_0 = np.random.uniform(low=-2.0, high=-0.5)
+            pos_y_0 = np.random.uniform(low=-2.0, high=-0.5)
+            pos_arr.append(np.array([pos_x_0, pos_y_0, pos_z]))
+
+            pos_x_1 = np.random.uniform(low=-2.0, high=-0.5)
+            pos_y_1 = np.random.uniform(low=0.5, high=2.0)
+            pos_arr.append(np.array([pos_x_1, pos_y_1, pos_z]))
+
+            pos_x_2 = np.random.uniform(low=0.5, high=2.0)
+            pos_y_2 = np.random.uniform(low=-2.0, high=-0.5)
+            pos_arr.append(np.array([pos_x_2, pos_y_2, pos_z]))
+
+            pos_x_3 = np.random.uniform(low=0.5, high=2.0)
+            pos_y_3 = np.random.uniform(low=0.5, high=2.0)
+            pos_arr.append(np.array([pos_x_3, pos_y_3, pos_z]))
+
         else:
             raise NotImplementedError(f'{self.num_obstacles} is not supported!')
 
