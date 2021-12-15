@@ -165,7 +165,7 @@ QUAD_OBSTACLE_PARAMETERZE_LONG_DURATION_CLI = (
     '--obst_obs_type=pos_size --room_length=10.0 --room_width=10.0 --room_height=10.0 --quads_obstacle_stack_num=2 '
     '--save_milestones_sec=10000 --reward_scale=0.1 --quads_obst_level_mode=0 --quads_enable_sim_room=wall-ceiling '
     '--quads_obst_proximity_mode=0 --quads_obst_inf_height=True --quads_obst_collision_enable_grace_period=True '
-    '--quads_obst_level_change_cond=6.0 '
+    '--quads_obst_level_change_cond=6.0'
 )
 
 
