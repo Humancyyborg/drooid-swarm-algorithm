@@ -7,7 +7,7 @@ _params = ParamGrid([
 ])
 
 PBT_CLI = QUAD_OBSTACLE_PBT_CLI + (
-    '--with_pbt=True --num_policies=8 --pbt_mix_policies_in_one_env=True --pbt_period_env_steps=10000000 '
+    ' --with_pbt=True --num_policies=8 --pbt_mix_policies_in_one_env=True --pbt_period_env_steps=10000000 '
     '--pbt_start_mutation=50000000 --pbt_replace_reward_gap=0.1 --pbt_replace_reward_gap_absolute=4.0 '
     '--num_workers=72 --num_envs_per_worker=16'
 )
