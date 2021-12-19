@@ -159,7 +159,7 @@ QUAD_OBSTACLE_PARAMETERZE_LONG_DURATION_CLI = (
     '--quads_local_obs=6 --quads_local_metric=dist --quads_local_coeff=1.0 --quads_num_agents=8 '
     '--quads_collision_reward=5.0 --quads_collision_smooth_max_penalty=10.0 --quads_neighbor_encoder_type=mean_embed '
     '--replay_buffer_sample_prob=0.0 --anneal_collision_steps=0.0 --quads_obstacle_type=cube '
-    '--quads_collision_obstacle_reward=5.0 --quads_collision_obst_smooth_max_penalty=10.0 '
+    '--quads_collision_obstacle_reward=5.0 --quads_collision_obst_smooth_max_penalty=2.0 '
     '--quads_obstacle_hidden_size=128 --quads_obst_penalty_fall_off=3.0 --quads_obstacle_size=1.0 '
     '--quads_obstacle_num=2 --quads_local_obst_obs=-1 --quads_obstacle_mode=static_pillar_fixsize '
     '--obst_obs_type=pos_size --room_length=10.0 --room_width=10.0 --room_height=10.0 --quads_obstacle_stack_num=2 '
