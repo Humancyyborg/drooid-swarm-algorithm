@@ -64,7 +64,7 @@ python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=1000000000 
 --exploration_loss_coeff=0.0 --rollout=128 --batch_size=1024 --quads_use_numba=True \
 --quads_mode=mix --quads_episode_duration=15.0 --quads_formation_size=0.0 \
 --encoder_custom=quad_multi_encoder --with_pbt=False --quads_collision_reward=5.0 \
---quads_neighbor_hidden_size=256 --neighbor_obs_type=pos_vel --quads_settle_reward=0.0 \
+--quads_neighbor_hidden_size=256 --neighbor_obs_type=pos_vel \
 --quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 --quads_local_obs=6 \
 --quads_local_metric=dist --quads_local_coeff=1.0 --quads_num_agents=8 --quads_collision_reward=5.0 \
 --quads_collision_smooth_max_penalty=10.0 --quads_neighbor_encoder_type=attention \

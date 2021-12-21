@@ -30,7 +30,7 @@ def make_quadrotor_env_single(cfg, **kwargs):
 
     sense_noise = 'default'
 
-    rew_coeff = DEFAULT_QUAD_REWARD_SHAPING_SINGLE['quad_rewards']
+    rew_coeff = DEFAULT_QUAD_REWARD_SHAPING_SINGLE
 
     dynamics_change = dict(noise=dict(thrust_noise_ratio=0.05), damp=dict(vel=0, omega_quadratic=0))
 
@@ -45,7 +45,7 @@ def make_quadrotor_env_single(cfg, **kwargs):
 
     reward_shaping = copy.deepcopy(DEFAULT_QUAD_REWARD_SHAPING_SINGLE)
     if cfg.quads_effort_reward is not None:
-        reward_shaping['quad_rewards']['effort'] = cfg.quads_effort_reward
+        reward_shaping['effort'] = cfg.quads_effort_reward
 
     env = QuadsRewardShapingWrapper(env, reward_shaping_scheme=reward_shaping)
 
@@ -70,7 +70,7 @@ def make_quadrotor_env_multi(cfg, **kwargs):
 
     sense_noise = 'default'
 
-    rew_coeff = DEFAULT_QUAD_REWARD_SHAPING['quad_rewards']
+    rew_coeff = DEFAULT_QUAD_REWARD_SHAPING
 
     dynamics_change = dict(noise=dict(thrust_noise_ratio=0.05), damp=dict(vel=0, omega_quadratic=0))
 
@@ -107,18 +107,17 @@ def make_quadrotor_env_multi(cfg, **kwargs):
 
     reward_shaping = copy.deepcopy(DEFAULT_QUAD_REWARD_SHAPING)
     if cfg.quads_effort_reward is not None:
-        reward_shaping['quad_rewards']['effort'] = cfg.quads_effort_reward
+        reward_shaping['effort'] = cfg.quads_effort_reward
 
-    reward_shaping['quad_rewards']['quadsettle'] = cfg.quads_settle_reward
-    reward_shaping['quad_rewards']['quadcol_bin_obst'] = cfg.quads_collision_obstacle_reward
-    reward_shaping['quad_rewards']['quadcol_bin_obst_smooth_max'] = cfg.quads_collision_obst_smooth_max_penalty
-    reward_shaping['quad_rewards']['quadcol_bin'] = cfg.quads_collision_reward
-    reward_shaping['quad_rewards']['quadcol_bin_smooth_max'] = cfg.quads_collision_smooth_max_penalty
+    reward_shaping['quadcol_bin_obst'] = cfg.quads_collision_obstacle_reward
+    reward_shaping['quadcol_bin_obst_smooth_max'] = cfg.quads_collision_obst_smooth_max_penalty
+    reward_shaping['quadcol_bin'] = cfg.quads_collision_reward
+    reward_shaping['quadcol_bin_smooth_max'] = cfg.quads_collision_smooth_max_penalty
 
     # this is annealed by the reward shaping wrapper
     if cfg.anneal_collision_steps > 0:
-        reward_shaping['quad_rewards']['quadcol_bin'] = 0.0
-        reward_shaping['quad_rewards']['quadcol_bin_smooth_max'] = 0.0
+        reward_shaping['quadcol_bin'] = 0.0
+        reward_shaping['quadcol_bin_smooth_max'] = 0.0
         annealing = [
             AnnealSchedule('quadcol_bin', cfg.quads_collision_reward, cfg.anneal_collision_steps),
             AnnealSchedule('quadcol_bin_smooth_max', cfg.quads_collision_smooth_max_penalty, cfg.anneal_collision_steps),
