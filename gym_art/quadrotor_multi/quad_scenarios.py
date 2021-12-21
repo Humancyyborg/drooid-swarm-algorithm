@@ -44,9 +44,6 @@ class QuadrotorScenario:
         for env in self.envs:
             env.reset_ep_len(ep_time=ep_time)
 
-        # Aux variables for scenario: circular configuration
-        self.settle_count = np.zeros(self.num_agents)
-        self.metric_of_settle = 2.0 * quad_arm
         # Aux variables for scenario: pursuit evasion
         self.interp = None
 
@@ -418,40 +415,6 @@ class Scenario_swap_goals(QuadrotorScenario):
 
         # Reset formation, and parameters related to the formation; formation center; goals
         self.standard_reset()
-
-
-class Scenario_circular_config(QuadrotorScenario):
-    def update_goals(self):
-        np.random.shuffle(self.goals)
-        for env, goal in zip(self.envs, self.goals):
-            env.goal = goal
-
-    def step(self, infos, rewards, pos):
-        for i, e in enumerate(self.envs):
-            dist = np.linalg.norm(pos[i] - e.goal)
-            if abs(dist) < self.metric_of_settle:
-                self.settle_count[i] += 1
-            else:
-                self.settle_count = np.zeros(self.num_agents)
-                break
-
-        # drones settled at the goal for 1 sec
-        control_step_for_one_sec = int(self.envs[0].control_freq)
-        tmp_count = self.settle_count >= control_step_for_one_sec
-        if all(tmp_count):
-            self.update_goals()
-            rews_settle_raw = control_step_for_one_sec
-            rews_settle = self.rew_coeff["quadsettle"] * rews_settle_raw
-            for i, env in enumerate(self.envs):
-                env.goal = self.goals[i]
-                # Add settle rewards
-                rewards[i] += rews_settle
-                infos[i]["rewards"]["rew_quadsettle"] = rews_settle
-                infos[i]["rewards"]["rewraw_quadsettle"] = rews_settle_raw
-
-            self.settle_count = np.zeros(self.num_agents)
-
-        return infos, rewards
 
 
 class Scenario_dynamic_formations(QuadrotorScenario):
