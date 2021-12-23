@@ -28,6 +28,10 @@ class MultiObstacles:
         self.room_height = drone_env.room_box[1][2]
         self.inf_height = inf_height
         self.room_dims = room_dims
+        self.half_room_length = self.room_dims[0] / 2
+        self.half_room_width = self.room_dims[1] / 2
+        self.start_range = np.zeros((2, 2))
+        self.end_range = np.zeros((2, 2))
 
         pos_arr = []
         if 'static_random_place' in mode:
@@ -53,7 +57,8 @@ class MultiObstacles:
                     if np.linalg.norm(obst_pos_xy - block_xy) < size:
                         for try_time in range(3):
                             pos_x = np.random.uniform(low=room_box[0][0] + 0.5 * size, high=room_box[1][0] - 0.5 * size)
-                            pos_y = np.random.uniform(low=room_box[0][1] + 2 + 0.5 * size, high=room_box[1][1] - 2 - 0.5 * size)
+                            pos_y = np.random.uniform(low=room_box[0][1] + 2 + 0.5 * size,
+                                                      high=room_box[1][1] - 2 - 0.5 * size)
                             obst_pos_xy = np.array([pos_x, pos_y])
                             if np.linalg.norm(obst_pos_xy - block_xy) >= size:
                                 break
@@ -72,11 +77,13 @@ class MultiObstacles:
         for i in range(self.num_obstacles):
             obstacle = SingleObstacle(max_init_vel=max_init_vel, init_box=init_box, mode=mode, shape=shape, size=size,
                                       quad_size=quad_size, dt=dt, traj=traj, obs_mode=obs_mode, index=i,
-                                      obs_type=obs_type, all_pos_arr=pos_arr, inf_height=inf_height, room_dims=room_dims)
+                                      obs_type=obs_type, all_pos_arr=pos_arr, inf_height=inf_height,
+                                      room_dims=room_dims)
             self.obstacles.append(obstacle)
 
-    def reset(self, obs=None, quads_pos=None, quads_vel=None, set_obstacles=None, formation_size=0.0, goal_central=np.array([0., 0., 2.]),
-              level=-1):
+    def reset(self, obs=None, quads_pos=None, quads_vel=None, set_obstacles=None, formation_size=0.0,
+              goal_central=np.array([0., 0., 2.]), level=-1, goal_start_point=np.array([-3.0, -3.0, 2.0]),
+              goal_end_point=np.array([3.0, 3.0, 2.0])):
         if self.num_obstacles <= 0:
             return obs
         if set_obstacles is None:
@@ -92,7 +99,8 @@ class MultiObstacles:
         pos_arr = [None for _ in range(self.num_obstacles)]
         if 'static_pillar' in self.mode:
             if self.inf_height:
-                pos_arr = self.generate_inf_pos_by_level(level=level)
+                pos_arr = self.generate_inf_pos_by_level(level=level, goal_start_point=goal_start_point,
+                                                         goal_end_point=goal_end_point)
             else:
                 pos_arr = self.generate_pos_by_level(level=level)
 
@@ -175,7 +183,8 @@ class MultiObstacles:
 
             for i in range(num_quads):
                 # Shape: num_obstacles * 3
-                rel_pos, rel_vel = self.get_rel_pos_vel_item(quad_pos=quads_pos[i], quad_vel=quads_vel[i], indices=indices[i])
+                rel_pos, rel_vel = self.get_rel_pos_vel_item(quad_pos=quads_pos[i], quad_vel=quads_vel[i],
+                                                             indices=indices[i])
                 rel_dist = np.linalg.norm(rel_pos, axis=1)
                 rel_dist = np.maximum(rel_dist, 0.01)
                 rel_pos_unit = rel_pos / rel_dist[:, None]
@@ -265,7 +274,7 @@ class MultiObstacles:
                 pos_z_bottom = 0.5 * self.size * level_z - self.size * self.stack_num
 
             # Add pos
-            for i in range(int(self.num_obstacles/2)):
+            for i in range(int(self.num_obstacles / 2)):
                 tmp_pos_arr_0 = np.array([pos_x_0, pos_y_0, pos_z_bottom + self.size * (0.5 + i)])
                 tmp_pos_arr_1 = np.array([pos_x_1, pos_y_1, pos_z_bottom + self.size * (0.5 + i)])
                 pos_arr.append(tmp_pos_arr_0)
@@ -273,16 +282,53 @@ class MultiObstacles:
 
         return pos_arr
 
-    def generate_inf_pos_by_level(self, level=-1):
+    def check_pos(self, pos_xy, goal_range):
+        min_pos = goal_range[0] - np.array([0.5 * self.size, 0.5 * self.size])
+        max_pos = goal_range[1] + np.array([0.5 * self.size, 0.5 * self.size])
+        closest_point = np.maximum(min_pos, np.minimum(pos_xy, max_pos))
+        closest_dist = np.linalg.norm(pos_xy - closest_point)
+        if closest_dist <= 0.25:
+            # obstacle collide with the spawn range of drones
+            return True
+        else:
+            return False
+
+    def random_pos(self):
+        pos_x = np.random.uniform(low=-1.0 * self.half_room_length + 1.0, high=self.half_room_length - 1.0)
+        pos_y = np.random.uniform(low=-1.0 * self.half_room_width + 1.0, high=self.half_room_width - 1.0)
+        pos_xy = np.array([pos_x, pos_y])
+
+        collide_start = self.check_pos(pos_xy, self.start_range)
+        collide_end = self.check_pos(pos_xy, self.end_range)
+        collide_flag = collide_start or collide_end
+        return pos_xy, collide_flag
+
+    def generate_pos(self):
+        pos_xy, collide_flag = self.random_pos()
+        if collide_flag:
+            for i in range(3):
+                pos_xy, collide_flag = self.random_pos()
+                if not collide_flag:
+                    break
+
+        return pos_xy
+
+    def generate_inf_pos_by_level(self, level=-1, goal_start_point=np.array([-3.0, -3.0, 2.0]),
+                                  goal_end_point=np.array([3.0, 3.0, 2.0])):
         pos_arr = []
+        init_box_range = self.drone_env.init_box_range
         if level <= -1:
             pos_z = -0.5 * self.room_height - 1.0
         else:
             pos_z = 0.5 * self.room_height
 
+        # Based on room_dims [10, 10, 10]
+        self.start_range = np.array([goal_start_point[:2] + init_box_range[0][:2],
+                                     goal_start_point[:2] + init_box_range[1][:2]])
+        self.end_range = np.array([goal_end_point[:2] + np.array([-0.5, -0.5]),
+                                   goal_end_point[:2] + np.array([0.5, 0.5])])
         for i in range(self.num_obstacles):
-            pos_x = np.random.uniform(low=-self.room_dims[0]/2 + 1.0, high=self.room_dims[0]/2 - 1.0)
-            pos_y = np.random.uniform(low=-self.room_dims[1]/2 + 1.0, high=self.room_dims[1]/2 - 1.0)
+            pos_x, pos_y = self.generate_pos()
             pos_arr.append(np.array([pos_x, pos_y, pos_z]))
 
         return pos_arr

@@ -359,6 +359,9 @@ class QuadrotorEnvMulti(gym.Env):
         self.scenario.reset()
         self.quads_formation_size = self.scenario.formation_size
         self.goal_central = np.mean(self.scenario.goals, axis=0)
+        spawn_flag = self.scenario.spawn_flag
+        goal_start_point = self.scenario.start_point
+        goal_end_point = self.scenario.end_point
 
         # try to activate replay buffer if enabled
         if self.use_replay_buffer and not self.activate_replay_buffer:
@@ -375,6 +378,7 @@ class QuadrotorEnvMulti(gym.Env):
             e.goal = self.scenario.goals[i]
             e.rew_coeff = self.rew_coeff
             e.update_env(*self.room_dims)
+            e.reset_spawn_flag(spawn_flag=spawn_flag)
 
             observation = e.reset()
             obs.append(observation)
@@ -393,7 +397,8 @@ class QuadrotorEnvMulti(gym.Env):
             quads_vel = np.array([e.dynamics.vel for e in self.envs])
             obs = self.multi_obstacles.reset(obs=obs, quads_pos=quads_pos, quads_vel=quads_vel,
                                              set_obstacles=self.set_obstacles, formation_size=self.quads_formation_size,
-                                             goal_central=self.goal_central, level=self.obst_level)
+                                             goal_central=self.goal_central, level=self.obst_level,
+                                             goal_start_point=goal_start_point, goal_end_point=goal_end_point)
             self.obst_quad_collisions_per_episode = 0
             self.obst_quad_collisions_per_episode_after_settle = 0
             self.prev_obst_quad_collisions = []
