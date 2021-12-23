@@ -16,8 +16,19 @@ class QuadNeighborhoodEncoder(nn.Module):
         self.num_use_neighbor_obs = num_use_neighbor_obs
 
 
+class QuadObstEncoder(nn.Module):
+    def __init__(self, cfg, self_obs_dim, obst_obs_dim, obst_hidden_size, num_use_obst_obs):
+        super().__init__()
+        self.cfg = cfg
+        self.self_obs_dim = self_obs_dim
+        self.obst_obs_dim = obst_obs_dim
+        self.obst_hidden_size = obst_hidden_size
+        self.num_use_obst_obs = num_use_obst_obs
+
+
 class QuadNeighborhoodEncoderDeepsets(QuadNeighborhoodEncoder):
-    def __init__(self, cfg, neighbor_obs_dim, neighbor_hidden_size, use_spectral_norm, self_obs_dim, num_use_neighbor_obs):
+    def __init__(self, cfg, neighbor_obs_dim, neighbor_hidden_size, use_spectral_norm, self_obs_dim,
+                 num_use_neighbor_obs):
         super().__init__(cfg, self_obs_dim, neighbor_obs_dim, neighbor_hidden_size, num_use_neighbor_obs)
 
         self.embedding_mlp = nn.Sequential(
@@ -37,7 +48,8 @@ class QuadNeighborhoodEncoderDeepsets(QuadNeighborhoodEncoder):
 
 
 class QuadNeighborhoodEncoderAttention(QuadNeighborhoodEncoder):
-    def __init__(self, cfg, neighbor_obs_dim, neighbor_hidden_size, use_spectral_norm, self_obs_dim, num_use_neighbor_obs):
+    def __init__(self, cfg, neighbor_obs_dim, neighbor_hidden_size, use_spectral_norm, self_obs_dim,
+                 num_use_neighbor_obs):
         super().__init__(cfg, self_obs_dim, neighbor_obs_dim, neighbor_hidden_size, num_use_neighbor_obs)
 
         self.self_obs_dim = self_obs_dim
@@ -60,7 +72,8 @@ class QuadNeighborhoodEncoderAttention(QuadNeighborhoodEncoder):
 
         # outputs scalar score alpha_i for each neighbor i
         self.attention_mlp = nn.Sequential(
-            fc_layer(neighbor_hidden_size * 2, neighbor_hidden_size, spec_norm=use_spectral_norm),  # neighbor_hidden_size * 2 because we concat e_i and e_m
+            fc_layer(neighbor_hidden_size * 2, neighbor_hidden_size, spec_norm=use_spectral_norm),
+            # neighbor_hidden_size * 2 because we concat e_i and e_m
             nonlinearity(cfg),
             fc_layer(neighbor_hidden_size, neighbor_hidden_size, spec_norm=use_spectral_norm),
             nonlinearity(cfg),
@@ -96,7 +109,8 @@ class QuadNeighborhoodEncoderAttention(QuadNeighborhoodEncoder):
 
 
 class QuadNeighborhoodEncoderMlp(QuadNeighborhoodEncoder):
-    def __init__(self, cfg, neighbor_obs_dim, neighbor_hidden_size, use_spectral_norm, self_obs_dim, num_use_neighbor_obs):
+    def __init__(self, cfg, neighbor_obs_dim, neighbor_hidden_size, use_spectral_norm, self_obs_dim,
+                 num_use_neighbor_obs):
         super().__init__(cfg, self_obs_dim, neighbor_obs_dim, neighbor_hidden_size, num_use_neighbor_obs)
 
         self.self_obs_dim = self_obs_dim
@@ -114,6 +128,44 @@ class QuadNeighborhoodEncoderMlp(QuadNeighborhoodEncoder):
         obs_neighbors = obs[:, self.self_obs_dim:self.self_obs_dim + all_neighbor_obs_size]
         final_neighborhood_embedding = self.neighbor_mlp(obs_neighbors)
         return final_neighborhood_embedding
+
+
+class QuadObstEncoderDeepsets(QuadObstEncoder):
+    def __init__(self, cfg, obst_obs_dim, obst_hidden_size, use_spectral_norm, self_obs_dim, num_use_obst_obs):
+        super().__init__(cfg, self_obs_dim, obst_obs_dim, obst_hidden_size, num_use_obst_obs)
+        self.obstacle_obs_dim = obst_obs_dim
+        self.obst_hidden_size = obst_hidden_size
+        self.embedding_mlp = nn.Sequential(
+            fc_layer(obst_obs_dim, obst_hidden_size, spec_norm=use_spectral_norm),
+            nonlinearity(cfg),
+            fc_layer(obst_hidden_size, obst_hidden_size, spec_norm=use_spectral_norm),
+            nonlinearity(cfg)
+        )
+
+    def forward(self, self_obs, obs, all_neighbor_obs_size, batch_size):
+        obs_obstacles = obs[:, self.self_obs_dim + all_neighbor_obs_size:]
+        obs_obstacles = obs_obstacles.reshape(-1, self.obstacle_obs_dim)
+        obstacle_embeds = self.embedding_mlp(obs_obstacles)
+        obstacle_embeds = obstacle_embeds.reshape(batch_size, -1, self.obst_hidden_size)
+        obstacle_mean_embed = torch.mean(obstacle_embeds, dim=1)
+        return obstacle_mean_embed
+
+
+class QuadObstEncoderMlp(QuadObstEncoder):
+    def __init__(self, cfg, obst_obs_dim, obst_hidden_size, use_spectral_norm, self_obs_dim, num_use_obst_obs):
+        super().__init__(cfg, self_obs_dim, obst_obs_dim, obst_hidden_size, num_use_obst_obs)
+        self.self_obs_dim = self_obs_dim
+        self.obst_mlp = nn.Sequential(
+            fc_layer(obst_obs_dim * num_use_obst_obs, obst_hidden_size, spec_norm=use_spectral_norm),
+            nonlinearity(cfg),
+            fc_layer(obst_hidden_size, obst_hidden_size, spec_norm=use_spectral_norm),
+            nonlinearity(cfg),
+        )
+
+    def forward(self, self_obs, obs, all_neighbor_obs_size, batch_size):
+        obs_obstacles = obs[:, self.self_obs_dim + all_neighbor_obs_size:]
+        final_obst_embedding = self.obst_mlp(obs_obstacles)
+        return final_obst_embedding
 
 
 class QuadMultiEncoder(EncoderBase):
@@ -182,11 +234,13 @@ class QuadMultiEncoder(EncoderBase):
             neighbor_encoder_type = cfg.quads_neighbor_encoder_type
             if neighbor_encoder_type == 'mean_embed':
                 self.neighbor_encoder = QuadNeighborhoodEncoderDeepsets(cfg, self.neighbor_obs_dim,
-                                                                        self.neighbor_hidden_size, self.use_spectral_norm,
+                                                                        self.neighbor_hidden_size,
+                                                                        self.use_spectral_norm,
                                                                         self.self_obs_dim, self.num_use_neighbor_obs)
             elif neighbor_encoder_type == 'attention':
                 self.neighbor_encoder = QuadNeighborhoodEncoderAttention(cfg, self.neighbor_obs_dim,
-                                                                         self.neighbor_hidden_size, self.use_spectral_norm,
+                                                                         self.neighbor_hidden_size,
+                                                                         self.use_spectral_norm,
                                                                          self.self_obs_dim, self.num_use_neighbor_obs)
             elif neighbor_encoder_type == 'mlp':
                 self.neighbor_encoder = QuadNeighborhoodEncoderMlp(cfg, self.neighbor_obs_dim,
@@ -214,13 +268,17 @@ class QuadMultiEncoder(EncoderBase):
         obstacle_encoder_out_size = 0
         if self.obstacle_mode != 'no_obstacles':
             self.obstacle_hidden_size = cfg.quads_obstacle_hidden_size  # internal param
-            self.obstacle_encoder = nn.Sequential(
-                fc_layer(self.obstacle_obs_dim, self.obstacle_hidden_size, spec_norm=self.use_spectral_norm),
-                nonlinearity(cfg),
-                fc_layer(self.obstacle_hidden_size, self.obstacle_hidden_size, spec_norm=self.use_spectral_norm),
-                nonlinearity(cfg),
-            )
-            obstacle_encoder_out_size = calc_num_elements(self.obstacle_encoder, (self.obstacle_obs_dim,))
+            obst_encoder_type = cfg.quads_obst_encoder_type
+            if obst_encoder_type == 'mean_embed':
+                self.obstacle_encoder = QuadObstEncoderDeepsets(cfg, self.obstacle_obs_dim, self.obstacle_hidden_size,
+                                                                self.use_spectral_norm, self.self_obs_dim,
+                                                                self.local_obstacle_num)
+            elif obst_encoder_type == 'mlp':
+                self.obstacle_encoder = QuadObstEncoderMlp(cfg, self.obstacle_obs_dim, self.obstacle_hidden_size,
+                                                           self.use_spectral_norm, self.self_obs_dim,
+                                                           self.local_obstacle_num)
+
+            obstacle_encoder_out_size = self.obstacle_hidden_size
 
         if self.quads_obst_model_type == 'nei_obst':
             in_size = neighbor_encoder_out_size + obstacle_encoder_out_size
@@ -273,12 +331,8 @@ class QuadMultiEncoder(EncoderBase):
                 embeddings = torch.cat((embeddings, neighborhood_embedding), dim=1)
 
             if self.obstacle_mode != 'no_obstacles':
-                obs_obstacles = obs[:, self.self_obs_dim + all_neighbor_obs_size:]
-                obs_obstacles = obs_obstacles.reshape(-1, self.obstacle_obs_dim)
-                obstacle_embeds = self.obstacle_encoder(obs_obstacles)
-                obstacle_embeds = obstacle_embeds.reshape(batch_size, -1, self.obstacle_hidden_size)
-                obstacle_mean_embed = torch.mean(obstacle_embeds, dim=1)
-                embeddings = torch.cat((embeddings, obstacle_mean_embed), dim=1)
+                obstacle_embedding = self.obstacle_encoder(obs_self, obs, all_neighbor_obs_size, batch_size)
+                embeddings = torch.cat((embeddings, obstacle_embedding), dim=1)
 
         out = self.feed_forward(embeddings)
         return out
