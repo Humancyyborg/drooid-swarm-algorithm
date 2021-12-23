@@ -77,3 +77,6 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obst_proximity_mode', default=1, type=int, help='0: without dt, 1: with dt, check quad_utils.py, calculate_obst_drone_proximity_penalties')
     p.add_argument('--quads_obst_inf_height', default=False, type=str2bool, help='True: height == room height, False: customized height')
     p.add_argument('--quads_obst_collision_enable_grace_period', default=False, type=str2bool, help='If use grace period, we only calculate the collision penalty and collision proximity penalty after grace period')
+
+    p.add_argument('--quads_midreset', default=False, type=str2bool, help='If a drone crashes >= quads_crash_reset_threshold, reset this drone')
+    p.add_argument('--quads_crash_reset_threshold', default=100, type=int, help='Threshold of midreset, default: 100 ticks')

@@ -40,7 +40,7 @@ class QuadrotorEnvMulti(gym.Env):
                  viz_traces=25, viz_trace_nth_step=1, local_obst_obs=-1, obst_enable_sim=True, obst_obs_type='none',
                  quads_reward_ep_len=True, obst_level=-1, obst_stack_num=4, enable_sim_room='none', obst_level_mode=0,
                  obst_proximity_mode=0, obst_inf_height=False, obst_level_change_cond=0.5,
-                 obst_collision_enable_grace_period=False):
+                 obst_collision_enable_grace_period=False, midreset=False, crash_reset_threshold=100):
 
         super().__init__()
 
@@ -224,6 +224,12 @@ class QuadrotorEnvMulti(gym.Env):
         self.crashes_in_recent_episodes = deque([], maxlen=100)
         self.crashes_last_episode = 0
 
+        # count the continuous crash ticks, 100 ticks
+        self.midreset = midreset
+        self.all_crash_counter = np.zeros(self.num_agents)
+        self.all_crash_threshold = crash_reset_threshold
+
+
     def set_room_dims(self, dims):
         # dims is a (x, y, z) tuple
         self.room_dims = dims
@@ -362,7 +368,10 @@ class QuadrotorEnvMulti(gym.Env):
         spawn_flag = self.scenario.spawn_flag
         goal_start_point = self.scenario.start_point
         goal_end_point = self.scenario.end_point
-        scenario_mode = self.scenario.scenario_mode
+        if self.scenario.quads_mode == 'mix':
+            scenario_mode = self.scenario.scenario_mode
+        else:
+            scenario_mode = self.scenario.quads_mode
 
         # try to activate replay buffer if enabled
         if self.use_replay_buffer and not self.activate_replay_buffer:
@@ -379,7 +388,7 @@ class QuadrotorEnvMulti(gym.Env):
             e.goal = self.scenario.goals[i]
             e.rew_coeff = self.rew_coeff
             e.update_env(*self.room_dims)
-            e.reset_spawn_flag(spawn_flag=spawn_flag)
+            e.reset_spawn_flag_and_start_point(spawn_flag=spawn_flag, goal_start_point=goal_start_point)
 
             observation = e.reset()
             obs.append(observation)
@@ -634,6 +643,20 @@ class QuadrotorEnvMulti(gym.Env):
             obs = self.multi_obstacles.step(obs=obs, quads_pos=self.pos, quads_vel=quads_vel,
                                             set_obstacles=self.set_obstacles)
 
+        if self.midreset:
+            all_kinds_collisions = np.array([env.crashed for env in self.envs])
+            if any(all_kinds_collisions):
+                for i, e in enumerate(self.envs):
+                    if all_kinds_collisions[i]:
+                        self.all_crash_counter[i] += 1
+                    else:
+                        self.all_crash_counter[i] = 0
+
+                    if self.all_crash_counter[i] > self.all_crash_threshold:
+                        e.mid_reset()
+                        self.all_crash_counter[i] = 0
+            else:
+                self.all_crash_counter = np.zeros(self.num_agents)
 
         # DONES
         if any(dones):
