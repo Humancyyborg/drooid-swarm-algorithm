@@ -1,5 +1,6 @@
 import numpy as np
 
+from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_MODE_MULTI_GOAL_CENTER
 from gym_art.quadrotor_multi.quadrotor_single_obstacle import SingleObstacle
 from gym_art.quadrotor_multi.quad_obstacle_utils import OBSTACLES_SHAPE_LIST, STATIC_OBSTACLE_DOOR
 
@@ -80,7 +81,7 @@ class MultiObstacles:
 
     def reset(self, obs=None, quads_pos=None, quads_vel=None, set_obstacles=None, formation_size=0.0,
               goal_central=np.array([0., 0., 2.]), level=-1, goal_start_point=np.array([-3.0, -3.0, 2.0]),
-              goal_end_point=np.array([3.0, 3.0, 2.0])):
+              goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal'):
         if self.num_obstacles <= 0:
             return obs
         if set_obstacles is None:
@@ -97,7 +98,7 @@ class MultiObstacles:
         if 'static_pillar' in self.mode:
             if self.inf_height:
                 pos_arr = self.generate_inf_pos_by_level(level=level, goal_start_point=goal_start_point,
-                                                         goal_end_point=goal_end_point)
+                                                         goal_end_point=goal_end_point, scenario_mode=scenario_mode)
             else:
                 pos_arr = self.generate_pos_by_level(level=level)
 
@@ -311,7 +312,7 @@ class MultiObstacles:
         return pos_xy
 
     def generate_inf_pos_by_level(self, level=-1, goal_start_point=np.array([-3.0, -3.0, 2.0]),
-                                  goal_end_point=np.array([3.0, 3.0, 2.0])):
+                                  goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal'):
         pos_arr = []
         init_box_range = self.drone_env.init_box_range
         if level <= -1:
@@ -322,8 +323,14 @@ class MultiObstacles:
         # Based on room_dims [10, 10, 10]
         self.start_range = np.array([goal_start_point[:2] + init_box_range[0][:2],
                                      goal_start_point[:2] + init_box_range[1][:2]])
-        self.end_range = np.array([goal_end_point[:2] + np.array([-0.5, -0.5]),
-                                   goal_end_point[:2] + np.array([0.5, 0.5])])
+
+        if scenario_mode in QUADS_MODE_MULTI_GOAL_CENTER:
+            self.end_range = np.array([goal_end_point[:2] + init_box_range[0][:2],
+                                       goal_end_point[:2] + init_box_range[1][:2]])
+        else:
+            self.end_range = np.array([goal_end_point[:2] + np.array([-0.5, -0.5]),
+                                       goal_end_point[:2] + np.array([0.5, 0.5])])
+
         for i in range(self.num_obstacles):
             pos_x, pos_y = self.generate_pos()
             pos_arr.append(np.array([pos_x, pos_y, pos_z]))

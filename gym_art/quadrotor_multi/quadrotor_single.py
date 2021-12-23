@@ -1130,7 +1130,7 @@ class QuadrotorSingle:
                                                    quads_reward_ep_len=self.quads_reward_ep_len
         )
         self.tick += 1
-        done = self.tick > self.ep_len  # or self.crashed
+        done = self.tick >= self.ep_len  # or self.crashed
         sv = self.state_vector(self)
 
         self.traj_count += int(done)
