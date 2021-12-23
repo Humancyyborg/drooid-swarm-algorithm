@@ -69,10 +69,7 @@ class MultiObstacles:
 
                 pos_block_arr.append(np.array([pos_x, pos_y, 0.5 * size]))
         elif 'static_pillar' in mode:
-            if inf_height:
-                pos_arr = self.generate_inf_pos_by_level(level=level)
-            else:
-                pos_arr = self.generate_pos_by_level(level=level)
+            pos_arr = np.zeros((num_obstacles, 3))
 
         for i in range(self.num_obstacles):
             obstacle = SingleObstacle(max_init_vel=max_init_vel, init_box=init_box, mode=mode, shape=shape, size=size,
