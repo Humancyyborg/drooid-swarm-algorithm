@@ -451,6 +451,9 @@ class QuadrotorDynamics:
 
         ## Computing velocities
         self.vel = (1.0 - self.vel_damp) * self.vel + dt * acc
+        if self.crashed_floor:
+            self.vel = np.clip(self.vel, a_min=np.array([-self.vxyz_max, -self.vxyz_max, -0.5]),
+                               a_max=np.array([self.vxyz_max, self.vxyz_max, self.vxyz_max]))
         # self.vel[mask] = 0. #If we leave the room - stop flying
 
         ## Accelerometer measures so called "proper acceleration"
@@ -482,6 +485,9 @@ class QuadrotorDynamics:
         self.vel, self.acc, self.accelerometer = compute_velocity_and_acceleration(self.vel, grav_cnst_arr, self.mass, self.rot,
                                                                          sum_thr_drag, self.vel_damp, dt, self.rot.T,
                                                                          grav_arr)
+        if self.crashed_floor:
+            self.vel = np.clip(self.vel, a_min=np.array([-self.vxyz_max, -self.vxyz_max, -0.5]),
+                               a_max=np.array([self.vxyz_max, self.vxyz_max, self.vxyz_max]))
 
     def reset(self):
         self.thrust_cmds_damp = np.zeros([4])

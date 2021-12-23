@@ -344,14 +344,14 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_dyn, quad_arm, room_dims
             obst_z_size = 0.5 * obstacle_dyn.size
         if abs(rel_pos[0]) <= obst_range and abs(rel_pos[1]) <= obst_range and abs(rel_pos[2]) <= obst_z_size:
             collision_norm = drone_dyn.pos - obstacle_dyn.pos
-            collision_norm[2] = np.random.uniform(low=-0.1, high=0.1)
+            collision_norm[2] = np.random.uniform(low=-0.01, high=0.01)
             coll_norm_mag = np.linalg.norm(collision_norm)
             collision_norm = collision_norm / (coll_norm_mag + 0.00001 if coll_norm_mag == 0.0 else coll_norm_mag)
             drone_dyn.vel = 10.0 * collision_norm
         else:
             drone_speed = np.linalg.norm(drone_dyn.vel)
-            real_speed = np.random.uniform(low=0.1 * drone_speed, high=1.0 * drone_speed)
-            real_speed = np.clip(real_speed, a_min=0.1, a_max=10.0)
+            real_speed = np.random.uniform(low=0.1 * drone_speed, high=0.5 * drone_speed)
+            real_speed = np.clip(real_speed, a_min=0.1, a_max=8.0)
 
             drone_pos = drone_dyn.pos
             obst_pos = obstacle_dyn.pos
@@ -460,8 +460,8 @@ def perform_collision_with_obstacle_v2(drone_dyn, obstacle_dyn, quad_arm=0.046):
 
 def perform_collision_with_wall(drone_dyn, room_box):
     drone_speed = np.linalg.norm(drone_dyn.vel)
-    real_speed = np.random.uniform(low=0.1 * drone_speed, high=1.0 * drone_speed)
-    real_speed = np.clip(real_speed, a_min=0.1, a_max=10.0)
+    real_speed = np.random.uniform(low=0.1 * drone_speed, high=0.5 * drone_speed)
+    real_speed = np.clip(real_speed, a_min=0.1, a_max=8.0)
 
     drone_pos = drone_dyn.pos
     x_list = [drone_pos[0] == room_box[0][0], drone_pos[0] == room_box[1][0]]
