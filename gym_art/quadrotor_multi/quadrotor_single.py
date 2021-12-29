@@ -34,6 +34,7 @@ import transforms3d as t3d
 # GYM
 from gym.utils import seeding
 from gym_art.quadrotor_multi.inertia import QuadLink, QuadLinkSimplified
+from gym_art.quadrotor_multi.quad_crash_utils import clip_floor_vel_params
 from gym_art.quadrotor_multi.quadrotor_control import *
 from gym_art.quadrotor_multi.quadrotor_visualization import *
 from gym_art.quadrotor_multi.sensor_noise import SensorNoise
@@ -76,11 +77,12 @@ class QuadrotorDynamics:
                  dim_mode="3D",
                  gravity=GRAV,
                  dynamics_simplification=False,
-                 use_numba=False):
+                 use_numba=False, clip_floor_vel_mode=0):
 
         self.dynamics_steps_num = dynamics_steps_num
         self.dynamics_simplification = dynamics_simplification
         self.use_numba = use_numba
+        self.clip_floor_vel_mode = clip_floor_vel_mode
         ###############################################################
         ## PARAMETERS
         self.prop_ccw = np.array([-1., 1., -1., 1.])
@@ -451,9 +453,10 @@ class QuadrotorDynamics:
 
         ## Computing velocities
         self.vel = (1.0 - self.vel_damp) * self.vel + dt * acc
-        if self.crashed_floor:
-            self.vel = np.clip(self.vel, a_min=np.array([-self.vxyz_max, -self.vxyz_max, -0.1]),
-                               a_max=np.array([self.vxyz_max, self.vxyz_max, self.vxyz_max]))
+        if self.crashed_floor and self.clip_floor_vel_mode > 0:
+            min_vel = clip_floor_vel_params[self.clip_floor_vel_mode]['min']
+            max_vel = clip_floor_vel_params[self.clip_floor_vel_mode]['max']
+            self.vel = np.clip(self.vel, a_min=min_vel, a_max=max_vel)
         # self.vel[mask] = 0. #If we leave the room - stop flying
 
         ## Accelerometer measures so called "proper acceleration"
@@ -492,9 +495,10 @@ class QuadrotorDynamics:
                                                                                    sum_thr_drag, self.vel_damp, dt,
                                                                                    self.rot.T,
                                                                                    grav_arr)
-        if self.crashed_floor:
-            self.vel = np.clip(self.vel, a_min=np.array([-self.vxyz_max, -self.vxyz_max, -0.1]),
-                               a_max=np.array([self.vxyz_max, self.vxyz_max, self.vxyz_max]))
+        if self.crashed_floor and self.clip_floor_vel_mode > 0:
+            min_vel = clip_floor_vel_params[self.clip_floor_vel_mode]['min']
+            max_vel = clip_floor_vel_params[self.clip_floor_vel_mode]['max']
+            self.vel = np.clip(self.vel, a_min=min_vel, a_max=max_vel)
 
     def reset(self):
         self.thrust_cmds_damp = np.zeros([4])
@@ -765,7 +769,7 @@ class QuadrotorSingle:
                  t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False, swarm_obs='none', num_agents=1,quads_settle=False,
                  quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8,
                  view_mode='local', obstacle_mode='no_obstacles', obstacle_num=0, num_use_neighbor_obs=0, num_local_obst=0,
-                 obst_obs_type='none', quads_reward_ep_len=True, obst_inf_height=False):
+                 obst_obs_type='none', quads_reward_ep_len=True, obst_inf_height=False, clip_floor_vel_mode=0):
         np.seterr(under='ignore')
         """
         Args:
@@ -819,6 +823,7 @@ class QuadrotorSingle:
         self.quads_settle = quads_settle
         self.quads_settle_range_meters = quads_settle_range_meters
         self.quads_vel_reward_out_range = quads_vel_reward_out_range
+        self.clip_floor_vel_mode = clip_floor_vel_mode
         ## t2w and t2t ranges
         self.t2w_std = t2w_std
         self.t2w_min = 1.5
@@ -980,7 +985,7 @@ class QuadrotorSingle:
                                           dynamics_steps_num=self.sim_steps, room_box=self.room_box,
                                           dim_mode=self.dim_mode,
                                           gravity=self.gravity, dynamics_simplification=self.dynamics_simplification,
-                                          use_numba=self.use_numba)
+                                          use_numba=self.use_numba, clip_floor_vel_mode=self.clip_floor_vel_mode)
 
         if self.verbose:
             print("#################################################")

@@ -79,3 +79,5 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obst_collision_enable_grace_period', default=False, type=str2bool, help='If use grace period, we only calculate the collision penalty and collision proximity penalty after grace period')
 
     p.add_argument('--quads_crash_mode', default=0, type=int, help='Check quad_crash_utils.py, crash_params')
+    p.add_argument('--quads_clip_floor_vel_mode', default=0, type=int, help='Check quad_crash_utils.py, clip_floor_vel_params')
+
