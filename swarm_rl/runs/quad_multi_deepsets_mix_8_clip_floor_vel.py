@@ -4,14 +4,14 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_OBSTACLE_PA
 
 _params = ParamGrid([
     ('seed', [0000, 3333]),
-    ('quads_obstacle_num', [4]),
+    ('quads_obstacle_num', [8]),
     ('quads_local_obst_obs', [2]),
     ('quads_crash_mode', [0]),
     ('quads_clip_floor_vel_mode', [0, 2]),
 ])
 
 _experiment = Experiment(
-    'clip_floor_vel_2local_obst_prox_penalty_mix',
+    'clip_floor_vel_2_local_obst_prox_penalty_mix',
     QUAD_OBSTACLE_PARAMETERZE_LONG_DURATION_CLI,
     _params.generate_params(randomize=False),
 )

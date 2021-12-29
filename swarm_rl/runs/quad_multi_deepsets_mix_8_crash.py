@@ -4,7 +4,7 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_OBSTACLE_PA
 
 _params = ParamGrid([
     ('seed', [0000, 3333]),
-    ('quads_obstacle_num', [4]),
+    ('quads_obstacle_num', [8]),
     ('quads_local_obst_obs', [2]),
     ('quads_crash_mode', [0, 2]),
 ])
