@@ -8,6 +8,9 @@ from scipy import spatial
 from copy import deepcopy
 
 # dict pretty printing
+from gym_art.quadrotor_multi.quad_crash_utils import crash_params
+
+
 def print_dic(dic, indent=""):
     for key, item in dic.items():
         if isinstance(item, dict):
@@ -334,7 +337,7 @@ def perform_collision_between_drones(dyn1, dyn2):
     dyn2.omega -= new_omega
 
 
-def perform_collision_with_obstacle(drone_dyn, obstacle_dyn, quad_arm, room_dims, inf_height):
+def perform_collision_with_obstacle(drone_dyn, obstacle_dyn, quad_arm, room_dims, inf_height, crash_mode):
     if obstacle_dyn.shape == 'cube':
         rel_pos = drone_dyn.pos - obstacle_dyn.pos
         obst_range = 0.5 * obstacle_dyn.size + 0.001
@@ -349,9 +352,15 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_dyn, quad_arm, room_dims
             collision_norm = collision_norm / (coll_norm_mag + 0.00001 if coll_norm_mag == 0.0 else coll_norm_mag)
             drone_dyn.vel = 10.0 * collision_norm
         else:
+            damp_low_speed_ratio = crash_params[crash_mode]['low']
+            damp_high_speed_ratio = crash_params[crash_mode]['high']
+            lowest_speed = crash_params[crash_mode]['low_speed']
+            highest_speed = crash_params[crash_mode]['high_speed']
+
             drone_speed = np.linalg.norm(drone_dyn.vel)
-            real_speed = np.random.uniform(low=0.1 * drone_speed, high=1.0 * drone_speed)
-            real_speed = np.clip(real_speed, a_min=0.1, a_max=10.0)
+            real_speed = np.random.uniform(low=damp_low_speed_ratio * drone_speed,
+                                           high=damp_high_speed_ratio * drone_speed)
+            real_speed = np.clip(real_speed, a_min=lowest_speed, a_max=highest_speed)
 
             drone_pos = drone_dyn.pos
             obst_pos = obstacle_dyn.pos
@@ -458,10 +467,15 @@ def perform_collision_with_obstacle_v2(drone_dyn, obstacle_dyn, quad_arm=0.046):
     drone_dyn.omega += new_omega
 
 
-def perform_collision_with_wall(drone_dyn, room_box):
+def perform_collision_with_wall(drone_dyn, room_box, crash_mode):
+    damp_low_speed_ratio = crash_params[crash_mode]['low']
+    damp_high_speed_ratio = crash_params[crash_mode]['high']
+    lowest_speed = crash_params[crash_mode]['low_speed']
+    highest_speed = crash_params[crash_mode]['high_speed']
+
     drone_speed = np.linalg.norm(drone_dyn.vel)
-    real_speed = np.random.uniform(low=0.1 * drone_speed, high=1.0 * drone_speed)
-    real_speed = np.clip(real_speed, a_min=0.1, a_max=10.0)
+    real_speed = np.random.uniform(low=damp_low_speed_ratio * drone_speed, high=damp_high_speed_ratio * drone_speed)
+    real_speed = np.clip(real_speed, a_min=lowest_speed, a_max=highest_speed)
 
     drone_pos = drone_dyn.pos
     x_list = [drone_pos[0] == room_box[0][0], drone_pos[0] == room_box[1][0]]

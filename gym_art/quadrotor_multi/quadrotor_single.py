@@ -451,6 +451,9 @@ class QuadrotorDynamics:
 
         ## Computing velocities
         self.vel = (1.0 - self.vel_damp) * self.vel + dt * acc
+        if self.crashed_floor:
+            self.vel = np.clip(self.vel, a_min=np.array([-self.vxyz_max, -self.vxyz_max, -0.1]),
+                               a_max=np.array([self.vxyz_max, self.vxyz_max, self.vxyz_max]))
         # self.vel[mask] = 0. #If we leave the room - stop flying
 
         ## Accelerometer measures so called "proper acceleration"
@@ -460,11 +463,16 @@ class QuadrotorDynamics:
     def step1_numba(self, thrust_cmds, dt, thrust_noise):
         self.motor_tau_up, self.motor_tau_down, self.thrust_rot_damp, self.thrust_cmds_damp, self.torques, \
         self.torque, self.rot, self.since_last_svd, self.omega_dot, self.omega, self.pos, thrust, rotor_drag_force = \
-            calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, EPS, self.motor_damp_time_up, self.motor_damp_time_down,
-                         self.thrust_cmds_damp, self.thrust_rot_damp, thrust_noise, self.thrust_max, self.motor_linearity,
-                         self.prop_crossproducts, self.prop_ccw, self.torque_max, self.rot, np.float64(self.omega),
-                         self.eye, self.since_last_svd, self.since_last_svd_limit, self.inertia,
-                         self.damp_omega_quadratic, self.omega_max, self.pos, self.vel)
+            calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, EPS, self.motor_damp_time_up,
+                                                                  self.motor_damp_time_down,
+                                                                  self.thrust_cmds_damp, self.thrust_rot_damp,
+                                                                  thrust_noise, self.thrust_max, self.motor_linearity,
+                                                                  self.prop_crossproducts, self.prop_ccw,
+                                                                  self.torque_max, self.rot, np.float64(self.omega),
+                                                                  self.eye, self.since_last_svd,
+                                                                  self.since_last_svd_limit, self.inertia,
+                                                                  self.damp_omega_quadratic, self.omega_max, self.pos,
+                                                                  self.vel)
 
         self.crashed_wall = not np.array_equal(
             self.pos[:2], np.clip(self.pos[:2], a_min=self.room_box[0][:2], a_max=self.room_box[1][:2]))
@@ -479,9 +487,14 @@ class QuadrotorDynamics:
         grav_cnst_arr = np.float64([0, 0, -GRAV])
         sum_thr_drag = thrust + rotor_drag_force
         grav_arr = np.float64([0, 0, self.gravity])
-        self.vel, self.acc, self.accelerometer = compute_velocity_and_acceleration(self.vel, grav_cnst_arr, self.mass, self.rot,
-                                                                         sum_thr_drag, self.vel_damp, dt, self.rot.T,
-                                                                         grav_arr)
+        self.vel, self.acc, self.accelerometer = compute_velocity_and_acceleration(self.vel, grav_cnst_arr, self.mass,
+                                                                                   self.rot,
+                                                                                   sum_thr_drag, self.vel_damp, dt,
+                                                                                   self.rot.T,
+                                                                                   grav_arr)
+        if self.crashed_floor:
+            self.vel = np.clip(self.vel, a_min=np.array([-self.vxyz_max, -self.vxyz_max, -0.1]),
+                               a_max=np.array([self.vxyz_max, self.vxyz_max, self.vxyz_max]))
 
     def reset(self):
         self.thrust_cmds_damp = np.zeros([4])

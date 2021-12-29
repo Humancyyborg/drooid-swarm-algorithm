@@ -40,7 +40,7 @@ class QuadrotorEnvMulti(gym.Env):
                  viz_traces=25, viz_trace_nth_step=1, local_obst_obs=-1, obst_enable_sim=True, obst_obs_type='none',
                  quads_reward_ep_len=True, obst_level=-1, obst_stack_num=4, enable_sim_room='none', obst_level_mode=0,
                  obst_proximity_mode=0, obst_inf_height=False, obst_level_change_cond=0.5,
-                 obst_collision_enable_grace_period=False):
+                 obst_collision_enable_grace_period=False, crash_mode=0):
 
         super().__init__()
 
@@ -223,6 +223,9 @@ class QuadrotorEnvMulti(gym.Env):
         self.last_step_unique_collisions = False
         self.crashes_in_recent_episodes = deque([], maxlen=100)
         self.crashes_last_episode = 0
+
+        # set crash parameters
+        self.crash_mode = crash_mode
 
     def set_room_dims(self, dims):
         # dims is a (x, y, z) tuple
@@ -524,7 +527,8 @@ class QuadrotorEnvMulti(gym.Env):
                 if self.obst_enable_sim:
                     perform_collision_with_obstacle(
                         drone_dyn=self.envs[val[0]].dynamics, obstacle_dyn=self.multi_obstacles.obstacles[val[1]],
-                        quad_arm=self.quad_arm, room_dims=self.room_dims, inf_height=self.obst_inf_height)
+                        quad_arm=self.quad_arm, room_dims=self.room_dims, inf_height=self.obst_inf_height,
+                        crash_mode=self.crash_mode)
 
         if self.enable_sim_room != 'none':
             sim_list = self.enable_sim_room.split('-')
@@ -539,7 +543,8 @@ class QuadrotorEnvMulti(gym.Env):
             if 'wall' in sim_list:
                 wall_crash_list = np.where(wall_collisions >= 1)[0]
                 for val in wall_crash_list:
-                    perform_collision_with_wall(drone_dyn=self.envs[val].dynamics, room_box=self.envs[0].room_box)
+                    perform_collision_with_wall(drone_dyn=self.envs[val].dynamics, room_box=self.envs[0].room_box,
+                                                crash_mode=self.crash_mode)
 
         for i in range(self.num_agents):
             rewards[i] += rew_collisions[i]
