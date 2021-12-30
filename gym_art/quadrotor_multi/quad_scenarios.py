@@ -866,6 +866,7 @@ class Scenario_o_swarm_vs_swarm(QuadrotorScenario):
         self.spawn_flag = 0  # used for init spawn, check quadrotor_single.py
         self.duration_time = 0.0
         self.quads_mode = quads_mode
+        self.env_shuffle_list = np.arange(len(envs))
 
     def update_formation_size(self, new_formation_size):
         if new_formation_size != self.formation_size:
@@ -908,10 +909,12 @@ class Scenario_o_swarm_vs_swarm(QuadrotorScenario):
         # Shuffle goals
         np.random.shuffle(self.goals_1)
         np.random.shuffle(self.goals_2)
-        self.goals = np.concatenate([self.goals_1, self.goals_2])
+        tmp_goals = np.concatenate([self.goals_1, self.goals_2])
+        self.goals = copy.deepcopy(tmp_goals)
+        for i in range(len(self.envs)):
+            self.goals[self.env_shuffle_list[i]] = tmp_goals[i]
 
     def update_goals(self):
-        self.duration_time += np.random.uniform(low=10.0, high=15.0)
         tmp_goal_center_1 = copy.deepcopy(self.goal_center_1)
         tmp_goal_center_2 = copy.deepcopy(self.goal_center_2)
         self.goal_center_1 = tmp_goal_center_2
@@ -929,11 +932,13 @@ class Scenario_o_swarm_vs_swarm(QuadrotorScenario):
             return infos, rewards
 
         self.update_goals()
+        self.duration_time += np.random.uniform(low=10.0, high=15.0)
         return infos, rewards
 
     def reset(self):
         self.duration_time = np.random.uniform(low=4.0, high=6.0)
         self.spawn_flag = np.random.randint(4)
+        np.random.shuffle(self.env_shuffle_list)
         # Reset formation and related parameters
         self.update_formation_and_relate_param()
 
