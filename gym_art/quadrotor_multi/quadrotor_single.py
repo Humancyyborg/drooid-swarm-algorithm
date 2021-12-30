@@ -937,6 +937,10 @@ class QuadrotorSingle:
         self.tick = 0
         self.crashed = False
         self.control_freq = sim_freq / sim_steps
+        # used for spawn
+        self.spawn_flag = 0
+        self.init_box_range = np.array([[-self.box, -self.box, -0.5 * self.box], [self.box, self.box, 1.5 * self.box]])
+        self.goal_start_point = np.zeros(3)
 
         self.rew_coeff = None  # provided by the parent multi_env
 
@@ -946,6 +950,10 @@ class QuadrotorSingle:
     def reset_ep_len(self, ep_time):
         self.ep_time = ep_time
         self.ep_len = int(self.ep_time / (self.dt * self.sim_steps))
+
+    def reset_spawn_flag_and_start_point(self, spawn_flag, goal_start_point):
+        self.spawn_flag = spawn_flag
+        self.goal_start_point = goal_start_point
 
     def save_dyn_params(self, filename):
         import yaml
@@ -1142,7 +1150,7 @@ class QuadrotorSingle:
                                                    quads_reward_ep_len=self.quads_reward_ep_len
         )
         self.tick += 1
-        done = self.tick > self.ep_len  # or self.crashed
+        done = self.tick >= self.ep_len  # or self.crashed
         sv = self.state_vector(self)
 
         self.traj_count += int(done)
@@ -1214,6 +1222,44 @@ class QuadrotorSingle:
         ## Updating params
         self.update_dynamics(dynamics_params=self.dynamics_params)
 
+    def set_pos(self):
+        if self.spawn_flag == 0 or self.spawn_flag == 2:
+            tmp_x = self.np_random.uniform(-1.0 * self.box, self.box)
+            tmp_y = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box)
+            # low
+            self.init_box_range[0][0] = -1.0 * self.box
+            self.init_box_range[0][1] = -0.5 * self.box
+            # high
+            self.init_box_range[1][0] = self.box
+            self.init_box_range[1][1] = 0.5 * self.box
+        else:
+            tmp_x = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box)
+            tmp_y = self.np_random.uniform(-1.0 * self.box, 1.0 * self.box)
+            # low
+            self.init_box_range[0][0] = -0.5 * self.box
+            self.init_box_range[0][1] = -1.0 * self.box
+            # high
+            self.init_box_range[1][0] = 0.5 * self.box
+            self.init_box_range[1][1] = self.box
+
+        tmp_z = self.np_random.uniform(-1.0 * self.box, 1.5 * self.box)
+        x, y, z = np.array([tmp_x, tmp_y, tmp_z]) + self.goal
+
+        if self.dim_mode == '1D':
+            x, y = self.goal[0], self.goal[1]
+        elif self.dim_mode == '2D':
+            y = self.goal[1]
+        # Since being near the groud means crash we have to start above
+        # if z < 0.25: z = 0.25
+        x = np.clip(x, a_min=-1.0 * self.room_length / 2 + 0.25, a_max=self.room_length / 2 - 0.25)
+        y = np.clip(y, a_min=-1.0 * self.room_width / 2 + 0.25, a_max=self.room_width / 2 - 0.25)
+
+        z_low_shift = np.random.uniform(low=0.25, high=0.5)
+        z_high_shift = np.random.uniform(low=0.25, high=0.5)
+        z = np.clip(z, a_min=z_low_shift, a_max=self.room_height - z_high_shift)
+
+        pos = npa(x, y, z)
+        return pos
 
     def _reset(self):
         ## I have to update state vector 
@@ -1227,22 +1273,8 @@ class QuadrotorSingle:
         # from 0.5 to 10 after 100k episodes (a form of curriculum)
         if self.box < 10:
             self.box = self.box * self.box_scale
-        x, y, z = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box, size=(3,)) + self.goal
 
-        if self.dim_mode == '1D':
-            x, y = self.goal[0], self.goal[1]
-        elif self.dim_mode == '2D':
-            y = self.goal[1]
-        # Since being near the groud means crash we have to start above
-        # if z < 0.25: z = 0.25
-        x = np.clip(x, a_min=-1.0 * self.room_length / 2 + 0.25, a_max=self.room_length / 2 - 0.25)
-        y = np.clip(y, a_min=-1.0 * self.room_width / 2 + 0.25, a_max=self.room_width / 2 - 0.25)
-
-        z_low_shift = np.random.uniform(low=0.25, high=0.75)
-        z_high_shift = np.random.uniform(low=0.25, high=0.75)
-        z = np.clip(z, a_min=z_low_shift, a_max=self.room_height - z_high_shift)
-
-        pos = npa(x, y, z)
+        pos = self.set_pos()
 
         ##############################################################
         ## INIT STATE
