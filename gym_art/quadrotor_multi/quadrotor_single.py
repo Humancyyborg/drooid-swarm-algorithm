@@ -1060,6 +1060,9 @@ class QuadrotorSingle:
             "nbr_dist": [np.zeros(1), room_max_dist],
             "nbr_goal_dist": [np.zeros(1), room_max_dist],
             "wall": [np.zeros(6), 10.0 * np.ones(6)],
+            "floor": [np.zeros(1), 10.0 * np.ones(1)],
+            "cwallid": [np.zeros(1), 3 * np.ones(1)],
+            "cwall": [np.zeros(1), 10.0 * np.ones(1)],
         }
         self.obs_comp_names = list(self.obs_space_low_high.keys())
         self.obs_comp_sizes = [self.obs_space_low_high[name][1].size for name in self.obs_comp_names]

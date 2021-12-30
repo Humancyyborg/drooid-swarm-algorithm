@@ -7,6 +7,7 @@ import gym
 
 from copy import deepcopy
 
+from gym_art.quadrotor_multi.params import obs_self_size_dict
 from gym_art.quadrotor_multi.quad_utils import perform_collision_between_drones, perform_collision_with_obstacle, \
     calculate_collision_matrix, calculate_drone_proximity_penalties, calculate_obst_drone_proximity_penalties, \
     perform_collision_with_wall, perform_collision_with_ceiling, perform_collision_with_floor
@@ -109,12 +110,8 @@ class QuadrotorEnvMulti(gym.Env):
         self.control_dt = 1.0 / self.control_freq
         self.pos = np.zeros([self.num_agents, 3])  # Matrix containing all positions
         self.quads_mode = quads_mode
-        if obs_repr == 'xyz_vxyz_R_omega':
-            obs_self_size = 18
-        elif obs_repr == 'xyz_vxyz_R_omega_wall':
-            obs_self_size = 24
-        else:
-            raise NotImplementedError(f'{obs_repr} not supported!')
+
+        obs_self_size = obs_self_size_dict[obs_repr]
 
         if self.swarm_obs == 'pos_vel':
             self.neighbor_obs_size = 6

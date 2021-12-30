@@ -48,7 +48,57 @@ def state_xyz_vxyz_R_omega_wall(self):
     wall_box_1 = self.room_box[1] - pos
     return np.concatenate([pos - self.goal[:3], vel, rot.flatten(), omega, wall_box_0, wall_box_1])
 
-def state_xyz_vxyz_tx3_R_omega(self):        
+def state_xyz_vxyz_R_omega_floor(self):
+    if self.use_numba:
+        pos, vel, rot, omega, acc = self.sense_noise.add_noise_numba(
+            self.dynamics.pos,
+            self.dynamics.vel,
+            self.dynamics.rot,
+            self.dynamics.omega,
+            self.dynamics.accelerometer,
+            self.dt
+        )
+    else:
+        pos, vel, rot, omega, acc = self.sense_noise.add_noise(
+            pos=self.dynamics.pos,
+            vel=self.dynamics.vel,
+            rot=self.dynamics.rot,
+            omega=self.dynamics.omega,
+            acc=self.dynamics.accelerometer,
+            dt=self.dt
+        )
+    dist_2_floor = np.array([pos[2]])
+    return np.concatenate([pos - self.goal[:3], vel, rot.flatten(), omega, dist_2_floor])
+
+def state_xyz_vxyz_R_omega_floor_cwallid_cwall(self):
+    if self.use_numba:
+        pos, vel, rot, omega, acc = self.sense_noise.add_noise_numba(
+            self.dynamics.pos,
+            self.dynamics.vel,
+            self.dynamics.rot,
+            self.dynamics.omega,
+            self.dynamics.accelerometer,
+            self.dt
+        )
+    else:
+        pos, vel, rot, omega, acc = self.sense_noise.add_noise(
+            pos=self.dynamics.pos,
+            vel=self.dynamics.vel,
+            rot=self.dynamics.rot,
+            omega=self.dynamics.omega,
+            acc=self.dynamics.accelerometer,
+            dt=self.dt
+        )
+    dist_2_floor = np.array([pos[2]])
+    wall_box_0 = pos[:2] - self.room_box[0][:2]
+    wall_box_1 = self.room_box[1][:2] - pos[:2]
+    dist_2_walls = np.array([wall_box_0, wall_box_1]).flatten()
+    closest_wall_id = np.array([np.argmin(dist_2_walls)])
+    closest_wall_dist = np.array([np.min(dist_2_walls)])
+    return np.concatenate([pos - self.goal[:3], vel, rot.flatten(), omega, dist_2_floor, closest_wall_id,
+                           closest_wall_dist])
+
+def state_xyz_vxyz_tx3_R_omega(self):
     pos, vel, rot, omega, acc = self.sense_noise.add_noise(
         pos=self.dynamics.pos,
         vel=self.dynamics.vel,

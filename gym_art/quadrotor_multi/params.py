@@ -15,3 +15,10 @@ quad_color = (
     (0.8, 0.8, 0.8),  # lightgrey
     (1.0, 0.0, 1.0),  # Violet
 )
+
+obs_self_size_dict ={
+    'xyz_vxyz_R_omega': 18,
+    'xyz_vxyz_R_omega_floor': 19,
+    'xyz_vxyz_R_omega_floor_cwallid_cwall': 21,
+    'xyz_vxyz_R_omega_wall': 24
+}

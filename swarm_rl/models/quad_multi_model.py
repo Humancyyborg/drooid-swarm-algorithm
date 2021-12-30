@@ -5,6 +5,8 @@ from sample_factory.algorithms.appo.model_utils import nonlinearity, EncoderBase
     register_custom_encoder, ENCODER_REGISTRY, fc_layer
 from sample_factory.algorithms.utils.pytorch_utils import calc_num_elements
 
+from gym_art.quadrotor_multi.params import obs_self_size_dict
+
 
 class QuadNeighborhoodEncoder(nn.Module):
     def __init__(self, cfg, self_obs_dim, neighbor_obs_dim, neighbor_hidden_size, num_use_neighbor_obs):
@@ -121,13 +123,7 @@ class QuadMultiEncoder(EncoderBase):
     def __init__(self, cfg, obs_space, timing):
         super().__init__(cfg, timing)
         # internal params -- cannot change from cmd line
-        if cfg.quads_obs_repr == 'xyz_vxyz_R_omega':
-            self.self_obs_dim = 18
-        elif cfg.quads_obs_repr == 'xyz_vxyz_R_omega_wall':
-            self.self_obs_dim = 24
-        else:
-            raise NotImplementedError(f'Layer {cfg.quads_obs_repr} not supported!')
-
+        self.self_obs_dim = obs_self_size_dict[cfg.quads_obs_repr]
         self.neighbor_hidden_size = cfg.quads_neighbor_hidden_size
 
         self.neighbor_obs_type = cfg.neighbor_obs_type
