@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 
 from gym_art.quadrotor_multi.quad_obstacle_utils import OBSTACLES_SHAPE_LIST, STATIC_OBSTACLE_DOOR
@@ -209,22 +211,21 @@ class SingleObstacle:
                 obst_shape = self.shape_list.index(self.shape) * np.ones((len(quads_pos), 1))
             obs = np.concatenate((rel_pos, rel_vel, obst_size, obst_shape), axis=1)
         elif 'static' in self.mode:
-            if self.inf_height:
-                rel_pos = self.pos[:2] - quads_pos[:, :2]
-            else:
-                rel_pos = self.pos - quads_pos
-
+            rel_pos = self.pos - quads_pos
             rel_vel = self.vel - quads_vel
 
             # obst_size: in xyz axis: radius for sphere, half edge length for cube
             obst_size = (self.size / 2) * np.ones((len(quads_pos), 1))
             obst_shape = self.shape_list.index(self.shape) * np.ones((len(quads_pos), 1))
-            if self.obs_type == 'pos_vel_size_shape':
-                obs = np.concatenate((rel_pos, rel_vel, obst_size, obst_shape), axis=1)
+            if self.obs_type == 'cpoint':
+                closest_points = self.get_closest_points(quads_pos)
+                obs = closest_points - quads_pos
             elif self.obs_type == 'pos_size':
                 obs = np.concatenate((rel_pos, obst_size), axis=1)
             elif self.obs_type == 'pos_vel_size':
                 obs = np.concatenate((rel_pos, rel_vel, obst_size), axis=1)
+            elif self.obs_type == 'pos_vel_size_shape':
+                obs = np.concatenate((rel_pos, rel_vel, obst_size, obst_shape), axis=1)
             else:
                 raise NotImplementedError(f'{self.obs_type} is not supported!')
         else:
@@ -280,14 +281,7 @@ class SingleObstacle:
     def cube_detection(self, pos_quads=None):
         # https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_collision_detection
         # Sphere vs. AABB (Cuboid, not only cube)
-        if self.inf_height:
-            obst_min_pos = self.pos - np.array([0.5 * self.size, 0.5 * self.size, 0.5 * self.room_dims[2]])
-            obst_max_pos = self.pos + np.array([0.5 * self.size, 0.5 * self.size, 0.5 * self.room_dims[2]])
-        else:
-            obst_min_pos = self.pos - 0.5 * self.size
-            obst_max_pos = self.pos + 0.5 * self.size
-
-        closest_poses = np.maximum(obst_min_pos, np.minimum(pos_quads, obst_max_pos))
+        closest_poses = self.get_closest_points(pos_quads)
         # dist_arr means the distance between from drones to the closest point on the obstacle
         dist_arr = np.linalg.norm(pos_quads - closest_poses, axis=1)
         collision_arr = (dist_arr <= self.quad_size).astype(np.float32)
@@ -309,3 +303,14 @@ class SingleObstacle:
             raise NotImplementedError()
 
         return collision_arr, dist_arr
+
+    def get_closest_points(self, quads_pos):
+        if self.inf_height:
+            obst_min_pos = self.pos - np.array([0.5 * self.size, 0.5 * self.size, 0.5 * self.room_dims[2]])
+            obst_max_pos = self.pos + np.array([0.5 * self.size, 0.5 * self.size, 0.5 * self.room_dims[2]])
+        else:
+            obst_min_pos = self.pos - 0.5 * self.size
+            obst_max_pos = self.pos + 0.5 * self.size
+
+        closest_points = np.maximum(obst_min_pos, np.minimum(quads_pos, obst_max_pos))
+        return closest_points

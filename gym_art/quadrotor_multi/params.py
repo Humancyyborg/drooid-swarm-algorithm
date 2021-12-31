@@ -16,9 +16,24 @@ quad_color = (
     (1.0, 0.0, 1.0),  # Violet
 )
 
-obs_self_size_dict ={
+obs_self_size_dict = {
     'xyz_vxyz_R_omega': 18,
     'xyz_vxyz_R_omega_floor': 19,
     'xyz_vxyz_R_omega_floor_cwallid_cwall': 21,
     'xyz_vxyz_R_omega_wall': 24
+}
+
+obs_neighbor_size_dict = {
+    'none': 0,
+    'pos_vel': 6,
+    'pos_vel_goals': 9,
+    'pos_vel_goals_ndist_gdist': 11,
+}
+
+obs_obst_size_dict = {
+    'none': 0,
+    'cpoint': 3,
+    'pos_size': 4,
+    'pos_vel_size': 7,
+    'pos_vel_size_shape': 8
 }

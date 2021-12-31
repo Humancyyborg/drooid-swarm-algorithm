@@ -5,7 +5,7 @@ from sample_factory.algorithms.appo.model_utils import nonlinearity, EncoderBase
     register_custom_encoder, ENCODER_REGISTRY, fc_layer
 from sample_factory.algorithms.utils.pytorch_utils import calc_num_elements
 
-from gym_art.quadrotor_multi.params import obs_self_size_dict
+from gym_art.quadrotor_multi.params import obs_self_size_dict, obs_obst_size_dict, obs_neighbor_size_dict
 
 
 class QuadNeighborhoodEncoder(nn.Module):
@@ -137,38 +137,17 @@ class QuadMultiEncoder(EncoderBase):
         else:
             self.local_obstacle_num = cfg.quads_local_obst_obs
 
-        if cfg.quads_local_obs == -1:
-            self.num_use_neighbor_obs = cfg.quads_num_agents - 1
-        else:
-            self.num_use_neighbor_obs = cfg.quads_local_obs
-
-        obst_pos_shift = 0
-        if cfg.quads_obst_inf_height:
-            obst_pos_shift = -1
-
-        if cfg.obst_obs_type == 'none':
-            self.obstacle_obs_dim = 0
-        elif cfg.obst_obs_type == 'pos_size':
-            self.obstacle_obs_dim = 4 + obst_pos_shift
-        elif cfg.obst_obs_type == 'pos_vel_size':
-            self.obstacle_obs_dim = 7 + obst_pos_shift
-        elif cfg.obst_obs_type == 'pos_vel_size_shape':
-            self.obstacle_obs_dim = 8 + obst_pos_shift
-        else:
-            raise NotImplementedError(f'{cfg.obst_obs_type} not supported!')
-
-        if self.neighbor_obs_type == 'pos_vel_goals':
-            self.neighbor_obs_dim = 9  # include goal pos info
-        elif self.neighbor_obs_type == 'pos_vel':
-            self.neighbor_obs_dim = 6
-        elif self.neighbor_obs_type == 'pos_vel_goals_ndist_gdist':
-            self.neighbor_obs_dim = 11
-        elif self.neighbor_obs_type == 'none':
-            # override these params so that neighbor encoder is a no-op during inference
-            self.neighbor_obs_dim = 0
+        if self.neighbor_obs_type == 'none':
             self.num_use_neighbor_obs = 0
         else:
-            raise NotImplementedError(f'Unknown value {cfg.neighbor_obs_type} passed to --neighbor_obs_type')
+            if cfg.quads_local_obs == -1:
+                self.num_use_neighbor_obs = cfg.quads_num_agents - 1
+            else:
+                self.num_use_neighbor_obs = cfg.quads_local_obs
+
+        self.neighbor_obs_dim = obs_neighbor_size_dict[self.neighbor_obs_type]
+
+        self.obstacle_obs_dim = obs_obst_size_dict[cfg.obst_obs_type]
 
         # encode the neighboring drone's observations
         neighbor_encoder_out_size = 0
