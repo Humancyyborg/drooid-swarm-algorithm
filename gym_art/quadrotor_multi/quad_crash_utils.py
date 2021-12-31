@@ -23,6 +23,12 @@ crash_params = {
         'low_speed': 0.5,
         'high_speed': 6.0,
     },
+    4: {
+        'low': 0.2,
+        'high': 0.8,
+        'low_speed': 2.0,
+        'high_speed': 6.0,
+    },
 }
 
 clip_floor_vel_params = {
