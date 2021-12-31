@@ -81,3 +81,5 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_crash_mode', default=0, type=int, help='Check quad_crash_utils.py, crash_params')
     p.add_argument('--quads_clip_floor_vel_mode', default=0, type=int, help='Check quad_crash_utils.py, clip_floor_vel_params')
 
+    p.add_argument('--quads_midreset', default=False, type=str2bool, help='If a drone crashes >= quads_crash_reset_threshold, reset this drone')
+    p.add_argument('--quads_crash_reset_threshold', default=200, type=int, help='Threshold of midreset, default: 200 ticks')

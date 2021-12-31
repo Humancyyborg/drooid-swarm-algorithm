@@ -41,7 +41,8 @@ class QuadrotorEnvMulti(gym.Env):
                  viz_traces=25, viz_trace_nth_step=1, local_obst_obs=-1, obst_enable_sim=True, obst_obs_type='none',
                  quads_reward_ep_len=True, obst_level=-1, obst_stack_num=4, enable_sim_room='none', obst_level_mode=0,
                  obst_proximity_mode=0, obst_inf_height=False, obst_level_change_cond=0.5,
-                 obst_collision_enable_grace_period=False, crash_mode=0, clip_floor_vel_mode=0):
+                 obst_collision_enable_grace_period=False, crash_mode=0, clip_floor_vel_mode=0,
+                 midreset=False, crash_reset_threshold=200):
 
         super().__init__()
 
@@ -224,6 +225,11 @@ class QuadrotorEnvMulti(gym.Env):
 
         # set crash parameters
         self.crash_mode = crash_mode
+
+        # count the continuous crash ticks, 100 ticks
+        self.midreset = midreset
+        self.all_crash_counter = np.zeros(self.num_agents)
+        self.all_crash_threshold = crash_reset_threshold
 
     def set_room_dims(self, dims):
         # dims is a (x, y, z) tuple
@@ -640,6 +646,20 @@ class QuadrotorEnvMulti(gym.Env):
             obs = self.multi_obstacles.step(obs=obs, quads_pos=self.pos, quads_vel=quads_vel,
                                             set_obstacles=self.set_obstacles)
 
+        if self.midreset:
+            all_kinds_collisions = np.array([env.crashed for env in self.envs])
+            if any(all_kinds_collisions):
+                for i, e in enumerate(self.envs):
+                    if all_kinds_collisions[i]:
+                        self.all_crash_counter[i] += 1
+                    else:
+                        self.all_crash_counter[i] = 0
+
+                    if self.all_crash_counter[i] > self.all_crash_threshold:
+                        e.mid_reset()
+                        self.all_crash_counter[i] = 0
+            else:
+                self.all_crash_counter = np.zeros(self.num_agents)
 
         # DONES
         if any(dones):

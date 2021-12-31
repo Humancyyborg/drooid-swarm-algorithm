@@ -1263,6 +1263,54 @@ class QuadrotorSingle:
         pos = npa(x, y, z)
         return pos
 
+    def mid_reset(self):
+        if self.dynamics_randomize_every is not None and \
+                (self.traj_count + 1) % (self.dynamics_randomize_every) == 0:
+            self.resample_dynamics()
+
+        if self.spawn_flag == 0 or self.spawn_flag == 2:
+            tmp_x = self.np_random.uniform(-1.0 * self.box, self.box)
+            tmp_y = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box)
+        else:
+            tmp_x = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box)
+            tmp_y = self.np_random.uniform(-1.0 * self.box, 1.0 * self.box)
+
+        tmp_z = self.np_random.uniform(-1.0 * self.box, 1.5 * self.box)
+        x, y, z = np.array([tmp_x, tmp_y, tmp_z]) + self.goal_start_point
+
+        # Since being near the groud means crash we have to start above
+        # if z < 0.25: z = 0.25
+        x = np.clip(x, a_min=-1.0 * self.room_length / 2 + 0.25, a_max=self.room_length / 2 - 0.25)
+        y = np.clip(y, a_min=-1.0 * self.room_width / 2 + 0.25, a_max=self.room_width / 2 - 0.25)
+
+        z_low_shift = np.random.uniform(low=0.25, high=0.5)
+        z_high_shift = np.random.uniform(low=0.25, high=0.5)
+        z = np.clip(z, a_min=z_low_shift, a_max=self.room_height - z_high_shift)
+
+        pos = npa(x, y, z)
+
+        if self.init_random_state:
+            _, vel, rotation, omega = self.dynamics.random_state(
+                box=(self.room_length, self.room_width, self.room_height), vel_max=self.max_init_vel,
+                omega_max=self.max_init_omega
+            )
+        else:
+            ## INIT HORIZONTALLY WITH 0 VEL and OMEGA
+            vel, omega = npa(0, 0, 0), npa(0, 0, 0)
+            rotation = randyaw()
+            while np.dot(rotation[:, 0], to_xyhat(-pos)) < 0.5:
+                rotation = randyaw()
+
+        # Setting the generated state
+        # print("QuadEnv: init: pos/vel/rot/omega:", pos, vel, rotation, omega)
+        self.init_state = [pos, vel, rotation, omega]
+        self.dynamics.set_state(pos, vel, rotation, omega)
+        self.dynamics.reset()
+
+        # Reseting some internal state (counters, etc)
+        self.crashed = False
+        self.actions = [np.zeros([4, ]), np.zeros([4, ])]
+
     def _reset(self):
         ## I have to update state vector 
         ##############################################################
