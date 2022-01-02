@@ -808,7 +808,7 @@ class Scenario_o_dynamic_same_goal(QuadrotorScenario):
         self.init_flag = np.random.randint(4)
         self.spawn_flag = self.init_flag
         self.start_point = self.generate_pos(shift_small=1.25, shift_big=2.0, shift_collide=2.5)
-        self.set_end_point()
+        self.end_point = copy.deepcopy(self.start_point)
         self.duration_time = np.random.uniform(low=4.0, high=6.0)
         self.standard_reset(formation_center=self.start_point)
 
