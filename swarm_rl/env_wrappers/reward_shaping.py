@@ -29,6 +29,7 @@ class QuadsRewardShapingWrapper(gym.Wrapper, RewardShapingInterface, TrainingInf
         self.episode_actions = None
 
         self.num_agents = env.num_agents if hasattr(env, 'num_agents') else 1
+        self.use_obstacles = env.obstacle_mode != 'no_obstacles' and env.obstacle_num > 0
 
         self.reward_shaping_updated = True
 
@@ -82,6 +83,8 @@ class QuadsRewardShapingWrapper(gym.Wrapper, RewardShapingInterface, TrainingInf
                 if true_reward_consider_collisions:
                     # we ideally want zero collisions, so collisions between quads are given very high weight
                     true_reward += 1000 * self.cumulative_rewards[i].get('rewraw_quadcol', 0)
+                    if self.use_obstacles:
+                        true_reward += 1000 * self.cumulative_rewards[i].get('rewraw_quadcol_obstacle', 0)
 
                 info['true_reward'] = true_reward
                 if 'episode_extra_stats' not in info:

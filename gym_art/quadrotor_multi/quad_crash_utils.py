@@ -8,7 +8,7 @@ crash_params = {
     1: {
         'low': 0.2,
         'high': 0.8,
-        'low_speed': 0.5,
+        'low_speed': 1.0,
         'high_speed': 6.0,
     },
     2: {
