@@ -42,7 +42,7 @@ class QuadrotorEnvMulti(gym.Env):
                  quads_reward_ep_len=True, obst_level=-1, obst_stack_num=4, enable_sim_room='none', obst_level_mode=0,
                  obst_proximity_mode=0, obst_inf_height=False, obst_level_change_cond=0.5,
                  obst_collision_enable_grace_period=False, crash_mode=0, clip_floor_vel_mode=0,
-                 midreset=False, crash_reset_threshold=200):
+                 midreset=False, crash_reset_threshold=200, neighbor_rel_pos_mode=0):
 
         super().__init__()
 
@@ -127,6 +127,8 @@ class QuadrotorEnvMulti(gym.Env):
         self.clip_neighbor_space_length = self.num_use_neighbor_obs * self.neighbor_obs_size
         self.clip_neighbor_space_min_box = self.observation_space.low[obs_self_size:obs_self_size+self.clip_neighbor_space_length]
         self.clip_neighbor_space_max_box = self.observation_space.high[obs_self_size:obs_self_size+self.clip_neighbor_space_length]
+
+        self.neighbor_rel_pos_mode = neighbor_rel_pos_mode
 
         # Aux variables for rewards
         self.rews_settle = np.zeros(self.num_agents)
@@ -250,6 +252,12 @@ class QuadrotorEnvMulti(gym.Env):
         pos_neighbor = np.stack([self.envs[j].dynamics.pos for j in indices])
         vel_neighbor = np.stack([self.envs[j].dynamics.vel for j in indices])
         pos_rel = pos_neighbor - cur_pos
+        if self.neighbor_rel_pos_mode == 1:
+            pos_rel_mag = np.linalg.norm(pos_rel, axis=1)
+            pos_rel_norm = np.array([pos_rel[i] / (pos_rel_mag[i] + 1e-6 if pos_rel_mag[i] == 0.0 else pos_rel_mag[i])
+                                     for i in range(len(pos_rel_mag))])
+            pos_rel = pos_rel - 2.0 * self.quad_arm * pos_rel_norm
+
         vel_rel = vel_neighbor - cur_vel
         return pos_rel, vel_rel
 

@@ -83,3 +83,5 @@ def add_quadrotors_env_args(env, parser):
 
     p.add_argument('--quads_midreset', default=False, type=str2bool, help='If a drone crashes >= quads_crash_reset_threshold, reset this drone')
     p.add_argument('--quads_crash_reset_threshold', default=200, type=int, help='Threshold of midreset, default: 200 ticks')
+
+    p.add_argument('--quads_neighbor_rel_pos_mode', default=0, type=int, choices=[0, 1], help='0: use relative pos between the center point of drones, 1: use relative pos between closest point of drones')
