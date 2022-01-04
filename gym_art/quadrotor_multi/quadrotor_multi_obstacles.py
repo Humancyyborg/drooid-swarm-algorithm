@@ -11,7 +11,7 @@ class MultiObstacles:
     def __init__(self, mode='no_obstacles', num_obstacles=0, max_init_vel=1., init_box=2.0, dt=0.005,
                  quad_size=0.046, shape='sphere', size=0.0, traj='gravity', obs_mode='relative', num_local_obst=-1,
                  obs_type='pos_size', drone_env=None, level=-1, stack_num=4, level_mode=0, inf_height=False,
-                 room_dims=(10.0, 10.0, 10.0)):
+                 room_dims=(10.0, 10.0, 10.0), rel_pos_mode=0):
         if 'static_door' in mode:
             self.num_obstacles = len(STATIC_OBSTACLE_DOOR)
         else:
@@ -74,7 +74,8 @@ class MultiObstacles:
         for i in range(self.num_obstacles):
             obstacle = SingleObstacle(max_init_vel=max_init_vel, init_box=init_box, mode=mode, shape=shape, size=size,
                                       quad_size=quad_size, dt=dt, traj=traj, obs_mode=obs_mode, index=i,
-                                      obs_type=obs_type, all_pos_arr=pos_arr, inf_height=inf_height, room_dims=room_dims)
+                                      obs_type=obs_type, all_pos_arr=pos_arr, inf_height=inf_height, room_dims=room_dims,
+                                      rel_pos_mode=rel_pos_mode)
             self.obstacles.append(obstacle)
 
     def reset(self, obs=None, quads_pos=None, quads_vel=None, set_obstacles=None, formation_size=0.0,

@@ -37,3 +37,5 @@ obs_obst_size_dict = {
     'pos_vel_size': 7,
     'pos_vel_size_shape': 8
 }
+
+quad_arm_size = 0.04596194077712559
