@@ -3,11 +3,11 @@ from sample_factory.runner.run_description import RunDescription, Experiment, Pa
 from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_OBSTACLE_PARAMETERZE_LONG_DURATION_CLI
 
 _params = ParamGrid([
-    ('seed', [0000, 1111, 2222, 3333]),
+    ('seed', [0000, 3333]),
     ('quads_obstacle_num', [8]),
     ('quads_local_obst_obs', [2]),
     ('quads_obst_proximity_mode', [1]),
-    ('quads_collision_obst_smooth_max_penalty', [10]),
+    ('quads_collision_obst_smooth_max_penalty', [10, 40]),
 ])
 
 _experiment = Experiment(
