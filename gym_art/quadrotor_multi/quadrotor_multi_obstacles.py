@@ -33,6 +33,8 @@ class MultiObstacles:
         self.half_room_width = self.room_dims[1] / 2
         self.start_range = np.zeros((2, 2))
         self.end_range = np.zeros((2, 2))
+        # self.counter = 0
+        # self.counter_list = []
 
         pos_arr = []
         if 'static_random_place' in mode:
@@ -81,6 +83,7 @@ class MultiObstacles:
     def reset(self, obs=None, quads_pos=None, quads_vel=None, set_obstacles=None, formation_size=0.0,
               goal_central=np.array([0., 0., 2.]), level=-1, goal_start_point=np.array([-3.0, -3.0, 2.0]),
               goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal'):
+        # self.counter = 0
         if self.num_obstacles <= 0:
             return obs
         if set_obstacles is None:
@@ -304,11 +307,40 @@ class MultiObstacles:
         pos_xy, collide_flag = self.random_pos()
         if collide_flag:
             for i in range(3):
+                # self.counter += 1
                 pos_xy, collide_flag = self.random_pos()
                 if not collide_flag:
                     break
 
         return pos_xy
+
+    def get_pos_no_overlap(self, pos_item, pos_arr):
+        if self.shape != 'cube':
+            raise NotImplementedError(f'{self.shape} not supported!')
+
+        if self.inf_height:
+            range_shape = np.array([0.5 * self.size, 0.5 * self.size, 0.5 * self.room_dims[2]])
+        else:
+            range_shape = 0.5 * self.size
+
+        min_pos = pos_item - range_shape
+        max_pos = pos_item + range_shape
+
+        for pos_i in pos_arr:
+            tmp_min_pos = pos_i - range_shape
+            tmp_max_pos = pos_i + range_shape
+            count = 0
+            while all(min_pos <= tmp_max_pos) and all(max_pos >= tmp_min_pos):
+                if count > 5:
+                    break
+                # self.counter += 1
+                pos_x, pos_y = self.generate_pos()
+                pos_item = np.array([pos_x, pos_y, pos_item[2]])
+                min_pos = pos_item - range_shape
+                max_pos = pos_item + range_shape
+                count += 1
+
+        return pos_item
 
     def generate_inf_pos_by_level(self, level=-1, goal_start_point=np.array([-3.0, -3.0, 2.0]),
                                   goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal'):
@@ -332,6 +364,13 @@ class MultiObstacles:
 
         for i in range(self.num_obstacles):
             pos_x, pos_y = self.generate_pos()
-            pos_arr.append(np.array([pos_x, pos_y, pos_z]))
+            pos_item = np.array([pos_x, pos_y, pos_z])
+            final_pos_item = self.get_pos_no_overlap(pos_item, pos_arr)
+            pos_arr.append(final_pos_item)
+
+        # self.counter_list.append(self.counter)
+        # print('counter: ', self.counter)
+        # print('mean: ', np.mean(self.counter_list))
+        # print('list counter: ', self.counter_list)
 
         return pos_arr
