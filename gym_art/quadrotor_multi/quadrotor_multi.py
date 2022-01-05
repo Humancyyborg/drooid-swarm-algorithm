@@ -43,7 +43,7 @@ class QuadrotorEnvMulti(gym.Env):
                  obst_proximity_mode=0, obst_inf_height=False, obst_level_change_cond=0.5,
                  obst_collision_enable_grace_period=False, crash_mode=0, clip_floor_vel_mode=0,
                  midreset=False, crash_reset_threshold=200, neighbor_rel_pos_mode=0, obst_rel_pos_mode=0,
-                 neighbor_prox_mode=0):
+                 neighbor_prox_mode=0, obst_midreset=False, obst_col_reset_threshold=1):
 
         super().__init__()
 
@@ -152,6 +152,10 @@ class QuadrotorEnvMulti(gym.Env):
         self.use_obstacles = self.obstacle_mode != 'no_obstacles' and self.obstacle_num > 0
         self.obst_inf_height = obst_inf_height
         self.obst_level_change_cond = obst_level_change_cond
+        self.obst_midreset = obst_midreset
+        self.obst_col_reset_threshold = obst_col_reset_threshold
+        self.obst_midreset_list = np.zeros(self.num_agents)
+
         # Control different level, curriculum learning
         self.obst_level = obst_level
         self.obst_level_mode = obst_level_mode
@@ -423,6 +427,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.obst_quad_collisions_per_episode = 0
             self.obst_quad_collisions_per_episode_after_settle = 0
             self.prev_obst_quad_collisions = []
+            self.obst_midreset_list = np.zeros(self.num_agents)
 
         self.all_collisions = {val: [0.0 for _ in range(len(self.envs))] for val in
                                ['drone', 'ground', 'obstacle', 'wall', 'ceiling']}
@@ -505,6 +510,7 @@ class QuadrotorEnvMulti(gym.Env):
                 # We assign penalties to the drones which collide with the obstacles
                 # And obst_quad_last_step_unique_collisions only include drones' id
                 rew_obst_quad_collisions_raw[obst_quad_last_step_unique_collisions] = -1.0
+                self.obst_midreset_list[obst_quad_last_step_unique_collisions] += 1.0
 
             rew_collisions_obst_quad = self.rew_coeff["quadcol_bin_obst"] * rew_obst_quad_collisions_raw
 
@@ -669,6 +675,14 @@ class QuadrotorEnvMulti(gym.Env):
                         self.all_crash_counter[i] = 0
             else:
                 self.all_crash_counter = np.zeros(self.num_agents)
+
+        if self.obst_midreset:
+            if any(self.obst_midreset_list):
+                for i, e in enumerate(self.envs):
+                    if self.obst_midreset_list[i] >= self.obst_col_reset_threshold:
+                        e.mid_reset()
+                        self.obst_midreset_list[i] = 0
+
 
         # DONES
         if any(dones):
