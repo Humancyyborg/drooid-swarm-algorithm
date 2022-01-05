@@ -11,12 +11,12 @@ _params = ParamGrid([
 ])
 
 _experiment = Experiment(
-    'obst_mid_reset_2_local_obst_prox_penalty_mix',
+    'obst_mid_reset',
     QUAD_OBSTACLE_PARAMETERZE_LONG_DURATION_CLI,
     _params.generate_params(randomize=False),
 )
 
-RUN_DESCRIPTION = RunDescription('obst_midreset_8_obst_quads_multi_obst_mix_8a_v116', experiments=[_experiment])
+RUN_DESCRIPTION = RunDescription('8_obst_quads_multi_obst_mix_8a_v116', experiments=[_experiment])
 
 # On Brain server, when you use num_workers = 72, if the system reports: Resource temporarily unavailable,
 # then, try to use two commands below
