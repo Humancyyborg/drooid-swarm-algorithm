@@ -102,7 +102,7 @@ def make_quadrotor_env_multi(cfg, **kwargs):
         obst_collision_enable_grace_period=cfg.quads_obst_collision_enable_grace_period, crash_mode=cfg.quads_crash_mode,
         clip_floor_vel_mode=cfg.quads_clip_floor_vel_mode, midreset=cfg.quads_midreset,
         crash_reset_threshold=cfg.quads_crash_reset_threshold, neighbor_rel_pos_mode=cfg.quads_neighbor_rel_pos_mode,
-        obst_rel_pos_mode=cfg.quads_obst_rel_pos_mode
+        obst_rel_pos_mode=cfg.quads_obst_rel_pos_mode, neighbor_prox_mode=cfg.quads_neighbor_proximity_mode
     )
 
     if use_replay_buffer:

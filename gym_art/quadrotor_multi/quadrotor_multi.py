@@ -42,7 +42,8 @@ class QuadrotorEnvMulti(gym.Env):
                  quads_reward_ep_len=True, obst_level=-1, obst_stack_num=4, enable_sim_room='none', obst_level_mode=0,
                  obst_proximity_mode=0, obst_inf_height=False, obst_level_change_cond=0.5,
                  obst_collision_enable_grace_period=False, crash_mode=0, clip_floor_vel_mode=0,
-                 midreset=False, crash_reset_threshold=200, neighbor_rel_pos_mode=0, obst_rel_pos_mode=0):
+                 midreset=False, crash_reset_threshold=200, neighbor_rel_pos_mode=0, obst_rel_pos_mode=0,
+                 neighbor_prox_mode=0):
 
         super().__init__()
 
@@ -129,7 +130,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.clip_neighbor_space_max_box = self.observation_space.high[obs_self_size:obs_self_size+self.clip_neighbor_space_length]
 
         self.neighbor_rel_pos_mode = neighbor_rel_pos_mode
-
+        self.neighbor_prox_mode = neighbor_prox_mode
         # Aux variables for rewards
         self.rews_settle = np.zeros(self.num_agents)
         self.rews_settle_raw = np.zeros(self.num_agents)
@@ -484,7 +485,7 @@ class QuadrotorEnvMulti(gym.Env):
             distance_matrix=distance_matrix, arm=self.quad_arm, dt=self.control_dt,
             penalty_fall_off=self.collision_falloff_radius,
             max_penalty=self.rew_coeff["quadcol_bin_smooth_max"],
-            num_agents=self.num_agents,
+            num_agents=self.num_agents, proximity_mode=self.neighbor_prox_mode
         )
 
         # COLLISION BETWEEN QUAD AND OBSTACLE(S)
