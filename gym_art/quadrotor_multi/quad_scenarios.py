@@ -4,7 +4,7 @@ import copy
 
 from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_PARAMS_DICT, update_formation_and_max_agent_per_layer, \
     update_layer_dist, get_formation_range, get_goal_by_formation, get_z_value, QUADS_MODE_LIST, \
-    QUADS_MODE_LIST_OBSTACLES
+    QUADS_MODE_LIST_OBSTACLES, QUADS_MODE_GOAL_CENTERS
 from gym_art.quadrotor_multi.quad_utils import generate_points, get_grid_dim_number
 
 
@@ -80,7 +80,10 @@ class QuadrotorScenario:
             goals = np.array(goals)
             goals += formation_center
         elif self.formation == "sphere":
-            goals = self.formation_size * np.array(generate_points(num_agents)) + formation_center
+            if num_agents < 3:
+                goals = np.zeros((num_agents, 3)) + formation_center
+            else:
+                goals = self.formation_size * np.array(generate_points(num_agents)) + formation_center
         elif self.formation.startswith("grid"):
             if num_agents <= self.num_agents_per_layer:
                 dim_1, dim_2 = get_grid_dim_number(num_agents)
@@ -1244,6 +1247,109 @@ class Scenario_o_inside_obstacles(Scenario_o_dynamic_diff_goal):
         self.standard_reset(formation_center=self.start_point)
 
 
+class Scenario_o_swarm_groups(QuadrotorScenario):
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+        self.group_num = 4
+        self.goals_center_list = []
+        self.goals_list = []
+        # i.e., self.group_num = 3, self.agent_groups = [3, 2, 3]
+        self.agent_groups = []
+        self.room_dims = room_dims
+        self.duration_time = 0.0
+        self.quads_mode = quads_mode
+        self.env_shuffle_list = np.arange(len(envs))
+        self.agent_num = len(envs)
+        self.half_room_length = self.room_dims[0] / 2
+        self.half_room_width = self.room_dims[1] / 2
+
+    def update_formation_size(self, new_formation_size):
+        if new_formation_size != self.formation_size:
+            self.formation_size = new_formation_size if new_formation_size > 0.0 else 0.0
+            self.create_formations()
+            for i, env in enumerate(self.envs):
+                env.goal = self.goals[i]
+
+    def get_decent_center(self, x_low, x_high, y_low, y_high):
+        x = np.random.uniform(low=x_low, high=x_high)
+        y = np.random.uniform(low=y_low, high=y_high)
+        for center in self.goals_center_list:
+            center_xy = center[:2]
+            count = 0
+            while np.linalg.norm(np.array([x, y]) - center_xy) <= 1.0:
+                if count > 3:
+                    break
+                x = np.random.uniform(low=x_low, high=x_high)
+                y = np.random.uniform(low=y_low, high=y_high)
+                count += 1
+
+        return x, y
+
+    def set_agent_groups(self):
+        self.agent_groups = [self.agent_num // self.group_num for _ in range(self.group_num)]
+        if self.agent_num / self.group_num != self.agent_num // self.group_num:
+            surplus_num = self.agent_num % self.group_num
+            group_id_list = np.arange(self.group_num)
+            np.random.shuffle(group_id_list)
+            for i in range(surplus_num):
+                self.agent_groups[group_id_list[i]] += 1
+
+    def generate_centers(self, shift_collide=1.5):
+        x_low, x_high = -1.0 * self.half_room_length + shift_collide, self.half_room_length - shift_collide
+        y_low, y_high = -1.0 * self.half_room_width + shift_collide, self.half_room_width - shift_collide
+
+        for i in range(self.group_num):
+            x, y = self.get_decent_center(x_low, x_high, y_low, y_high)
+            z = np.random.uniform(low=2.0, high=3.0)
+            self.goals_center_list.append(np.array([x, y, z]))
+
+    def create_formations(self):
+        tmp_goals = []
+        for i in range(self.group_num):
+            goals = self.generate_goals(num_agents=self.agent_groups[i], formation_center=self.goals_center_list[i],
+                                        layer_dist=self.layer_dist)
+            np.random.shuffle(goals)
+            tmp_goals.extend(goals)
+
+        self.goals = copy.deepcopy(tmp_goals)
+        for i in range(len(self.envs)):
+            self.goals[self.env_shuffle_list[i]] = tmp_goals[i]
+
+    def update_goals(self):
+        np.random.shuffle(self.goals_center_list)
+
+        self.update_formation_and_relate_param()
+        self.create_formations()
+        for i, env in enumerate(self.envs):
+            env.goal = self.goals[i]
+
+    def step(self, infos, rewards, pos):
+        tick = self.envs[0].tick
+
+        if tick <= int(self.duration_time * self.envs[0].control_freq):
+            return infos, rewards
+
+        self.update_goals()
+        self.duration_time += np.random.uniform(low=10.0, high=15.0)
+        return infos, rewards
+
+    def reset(self):
+        self.duration_time = np.random.uniform(low=4.0, high=6.0)
+        np.random.shuffle(self.env_shuffle_list)
+        # Reset formation and related parameters
+        self.update_formation_and_relate_param()
+
+        # Initialize group number
+        self.group_num = np.random.randint(3, self.agent_num + 1)  # [low, high)
+        self.set_agent_groups()
+
+        # Initialize self.goals_center_list
+        self.generate_centers()
+        # Reset the formation size and the goals of swarms
+        self.create_formations()
+        self.formation_center = np.mean(self.goals_center_list, axis=0)
+
+
 class Scenario_mix(QuadrotorScenario):
     def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
         super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
@@ -1262,6 +1368,8 @@ class Scenario_mix(QuadrotorScenario):
             self.start_point = np.array([-3.0, -3.0, 2.0])
             self.end_point = np.array([3.0, 3.0, 2.0])
             self.scenario_mode = 'o_dynamic_same_goal'
+            self.goals_center_list = []
+            self.multi_goals = []
 
         # actual scenario being used
         self.scenario = None
@@ -1293,7 +1401,12 @@ class Scenario_mix(QuadrotorScenario):
         self.goals = self.scenario.goals
         self.formation_size = self.scenario.formation_size
         if self.obst_mode != 'no_obstacles':
-            self.spawn_flag = self.scenario.spawn_flag
-            self.start_point = self.scenario.start_point
-            self.end_point = self.scenario.end_point
+            if mode not in QUADS_MODE_GOAL_CENTERS:
+                self.spawn_flag = self.scenario.spawn_flag
+                self.start_point = self.scenario.start_point
+                self.end_point = self.scenario.end_point
+            else:
+                self.goals_center_list = self.scenario.goals_center_list
+                self.multi_goals = self.scenario.goals
+
             self.scenario_mode = self.scenario.quads_mode

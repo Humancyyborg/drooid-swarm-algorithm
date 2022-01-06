@@ -1225,7 +1225,16 @@ class QuadrotorSingle:
         self.update_dynamics(dynamics_params=self.dynamics_params)
 
     def set_pos(self):
-        if self.spawn_flag == 0 or self.spawn_flag == 2:
+        if self.spawn_flag < 0:
+            tmp_x = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box)
+            tmp_y = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box)
+            # low
+            self.init_box_range[0][0] = -0.5 * self.box
+            self.init_box_range[0][1] = -0.5 * self.box
+            # high
+            self.init_box_range[1][0] = 0.5 * self.box
+            self.init_box_range[1][1] = 0.5 * self.box
+        elif self.spawn_flag == 0 or self.spawn_flag == 2:
             tmp_x = self.np_random.uniform(-1.0 * self.box, self.box)
             tmp_y = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box)
             # low
@@ -1268,7 +1277,10 @@ class QuadrotorSingle:
                 (self.traj_count + 1) % (self.dynamics_randomize_every) == 0:
             self.resample_dynamics()
 
-        if self.spawn_flag == 0 or self.spawn_flag == 2:
+        if self.spawn_flag < 0:
+            tmp_x = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box)
+            tmp_y = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box)
+        elif self.spawn_flag == 0 or self.spawn_flag == 2:
             tmp_x = self.np_random.uniform(-1.0 * self.box, self.box)
             tmp_y = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box)
         else:

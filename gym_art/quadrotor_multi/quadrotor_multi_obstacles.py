@@ -1,6 +1,6 @@
 import numpy as np
 
-from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_MODE_MULTI_GOAL_CENTER
+from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_MODE_MULTI_GOAL_CENTER, QUADS_MODE_GOAL_CENTERS
 from gym_art.quadrotor_multi.quadrotor_single_obstacle import SingleObstacle
 from gym_art.quadrotor_multi.quad_obstacle_utils import OBSTACLES_SHAPE_LIST, STATIC_OBSTACLE_DOOR
 
@@ -33,6 +33,8 @@ class MultiObstacles:
         self.half_room_width = self.room_dims[1] / 2
         self.start_range = np.zeros((2, 2))
         self.end_range = np.zeros((2, 2))
+        self.start_range_list = []
+        self.scenario_mode = None
         # self.counter = 0
         # self.counter_list = []
 
@@ -83,6 +85,8 @@ class MultiObstacles:
     def reset(self, obs=None, quads_pos=None, quads_vel=None, set_obstacles=None, formation_size=0.0,
               goal_central=np.array([0., 0., 2.]), level=-1, goal_start_point=np.array([-3.0, -3.0, 2.0]),
               goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal'):
+
+        self.scenario_mode = scenario_mode
         # self.counter = 0
         if self.num_obstacles <= 0:
             return obs
@@ -298,9 +302,18 @@ class MultiObstacles:
         pos_y = np.random.uniform(low=-1.0 * self.half_room_width + 1.0, high=self.half_room_width - 1.0)
         pos_xy = np.array([pos_x, pos_y])
 
-        collide_start = self.check_pos(pos_xy, self.start_range)
-        collide_end = self.check_pos(pos_xy, self.end_range)
-        collide_flag = collide_start or collide_end
+        if self.scenario_mode not in QUADS_MODE_GOAL_CENTERS:
+            collide_start = self.check_pos(pos_xy, self.start_range)
+            collide_end = self.check_pos(pos_xy, self.end_range)
+            collide_flag = collide_start or collide_end
+        else:
+            collide_flag = False
+            for start_range in self.start_range_list:
+                collide_start = self.check_pos(pos_xy, start_range)
+                if collide_start:
+                    collide_flag = True
+                    break
+
         return pos_xy, collide_flag
 
     def generate_pos(self):
@@ -352,15 +365,22 @@ class MultiObstacles:
             pos_z = 0.5 * self.room_height
 
         # Based on room_dims [10, 10, 10]
-        self.start_range = np.array([goal_start_point[:2] + init_box_range[0][:2],
-                                     goal_start_point[:2] + init_box_range[1][:2]])
+        if scenario_mode not in QUADS_MODE_GOAL_CENTERS:
+            self.start_range = np.array([goal_start_point[:2] + init_box_range[0][:2],
+                                         goal_start_point[:2] + init_box_range[1][:2]])
 
-        if scenario_mode in QUADS_MODE_MULTI_GOAL_CENTER:
-            self.end_range = np.array([goal_end_point[:2] + init_box_range[0][:2],
-                                       goal_end_point[:2] + init_box_range[1][:2]])
+            if scenario_mode in QUADS_MODE_MULTI_GOAL_CENTER:
+                self.end_range = np.array([goal_end_point[:2] + init_box_range[0][:2],
+                                           goal_end_point[:2] + init_box_range[1][:2]])
+            else:
+                self.end_range = np.array([goal_end_point[:2] + np.array([-0.5, -0.5]),
+                                           goal_end_point[:2] + np.array([0.5, 0.5])])
         else:
-            self.end_range = np.array([goal_end_point[:2] + np.array([-0.5, -0.5]),
-                                       goal_end_point[:2] + np.array([0.5, 0.5])])
+            for start_point in goal_start_point:
+                start_range = np.array([start_point[:2] + init_box_range[0][:2],
+                                        start_point[:2] + init_box_range[1][:2]])
+
+                self.start_range_list.append(start_range)
 
         for i in range(self.num_obstacles):
             pos_x, pos_y = self.generate_pos()

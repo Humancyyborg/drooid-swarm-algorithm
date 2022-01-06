@@ -8,6 +8,7 @@ import gym
 from copy import deepcopy
 
 from gym_art.quadrotor_multi.params import obs_self_size_dict
+from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_MODE_GOAL_CENTERS
 from gym_art.quadrotor_multi.quad_utils import perform_collision_between_drones, perform_collision_with_obstacle, \
     calculate_collision_matrix, calculate_drone_proximity_penalties, calculate_obst_drone_proximity_penalties, \
     perform_collision_with_wall, perform_collision_with_ceiling, perform_collision_with_floor
@@ -379,13 +380,23 @@ class QuadrotorEnvMulti(gym.Env):
         self.scenario.reset()
         self.quads_formation_size = self.scenario.formation_size
         self.goal_central = np.mean(self.scenario.goals, axis=0)
-        spawn_flag = self.scenario.spawn_flag
-        goal_start_point = self.scenario.start_point
-        goal_end_point = self.scenario.end_point
         if self.scenario.quads_mode == 'mix':
             scenario_mode = self.scenario.scenario_mode
         else:
             scenario_mode = self.scenario.quads_mode
+
+        if scenario_mode not in QUADS_MODE_GOAL_CENTERS:
+            spawn_flag = self.scenario.spawn_flag
+            goal_start_point = self.scenario.start_point
+            goal_end_point = self.scenario.end_point
+        else:
+            spawn_flag = -1
+            goal_start_point = self.scenario.goals_center_list
+            goal_end_point = copy.deepcopy(goal_start_point)
+            if self.scenario.quads_mode == 'mix':
+                goal_points = self.scenario.multi_goals
+            else:
+                goal_points = self.scenario.goals
 
         # try to activate replay buffer if enabled
         if self.use_replay_buffer and not self.activate_replay_buffer:
@@ -402,7 +413,10 @@ class QuadrotorEnvMulti(gym.Env):
             e.goal = self.scenario.goals[i]
             e.rew_coeff = self.rew_coeff
             e.update_env(*self.room_dims)
-            e.reset_spawn_flag_and_start_point(spawn_flag=spawn_flag, goal_start_point=goal_start_point)
+            if scenario_mode in QUADS_MODE_GOAL_CENTERS:
+                e.reset_spawn_flag_and_start_point(spawn_flag=spawn_flag, goal_start_point=goal_points[i])
+            else:
+                e.reset_spawn_flag_and_start_point(spawn_flag=spawn_flag, goal_start_point=goal_start_point)
 
             observation = e.reset()
             obs.append(observation)
