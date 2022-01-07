@@ -189,7 +189,7 @@ QUAD_8_OBSTACLES_PARAMETERZE_CLI = (
     '--save_milestones_sec=10000 --reward_scale=0.05 --quads_obst_level_mode=0 --quads_enable_sim_room=wall-ceiling '
     '--quads_obst_proximity_mode=0 --quads_obst_inf_height=True --quads_obst_collision_enable_grace_period=True '
     '--quads_obst_level_change_cond=6.0 --gamma=0.998 --quads_neighbor_proximity_mode=0 --quads_crash_mode=1 '
-    '--quads_obs_repr=xyz_vxyz_R_omega_floor_cwallid_cwall '
+    '--quads_obs_repr=xyz_vxyz_R_omega_floor_cwallid_cwall'
 )
 
 
