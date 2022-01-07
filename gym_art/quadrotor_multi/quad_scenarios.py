@@ -953,38 +953,6 @@ class Scenario_o_swarm_vs_swarm(QuadrotorScenario):
         self.formation_center = (self.goal_center_1 + self.goal_center_2) / 2
 
 
-class Scenario_o_swap_goals(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
-        self.duration_time = 3.0
-
-    def update_goals(self):
-        np.random.shuffle(self.goals)
-        for env, goal in zip(self.envs, self.goals):
-            env.goal = goal
-
-    def step(self, infos, rewards, pos):
-        tick = self.envs[0].tick
-
-        if tick < int(self.duration_time * self.envs[0].control_freq):
-            return infos, rewards
-
-        self.update_goals()
-        self.duration_time += np.random.uniform(low=3.0, high=5.0)
-        return infos, rewards
-
-    def reset(self):
-        # Update duration time
-        self.duration_time = np.random.uniform(low=3.0, high=5.0)
-
-        x = np.random.uniform(low=-1.5, high=1.5)
-        y = np.random.uniform(low=-1.5, high=1.5)
-        z = np.random.uniform(low=1.0, high=2.0)
-        self.formation_center = np.array([x, y, z])
-        # Reset formation, and parameters related to the formation; formation center; goals
-        self.standard_reset(formation_center=self.formation_center)
-
-
 class Scenario_o_dynamic_formations(Scenario_o_dynamic_diff_goal):
     def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
         super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
@@ -1244,6 +1212,62 @@ class Scenario_o_inside_obstacles(Scenario_o_dynamic_diff_goal):
         self.start_point = np.array([x, y, z])
         self.end_point = np.array([x, y, z])
         self.duration_time = np.random.uniform(low=4.0, high=6.0)
+        self.standard_reset(formation_center=self.start_point)
+
+
+class Scenario_o_swap_goals(Scenario_o_inside_obstacles):
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+        self.start_point = np.array([0.0, -3.0, 2.0])
+        self.end_point = np.array([0.0, 3.0, 2.0])
+        self.duration_time = 0.0
+        self.obstacle_pos = np.array([0.0, 0.0, 2.0])
+        self.init_flag = 0
+        self.spawn_flag = 0
+        self.get_obst_flag = False
+
+    def set_end_point(self):
+        self.start_point = np.copy(self.end_point)
+        obst_x, obst_y = self.obstacle_pos[:2]
+        end_x = obst_x + np.random.uniform(low=-0.5, high=0.5)
+        end_y = obst_y + np.random.uniform(low=-0.5, high=0.5)
+
+        end_z = self.start_point[2] + np.random.uniform(low=-1.0, high=1.0)
+        end_z = np.clip(end_z, a_min=1.0, a_max=4.0)
+        self.end_point = np.array([end_x, end_y, end_z])
+
+    def step(self, infos, rewards, pos):
+        tick = self.envs[0].tick
+        if tick <= int(self.duration_time * self.envs[0].control_freq):
+            return infos, rewards
+
+        if not self.get_obst_flag:
+            obst_num = len(infos[0]['obstacles'])
+            obst_id = np.random.randint(low=0, high=obst_num)
+            self.obstacle_pos = infos[0]['obstacles'][obst_id].pos
+            self.set_end_point()
+            self.get_obst_flag = True
+
+        self.duration_time += np.random.uniform(low=8.0, high=10.0)
+        # Reset formation and related parameters
+        self.update_formation_and_relate_param()
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.end_point, layer_dist=0.0)
+        np.random.shuffle(self.goals)
+        for i, env in enumerate(self.envs):
+            env.goal = self.goals[i]
+
+        return infos, rewards
+
+    def reset(self):
+        self.init_flag = np.random.randint(4)
+        self.spawn_flag = self.init_flag
+        x, y, z = self.generate_pos(shift_small=1.25, shift_big=2.0, shift_collide=2.5)
+        self.start_point = np.array([x, y, z])
+        self.end_point = np.array([x, y, z])
+        self.duration_time = np.random.uniform(low=4.0, high=6.0)
+        self.get_obst_flag = False
+
+        # Reset formation and related parameters
         self.standard_reset(formation_center=self.start_point)
 
 

@@ -8,7 +8,7 @@ import gym
 from copy import deepcopy
 
 from gym_art.quadrotor_multi.params import obs_self_size_dict
-from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_MODE_GOAL_CENTERS
+from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_MODE_GOAL_CENTERS, QUADS_MODE_OBST_INFO_LIST
 from gym_art.quadrotor_multi.quad_utils import perform_collision_between_drones, perform_collision_with_obstacle, \
     calculate_collision_matrix, calculate_drone_proximity_penalties, calculate_obst_drone_proximity_penalties, \
     perform_collision_with_wall, perform_collision_with_ceiling, perform_collision_with_floor
@@ -613,8 +613,8 @@ class QuadrotorEnvMulti(gym.Env):
                 infos[i]["rewards"]["rew_obst_quad_proximity_after_settle"] = rew_obst_quad_proximity_after_settle[i]
 
         # run the scenario passed to self.quads_mode)
-        if self.scenario.quads_mode in ['o_test', 'o_inside_obstacles'] or (
-                self.scenario.quads_mode == 'mix' and self.scenario.scenario.quads_mode == 'o_inside_obstacles'):
+        if self.scenario.quads_mode in QUADS_MODE_OBST_INFO_LIST or (
+                self.scenario.quads_mode == 'mix' and self.scenario.scenario.quads_mode in QUADS_MODE_OBST_INFO_LIST):
             infos[0]['obstacles'] = self.multi_obstacles.obstacles
         infos, rewards = self.scenario.step(infos=infos, rewards=rewards, pos=self.pos)
 
