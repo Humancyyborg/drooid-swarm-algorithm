@@ -186,7 +186,7 @@ QUAD_8_OBSTACLES_PARAMETERZE_CLI = (
     '--quads_neighbor_hidden_size=128 --neighbor_obs_type=pos_vel '
     '--quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
     '--quads_local_obs=6 --quads_local_metric=dist --quads_local_coeff=1.0 --quads_num_agents=8 '
-    '--quads_collision_reward=5.0 --quads_collision_smooth_max_penalty=10.0 --quads_neighbor_encoder_type=mean_embed '
+    '--quads_collision_reward=5.0 --quads_collision_smooth_max_penalty=4.0 --quads_neighbor_encoder_type=mean_embed '
     '--replay_buffer_sample_prob=0.0 --anneal_collision_steps=0.0 --quads_obstacle_type=cube '
     '--quads_collision_obstacle_reward=5.0 --quads_collision_obst_smooth_max_penalty=2.0 '
     '--quads_obstacle_hidden_size=128 --quads_obst_penalty_fall_off=3.0 --quads_obstacle_size=1.0 '
