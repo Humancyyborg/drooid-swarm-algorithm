@@ -1,5 +1,11 @@
 from sample_factory.runner.run_description import RunDescription, Experiment, ParamGrid
 from swarm_rl.runs.quad_multi_mix_baseline import QUAD_BASELINE_CLI
+import random
+
+
+def seeds(num_seeds):
+    return [random.randrange(0, 9999999) for _ in range(num_seeds)]
+
 
 _params = ParamGrid([
     ('seed', [1111, 2222, 3333, 4444]),
