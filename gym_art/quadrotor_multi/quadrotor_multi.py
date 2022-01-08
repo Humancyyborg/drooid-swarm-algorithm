@@ -44,7 +44,7 @@ class QuadrotorEnvMulti(gym.Env):
                  obst_proximity_mode=0, obst_inf_height=False, obst_level_change_cond=0.5,
                  obst_collision_enable_grace_period=False, crash_mode=0, clip_floor_vel_mode=0,
                  midreset=False, crash_reset_threshold=200, neighbor_rel_pos_mode=0, obst_rel_pos_mode=0,
-                 neighbor_prox_mode=0, obst_midreset=False, obst_col_reset_threshold=1):
+                 neighbor_prox_mode=0, obst_midreset=False, obst_col_reset_threshold=1, print_info=False):
 
         super().__init__()
 
@@ -238,6 +238,14 @@ class QuadrotorEnvMulti(gym.Env):
         self.midreset = midreset
         self.all_crash_counter = np.zeros(self.num_agents)
         self.all_crash_threshold = crash_reset_threshold
+
+        # print info
+        self.print_info = print_info
+        self.obst_counter_list = []
+        self.cur_ep_obst_counter = 0
+        self.real_obst_counter_list = []
+        self.real_cur_ep_obst_counter = 0
+
 
     def set_room_dims(self, dims):
         # dims is a (x, y, z) tuple
@@ -526,6 +534,13 @@ class QuadrotorEnvMulti(gym.Env):
                 rew_obst_quad_collisions_raw[obst_quad_last_step_unique_collisions] = -1.0
                 self.obst_midreset_list[obst_quad_last_step_unique_collisions] += 1.0
 
+                for drone_id in obst_quad_last_step_unique_collisions:
+                    if not self.envs[drone_id].crashed:
+                        self.cur_ep_obst_counter += 1
+
+                if self.print_info:
+                    self.real_cur_ep_obst_counter += len(obst_quad_last_step_unique_collisions)
+
             rew_collisions_obst_quad = self.rew_coeff["quadcol_bin_obst"] * rew_obst_quad_collisions_raw
 
             # penalties for low distance between obstacles and drones
@@ -697,9 +712,20 @@ class QuadrotorEnvMulti(gym.Env):
                         e.mid_reset()
                         self.obst_midreset_list[i] = 0
 
-
         # DONES
         if any(dones):
+            if self.print_info:
+                self.obst_counter_list.append(self.cur_ep_obst_counter)
+                self.real_obst_counter_list.append(self.real_cur_ep_obst_counter)
+                print("ep_num: ", len(self.obst_counter_list))
+                print("counter_list: ", self.obst_counter_list)
+                print("mean: ", np.mean(self.obst_counter_list))
+                print("real counter_list: ", self.real_obst_counter_list)
+                print("mean: ", np.mean(self.real_obst_counter_list))
+                self.real_cur_ep_obst_counter = 0
+
+            self.cur_ep_obst_counter = 0
+
             self.episode_id += 1
             if self.crash_value >= -1.0 * self.obst_level_change_cond:
                 self.crash_counter += 1
@@ -735,6 +761,8 @@ class QuadrotorEnvMulti(gym.Env):
 
                         infos[i]['episode_extra_stats']['episode_id'] = self.episode_id
                         infos[i]['episode_extra_stats']['obst_level'] = self.obst_level
+
+                        infos[i]['episode_extra_stats']['obst_counter_air'] = self.cur_ep_obst_counter
 
             obs = self.reset()
             dones = [True] * len(dones)  # terminate the episode for all "sub-envs"
