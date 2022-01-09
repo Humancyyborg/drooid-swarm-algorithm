@@ -4,7 +4,6 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_8_OBSTACLES
 
 _params = ParamGrid([
     ('pbt_optimize_batch_size', [False]),
-    ('wandb_user', ['pbt_v2']),
 ])
 
 PBT_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
