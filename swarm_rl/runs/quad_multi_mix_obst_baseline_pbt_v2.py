@@ -7,8 +7,8 @@ _params = ParamGrid([
 ])
 
 PBT_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
-    ' --with_pbt=True --num_policies=8 --pbt_mix_policies_in_one_env=True --pbt_period_env_steps=1e7 '
-    '--pbt_start_mutation=5e7 --pbt_replace_reward_gap=0.2 --pbt_replace_reward_gap_absolute=5.0 '
+    ' --with_pbt=True --num_policies=8 --pbt_mix_policies_in_one_env=True --pbt_period_env_steps=10000000 '
+    '--pbt_start_mutation=50000000 --pbt_replace_reward_gap=0.2 --pbt_replace_reward_gap_absolute=5.0 '
     '--pbt_optimize_gamma=True --pbt_perturb_max=1.2 --num_workers=72 --num_envs_per_worker=8'
 )
 
