@@ -79,7 +79,7 @@ class QuadsRewardShapingWrapper(gym.Wrapper, RewardShapingInterface, TrainingInf
 
             if dones_multi[i]:
                 true_reward = self.cumulative_rewards[i]['rewraw_main']
-                true_reward_consider_collisions = True
+                true_reward_consider_collisions = False
                 if true_reward_consider_collisions:
                     # we ideally want zero collisions, so collisions between quads are given very high weight
                     true_reward += 1000 * self.cumulative_rewards[i].get('rewraw_quadcol', 0)
