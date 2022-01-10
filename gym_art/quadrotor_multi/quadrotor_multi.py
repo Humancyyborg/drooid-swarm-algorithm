@@ -450,6 +450,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.obst_quad_collisions_per_episode_after_settle = 0
             self.prev_obst_quad_collisions = []
             self.obst_midreset_list = np.zeros(self.num_agents)
+            self.cur_ep_obst_counter = 0
 
         self.all_collisions = {val: [0.0 for _ in range(len(self.envs))] for val in
                                ['drone', 'ground', 'obstacle', 'wall', 'ceiling']}
@@ -723,8 +724,6 @@ class QuadrotorEnvMulti(gym.Env):
                 print("real counter_list: ", self.real_obst_counter_list)
                 print("mean: ", np.mean(self.real_obst_counter_list))
                 self.real_cur_ep_obst_counter = 0
-
-            self.cur_ep_obst_counter = 0
 
             self.episode_id += 1
             if self.crash_value >= -1.0 * self.obst_level_change_cond:
