@@ -605,14 +605,14 @@ def perform_downwash(drones_dyn):
         neighbor_pos = dyns_pos - dyns_pos[i]
         neighbor_pos_dist = np.linalg.norm(neighbor_pos, axis=1)
         # speed downwash given neighbor_pos_dist
-        # 0.1 * (x - 1)^2 + random(-1e-3, 1e-3)
-        speed_downwash = 0.1 * (neighbor_pos_dist - 1) ** 2 + np.random.uniform(low=-1e-3, high=1e-3)
-        speed_downwash = np.clip(speed_downwash, a_min=1e-6, a_max=5.0)
+        # 2.0 * (x - 1)^2 + random(-0.1, 0.1)
+        speed_downwash = 2.0 * (neighbor_pos_dist - 1) ** 2 + np.random.uniform(low=-0.1, high=0.1)
+        speed_downwash = np.clip(speed_downwash, a_min=0.01, a_max=5.0)
 
         # omega downwash given neighbor_pos_dist
         # 3.0 * (x - 1)^2 + random(-0.3, 0.3)
-        omega_downwash = 0.3 * (neighbor_pos_dist - 1) ** 2 + np.random.uniform(low=-1e-3, high=1e-3)
-        omega_downwash = np.clip(omega_downwash, a_min=1e-6, a_max=5.0)
+        omega_downwash = 3.0 * (neighbor_pos_dist - 1) ** 2 + np.random.uniform(low=-0.3, high=0.3)
+        omega_downwash = np.clip(omega_downwash, a_min=0.01, a_max=5.0)
 
         rel_dists_z = np.dot(neighbor_pos, z_axis)
         rel_dists_xy = np.sqrt(neighbor_pos_dist ** 2 - rel_dists_z ** 2)
