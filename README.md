@@ -103,3 +103,26 @@ To run unit tests:
 ```
 ./run_tests.sh
 ```
+
+## Citation
+
+If you use this repository in your work or otherwise wish to cite it, please make reference to our CORL paper.
+
+```
+@inproceedings{batra21corl,
+  author    = {Sumeet Batra and
+               Zhehui Huang and
+               Aleksei Petrenko and
+               Tushar Kumar and
+               Artem Molchanov and
+               Gaurav S. Sukhatme},
+  title     = {Decentralized Control of Quadrotor Swarms with End-to-end Deep Reinforcement Learning},
+  booktitle = {5th Conference on Robot Learning, CoRL 2021, 8-11 November 2021, London, England, {UK}},
+  series    = {Proceedings of Machine Learning Research},
+  publisher = {{PMLR}},
+  year      = {2021},
+  url       = {https://arxiv.org/abs/2109.07735}
+}
+```
+
+Github issues and pull requests are welcome.
