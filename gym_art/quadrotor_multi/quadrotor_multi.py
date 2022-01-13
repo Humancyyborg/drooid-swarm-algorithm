@@ -11,7 +11,7 @@ from gym_art.quadrotor_multi.params import obs_self_size_dict
 from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_MODE_GOAL_CENTERS, QUADS_MODE_OBST_INFO_LIST
 from gym_art.quadrotor_multi.quad_utils import perform_collision_between_drones, perform_collision_with_obstacle, \
     calculate_collision_matrix, calculate_drone_proximity_penalties, calculate_obst_drone_proximity_penalties, \
-    perform_collision_with_wall, perform_collision_with_ceiling, perform_collision_with_floor
+    perform_collision_with_wall, perform_collision_with_ceiling, perform_collision_with_floor, perform_downwash
 
 from gym_art.quadrotor_multi.quadrotor_multi_obstacles import MultiObstacles
 from gym_art.quadrotor_multi.quadrotor_single import GRAV, QuadrotorSingle
@@ -44,7 +44,8 @@ class QuadrotorEnvMulti(gym.Env):
                  obst_proximity_mode=0, obst_inf_height=False, obst_level_change_cond=0.5,
                  obst_collision_enable_grace_period=False, crash_mode=0, clip_floor_vel_mode=0,
                  midreset=False, crash_reset_threshold=200, neighbor_rel_pos_mode=0, obst_rel_pos_mode=0,
-                 neighbor_prox_mode=0, obst_midreset=False, obst_col_reset_threshold=1, print_info=False):
+                 neighbor_prox_mode=0, obst_midreset=False, obst_col_reset_threshold=1, print_info=False,
+                 apply_downwash=False):
 
         super().__init__()
 
@@ -245,6 +246,9 @@ class QuadrotorEnvMulti(gym.Env):
         self.cur_ep_obst_counter = 0
         self.real_obst_counter_list = []
         self.real_cur_ep_obst_counter = 0
+
+        # physical deployment
+        self.apply_downwash = apply_downwash
 
 
     def set_room_dims(self, dims):
@@ -568,6 +572,11 @@ class QuadrotorEnvMulti(gym.Env):
             rew_obst_quad_proximity = np.zeros(self.num_agents)
             rew_collisions_obst_quad_after_settle = np.zeros(self.num_agents)
             rew_obst_quad_proximity_after_settle = np.zeros(self.num_agents)
+
+        # Apply random force for downwash
+        if self.apply_downwash:
+            envs_dynamics = [env.dynamics for env in self.envs]
+            perform_downwash(envs_dynamics)
 
         # Collisions with ground, ceiling, wall
         ground_collisions = np.array([env.dynamics.crashed_floor for env in self.envs])

@@ -92,3 +92,4 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obst_rel_pos_mode', default=0, type=int, choices=[0, 1], help='0: use relative pos between the center point of drones and obstacles, 1: use relative pos between the closest point of drones and obstacles')
 
     p.add_argument('--quads_print_info', default=False, type=str2bool, help='Print some information for testing')
+    p.add_argument('--quads_apply_downwash', default=False, type=str2bool, help='True: apply downwash; False: no downwash')

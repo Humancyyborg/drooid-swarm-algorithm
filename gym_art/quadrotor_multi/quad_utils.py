@@ -572,6 +572,61 @@ def perform_collision_with_floor(drone_dyn, room_box):
     drone_dyn.omega += new_omega
 
 
+def get_vel_omega_norm(z_axis):
+    # vel_norm
+    noise_z_axis = z_axis + np.random.uniform(low=-0.1, high=0.1, size=3)
+    noise_z_axis_mag = np.linalg.norm(noise_z_axis)
+    noise_z_axis_norm = noise_z_axis / (noise_z_axis_mag + 1e-6 if noise_z_axis_mag == 0.0 else noise_z_axis_mag)
+    down_z_axis_norm = -1.0 * noise_z_axis_norm
+
+    # omega norm
+    dir_omega = np.random.uniform(low=-1, high=1, size=3)
+    dir_omega_mag = np.linalg.norm(dir_omega)
+    dir_omega_norm = dir_omega / (dir_omega_mag + 1e-6 if dir_omega_mag == 0.0 else dir_omega_mag)
+
+    return down_z_axis_norm, dir_omega_norm
+
+
+def perform_downwash(drones_dyn):
+    # Use cylinder to simulate the downwash area
+    # The downwash area is a cylinder with radius of 2 arm ~ 10 cm and height of 1.0 m
+    xy_downwash = 0.1
+    z_downwash = 1.0
+    # get pos
+    dyns_pos = np.array([d.pos for d in drones_dyn])
+    # get z_axis
+    dyns_z_axis = np.array([d.rot[:, -1] for d in drones_dyn])
+
+    # drone num
+    dyns_num = len(drones_dyn)
+    # check if neighbors drones are within teh downwash areas, if yes, apply downwash
+    for i in range(dyns_num):
+        z_axis = dyns_z_axis[i]
+        neighbor_pos = dyns_pos - dyns_pos[i]
+        neighbor_pos_dist = np.linalg.norm(neighbor_pos, axis=1)
+        # speed downwash given neighbor_pos_dist
+        # 0.1 * (x - 1)^2 + random(-1e-3, 1e-3)
+        speed_downwash = 0.1 * (neighbor_pos_dist - 1) ** 2 + np.random.uniform(low=-1e-3, high=1e-3)
+        speed_downwash = np.clip(speed_downwash, a_min=1e-6, a_max=5.0)
+
+        # omega downwash given neighbor_pos_dist
+        # 3.0 * (x - 1)^2 + random(-0.3, 0.3)
+        omega_downwash = 0.3 * (neighbor_pos_dist - 1) ** 2 + np.random.uniform(low=-1e-3, high=1e-3)
+        omega_downwash = np.clip(omega_downwash, a_min=1e-6, a_max=5.0)
+
+        rel_dists_z = np.dot(neighbor_pos, z_axis)
+        rel_dists_xy = np.sqrt(neighbor_pos_dist ** 2 - rel_dists_z ** 2)
+
+        for j in range(dyns_num):
+            if i == j:
+                continue
+
+            if -z_downwash < rel_dists_z[j] < 0 and rel_dists_xy[j] < xy_downwash:
+                down_z_axis_norm, dir_omega_norm = get_vel_omega_norm(z_axis=z_axis)
+                drones_dyn[j].vel += speed_downwash[j] * down_z_axis_norm
+                drones_dyn[j].omega += omega_downwash[j] * dir_omega_norm
+
+
 class OUNoise:
     """Ornstein–Uhlenbeck process"""
     def __init__(self, action_dimension, mu=0, theta=0.15, sigma=0.3, use_seed=False):
