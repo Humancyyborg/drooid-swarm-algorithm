@@ -82,7 +82,7 @@ def make_quadrotor_env_multi(cfg, **kwargs):
         num_agents=cfg.quads_num_agents,
         dynamics_params=quad, raw_control=raw_control, raw_control_zero_middle=raw_control_zero_middle,
         dynamics_randomize_every=dyn_randomize_every, dynamics_change=dynamics_change, dyn_sampler_1=sampler_1,
-        sense_noise=sense_noise, init_random_state=True, ep_time=episode_duration, room_length=cfg.room_length,
+        sense_noise=sense_noise, init_random_state=cfg.quads_init_random_state, ep_time=episode_duration, room_length=cfg.room_length,
         room_width=cfg.room_width, room_height=cfg.room_height, rew_coeff=rew_coeff,
         quads_mode=cfg.quads_mode, quads_formation=cfg.quads_formation, quads_formation_size=cfg.quads_formation_size,
         swarm_obs=extended_obs, quads_use_numba=cfg.quads_use_numba, quads_settle=cfg.quads_settle, quads_settle_range_meters=cfg.quads_settle_range_meters,

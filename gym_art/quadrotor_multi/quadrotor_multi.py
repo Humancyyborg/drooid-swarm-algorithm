@@ -533,7 +533,7 @@ class QuadrotorEnvMulti(gym.Env):
                     self.obst_quad_collisions_per_episode_after_settle += len(obst_quad_last_step_unique_collisions)
 
             rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
-            if obst_quad_last_step_unique_collisions.any():
+            if len(obst_quad_last_step_unique_collisions) > 0:
                 # We assign penalties to the drones which collide with the obstacles
                 # And obst_quad_last_step_unique_collisions only include drones' id
                 rew_obst_quad_collisions_raw[obst_quad_last_step_unique_collisions] = -1.0
@@ -710,7 +710,7 @@ class QuadrotorEnvMulti(gym.Env):
                         self.all_crash_counter[i] = 0
 
                     if self.all_crash_counter[i] > self.all_crash_threshold:
-                        e.mid_reset()
+                        e.reset(midreset=True)
                         self.all_crash_counter[i] = 0
             else:
                 self.all_crash_counter = np.zeros(self.num_agents)
@@ -719,7 +719,7 @@ class QuadrotorEnvMulti(gym.Env):
             if any(self.obst_midreset_list):
                 for i, e in enumerate(self.envs):
                     if self.obst_midreset_list[i] >= self.obst_col_reset_threshold:
-                        e.mid_reset()
+                        e.reset(midreset=True)
                         self.obst_midreset_list[i] = 0
 
         # DONES

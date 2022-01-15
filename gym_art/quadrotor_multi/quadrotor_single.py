@@ -1224,10 +1224,8 @@ class QuadrotorSingle:
         ## Updating params
         self.update_dynamics(dynamics_params=self.dynamics_params)
 
-    def set_pos(self):
+    def set_init_box_range(self):
         if self.spawn_flag < 0:
-            tmp_x = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box)
-            tmp_y = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box)
             # low
             self.init_box_range[0][0] = -0.5 * self.box
             self.init_box_range[0][1] = -0.5 * self.box
@@ -1235,8 +1233,6 @@ class QuadrotorSingle:
             self.init_box_range[1][0] = 0.5 * self.box
             self.init_box_range[1][1] = 0.5 * self.box
         elif self.spawn_flag == 0 or self.spawn_flag == 2:
-            tmp_x = self.np_random.uniform(-1.0 * self.box, self.box)
-            tmp_y = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box)
             # low
             self.init_box_range[0][0] = -1.0 * self.box
             self.init_box_range[0][1] = -0.5 * self.box
@@ -1244,8 +1240,6 @@ class QuadrotorSingle:
             self.init_box_range[1][0] = self.box
             self.init_box_range[1][1] = 0.5 * self.box
         else:
-            tmp_x = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box)
-            tmp_y = self.np_random.uniform(-1.0 * self.box, 1.0 * self.box)
             # low
             self.init_box_range[0][0] = -0.5 * self.box
             self.init_box_range[0][1] = -1.0 * self.box
@@ -1253,15 +1247,16 @@ class QuadrotorSingle:
             self.init_box_range[1][0] = 0.5 * self.box
             self.init_box_range[1][1] = self.box
 
-        tmp_z = self.np_random.uniform(-1.0 * self.box, 1.5 * self.box)
-        x, y, z = np.array([tmp_x, tmp_y, tmp_z]) + self.goal
+    def set_pos(self, goal_pos=None):
+        if goal_pos is None:
+            goal_pos = copy.deepcopy(self.goal)
 
-        if self.dim_mode == '1D':
-            x, y = self.goal[0], self.goal[1]
-        elif self.dim_mode == '2D':
-            y = self.goal[1]
+        tmp_x = np.random.uniform(low=self.init_box_range[0][0], high=self.init_box_range[1][0])
+        tmp_y = np.random.uniform(low=self.init_box_range[0][1], high=self.init_box_range[1][1])
+        tmp_z = np.random.uniform(low=-1.0 * self.box, high=1.5 * self.box)
+        x, y, z = np.array([tmp_x, tmp_y, tmp_z]) + goal_pos
+
         # Since being near the groud means crash we have to start above
-        # if z < 0.25: z = 0.25
         x = np.clip(x, a_min=-1.0 * self.room_length / 2 + 0.25, a_max=self.room_length / 2 - 0.25)
         y = np.clip(y, a_min=-1.0 * self.room_width / 2 + 0.25, a_max=self.room_width / 2 - 0.25)
 
@@ -1272,46 +1267,26 @@ class QuadrotorSingle:
         pos = npa(x, y, z)
         return pos
 
-    def mid_reset(self):
-        if self.dynamics_randomize_every is not None and \
-                (self.traj_count + 1) % (self.dynamics_randomize_every) == 0:
+    def _reset(self, midreset=False):
+        if self.dynamics_randomize_every is not None and (self.traj_count + 1) % (self.dynamics_randomize_every) == 0:
             self.resample_dynamics()
 
-        if self.spawn_flag < 0:
-            tmp_x = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box)
-            tmp_y = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box)
-        elif self.spawn_flag == 0 or self.spawn_flag == 2:
-            tmp_x = self.np_random.uniform(-1.0 * self.box, self.box)
-            tmp_y = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box)
+        if midreset:
+            pos = self.set_pos(goal_pos=self.goal_start_point)
         else:
-            tmp_x = self.np_random.uniform(-0.5 * self.box, 0.5 * self.box)
-            tmp_y = self.np_random.uniform(-1.0 * self.box, 1.0 * self.box)
-
-        tmp_z = self.np_random.uniform(-1.0 * self.box, 1.5 * self.box)
-        x, y, z = np.array([tmp_x, tmp_y, tmp_z]) + self.goal_start_point
-
-        # Since being near the groud means crash we have to start above
-        # if z < 0.25: z = 0.25
-        x = np.clip(x, a_min=-1.0 * self.room_length / 2 + 0.25, a_max=self.room_length / 2 - 0.25)
-        y = np.clip(y, a_min=-1.0 * self.room_width / 2 + 0.25, a_max=self.room_width / 2 - 0.25)
-
-        z_low_shift = np.random.uniform(low=0.25, high=0.5)
-        z_high_shift = np.random.uniform(low=0.25, high=0.5)
-        z = np.clip(z, a_min=z_low_shift, a_max=self.room_height - z_high_shift)
-
-        pos = npa(x, y, z)
+            self.tick = 0
+            self.set_init_box_range()
+            pos = self.set_pos(goal_pos=self.goal)
 
         if self.init_random_state:
             _, vel, rotation, omega = self.dynamics.random_state(
-                box=(self.room_length, self.room_width, self.room_height), vel_max=self.max_init_vel,
-                omega_max=self.max_init_omega
+                box=(self.room_length, self.room_width, self.room_height), vel_max=self.max_init_vel, omega_max=self.max_init_omega
             )
         else:
+            pos[2] = np.random.uniform(low=0.00, high=0.01)
             ## INIT HORIZONTALLY WITH 0 VEL and OMEGA
             vel, omega = npa(0, 0, 0), npa(0, 0, 0)
             rotation = randyaw()
-            while np.dot(rotation[:, 0], to_xyhat(-pos)) < 0.5:
-                rotation = randyaw()
 
         # Setting the generated state
         # print("QuadEnv: init: pos/vel/rot/omega:", pos, vel, rotation, omega)
@@ -1321,70 +1296,13 @@ class QuadrotorSingle:
 
         # Reseting some internal state (counters, etc)
         self.crashed = False
-        self.actions = [np.zeros([4, ]), np.zeros([4, ])]
-
-    def _reset(self):
-        ## I have to update state vector 
-        ##############################################################
-        ## DYNAMICS RANDOMIZATION AND UPDATE       
-        if self.dynamics_randomize_every is not None and \
-                (self.traj_count + 1) % (self.dynamics_randomize_every) == 0:
-            self.resample_dynamics()
-
-        ## CURRICULUM (NOT REALLY NEEDED ANYMORE)
-        # from 0.5 to 10 after 100k episodes (a form of curriculum)
-        if self.box < 10:
-            self.box = self.box * self.box_scale
-
-        pos = self.set_pos()
-
-        ##############################################################
-        ## INIT STATE
-        ## Initializing rotation and velocities
-        if self.init_random_state:
-            if self.dim_mode == '1D':
-                omega, rotation = npa(0, 0, 0), np.eye(3)
-                vel = np.array([0., 0., self.max_init_vel * np.random.rand()])
-            elif self.dim_mode == '2D':
-                omega = npa(0, self.max_init_omega * np.random.rand(), 0)
-                vel = self.max_init_vel * np.random.rand(3)
-                vel[1] = 0.
-                theta = np.pi * np.random.rand()
-                c, s = np.cos(theta), np.sin(theta)
-                rotation = np.array(((c, 0., -s), (0., 1., 0.), (s, 0., c)))
-            else:
-                # It already sets the state internally
-                _, vel, rotation, omega = self.dynamics.random_state(
-                    box=(self.room_length, self.room_width, self.room_height), vel_max=self.max_init_vel, omega_max=self.max_init_omega
-                )
-        else:
-            ## INIT HORIZONTALLY WITH 0 VEL and OMEGA
-            vel, omega = npa(0, 0, 0), npa(0, 0, 0)
-
-            if self.dim_mode == '1D' or self.dim_mode == '2D':
-                rotation = np.eye(3)
-            else:
-                # make sure we're sort of pointing towards goal (for mellinger controller)
-                rotation = randyaw()
-                while np.dot(rotation[:, 0], to_xyhat(-pos)) < 0.5:
-                    rotation = randyaw()
-
-        # Setting the generated state
-        # print("QuadEnv: init: pos/vel/rot/omega:", pos, vel, rotation, omega)
-        self.init_state = [pos, vel, rotation, omega]
-        self.dynamics.set_state(pos, vel, rotation, omega)
-        self.dynamics.reset()
-
-        # Reseting some internal state (counters, etc)
-        self.crashed = False
-        self.tick = 0
         self.actions = [np.zeros([4, ]), np.zeros([4, ])]
 
         state = self.state_vector(self)
         return state
 
-    def reset(self):
-        return self._reset()
+    def reset(self, midreset=False):
+        return self._reset(midreset=midreset)
 
     def render(self, mode='human', **kwargs):
         """This class is only meant to be used as a component of QuadMultiEnv."""
