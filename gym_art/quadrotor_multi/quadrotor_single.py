@@ -938,7 +938,7 @@ class QuadrotorSingle:
         self.crashed = False
         self.control_freq = sim_freq / sim_steps
         # used for spawn
-        self.spawn_flag = 0
+        self.spawn_flag = -1
         self.init_box_range = np.array([[-self.box, -self.box, -0.5 * self.box], [self.box, self.box, 1.5 * self.box]])
         self.goal_start_point = np.zeros(3)
 

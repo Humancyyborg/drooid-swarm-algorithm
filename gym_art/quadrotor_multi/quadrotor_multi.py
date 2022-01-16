@@ -387,11 +387,7 @@ class QuadrotorEnvMulti(gym.Env):
             obst_inf_height=self.obst_inf_height
         )
 
-    def reset(self):
-        obs, rewards, dones, infos = [], [], [], []
-        self.scenario.reset()
-        self.quads_formation_size = self.scenario.formation_size
-        self.goal_central = np.mean(self.scenario.goals, axis=0)
+    def reset_given_obst_scenario(self):
         if self.scenario.quads_mode == 'mix':
             scenario_mode = self.scenario.scenario_mode
         else:
@@ -410,6 +406,16 @@ class QuadrotorEnvMulti(gym.Env):
             else:
                 goal_points = self.scenario.goals
 
+        return scenario_mode, spawn_flag, goal_start_point, goal_end_point, goal_points
+
+    def reset(self):
+        obs, rewards, dones, infos = [], [], [], []
+        self.scenario.reset()
+        self.quads_formation_size = self.scenario.formation_size
+        self.goal_central = np.mean(self.scenario.goals, axis=0)
+        if self.use_obstacles:
+            scenario_mode, spawn_flag, goal_start_point, goal_end_point, goal_points = self.reset_given_obst_scenario()
+
         # try to activate replay buffer if enabled
         if self.use_replay_buffer and not self.activate_replay_buffer:
             self.crashes_in_recent_episodes.append(self.crashes_last_episode)
@@ -425,10 +431,11 @@ class QuadrotorEnvMulti(gym.Env):
             e.goal = self.scenario.goals[i]
             e.rew_coeff = self.rew_coeff
             e.update_env(*self.room_dims)
-            if scenario_mode in QUADS_MODE_GOAL_CENTERS:
-                e.reset_spawn_flag_and_start_point(spawn_flag=spawn_flag, goal_start_point=goal_points[i])
-            else:
-                e.reset_spawn_flag_and_start_point(spawn_flag=spawn_flag, goal_start_point=goal_start_point)
+            if self.use_obstacles:
+                if scenario_mode in QUADS_MODE_GOAL_CENTERS:
+                    e.reset_spawn_flag_and_start_point(spawn_flag=spawn_flag, goal_start_point=goal_points[i])
+                else:
+                    e.reset_spawn_flag_and_start_point(spawn_flag=spawn_flag, goal_start_point=goal_start_point)
 
             observation = e.reset()
             obs.append(observation)
