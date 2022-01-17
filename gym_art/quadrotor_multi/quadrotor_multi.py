@@ -397,6 +397,7 @@ class QuadrotorEnvMulti(gym.Env):
             spawn_flag = self.scenario.spawn_flag
             goal_start_point = self.scenario.start_point
             goal_end_point = self.scenario.end_point
+            goal_points = []
         else:
             spawn_flag = -1
             goal_start_point = self.scenario.goals_center_list
