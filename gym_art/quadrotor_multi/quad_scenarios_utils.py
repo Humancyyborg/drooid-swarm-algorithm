@@ -55,6 +55,7 @@ QUADS_PARAMS_DICT = {
                 'o_swarm_groups': [QUADS_FORMATION_LIST, [0.0, 0.4], obstacle_duration],
                 'o_ep_rand_bezier': [['circle_horizontal'], [0.0, 0.0], obstacle_duration],
                 'o_test': [['circle_horizontal'], [0.0, 0.0], obstacle_duration],
+                'o_test_stack': [['circle_horizontal'], [0.0, 0.0], obstacle_duration],
 }
 
 

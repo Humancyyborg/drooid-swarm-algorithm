@@ -584,7 +584,7 @@ class QuadrotorEnvMulti(gym.Env):
         # Apply random force for downwash
         if self.apply_downwash:
             envs_dynamics = [env.dynamics for env in self.envs]
-            perform_downwash(envs_dynamics)
+            perform_downwash(drones_dyn=envs_dynamics, dt=self.control_dt)
 
         # Collisions with ground, ceiling, wall
         ground_collisions = np.array([env.dynamics.crashed_floor for env in self.envs])
