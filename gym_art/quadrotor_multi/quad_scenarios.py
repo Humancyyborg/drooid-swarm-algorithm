@@ -229,6 +229,7 @@ class Scenario_o_test_stack(QuadrotorScenario):
         self.end_point = np.array([0.0, 3.0, 2.0])
         self.duration_time = 1.0
         self.obstacle_pos = np.array([0.0, 0.0, 2.0])
+        self.spawn_flag = -1
 
     def update_formation_size(self, new_formation_size):
         pass
@@ -241,16 +242,10 @@ class Scenario_o_test_stack(QuadrotorScenario):
 
     def stack_goals(self):
         x, y, z = self.start_point
-        z_shift = 0.2
-        # for i in range(len(self.envs) // 2):
-        #     z_shift += 0.2
-        #     self.goals[i] = np.array([x, y, z + z_shift])
-        #     self.goals[-(i+1)] = np.array([x, y, z - z_shift])
-        for i in range(len(self.envs) // 2):
+        z_shift = 0.0
+        for i in range(len(self.envs)):
+            z_shift += 0.5
             self.goals[i] = np.array([x, y, z + z_shift])
-
-        for i in range(len(self.envs) // 2, len(self.envs)):
-            self.goals[i] = np.array([x, y, z])
 
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
@@ -267,8 +262,9 @@ class Scenario_o_test_stack(QuadrotorScenario):
         return infos, rewards
 
     def reset(self):
-        self.start_point = np.array([0.0, 0.0, 2.5])
-        self.end_point = np.array([0.0, 0.0, 2.5])
+        self.spawn_flag = -1
+        self.start_point = np.array([0.0, 0.0, 1.0])
+        self.end_point = np.array([0.0, 0.0, 1.0])
         self.duration_time = 100.0
         self.standard_reset(formation_center=self.start_point)
         self.stack_goals()
