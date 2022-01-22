@@ -439,6 +439,7 @@ class QuadrotorEnvMulti(gym.Env):
                rew_obst_quad_proximity
 
     def simulate_colliding_with_room(self, drone_col_matrix, obst_quad_col_matrix):
+        applied_room_collide_flag = False
         ground_collisions = np.array([env.dynamics.crashed_floor for env in self.envs])
         ceiling_collisions = np.array([env.dynamics.crashed_ceiling for env in self.envs])
         wall_collisions = np.array([env.dynamics.crashed_wall for env in self.envs])
@@ -451,17 +452,24 @@ class QuadrotorEnvMulti(gym.Env):
             sim_list = self.enable_sim_room.split('-')
             if 'ceiling' in sim_list:
                 ceiling_crash_list = np.where(ceiling_collisions >= 1)[0]
+                if len(ceiling_crash_list) > 0:
+                    applied_room_collide_flag = True
                 for val in ceiling_crash_list:
                     perform_collision_with_ceiling(drone_dyn=self.envs[val].dynamics)
             if 'floor' in sim_list:
                 floor_crash_list = np.where(ground_collisions >= 1)[0]
+                if len(floor_crash_list) > 0:
+                    applied_room_collide_flag = True
                 for val in floor_crash_list:
                     perform_collision_with_floor(drone_dyn=self.envs[val].dynamics)
             if 'wall' in sim_list:
                 wall_crash_list = np.where(wall_collisions >= 1)[0]
+                if len(wall_crash_list) > 0:
+                    applied_room_collide_flag = True
                 for val in wall_crash_list:
                     perform_collision_with_wall(drone_dyn=self.envs[val].dynamics, room_box=self.envs[0].room_box,
                                                 crash_mode=self.crash_mode)
+        return applied_room_collide_flag
 
     def concatenate_obstacle_obs(self, obs):
         quads_vel = np.array([e.dynamics.vel for e in self.envs])
@@ -676,6 +684,7 @@ class QuadrotorEnvMulti(gym.Env):
         # Deal with collisions b/w drones
         # # 1. collision matrix of drones, 2. raw collision penalties, 3.  collision penalties
         # # 4. smooth penalties when drones are close to each other
+        applied_force_flag = False
         drone_col_matrix, rew_collisions_raw, rew_collisions, rew_proximity = self.neighbor_collision_info()
 
         # COLLISION BETWEEN QUAD AND OBSTACLE(S)
@@ -686,13 +695,19 @@ class QuadrotorEnvMulti(gym.Env):
         # # 1. Apply random force of downwash
         if self.apply_downwash:
             envs_dynamics = [env.dynamics for env in self.envs]
-            perform_downwash(drones_dyn=envs_dynamics, dt=self.control_dt)
+            applied_downwash_flag = perform_downwash(drones_dyn=envs_dynamics, dt=self.control_dt)
+            applied_force_flag = applied_force_flag or applied_downwash_flag
 
         # # 2. Simulate collisions when drones collide with the room
-        self.simulate_colliding_with_room(drone_col_matrix=drone_col_matrix, obst_quad_col_matrix=obst_quad_col_matrix)
+        applied_room_collide_flag = self.simulate_colliding_with_room(drone_col_matrix=drone_col_matrix,
+                                                                      obst_quad_col_matrix=obst_quad_col_matrix)
+        applied_force_flag = applied_force_flag or applied_room_collide_flag
 
         # # 3 & 4. Simulate collisions when drones collide with each other or with obstacles
         if self.apply_collision_force:
+            if len(self.curr_drone_collisions) > 0 or len(curr_all_collisions) > 0:
+                applied_drone_or_obst_flag = True
+                applied_force_flag = applied_force_flag or applied_drone_or_obst_flag
             for val in self.curr_drone_collisions:
                 perform_collision_between_drones(self.envs[val[0]].dynamics, self.envs[val[1]].dynamics)
             for val in curr_all_collisions:
@@ -723,6 +738,11 @@ class QuadrotorEnvMulti(gym.Env):
                 self.scenario.quads_mode == 'mix' and self.scenario.scenario.quads_mode in QUADS_MODE_OBST_INFO_LIST):
             infos[0]['obstacles'] = self.multi_obstacles.obstacles
         infos, rewards = self.scenario.step(infos=infos, rewards=rewards, pos=self.pos)
+
+        # Adjust obs, specifically observation of drone itself after appplying random force
+        # # 1. Downwash; 2. Room; 3. b/w drones 4. b/w obstacles & drones only changes vel and omega
+        if applied_force_flag:
+            obs = [e.state_vector(e) for e in self.envs]
 
         # Concatenate observations of neighbor drones and obstacles
         obs = self.add_neighborhood_obs(obs=obs)

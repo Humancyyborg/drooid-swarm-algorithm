@@ -596,6 +596,7 @@ def perform_downwash(drones_dyn, dt):
     # acceleration func: a(x) = f(x) / 34 = -10 / 17 * x + 7 / 17, x in [0, 0.7]
     # Use cylinder to simulate the downwash area
     # The downwash area is a cylinder with radius of 2 arm ~ 10 cm and height of 1.0 m
+    applied_downwash_flag = False
     xy_downwash = 0.1
     z_downwash = 0.7
     # get pos
@@ -632,7 +633,9 @@ def perform_downwash(drones_dyn, dt):
                 down_z_axis_norm, dir_omega_norm = get_vel_omega_norm(z_axis=z_axis)
                 drones_dyn[j].vel += acc[j] * down_z_axis_norm * dt
                 drones_dyn[j].omega += omega_downwash[j] * dir_omega_norm * dt
+                applied_downwash_flag = True
 
+    return applied_downwash_flag
 
 class OUNoise:
     """Ornstein–Uhlenbeck process"""
