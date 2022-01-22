@@ -44,8 +44,14 @@ def state_xyz_vxyz_R_omega_wall(self):
             dt=self.dt
         )
     # return np.concatenate([pos - self.goal[:3], vel, rot.flatten(), omega, (pos[2],)])
-    wall_box_0 = np.clip(pos - self.room_box[0], a_min=0.0, a_max=2.0)
-    wall_box_1 = np.clip(self.room_box[1] - pos, a_min=0.0, a_max=2.0)
+    if self.obs_space_low_high is not None and 'wall' in self.obs_space_low_high:
+        d2wall_low = self.obs_space_low_high['wall'][0][0]
+        d2wall_high = self.obs_space_low_high['wall'][1][0]
+    else:
+        d2wall_low = 0.0
+        d2wall_high = 2.0
+    wall_box_0 = np.clip(pos - self.room_box[0], a_min=d2wall_low, a_max=d2wall_high)
+    wall_box_1 = np.clip(self.room_box[1] - pos, a_min=d2wall_low, a_max=d2wall_high)
     return np.concatenate([pos - self.goal[:3], vel, rot.flatten(), omega, wall_box_0, wall_box_1])
 
 def state_xyz_vxyz_R_omega_floor(self):
