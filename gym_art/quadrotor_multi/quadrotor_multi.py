@@ -43,7 +43,7 @@ class QuadrotorEnvMulti(gym.Env):
                  obst_level_change_cond=0.5, obst_collision_enable_grace_period=False, crash_mode=0,
                  clip_floor_vel_mode=0, midreset=False, crash_reset_threshold=200, neighbor_rel_pos_mode=0,
                  obst_rel_pos_mode=0, neighbor_prox_mode=0, obst_midreset=False, obst_col_reset_threshold=1,
-                 print_info=False, apply_downwash=False):
+                 print_info=False, apply_downwash=False, normalize_obs=False):
 
         super().__init__()
 
@@ -54,6 +54,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Parameters for multi-drones
         self.num_agents = num_agents
+        self.normalize_obs = normalize_obs
         # # Set to True means that sample_factory will treat it as a multi-agent vectorized environment even with
         # # num_agents=1. More info, please look at sample-factory: envs/quadrotors/wrappers/reward_shaping.py
         self.is_multiagent = True
@@ -75,12 +76,14 @@ class QuadrotorEnvMulti(gym.Env):
                 quads_use_numba, swarm_obs, num_agents, quads_settle, quads_settle_range_meters,
                 quads_vel_reward_out_range, quads_view_mode, quads_obstacle_mode, quads_obstacle_num,
                 local_obs, local_obst_obs, obst_obs_type, quads_reward_ep_len, obst_inf_height,
-                clip_floor_vel_mode
+                clip_floor_vel_mode, normalize_obs
             )
             self.envs.append(e)
 
         self.action_space = self.envs[0].action_space
         self.observation_space = self.envs[0].observation_space
+        self.obs_mean = (self.observation_space.high + self.observation_space.low) / 2.0
+        self.obs_std = (self.observation_space.high - self.observation_space.low) / 2.0
         # # Reward shaping
         self.rew_coeff = dict(
             pos=1., effort=0.05, action_change=0., crash=1., orient=1., yaw=0., rot=0., attitude=0., spin=0.1, vel=0.,
@@ -645,6 +648,11 @@ class QuadrotorEnvMulti(gym.Env):
 
         self.reset_scene = True
         self.crashes_last_episode = 0
+
+        if self.normalize_obs:
+            obs = np.clip(obs, a_min=self.observation_space.low, a_max=self.observation_space.high)
+            obs = (obs - self.obs_mean) / self.obs_std
+
         return obs
 
     # noinspection PyTypeChecker
@@ -778,6 +786,11 @@ class QuadrotorEnvMulti(gym.Env):
 
             obs = self.reset()
             dones = [True] * len(dones)  # terminate the episode for all "sub-envs"
+
+        # Normalize observations
+        if self.normalize_obs:
+            obs = np.clip(obs, a_min=self.observation_space.low, a_max=self.observation_space.high)
+            obs = (obs - self.obs_mean) / self.obs_std
 
         return obs, rewards, dones, infos
 

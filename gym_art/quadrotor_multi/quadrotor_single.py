@@ -77,12 +77,13 @@ class QuadrotorDynamics:
                  dim_mode="3D",
                  gravity=GRAV,
                  dynamics_simplification=False,
-                 use_numba=False, clip_floor_vel_mode=0):
+                 use_numba=False, clip_floor_vel_mode=0, normalize_obs=False):
 
         self.dynamics_steps_num = dynamics_steps_num
         self.dynamics_simplification = dynamics_simplification
         self.use_numba = use_numba
         self.clip_floor_vel_mode = clip_floor_vel_mode
+        self.normalize_obs = normalize_obs
         ###############################################################
         ## PARAMETERS
         self.prop_ccw = np.array([-1., 1., -1., 1.])
@@ -457,6 +458,9 @@ class QuadrotorDynamics:
             min_vel = clip_floor_vel_params[self.clip_floor_vel_mode]['min']
             max_vel = clip_floor_vel_params[self.clip_floor_vel_mode]['max']
             self.vel = np.clip(self.vel, a_min=min_vel, a_max=max_vel)
+
+        if self.normalize_obs:
+            self.vel = np.clip(self.vel, a_min=-self.vxyz_max, a_max=self.vxyz_max)
         # self.vel[mask] = 0. #If we leave the room - stop flying
 
         ## Accelerometer measures so called "proper acceleration"
@@ -499,6 +503,9 @@ class QuadrotorDynamics:
             min_vel = clip_floor_vel_params[self.clip_floor_vel_mode]['min']
             max_vel = clip_floor_vel_params[self.clip_floor_vel_mode]['max']
             self.vel = np.clip(self.vel, a_min=min_vel, a_max=max_vel)
+
+        if self.normalize_obs:
+            self.vel = np.clip(self.vel, a_min=-self.vxyz_max, a_max=self.vxyz_max)
 
     def reset(self):
         self.thrust_cmds_damp = np.zeros([4])
@@ -769,7 +776,8 @@ class QuadrotorSingle:
                  t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False, swarm_obs='none', num_agents=1,quads_settle=False,
                  quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8,
                  view_mode='local', obstacle_mode='no_obstacles', obstacle_num=0, num_use_neighbor_obs=0, num_local_obst=0,
-                 obst_obs_type='none', quads_reward_ep_len=True, obst_inf_height=False, clip_floor_vel_mode=0):
+                 obst_obs_type='none', quads_reward_ep_len=True, obst_inf_height=False, clip_floor_vel_mode=0,
+                 normalize_obs=False):
         np.seterr(under='ignore')
         """
         Args:
@@ -800,6 +808,7 @@ class QuadrotorSingle:
             excite: [bool] change the setpoint at the fixed frequency to perturb the quad
         """
         ## ARGS
+        self.normalize_obs = normalize_obs
         self.init_random_state = init_random_state
         self.room_length = room_length
         self.room_width = room_width
@@ -993,7 +1002,8 @@ class QuadrotorSingle:
                                           dynamics_steps_num=self.sim_steps, room_box=self.room_box,
                                           dim_mode=self.dim_mode,
                                           gravity=self.gravity, dynamics_simplification=self.dynamics_simplification,
-                                          use_numba=self.use_numba, clip_floor_vel_mode=self.clip_floor_vel_mode)
+                                          use_numba=self.use_numba, clip_floor_vel_mode=self.clip_floor_vel_mode,
+                                          normalize_obs=self.normalize_obs)
 
         if self.verbose:
             print("#################################################")
@@ -1054,13 +1064,13 @@ class QuadrotorSingle:
             "roxyz": [-room_range, room_range], # roxyz stands for relative pos between quadrotor and obstacle
             "roxy": [-room_range[:2], room_range[:2]],  # roxy stands for relative xy pos between quadrotor and obstacle, used when obstacle is inf high
             "rovxyz": [-20.0 * np.ones(3), 20.0 * np.ones(3)], # rovxyz stands for relative velocity between quadrotor and obstacle
-            "osize": [np.zeros(1), 20.0 * np.ones(1)],  # obstacle size, [[0., 0., 0.], [20., 20., 20.]]
+            "osize": [np.zeros(1), 2.0 * np.ones(1)],  # obstacle size, [[0., 0., 0.], [2., 2., 2.]]
             "otype": [np.zeros(1), 20.0 * np.ones(1)],  # obstacle type, [[0.], [20.]], which means we can support 21 types of obstacles
             "goal": [-room_range, room_range],
             "nbr_dist": [np.zeros(1), room_max_dist],
             "nbr_goal_dist": [np.zeros(1), room_max_dist],
-            "wall": [np.zeros(6), 10.0 * np.ones(6)],
-            "floor": [np.zeros(1), 10.0 * np.ones(1)],
+            "wall": [np.zeros(6), 2.0 * np.ones(6)],
+            "floor": [np.zeros(1), 2.0 * np.ones(1)],
             "cwallid": [np.zeros(1), 3 * np.ones(1)],
             "cwall": [np.zeros(1), 10.0 * np.ones(1)],
         }

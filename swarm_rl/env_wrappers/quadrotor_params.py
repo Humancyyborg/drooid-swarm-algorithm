@@ -94,3 +94,5 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_print_info', default=False, type=str2bool, help='Print some information for testing')
     p.add_argument('--quads_apply_downwash', default=False, type=str2bool, help='True: apply downwash; False: no downwash')
     p.add_argument('--quads_init_random_state', default=True, type=str2bool, help='True: spawn drones on the air; False: spawn drones on the floor with 0 vel, omega')
+
+    p.add_argument('--quads_normalize_obs', default=False, type=str2bool, help='True: Normalize all observations to [-1, 1]')
