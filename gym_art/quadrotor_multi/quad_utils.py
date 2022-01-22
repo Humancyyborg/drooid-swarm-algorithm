@@ -522,7 +522,7 @@ def perform_collision_with_wall(drone_dyn, room_box, crash_mode):
     drone_dyn.omega += new_omega
 
 
-def perform_collision_with_ceiling(drone_dyn, room_box):
+def perform_collision_with_ceiling(drone_dyn):
     drone_speed = np.linalg.norm(drone_dyn.vel)
     real_speed = np.random.uniform(low=0.5 * drone_speed, high=1.5 * drone_speed)
     real_speed = np.clip(real_speed, a_min=1.0, a_max=10.0)
@@ -547,7 +547,7 @@ def perform_collision_with_ceiling(drone_dyn, room_box):
     drone_dyn.omega += new_omega
 
 
-def perform_collision_with_floor(drone_dyn, room_box):
+def perform_collision_with_floor(drone_dyn):
     drone_speed = np.linalg.norm(drone_dyn.vel)
     real_speed = np.random.uniform(low=1.0 * drone_speed, high=1.5 * drone_speed)
     real_speed = np.clip(real_speed, a_min=1.0, a_max=10.0)
