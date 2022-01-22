@@ -425,25 +425,15 @@ class QuadrotorEnvMulti(gym.Env):
                 num_agents=self.num_agents,
                 proximity_mode=self.obst_proximity_mode
             )
-
-            if self.envs[0].tick >= self.obst_collisions_grace_period_seconds * self.control_freq:
-                rew_collisions_obst_quad_after_settle = copy.deepcopy(rew_collisions_obst_quad)
-                rew_obst_quad_proximity_after_settle = copy.deepcopy(rew_obst_quad_proximity)
-            else:
-                rew_collisions_obst_quad_after_settle = np.zeros(self.num_agents)
-                rew_obst_quad_proximity_after_settle = np.zeros(self.num_agents)
-
         else:
             obst_quad_col_matrix = np.zeros((self.num_agents, self.obstacle_num))
             curr_all_collisions = []
             rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
             rew_collisions_obst_quad = np.zeros(self.num_agents)
             rew_obst_quad_proximity = np.zeros(self.num_agents)
-            rew_collisions_obst_quad_after_settle = np.zeros(self.num_agents)
-            rew_obst_quad_proximity_after_settle = np.zeros(self.num_agents)
 
         return obst_quad_col_matrix, curr_all_collisions, rew_obst_quad_collisions_raw, rew_collisions_obst_quad, \
-               rew_obst_quad_proximity, rew_collisions_obst_quad_after_settle, rew_obst_quad_proximity_after_settle
+               rew_obst_quad_proximity
 
     def simulate_colliding_with_room(self, drone_col_matrix, obst_quad_col_matrix):
         ground_collisions = np.array([env.dynamics.crashed_floor for env in self.envs])
@@ -682,8 +672,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         # COLLISION BETWEEN QUAD AND OBSTACLE(S)
         obst_quad_col_matrix, curr_all_collisions, rew_obst_quad_collisions_raw, rew_collisions_obst_quad, \
-        rew_obst_quad_proximity, rew_collisions_obst_quad_after_settle, rew_obst_quad_proximity_after_settle = \
-            self.drone_obst_collision_info()
+        rew_obst_quad_proximity = self.drone_obst_collision_info()
 
         # Apply force to change vel and omega: 1. Downwash; 2. Room; 3. b/w drones 4. b/w obstacles & drones
         # # 1. Apply random force of downwash
@@ -714,19 +703,12 @@ class QuadrotorEnvMulti(gym.Env):
             infos[i]["rewards"]["rew_proximity"] = rew_proximity[i]
 
             if self.use_obstacles:
-                if self.obst_collision_enable_grace_period:
-                    rewards[i] += rew_collisions_obst_quad_after_settle[i]
-                    rewards[i] += rew_obst_quad_proximity_after_settle[i]
-                else:
-                    rewards[i] += rew_collisions_obst_quad[i]
-                    rewards[i] += rew_obst_quad_proximity[i]
+                rewards[i] += rew_collisions_obst_quad[i]
+                rewards[i] += rew_obst_quad_proximity[i]
 
                 infos[i]["rewards"]["rew_quadcol_obstacle"] = rew_collisions_obst_quad[i]
                 infos[i]["rewards"]["rewraw_quadcol_obstacle"] = rew_obst_quad_collisions_raw[i]
                 infos[i]["rewards"]["rew_obst_quad_proximity"] = rew_obst_quad_proximity[i]
-
-                infos[i]["rewards"]["rew_quadcol_obstacle_after_settle"] = rew_collisions_obst_quad_after_settle[i]
-                infos[i]["rewards"]["rew_obst_quad_proximity_after_settle"] = rew_obst_quad_proximity_after_settle[i]
 
         # Run the scenario passed to self.quads_mode
         if self.scenario.quads_mode in QUADS_MODE_OBST_INFO_LIST or (
