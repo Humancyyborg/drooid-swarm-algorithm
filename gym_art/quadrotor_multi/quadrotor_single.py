@@ -459,7 +459,7 @@ class QuadrotorDynamics:
             max_vel = clip_floor_vel_params[self.clip_floor_vel_mode]['max']
             self.vel = np.clip(self.vel, a_min=min_vel, a_max=max_vel)
 
-        if self.normalize_obs:
+        if self.normalize_obs and False:
             self.vel = np.clip(self.vel, a_min=-self.vxyz_max, a_max=self.vxyz_max)
         # self.vel[mask] = 0. #If we leave the room - stop flying
 
@@ -504,7 +504,7 @@ class QuadrotorDynamics:
             max_vel = clip_floor_vel_params[self.clip_floor_vel_mode]['max']
             self.vel = np.clip(self.vel, a_min=min_vel, a_max=max_vel)
 
-        if self.normalize_obs:
+        if self.normalize_obs and False:
             self.vel = np.clip(self.vel, a_min=-self.vxyz_max, a_max=self.vxyz_max)
 
     def reset(self):

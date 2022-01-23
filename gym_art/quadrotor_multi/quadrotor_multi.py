@@ -658,7 +658,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.crashes_last_episode = 0
 
         if self.normalize_obs:
-            obs = np.clip(obs, a_min=self.observation_space.low, a_max=self.observation_space.high)
+            # obs = np.clip(obs, a_min=self.observation_space.low, a_max=self.observation_space.high)
             obs = (obs - self.obs_mean) / self.obs_std
 
         return obs
@@ -809,7 +809,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Normalize observations
         if self.normalize_obs:
-            obs = np.clip(obs, a_min=self.observation_space.low, a_max=self.observation_space.high)
+            # obs = np.clip(obs, a_min=self.observation_space.low, a_max=self.observation_space.high)
             obs = (obs - self.obs_mean) / self.obs_std
 
         return obs, rewards, dones, infos
