@@ -767,17 +767,15 @@ class QuadrotorSingle:
         'video.frames_per_second': 50
     }
 
-    def __init__(self, dynamics_params="DefaultQuad", dynamics_change=None,
-                 dynamics_randomize_every=None, dyn_sampler_1=None, dyn_sampler_2=None,
-                 raw_control=True, raw_control_zero_middle=True, dim_mode='3D', tf_control=False, sim_freq=200.,
-                 sim_steps=2,
-                 obs_repr="xyz_vxyz_R_omega", ep_time=7, obstacles_num=0, room_length=10, room_width=10, room_height=10, init_random_state=False,
-                 rew_coeff=None, sense_noise=None, verbose=False, gravity=GRAV,
-                 t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False, swarm_obs='none', num_agents=1,quads_settle=False,
-                 quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8,
-                 view_mode='local', obstacle_mode='no_obstacles', obstacle_num=0, num_use_neighbor_obs=0, num_local_obst=0,
-                 obst_obs_type='none', quads_reward_ep_len=True, obst_inf_height=False, clip_floor_vel_mode=0,
-                 normalize_obs=False):
+    def __init__(self, dynamics_params="DefaultQuad", dynamics_change=None, dynamics_randomize_every=None,
+                 dyn_sampler_1=None, dyn_sampler_2=None, raw_control=True, raw_control_zero_middle=True, dim_mode='3D',
+                 tf_control=False, sim_freq=200., sim_steps=2, obs_repr="xyz_vxyz_R_omega", ep_time=7, room_length=10,
+                 room_width=10, room_height=10, init_random_state=False, sense_noise=None,
+                 verbose=False, gravity=GRAV, t2w_std=0.005, t2t_std=0.0005, excite=False,
+                 dynamics_simplification=False, use_numba=False, swarm_obs='none', num_agents=1, quads_settle=False,
+                 quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8, view_mode='local',
+                 obstacle_mode='no_obstacles', obstacle_num=0, num_use_neighbor_obs=0, num_local_obst=0,
+                 obst_obs_type='none', quads_reward_ep_len=True, clip_floor_vel_mode=0, normalize_obs=False):
         np.seterr(under='ignore')
         """
         Args:
@@ -800,7 +798,6 @@ class QuadrotorSingle:
             sim_steps: [int] how many simulation steps for each control step
             obs_repr: [str] options: xyz_vxyz_rot_omega, xyz_vxyz_quat_omega
             ep_time: [float] episode time in simulated seconds. This parameter is used to compute env max time length in steps.
-            obstacles_num: [int] number of obstacle in the env
             room_size: [int] env room size. Not the same as the initialization box to allow shorter episodes
             init_random_state: [bool] use random state initialization or horizontal initialization with 0 velocities
             rew_coeff: [dict] weights for different reward components (see compute_weighted_reward() function)
@@ -821,7 +818,6 @@ class QuadrotorSingle:
         self.tf_control = tf_control
         self.dynamics_randomize_every = dynamics_randomize_every
         self.verbose = verbose
-        self.obstacles_num = obstacles_num
         self.raw_control = raw_control
         self.use_numba = use_numba
         self.update_sense_noise(sense_noise=sense_noise)
@@ -855,7 +851,6 @@ class QuadrotorSingle:
         self.obstacle_num = obstacle_num
         self.num_local_obst = num_local_obst
         self.obst_obs_type = obst_obs_type
-        self.obst_inf_height = obst_inf_height
 
         # Reward scale
         self.quads_reward_ep_len = quads_reward_ep_len
@@ -1010,14 +1005,6 @@ class QuadrotorSingle:
             print("Dynamics params loaded:")
             print_dic(dynamics_params)
             print("#################################################")
-
-        ################################################################################
-        ## SCENE
-        if self.obstacles_num > 0:
-            #TODO: Fix unresolved reference error here???
-            self.obstacles = _random_obstacles(None, obstacles_num, self.room_size, self.dynamics.arm)
-        else:
-            self.obstacles = None
 
         ################################################################################
         ## CONTROL

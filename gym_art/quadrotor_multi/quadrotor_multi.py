@@ -26,24 +26,23 @@ class QuadrotorEnvMulti(gym.Env):
     def __init__(self,
                  num_agents, dynamics_params='DefaultQuad', dynamics_change=None, dynamics_randomize_every=None,
                  dyn_sampler_1=None, dyn_sampler_2=None, raw_control=True, raw_control_zero_middle=True, dim_mode='3D',
-                 tf_control=False, sim_freq=200., sim_steps=2, obs_repr='xyz_vxyz_R_omega', ep_time=7, obstacles_num=0,
-                 room_length=10, room_width=10, room_height=10, init_random_state=False, rew_coeff=None,
-                 sense_noise=None, verbose=False, gravity=GRAV, resample_goals=False, t2w_std=0.005, t2t_std=0.0005,
-                 excite=False, dynamics_simplification=False, quads_mode='static_same_goal',
-                 quads_formation='circle_horizontal', quads_formation_size=-1.0, swarm_obs='none',
-                 quads_use_numba=False, quads_settle=False, quads_settle_range_meters=1.0,
-                 quads_vel_reward_out_range=0.8, quads_obstacle_mode='no_obstacles', quads_view_mode='local',
-                 quads_obstacle_num=0, quads_obstacle_type='sphere', quads_obstacle_size=0.0, collision_force=True,
-                 adaptive_env=False, obstacle_traj='gravity', local_obs=-1, collision_hitbox_radius=2.0,
-                 collision_falloff_radius=2.0, collision_smooth_max_penalty=10.0, local_metric='dist', local_coeff=0.0,
-                 use_replay_buffer=False, obstacle_obs_mode='relative', obst_penalty_fall_off=10.0,
-                 vis_acc_arrows=False, viz_traces=25, viz_trace_nth_step=1, local_obst_obs=-1, obst_enable_sim=True,
-                 obst_obs_type='none', quads_reward_ep_len=True, obst_level=-1, obst_stack_num=4,
-                 enable_sim_room='none', obst_level_mode=0, obst_proximity_mode=0, obst_inf_height=False,
-                 obst_level_change_cond=0.5, obst_collision_enable_grace_period=False, crash_mode=0,
-                 clip_floor_vel_mode=0, midreset=False, crash_reset_threshold=200, neighbor_rel_pos_mode=0,
-                 obst_rel_pos_mode=0, neighbor_prox_mode=0, obst_midreset=False, obst_col_reset_threshold=1,
-                 print_info=False, apply_downwash=False, normalize_obs=False):
+                 tf_control=False, sim_freq=200., sim_steps=2, obs_repr='xyz_vxyz_R_omega', ep_time=7, room_length=10,
+                 room_width=10, room_height=10, init_random_state=False, rew_coeff=None, sense_noise=None,
+                 verbose=False, gravity=GRAV, t2w_std=0.005, t2t_std=0.0005, excite=False,
+                 dynamics_simplification=False, quads_mode='static_same_goal', quads_formation='circle_horizontal',
+                 quads_formation_size=-1.0, swarm_obs='none', quads_use_numba=False, quads_settle=False,
+                 quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8, quads_obstacle_mode='no_obstacles',
+                 quads_view_mode='local', quads_obstacle_num=0, quads_obstacle_type='sphere', quads_obstacle_size=0.0,
+                 collision_force=True, adaptive_env=False, obstacle_traj='gravity', local_obs=-1,
+                 collision_hitbox_radius=2.0, collision_falloff_radius=2.0, collision_smooth_max_penalty=10.0,
+                 local_metric='dist', local_coeff=0.0, use_replay_buffer=False, obstacle_obs_mode='relative',
+                 obst_penalty_fall_off=10.0, vis_acc_arrows=False, viz_traces=25, viz_trace_nth_step=1,
+                 local_obst_obs=-1, obst_enable_sim=True, obst_obs_type='none', quads_reward_ep_len=True, obst_level=-1,
+                 obst_stack_num=4, enable_sim_room='none', obst_level_mode=0, obst_proximity_mode=0,
+                 obst_inf_height=False, obst_level_change_cond=0.5, obst_collision_enable_grace_period=False,
+                 crash_mode=0, clip_floor_vel_mode=0, midreset=False, crash_reset_threshold=200,
+                 neighbor_rel_pos_mode=0, obst_rel_pos_mode=0, neighbor_prox_mode=0, obst_midreset=False,
+                 obst_col_reset_threshold=1, print_info=False, apply_downwash=False, normalize_obs=False):
 
         super().__init__()
 
@@ -69,14 +68,19 @@ class QuadrotorEnvMulti(gym.Env):
         self.envs = []
         for i in range(self.num_agents):
             e = QuadrotorSingle(
-                dynamics_params, dynamics_change, dynamics_randomize_every, dyn_sampler_1, dyn_sampler_2,
-                raw_control, raw_control_zero_middle, dim_mode, tf_control, sim_freq, sim_steps,
-                obs_repr, ep_time, obstacles_num, room_length, room_width, room_height, init_random_state,
-                rew_coeff, sense_noise, verbose, gravity, t2w_std, t2t_std, excite, dynamics_simplification,
-                quads_use_numba, swarm_obs, num_agents, quads_settle, quads_settle_range_meters,
-                quads_vel_reward_out_range, quads_view_mode, quads_obstacle_mode, quads_obstacle_num,
-                local_obs, local_obst_obs, obst_obs_type, quads_reward_ep_len, obst_inf_height,
-                clip_floor_vel_mode, normalize_obs
+                dynamics_params=dynamics_params, dynamics_change=dynamics_change,
+                dynamics_randomize_every=dynamics_randomize_every, dyn_sampler_1=dyn_sampler_1,
+                dyn_sampler_2=dyn_sampler_2, raw_control=raw_control, raw_control_zero_middle=raw_control_zero_middle,
+                dim_mode=dim_mode, tf_control=tf_control, sim_freq=sim_freq, sim_steps=sim_steps, obs_repr=obs_repr,
+                ep_time=ep_time, room_length=room_length, room_width=room_width, room_height=room_height,
+                init_random_state=init_random_state, sense_noise=sense_noise, verbose=verbose, gravity=gravity,
+                t2w_std=t2w_std, t2t_std=t2t_std, excite=excite, dynamics_simplification=dynamics_simplification,
+                use_numba=quads_use_numba, swarm_obs=swarm_obs, num_agents=num_agents, quads_settle=quads_settle,
+                quads_settle_range_meters=quads_settle_range_meters,
+                quads_vel_reward_out_range=quads_vel_reward_out_range, view_mode=quads_view_mode,
+                obstacle_mode=quads_obstacle_mode, obstacle_num=quads_obstacle_num, num_use_neighbor_obs=local_obs,
+                num_local_obst=local_obst_obs, obst_obs_type=obst_obs_type, quads_reward_ep_len=quads_reward_ep_len,
+                clip_floor_vel_mode=clip_floor_vel_mode, normalize_obs=normalize_obs
             )
             self.envs.append(e)
 
