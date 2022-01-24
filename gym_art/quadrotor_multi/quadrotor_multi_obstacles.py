@@ -328,7 +328,9 @@ class MultiObstacles:
         return pos_xy
 
     def get_pos_no_overlap(self, pos_item, pos_arr):
-        if self.shape != 'cube':
+        # In this function, we assume the shape of all obstacles is cube
+        # But even if we have this assumption, we can still roughly use it for shapes like cylinder
+        if self.shape not in ['cube', 'cylinder']:
             raise NotImplementedError(f'{self.shape} not supported!')
 
         if self.inf_height:

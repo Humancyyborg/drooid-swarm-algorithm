@@ -4,7 +4,7 @@ from gym_art.quadrotor_multi.params import quad_color
 from gym_art.quadrotor_multi.quad_utils import *
 from gym_art.quadrotor_multi.quadrotor_visualization import ChaseCamera, SideCamera, quadrotor_simple_3dmodel, \
     quadrotor_3dmodel
-
+import gym_art.quadrotor_multi.rendering3d as r3d
 
 # Global Camera
 class GlobalCamera(object):
@@ -197,17 +197,22 @@ class Quadrotor3DSceneMulti:
         self.scene.batches.extend([batch])
 
     def create_obstacles(self):
-        import gym_art.quadrotor_multi.rendering3d as r3d
-
         for item in self.multi_obstacles.obstacles:
             color = quad_color[14]
             if item.shape == 'cube':
+                obst_height = item.size
                 if self.obst_inf_height:
-                    obstacle_transform = r3d.transform_and_color(np.eye(4), color,
-                                                                 r3d.box(item.size, item.size, self.room_dims[2]))
-                else:
-                    obstacle_transform = r3d.transform_and_color(np.eye(4), color,
-                                                                 r3d.box(item.size, item.size, item.size))
+                    obst_height = self.room_dims[2]
+
+                obstacle_transform = r3d.transform_and_color(np.eye(4), color,
+                                                             r3d.box(item.size, item.size, obst_height))
+            elif item.shape == 'cylinder':
+                obst_height = item.size
+                if self.obst_inf_height:
+                    obst_height = self.room_dims[2]
+
+                obstacle_transform = r3d.transform_and_color(np.eye(4), color, r3d.cylinder(
+                    radius=item.size / 2.0, height=obst_height, sections=64))
 
             elif item.shape == 'sphere':
                 num_facets = 18
@@ -227,7 +232,15 @@ class Quadrotor3DSceneMulti:
 
         for i, g in enumerate(multi_obstacles.obstacles):
             # self.obstacle_transforms[i].set_transform(r3d.translate(g.pos))
-            self.obstacle_transforms[i].set_transform_and_color(r3d.translate(g.pos), (1.0, 0.0, 0.0, 0.1))
+            if g.shape == 'cylinder':
+                if g.inf_height:
+                    pos_update = [g.pos[0], g.pos[1], g.pos[2] - g.room_dims[2] / 2]
+                else:
+                    pos_update = [g.pos[0], g.pos[1], g.pos[2] - g.size / 2]
+            else:
+                pos_update = g.pos
+
+            self.obstacle_transforms[i].set_transform_and_color(r3d.translate(pos_update), (1.0, 0.0, 0.0, 0.1))
 
     def create_goals(self):
         import gym_art.quadrotor_multi.rendering3d as r3d

@@ -21,7 +21,7 @@ class SingleObstacle:
         self.init_box = init_box  # means the size of initial space that the obstacles spawn at
         self.mode = mode
         self.shape = shape
-        self.size = size  # sphere: diameter, cube: edge length
+        self.size = size  # sphere: diameter, cube: edge length; cylinder: diameter
         self.quad_size = quad_size
         self.dt = dt
         self.traj = traj
@@ -309,15 +309,145 @@ class SingleObstacle:
         collision_arr = (dist_arr <= self.quad_size).astype(np.float32)
         return collision_arr, dist_arr
 
+    def cylinder_detection(self, pos_quads=None):
+        # dist_arr means the distance between from drones to the closest point on the obstacle
+        obst_radius = 0.5 * self.size
+        delta_xy_dist = np.linalg.norm(pos_quads[:, :2] - self.pos[:2], axis=1) - obst_radius
+
+        if self.inf_height:
+            dist_arr = delta_xy_dist
+        else:
+            obst_half_height = 0.5 * self.size
+
+            delta_xy_dist = np.maximum(delta_xy_dist, 0.0)
+            # np.maximum(obst_min_z, np.minimum(quads_pos, obst_max_pos))
+            obst_z = self.pos[2]
+            quads_z = pos_quads[:, 2]
+            delta_z = abs(np.maximum(obst_z - obst_half_height, np.minimum(quads_z, obst_z + obst_half_height)) - quads_z)
+
+            rel_closest_dist = np.array([delta_xy_dist, delta_z]).T
+            dist_arr = np.linalg.norm(rel_closest_dist, axis=1)
+
+        collision_arr = (dist_arr <= self.quad_size).astype(np.float32)
+        return collision_arr, dist_arr
+
     def collision_detection(self, pos_quads=None):
         if self.shape == 'cube':
             collision_arr, dist_arr = self.cube_detection(pos_quads)
         elif self.shape == 'sphere':
             collision_arr, dist_arr = self.sphere_detection(pos_quads)
+        elif self.shape == 'cylinder':
+            collision_arr, dist_arr = self.cylinder_detection(pos_quads)
         else:
             raise NotImplementedError()
 
         return collision_arr, dist_arr
+
+    @staticmethod
+    def get_dir_of_cube_collision(drone_dyn, obstacle_dyn, obst_z_size):
+        drone_pos = drone_dyn.pos
+        obst_pos = obstacle_dyn.pos
+        shift_pos = drone_pos - obst_pos
+        abs_shift_pos = np.abs(shift_pos)
+        x_list = [abs_shift_pos[0] >= abs_shift_pos[1] and shift_pos[0] >= 0,
+                  abs_shift_pos[0] >= abs_shift_pos[1] and shift_pos[0] < 0]
+        y_list = [abs_shift_pos[0] < abs_shift_pos[1] and shift_pos[1] >= 0,
+                  abs_shift_pos[0] < abs_shift_pos[1] and shift_pos[1] < 0]
+        z_list = [abs_shift_pos[2] > obst_z_size and shift_pos[2] >= 0,
+                  abs_shift_pos[2] > obst_z_size and shift_pos[2] < 0]
+
+        direction = np.random.uniform(low=-1.0, high=1.0, size=(3,))
+        if drone_pos[2] == 0.0:
+            direction[2] = np.random.uniform(low=-0.01, high=0.01)
+
+        if x_list[0]:
+            direction[0] = np.random.uniform(low=0.1, high=1.0)
+        elif x_list[1]:
+            direction[0] = np.random.uniform(low=-1.0, high=-0.1)
+
+        if y_list[0]:
+            direction[1] = np.random.uniform(low=0.1, high=1.0)
+        elif y_list[1]:
+            direction[1] = np.random.uniform(low=-1.0, high=-0.1)
+
+        # if any item in z_list, we should reconsider direction in xy plane
+        if z_list[0]:
+            direction[:2] = np.random.uniform(low=-1.0, high=1.0, size=(2,))
+            direction[2] = np.random.uniform(low=0.1, high=1.0)
+        elif z_list[1]:
+            direction[:2] = np.random.uniform(low=-1.0, high=1.0, size=(2,))
+            direction[2] = np.random.uniform(low=-1.0, high=-0.5)
+
+        return direction
+
+    @staticmethod
+    def get_dir_of_cylinder_collision(drone_dyn, obstacle_dyn, obst_z_size):
+        drone_pos = drone_dyn.pos
+        obst_pos = obstacle_dyn.pos
+        shift_pos = drone_pos - obst_pos
+        abs_shift_pos = np.abs(shift_pos)
+        sx, sy, _ = shift_pos
+
+        z_list = [abs_shift_pos[2] > obst_z_size and shift_pos[2] >= 0,
+                  abs_shift_pos[2] > obst_z_size and shift_pos[2] < 0]
+
+        direction = shift_pos
+        direction_mag = np.linalg.norm(direction)
+        direction = direction / (direction_mag + 0.00001 if direction_mag == 0.0 else direction_mag)
+
+        direction += np.random.uniform(low=-0.2 * direction, high=0.2*direction)
+
+        if drone_pos[2] == 0.0:
+            direction[2] = np.random.uniform(low=-0.01, high=0.01)
+
+        # if any item in z_list, we should reconsider direction in xy plane
+        if z_list[0]:
+            direction[:2] = np.random.uniform(low=-1.0, high=1.0, size=(2,))
+            direction[2] = np.random.uniform(low=0.1, high=1.0)
+        elif z_list[1]:
+            direction[:2] = np.random.uniform(low=-1.0, high=1.0, size=(2,))
+            direction[2] = np.random.uniform(low=-1.0, high=-0.5)
+
+        return direction
+
+    def get_dir_of_collision(self, drone_dyn, obstacle_dyn, obst_z_size):
+        if self.shape == 'cube':
+            direction = self.get_dir_of_cube_collision(drone_dyn=drone_dyn, obstacle_dyn=obstacle_dyn,
+                                                       obst_z_size=obst_z_size)
+        elif self.shape == 'cylinder':
+            direction = self.get_dir_of_cylinder_collision(drone_dyn=drone_dyn, obstacle_dyn=obstacle_dyn,
+                                                           obst_z_size=obst_z_size)
+        else:
+            raise NotImplementedError()
+
+        return direction
+
+    def inside_collision_detection(self, pos_quad=None):
+        if self.inf_height:
+            obst_z_size = 0.5 * self.room_dims[2]
+        else:
+            obst_z_size = 0.5 * self.size
+
+        rel_pos = pos_quad - self.pos
+        obst_range = 0.5 * self.size + 0.001
+
+        if self.shape == 'cube':
+            if abs(rel_pos[0]) <= obst_range and abs(rel_pos[1]) <= obst_range and abs(rel_pos[2]) <= obst_z_size:
+                return True
+            else:
+                return False
+        elif self.shape == 'sphere':
+            if np.linalg.norm(rel_pos) <= obst_range:
+                return True
+            else:
+                return False
+        elif self.shape == 'cylinder':
+            if np.linalg.norm(rel_pos[:2]) <= obst_range and abs(rel_pos[2]) <= obst_z_size:
+                return True
+            else:
+                return False
+        else:
+            raise NotImplementedError(f'inside_collision_detection, {self.shape} not supported!')
 
     def get_closest_points(self, quads_pos):
         if self.inf_height:
