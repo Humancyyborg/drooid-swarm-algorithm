@@ -4,7 +4,7 @@ from gym_art.quadrotor_multi.params import quad_color
 from gym_art.quadrotor_multi.quad_utils import *
 from gym_art.quadrotor_multi.quadrotor_visualization import ChaseCamera, SideCamera, quadrotor_simple_3dmodel, \
     quadrotor_3dmodel
-import gym_art.quadrotor_multi.rendering3d as r3d
+
 
 # Global Camera
 class GlobalCamera(object):
@@ -197,6 +197,8 @@ class Quadrotor3DSceneMulti:
         self.scene.batches.extend([batch])
 
     def create_obstacles(self):
+        import gym_art.quadrotor_multi.rendering3d as r3d
+
         for item in self.multi_obstacles.obstacles:
             color = quad_color[14]
             if item.shape == 'cube':
