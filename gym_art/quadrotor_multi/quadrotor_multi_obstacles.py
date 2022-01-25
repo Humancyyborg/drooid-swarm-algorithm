@@ -361,10 +361,13 @@ class MultiObstacles:
                                   goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal'):
         pos_arr = []
         init_box_range = self.drone_env.init_box_range
+        pos_z = 0.5 * self.room_height
+
         if level <= -1:
-            pos_z = -0.5 * self.room_height - 1.0
-        else:
-            pos_z = 0.5 * self.room_height
+            pos_item = np.array([self.half_room_length + self.size, self.half_room_width + self.size, pos_z])
+            pos_arr = np.array([pos_item for _ in range(self.num_obstacles)])
+            return pos_arr
+
 
         # Based on room_dims [10, 10, 10]
         if scenario_mode not in QUADS_MODE_GOAL_CENTERS:
