@@ -68,6 +68,7 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obst_model_type', default='whole', type=str, help='Whole: self, neighbor, obstacle, we use seperate model deal with them, then concate them together. nei_obst, we concate nei_obst first, then concate with self_encoder')
 
     p.add_argument('--quads_reward_ep_len', default=True, type=str2bool, help='For each drone, reward scale is same as ep_len or not. For example, ep_len=1600, then rew_crash should equals to 16')
+    p.add_argument('--quads_freeze_obst_level', default=False, choices=[True, False], type=str2bool, help='True: Never change obstacles level')
     p.add_argument('--quads_obst_level', default=-1, type=int, help='Obstacle start level, -1 means underearth')
     p.add_argument('--quads_obst_level_mode', default=1, type=int, help='0: Directly move obsatcles from underground to above ground, 1: Gradually change the location of obstacles')
     p.add_argument('--quads_obst_level_change_cond', default=0.5, type=float, help='when crash value >= -1.0 * quads_obst_level_change_cond for 5 continuous episodes, we move obstacles above the ground')

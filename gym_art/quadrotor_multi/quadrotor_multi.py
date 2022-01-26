@@ -42,7 +42,8 @@ class QuadrotorEnvMulti(gym.Env):
                  obst_inf_height=False, obst_level_change_cond=0.5, obst_collision_enable_grace_period=False,
                  crash_mode=0, clip_floor_vel_mode=0, midreset=False, crash_reset_threshold=200,
                  neighbor_rel_pos_mode=0, obst_rel_pos_mode=0, neighbor_prox_mode=0, obst_midreset=False,
-                 obst_col_reset_threshold=1, print_info=False, apply_downwash=False, normalize_obs=False):
+                 obst_col_reset_threshold=1, print_info=False, apply_downwash=False, normalize_obs=False,
+                 freeze_obst_level=False):
 
         super().__init__()
 
@@ -185,6 +186,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.obst_midreset_list = np.zeros(self.num_agents)
 
         # # Parameters used in controlling different level of obstacles (curriculum learning)
+        self.freeze_obst_level = freeze_obst_level
         self.obst_level = obst_level
         self.obst_level_mode = obst_level_mode
         self.crash_counter = 0
@@ -750,7 +752,8 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Concatenate observations of neighbor drones and obstacles
         obs = self.add_neighborhood_obs(obs=obs)
-        obs = self.concatenate_obstacle_obs(obs=obs)
+        if self.use_obstacles:
+            obs = self.concatenate_obstacle_obs(obs=obs)
 
         # Reset a drone if it's crash time on the floor larger than a predefined threshold
         self.reset_crashed_drones()
@@ -771,7 +774,7 @@ class QuadrotorEnvMulti(gym.Env):
                 self.real_cur_ep_obst_counter = 0
 
             self.episode_id += 1
-            if self.crash_value >= -1.0 * self.obst_level_change_cond:
+            if self.crash_value >= -1.0 * self.obst_level_change_cond and not self.freeze_obst_level:
                 self.crash_counter += 1
                 if self.crash_counter >= self.crash_counter_threshold:
                     self.obst_level += 1
