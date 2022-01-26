@@ -3,12 +3,12 @@ from sample_factory.runner.run_description import RunDescription, Experiment, Pa
 from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_8_OBSTACLES_PARAMETERZE_CLI, seeds
 
 _params = ParamGrid([
-    ('seed', seeds(4)),
+    ('seed', seeds(2)),
     ('quads_obstacle_mode', ['no_obstacles', 'static_pillar_fixsize']),
 ])
 
 BIG_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
-    ' --hidden_size=256 --quads_neighbor_hidden_size=128 --quads_obstacle_hidden_size=128 '
+    ' --num_workers=36 --hidden_size=256 --quads_neighbor_hidden_size=128 --quads_obstacle_hidden_size=128 '
     '--quads_obstacle_type=cylinder --quads_freeze_obst_level=True --quads_apply_downwash=True'
 )
 
