@@ -601,7 +601,11 @@ class QuadrotorEnvMulti(gym.Env):
 
     def reset(self):
         obs, rewards, dones, infos = [], [], [], []
-        self.scenario.reset()
+        if self.scenario.quads_mode in QUADS_MODE_OBST_INFO_LIST and self.use_obstacles:
+            self.scenario.reset(obst_level=self.obst_level)
+        else:
+            self.scenario.reset()
+
         self.quads_formation_size = self.scenario.formation_size
         self.goal_central = np.mean(self.scenario.goals, axis=0)
         if self.use_obstacles:

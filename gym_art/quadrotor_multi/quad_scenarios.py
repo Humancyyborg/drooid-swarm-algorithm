@@ -4,7 +4,7 @@ import copy
 
 from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_PARAMS_DICT, update_formation_and_max_agent_per_layer, \
     update_layer_dist, get_formation_range, get_goal_by_formation, get_z_value, QUADS_MODE_LIST, \
-    QUADS_MODE_LIST_OBSTACLES, QUADS_MODE_GOAL_CENTERS
+    QUADS_MODE_LIST_OBSTACLES, QUADS_MODE_GOAL_CENTERS, QUADS_MODE_OBST_INFO_LIST
 from gym_art.quadrotor_multi.quad_utils import generate_points, get_grid_dim_number
 
 
@@ -1219,6 +1219,7 @@ class Scenario_o_inside_obstacles(Scenario_o_dynamic_diff_goal):
         self.obstacle_pos = np.array([0.0, 0.0, 2.0])
         self.init_flag = 0
         self.spawn_flag = 0
+        self.obst_level = -1
 
     def update_formation_size(self, new_formation_size):
         pass
@@ -1239,9 +1240,15 @@ class Scenario_o_inside_obstacles(Scenario_o_dynamic_diff_goal):
         if tick <= int(self.duration_time * self.envs[0].control_freq):
             return infos, rewards
 
-        obst_num = len(infos[0]['obstacles'])
-        obst_id = np.random.randint(low=0, high=obst_num)
-        self.obstacle_pos = infos[0]['obstacles'][obst_id].pos
+        if self.obst_level > -1:
+            obst_num = len(infos[0]['obstacles'])
+            obst_id = np.random.randint(low=0, high=obst_num)
+            self.obstacle_pos = infos[0]['obstacles'][obst_id].pos
+        else:
+            x, y = np.random.uniform(low=-3.0, high=3.0, size=2)
+            z = np.random.uniform(low=1.0, high=3.0)
+            self.obstacle_pos = np.array([x, y, z])
+
         self.set_end_point()
         # Reset formation and related parameters
         self.update_formation_and_relate_param()
@@ -1252,7 +1259,8 @@ class Scenario_o_inside_obstacles(Scenario_o_dynamic_diff_goal):
 
         return infos, rewards
 
-    def reset(self):
+    def reset(self, obst_level=-1):
+        self.obst_level = obst_level
         self.init_flag = np.random.randint(4)
         self.spawn_flag = self.init_flag
         x, y, z = self.generate_pos(shift_small=1.25, shift_big=2.0, shift_collide=2.5)
@@ -1272,6 +1280,7 @@ class Scenario_o_swap_goals(Scenario_o_inside_obstacles):
         self.init_flag = 0
         self.spawn_flag = 0
         self.get_obst_flag = False
+        self.obst_level = -1
 
     def set_end_point(self):
         self.start_point = np.copy(self.end_point)
@@ -1288,12 +1297,18 @@ class Scenario_o_swap_goals(Scenario_o_inside_obstacles):
         if tick <= int(self.duration_time * self.envs[0].control_freq):
             return infos, rewards
 
-        if not self.get_obst_flag:
-            obst_num = len(infos[0]['obstacles'])
-            obst_id = np.random.randint(low=0, high=obst_num)
-            self.obstacle_pos = infos[0]['obstacles'][obst_id].pos
+        if self.obst_level > -1:
+            if not self.get_obst_flag:
+                obst_num = len(infos[0]['obstacles'])
+                obst_id = np.random.randint(low=0, high=obst_num)
+                self.obstacle_pos = infos[0]['obstacles'][obst_id].pos
+                self.set_end_point()
+                self.get_obst_flag = True
+        else:
+            x, y = np.random.uniform(low=-3.0, high=3.0, size=2)
+            z = np.random.uniform(low=1.0, high=3.0)
+            self.obstacle_pos = np.array([x, y, z])
             self.set_end_point()
-            self.get_obst_flag = True
 
         self.duration_time += np.random.uniform(low=8.0, high=10.0)
         # Reset formation and related parameters
@@ -1305,7 +1320,8 @@ class Scenario_o_swap_goals(Scenario_o_inside_obstacles):
 
         return infos, rewards
 
-    def reset(self):
+    def reset(self, obst_level=-1):
+        self.obst_level = obst_level
         self.init_flag = np.random.randint(4)
         self.spawn_flag = self.init_flag
         x, y, z = self.generate_pos(shift_small=1.25, shift_big=2.0, shift_collide=2.5)
@@ -1520,7 +1536,7 @@ class Scenario_mix(QuadrotorScenario):
         self.formation_size = self.scenario.formation_size
         return infos, rewards
 
-    def reset(self):
+    def reset(self, obst_level=-1):
         mode_index = np.random.randint(low=0, high=len(self.quads_mode_list))
         mode = self.quads_mode_list[mode_index]
 
@@ -1530,7 +1546,11 @@ class Scenario_mix(QuadrotorScenario):
                                         rew_coeff=self.rew_coeff, quads_formation=self.formation,
                                         quads_formation_size=self.formation_size)
 
-        self.scenario.reset()
+        if mode in QUADS_MODE_OBST_INFO_LIST:
+            self.scenario.reset(obst_level=obst_level)
+        else:
+            self.scenario.reset()
+
         self.goals = self.scenario.goals
         self.formation_size = self.scenario.formation_size
         if self.obst_mode != 'no_obstacles':
