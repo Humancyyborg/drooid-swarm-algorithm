@@ -90,7 +90,8 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obst_col_reset_threshold', default=1, type=int, help='Threshold of midreset, default: 1')
 
     p.add_argument('--quads_neighbor_rel_pos_mode', default=0, type=int, choices=[0, 1], help='0: use relative pos between the center point of drones, 1: use relative pos between the closest point of drones')
-    p.add_argument('--quads_obst_rel_pos_mode', default=0, type=int, choices=[0, 1], help='0: use relative pos between the center point of drones and obstacles, 1: use relative pos between the closest point of drones and obstacles')
+    p.add_argument('--quads_obst_rel_pos_mode', default=0, type=int, choices=[0, 1, 2], help='0: use relative pos between the center point of drones and obstacles, 1: use relative pos between the closest point of drones and obstacles; 2: clip relative to a specific value if the rel_pos out of a predefined value')
+    p.add_argument('--quads_obst_rel_pos_clip_value', default=2.0, type=float, help='when quads_obst_rel_pos_mode=2, clip rel_pos')
 
     p.add_argument('--quads_print_info', default=False, type=str2bool, help='Print some information for testing')
     p.add_argument('--quads_apply_downwash', default=False, type=str2bool, help='True: apply downwash; False: no downwash')

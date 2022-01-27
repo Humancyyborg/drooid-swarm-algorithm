@@ -43,7 +43,7 @@ class QuadrotorEnvMulti(gym.Env):
                  crash_mode=0, clip_floor_vel_mode=0, midreset=False, crash_reset_threshold=200,
                  neighbor_rel_pos_mode=0, obst_rel_pos_mode=0, neighbor_prox_mode=0, obst_midreset=False,
                  obst_col_reset_threshold=1, print_info=False, apply_downwash=False, normalize_obs=False,
-                 freeze_obst_level=False):
+                 freeze_obst_level=False, obst_rel_pos_clip_value=2.0):
 
         super().__init__()
 
@@ -216,7 +216,7 @@ class QuadrotorEnvMulti(gym.Env):
                 size=quads_obstacle_size, traj=obstacle_traj, obs_mode=obstacle_obs_mode, num_local_obst=local_obst_obs,
                 obs_type=self.obst_obs_type, drone_env=self.envs[0], level=self.obst_level,
                 stack_num=obst_stack_num, level_mode=obst_level_mode, inf_height=obst_inf_height,
-                room_dims=self.room_dims, rel_pos_mode=obst_rel_pos_mode
+                room_dims=self.room_dims, rel_pos_mode=obst_rel_pos_mode, rel_pos_clip_value=obst_rel_pos_clip_value
             )
 
             # collisions between obstacles and quadrotors

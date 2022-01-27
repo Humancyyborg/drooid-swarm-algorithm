@@ -14,7 +14,7 @@ TRAJ_LIST = ['gravity', 'electron']
 class SingleObstacle:
     def __init__(self, max_init_vel=1., init_box=2.0, mode='no_obstacles', shape='sphere', size=0.0, quad_size=0.04,
                  dt=0.05, traj='gravity', obs_mode='relative', index=0, obs_type='pos_size', all_pos_arr=None,
-                 inf_height=False, room_dims=(10.0, 10.0, 10.0), rel_pos_mode=0):
+                 inf_height=False, room_dims=(10.0, 10.0, 10.0), rel_pos_mode=0, rel_pos_clip_value=2.0):
         if all_pos_arr is None:
             all_pos_arr = []
         self.max_init_vel = max_init_vel
@@ -38,6 +38,7 @@ class SingleObstacle:
         self.inf_height = inf_height
         self.room_dims = room_dims
         self.rel_pos_mode = rel_pos_mode
+        self.rel_pos_clip_value = rel_pos_clip_value
 
     def reset(self, set_obstacle=None, formation_size=0.0, goal_central=np.array([0., 0., 2.]), shape='sphere',
               quads_pos=None, quads_vel=None, new_pos=None):
@@ -220,12 +221,18 @@ class SingleObstacle:
                 obst_shape = self.shape_list.index(self.shape) * np.ones((len(quads_pos), 1))
             obs = np.concatenate((rel_pos, rel_vel, obst_size, obst_shape), axis=1)
         elif 'static' in self.mode:
-            rel_pos = self.pos - quads_pos
+            if self.inf_height:
+                rel_pos = self.pos[:2] - quads_pos[:, :2]
+            else:
+                rel_pos = self.pos - quads_pos
+
             if self.rel_pos_mode == 1:
                 rel_dist = np.linalg.norm(rel_pos, axis=1)
                 rel_dist = np.maximum(rel_dist, 1e-6)
                 rel_pos_unit = rel_pos / rel_dist[:, None]
                 rel_pos -= rel_pos_unit * (0.5 * self.size + quad_arm_size)
+            elif self.rel_pos_mode == 2:
+                rel_pos = np.clip(rel_pos, a_min=-1.0 * self.rel_pos_clip_value, a_max=self.rel_pos_clip_value)
 
             rel_vel = self.vel - quads_vel
 
@@ -236,7 +243,7 @@ class SingleObstacle:
                 closest_points = self.get_closest_points(quads_pos)
                 obs = closest_points - quads_pos
             elif self.obs_type == 'pos_size':
-                obs = np.concatenate((rel_pos, obst_size), axis=1)
+                    obs = np.concatenate((rel_pos, obst_size), axis=1)
             elif self.obs_type == 'pos_vel_size':
                 obs = np.concatenate((rel_pos, rel_vel, obst_size), axis=1)
             elif self.obs_type == 'pos_vel_size_shape':
