@@ -35,6 +35,7 @@ class MultiObstacles:
         self.end_range = np.zeros((2, 2))
         self.start_range_list = []
         self.scenario_mode = None
+        self.rel_pos_clip_value = rel_pos_clip_value
         # self.counter = 0
         # self.counter_list = []
 
@@ -364,7 +365,9 @@ class MultiObstacles:
         pos_z = 0.5 * self.room_height
 
         if level <= -1:
-            pos_item = np.array([self.half_room_length + self.size, self.half_room_width + self.size, pos_z])
+            pos_item = np.array([self.half_room_length + self.size + self.rel_pos_clip_value,
+                                 self.half_room_width + self.size + self.rel_pos_clip_value,
+                                 pos_z])
             pos_arr = np.array([pos_item for _ in range(self.num_obstacles)])
             return pos_arr
 
