@@ -221,7 +221,7 @@ class SingleObstacle:
                 obst_shape = self.shape_list.index(self.shape) * np.ones((len(quads_pos), 1))
             obs = np.concatenate((rel_pos, rel_vel, obst_size, obst_shape), axis=1)
         elif 'static' in self.mode:
-            if self.inf_height:
+            if self.inf_height or 'posxy' in self.obs_type:
                 rel_pos = self.pos[:2] - quads_pos[:, :2]
             else:
                 rel_pos = self.pos - quads_pos
@@ -242,8 +242,8 @@ class SingleObstacle:
             if self.obs_type == 'cpoint':
                 closest_points = self.get_closest_points(quads_pos)
                 obs = closest_points - quads_pos
-            elif self.obs_type == 'pos_size':
-                    obs = np.concatenate((rel_pos, obst_size), axis=1)
+            elif self.obs_type == 'pos_size' or self.obs_type == 'posxy_size':
+                obs = np.concatenate((rel_pos, obst_size), axis=1)
             elif self.obs_type == 'pos_vel_size':
                 obs = np.concatenate((rel_pos, rel_vel, obst_size), axis=1)
             elif self.obs_type == 'pos_vel_size_shape':

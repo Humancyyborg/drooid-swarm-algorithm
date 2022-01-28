@@ -33,6 +33,7 @@ obs_neighbor_size_dict = {
 obs_obst_size_dict = {
     'none': 0,
     'cpoint': 3,
+    'posxy_size': 3,
     'pos_size': 4,
     'pos_vel_size': 7,
     'pos_vel_size_shape': 8

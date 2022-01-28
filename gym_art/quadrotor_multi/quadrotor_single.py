@@ -1083,8 +1083,6 @@ class QuadrotorSingle:
 
             if 'static' in self.obstacle_mode:
                 rel_pos = ['roxyz']
-                if self.obst_inf_height:
-                    rel_pos = ['roxy']
 
                 if self.obst_obs_type == 'none':
                     raise NotImplementedError(f'{self.obst_obs_type} is not supported!')
@@ -1092,6 +1090,8 @@ class QuadrotorSingle:
                     obst_obs_comps = rel_pos * obstacle_num
                 elif self.obst_obs_type == 'pos_size':
                     obst_obs_comps = (rel_pos + ['osize']) * obstacle_num
+                elif self.obst_obs_type == 'posxy_size':
+                    obst_obs_comps = (['roxy'] + ['osize']) * obstacle_num
                 elif self.obst_obs_type == 'pos_vel_size':
                     obst_obs_comps = (rel_pos + ['rovxyz'] + ['osize']) * obstacle_num
                 elif self.obst_obs_type == 'pos_vel_size_shape':
