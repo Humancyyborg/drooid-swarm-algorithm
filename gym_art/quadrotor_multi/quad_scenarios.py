@@ -36,13 +36,13 @@ class QuadrotorScenario:
         self.formation_center = np.array([0.0, 0.0, 2.0])
 
         # Reset episode time
-        if self.quads_mode != 'mix':
-            ep_time = QUADS_PARAMS_DICT[quads_mode][2]
-        else:
-            ep_time = QUADS_PARAMS_DICT['swap_goals'][2]
-
-        for env in self.envs:
-            env.reset_ep_len(ep_time=ep_time)
+        # if self.quads_mode != 'mix':
+        #     ep_time = QUADS_PARAMS_DICT[quads_mode][2]
+        # else:
+        #     ep_time = QUADS_PARAMS_DICT['swap_goals'][2]
+        #
+        # for env in self.envs:
+        #     env.reset_ep_len(ep_time=ep_time)
 
         # Aux variables for scenario: pursuit evasion
         self.interp = None
@@ -797,6 +797,7 @@ class Scenario_o_dynamic_same_goal(QuadrotorScenario):
         self.end_point = np.array([0.0, 3.0, 2.0])
         self.room_dims = room_dims
         self.duration_time = 0.0
+        self.per_pass_time = [self.envs[0].ep_time + 1, self.envs[0].ep_time + 2]
         self.init_flag = 0
         self.spawn_flag = 0  # used for init spawn, check quadrotor_single.py
         self.explore_epsilon = 0.1
@@ -846,7 +847,7 @@ class Scenario_o_dynamic_same_goal(QuadrotorScenario):
             return infos, rewards
 
         self.set_end_point()
-        self.duration_time += np.random.uniform(low=10.0, high=15.0)
+        self.duration_time += np.random.uniform(low=self.per_pass_time[0], high=self.per_pass_time[1])
         self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.end_point, layer_dist=0.0)
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
@@ -870,6 +871,7 @@ class Scenario_o_dynamic_diff_goal(Scenario_o_dynamic_same_goal):
         self.end_point = np.array([0.0, 3.0, 2.0])
         self.room_dims = room_dims
         self.duration_time = 0.0  # used for init spawn
+        self.per_pass_time = [self.envs[0].ep_time + 1, self.envs[0].ep_time + 2]
         self.init_flag = 0
         self.spawn_flag = 0  # used for init spawn, check quadrotor_single.py
         self.explore_epsilon = 0.1
@@ -897,7 +899,7 @@ class Scenario_o_dynamic_diff_goal(Scenario_o_dynamic_same_goal):
             return infos, rewards
 
         self.set_end_point()
-        self.duration_time += np.random.uniform(low=10.0, high=15.0)
+        self.duration_time += np.random.uniform(low=self.per_pass_time[0], high=self.per_pass_time[1])
         self.update_goals()
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
@@ -915,6 +917,7 @@ class Scenario_o_swarm_vs_swarm(QuadrotorScenario):
         self.room_dims = room_dims
         self.spawn_flag = 0  # used for init spawn, check quadrotor_single.py
         self.duration_time = 0.0
+        self.per_pass_time = [self.envs[0].ep_time + 1, self.envs[0].ep_time + 2]
         self.quads_mode = quads_mode
         self.env_shuffle_list = np.arange(len(envs))
 
@@ -982,7 +985,7 @@ class Scenario_o_swarm_vs_swarm(QuadrotorScenario):
             return infos, rewards
 
         self.update_goals()
-        self.duration_time += np.random.uniform(low=10.0, high=15.0)
+        self.duration_time += np.random.uniform(low=self.per_pass_time[0], high=self.per_pass_time[1])
         return infos, rewards
 
     def reset(self):
