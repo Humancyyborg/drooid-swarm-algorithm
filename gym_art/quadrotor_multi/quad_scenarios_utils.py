@@ -4,12 +4,12 @@ from gym_art.quadrotor_multi.quad_utils import get_circle_radius, get_sphere_rad
 QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal', 'ep_lissajous3D',
                    'ep_rand_bezier', 'swarm_vs_swarm', 'dynamic_formations', 'swap_goals']
 
-# QUADS_MODE_LIST_OBSTACLES = ['o_dynamic_same_goal', 'o_dynamic_diff_goal', 'o_swarm_vs_swarm', 'o_dynamic_formations',
-#                              'o_dynamic_roller', 'o_inside_obstacles', 'o_swarm_groups', 'o_ep_rand_bezier',
-#                              'o_swap_goals']
-
-QUADS_MODE_LIST_OBSTACLES = ['o_dynamic_same_goal', 'o_dynamic_diff_goal', 'o_dynamic_roller', 'o_inside_obstacles',
+QUADS_MODE_LIST_OBSTACLES = ['o_dynamic_same_goal', 'o_dynamic_diff_goal', 'o_swarm_vs_swarm', 'o_dynamic_formations',
+                             'o_dynamic_roller', 'o_inside_obstacles', 'o_swarm_groups', 'o_ep_rand_bezier',
                              'o_swap_goals']
+
+# QUADS_MODE_LIST_OBSTACLES = ['o_dynamic_same_goal', 'o_dynamic_diff_goal', 'o_dynamic_roller', 'o_inside_obstacles',
+#                              'o_swap_goals']
 
 
 QUADS_MODE_MULTI_GOAL_CENTER = ['o_swarm_vs_swarm']
