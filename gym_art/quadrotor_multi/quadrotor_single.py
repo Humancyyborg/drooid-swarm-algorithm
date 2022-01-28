@@ -775,7 +775,8 @@ class QuadrotorSingle:
                  dynamics_simplification=False, use_numba=False, swarm_obs='none', num_agents=1, quads_settle=False,
                  quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8, view_mode='local',
                  obstacle_mode='no_obstacles', obstacle_num=0, num_use_neighbor_obs=0, num_local_obst=0,
-                 obst_obs_type='none', quads_reward_ep_len=True, clip_floor_vel_mode=0, normalize_obs=False):
+                 obst_obs_type='none', quads_reward_ep_len=True, clip_floor_vel_mode=0, normalize_obs=False,
+                 obst_inf_height=False):
         np.seterr(under='ignore')
         """
         Args:
@@ -872,6 +873,9 @@ class QuadrotorSingle:
 
         ## View / Camera mode
         self.view_mode = view_mode
+
+        ## Obstacle
+        self.obst_inf_height = obst_inf_height
 
 
         ###############################################################################
@@ -1079,6 +1083,8 @@ class QuadrotorSingle:
 
             if 'static' in self.obstacle_mode:
                 rel_pos = ['roxyz']
+                if self.obst_inf_height:
+                    rel_pos = ['roxy']
 
                 if self.obst_obs_type == 'none':
                     raise NotImplementedError(f'{self.obst_obs_type} is not supported!')

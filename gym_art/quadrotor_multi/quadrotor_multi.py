@@ -81,7 +81,7 @@ class QuadrotorEnvMulti(gym.Env):
                 quads_vel_reward_out_range=quads_vel_reward_out_range, view_mode=quads_view_mode,
                 obstacle_mode=quads_obstacle_mode, obstacle_num=quads_obstacle_num, num_use_neighbor_obs=local_obs,
                 num_local_obst=local_obst_obs, obst_obs_type=obst_obs_type, quads_reward_ep_len=quads_reward_ep_len,
-                clip_floor_vel_mode=clip_floor_vel_mode, normalize_obs=normalize_obs
+                clip_floor_vel_mode=clip_floor_vel_mode, normalize_obs=normalize_obs, obst_inf_height=obst_inf_height
             )
             self.envs.append(e)
 
