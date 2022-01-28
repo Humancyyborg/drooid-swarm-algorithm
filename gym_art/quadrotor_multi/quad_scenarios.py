@@ -8,14 +8,14 @@ from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_PARAMS_DICT, upda
 from gym_art.quadrotor_multi.quad_utils import generate_points, get_grid_dim_number
 
 
-def create_scenario(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+def create_scenario(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
     cls = eval('Scenario_' + quads_mode)
-    scenario = cls(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    scenario = cls(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
     return scenario
 
 
 class QuadrotorScenario:
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
         self.quads_mode = quads_mode
         self.envs = envs
         self.num_agents = num_agents
@@ -23,6 +23,7 @@ class QuadrotorScenario:
         self.set_room_dims = room_dims_callback  # usage example: self.set_room_dims((10, 10, 10))
         self.rew_coeff = rew_coeff
         self.goals = None
+        self.one_pass_per_episode = one_pass_per_episode
 
         #  Set formation, num_agents_per_layer, lowest_formation_size, highest_formation_size, formation_size,
         #  layer_dist, formation_center
@@ -185,8 +186,8 @@ class QuadrotorScenario:
 
 
 class Scenario_o_test(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         self.start_point = np.array([0.0, -3.0, 2.0])
         self.end_point = np.array([0.0, 3.0, 2.0])
         self.duration_time = 1.0
@@ -223,8 +224,8 @@ class Scenario_o_test(QuadrotorScenario):
 
 
 class Scenario_o_test_stack(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         self.start_point = np.array([0.0, -3.0, 2.0])
         self.end_point = np.array([0.0, 3.0, 2.0])
         self.duration_time = 1.0
@@ -283,8 +284,8 @@ class Scenario_static_diff_goal(QuadrotorScenario):
 
 
 class Scenario_dynamic_same_goal(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         # teleport every [4.0, 6.0] secs
         duration_time = 5.0
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
@@ -316,8 +317,8 @@ class Scenario_dynamic_same_goal(QuadrotorScenario):
 
 
 class Scenario_dynamic_diff_goal(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         # teleport every [4.0, 6.0] secs
         duration_time = 5.0
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
@@ -439,8 +440,8 @@ class Scenario_ep_rand_bezier(QuadrotorScenario):
 
 
 class Scenario_swap_goals(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         # teleport every [4.0, 6.0] secs
         duration_time = 5.0
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
@@ -468,8 +469,8 @@ class Scenario_swap_goals(QuadrotorScenario):
 
 
 class Scenario_dynamic_formations(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         # if increase_formation_size is True, increase the formation size
         # else, decrease the formation size
         self.increase_formation_size = True
@@ -512,8 +513,8 @@ class Scenario_dynamic_formations(QuadrotorScenario):
 
 
 class Scenario_swarm_vs_swarm(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         # teleport every [4.0, 6.0] secs
         duration_time = 5.0
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
@@ -635,8 +636,8 @@ class Scenario_tunnel(QuadrotorScenario):
 
 
 class Scenario_run_away(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
 
     def update_goals(self):
         self.goals = self.generate_goals(self.num_agents, self.formation_center, layer_dist=self.layer_dist)
@@ -674,8 +675,8 @@ class Scenario_run_away(QuadrotorScenario):
 
 
 class Scenario_through_hole(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         # teleport every [4.0, 6.0] secs
         self.start_point = np.array([0.0, -3.0, 1.5])
         self.end_point = np.array([0.0, 3.0, 1.5])
@@ -732,8 +733,8 @@ class Scenario_through_hole(QuadrotorScenario):
 
 
 class Scenario_through_random_obstacles(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         # teleport every [4.0, 6.0] secs
         self.start_point = np.array([0.0, -3.0, 1.5])
         self.end_point = np.array([0.0, 3.0, 1.5])
@@ -791,13 +792,17 @@ class Scenario_through_random_obstacles(QuadrotorScenario):
 
 
 class Scenario_o_dynamic_same_goal(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         self.start_point = np.array([0.0, -3.0, 2.0])
         self.end_point = np.array([0.0, 3.0, 2.0])
         self.room_dims = room_dims
         self.duration_time = 0.0
-        self.per_pass_time = [self.envs[0].ep_time + 1, self.envs[0].ep_time + 2]
+        if one_pass_per_episode:
+            self.per_pass_time = [self.envs[0].ep_time + 1, self.envs[0].ep_time + 2]
+        else:
+            self.per_pass_time = [10.0, 15.0]
+
         self.init_flag = 0
         self.spawn_flag = 0  # used for init spawn, check quadrotor_single.py
         self.explore_epsilon = 0.1
@@ -865,13 +870,16 @@ class Scenario_o_dynamic_same_goal(QuadrotorScenario):
 
 
 class Scenario_o_dynamic_diff_goal(Scenario_o_dynamic_same_goal):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         self.start_point = np.array([0.0, -3.0, 2.0])
         self.end_point = np.array([0.0, 3.0, 2.0])
         self.room_dims = room_dims
         self.duration_time = 0.0  # used for init spawn
-        self.per_pass_time = [self.envs[0].ep_time + 1, self.envs[0].ep_time + 2]
+        if one_pass_per_episode:
+            self.per_pass_time = [self.envs[0].ep_time + 1, self.envs[0].ep_time + 2]
+        else:
+            self.per_pass_time = [10.0, 15.0]
         self.init_flag = 0
         self.spawn_flag = 0  # used for init spawn, check quadrotor_single.py
         self.explore_epsilon = 0.1
@@ -908,8 +916,8 @@ class Scenario_o_dynamic_diff_goal(Scenario_o_dynamic_same_goal):
 
 
 class Scenario_o_swarm_vs_swarm(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         self.goals_1, self.goals_2 = None, None
         self.goal_center_1, self.goal_center_2 = None, None
         self.start_point = np.array([0.0, -3.0, 2.0])
@@ -917,7 +925,10 @@ class Scenario_o_swarm_vs_swarm(QuadrotorScenario):
         self.room_dims = room_dims
         self.spawn_flag = 0  # used for init spawn, check quadrotor_single.py
         self.duration_time = 0.0
-        self.per_pass_time = [self.envs[0].ep_time + 1, self.envs[0].ep_time + 2]
+        if one_pass_per_episode:
+            self.per_pass_time = [self.envs[0].ep_time + 1, self.envs[0].ep_time + 2]
+        else:
+            self.per_pass_time = [10.0, 15.0]
         self.quads_mode = quads_mode
         self.env_shuffle_list = np.arange(len(envs))
 
@@ -1004,8 +1015,8 @@ class Scenario_o_swarm_vs_swarm(QuadrotorScenario):
 
 
 class Scenario_o_dynamic_formations(Scenario_o_dynamic_diff_goal):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         # if increase_formation_size is True, increase the formation size
         # else, decrease the formation size
         self.increase_formation_size = True
@@ -1126,8 +1137,8 @@ class Scenario_o_ep_lissajous3D(QuadrotorScenario):
 
 
 class Scenario_o_dynamic_roller(Scenario_o_dynamic_diff_goal):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         self.start_point = np.array([0.0, -3.0, 2.0])
         self.end_point = np.array([0.0, 3.0, 2.0])
         self.duration_time = 0.0
@@ -1214,8 +1225,8 @@ class Scenario_o_dynamic_roller(Scenario_o_dynamic_diff_goal):
 
 
 class Scenario_o_inside_obstacles(Scenario_o_dynamic_diff_goal):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         self.start_point = np.array([0.0, -3.0, 2.0])
         self.end_point = np.array([0.0, 3.0, 2.0])
         self.duration_time = 0.0
@@ -1274,8 +1285,8 @@ class Scenario_o_inside_obstacles(Scenario_o_dynamic_diff_goal):
 
 
 class Scenario_o_swap_goals(Scenario_o_inside_obstacles):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         self.start_point = np.array([0.0, -3.0, 2.0])
         self.end_point = np.array([0.0, 3.0, 2.0])
         self.duration_time = 0.0
@@ -1338,8 +1349,8 @@ class Scenario_o_swap_goals(Scenario_o_inside_obstacles):
 
 
 class Scenario_o_swarm_groups(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         self.group_num = 4
         self.goals_center_list = []
         self.goals_list = []
@@ -1441,8 +1452,8 @@ class Scenario_o_swarm_groups(QuadrotorScenario):
 
 
 class Scenario_o_ep_rand_bezier(Scenario_o_dynamic_same_goal):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         self.start_point = np.array([0.0, -3.0, 2.0])
         self.end_point = np.array([0.0, 3.0, 2.0])
         self.room_dims = room_dims
@@ -1503,8 +1514,8 @@ class Scenario_o_ep_rand_bezier(Scenario_o_dynamic_same_goal):
 
 
 class Scenario_mix(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
         self.room_dims_callback = room_dims_callback
 
         self.obst_mode = self.envs[0].obstacle_mode

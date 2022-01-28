@@ -105,7 +105,8 @@ def make_quadrotor_env_multi(cfg, **kwargs):
         obst_rel_pos_mode=cfg.quads_obst_rel_pos_mode, neighbor_prox_mode=cfg.quads_neighbor_proximity_mode,
         obst_midreset=cfg.quads_obst_midreset, obst_col_reset_threshold=cfg.quads_obst_col_reset_threshold,
         print_info=cfg.quads_print_info, apply_downwash=cfg.quads_apply_downwash, normalize_obs=cfg.quads_normalize_obs,
-        freeze_obst_level=cfg.quads_freeze_obst_level, obst_rel_pos_clip_value=cfg.quads_obst_rel_pos_clip_value
+        freeze_obst_level=cfg.quads_freeze_obst_level, obst_rel_pos_clip_value=cfg.quads_obst_rel_pos_clip_value,
+        one_pass_per_episode=cfg.quads_one_pass_per_episode
     )
 
     if use_replay_buffer:

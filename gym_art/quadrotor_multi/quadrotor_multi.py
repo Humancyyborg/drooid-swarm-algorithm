@@ -43,7 +43,7 @@ class QuadrotorEnvMulti(gym.Env):
                  crash_mode=0, clip_floor_vel_mode=0, midreset=False, crash_reset_threshold=200,
                  neighbor_rel_pos_mode=0, obst_rel_pos_mode=0, neighbor_prox_mode=0, obst_midreset=False,
                  obst_col_reset_threshold=1, print_info=False, apply_downwash=False, normalize_obs=False,
-                 freeze_obst_level=False, obst_rel_pos_clip_value=2.0):
+                 freeze_obst_level=False, obst_rel_pos_clip_value=2.0, one_pass_per_episode=False):
 
         super().__init__()
 
@@ -117,7 +117,8 @@ class QuadrotorEnvMulti(gym.Env):
         self.scenario = create_scenario(quads_mode=quads_mode, envs=self.envs, num_agents=self.num_agents,
                                         room_dims=self.room_dims, room_dims_callback=self.set_room_dims,
                                         rew_coeff=self.rew_coeff, quads_formation=quads_formation,
-                                        quads_formation_size=quads_formation_size)
+                                        quads_formation_size=quads_formation_size,
+                                        one_pass_per_episode=one_pass_per_episode)
         self.quads_formation_size = quads_formation_size
         self.goal_central = np.array([0., 0., 2.])
 
