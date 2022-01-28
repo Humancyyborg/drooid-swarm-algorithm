@@ -1519,6 +1519,7 @@ class Scenario_mix(QuadrotorScenario):
         self.room_dims_callback = room_dims_callback
 
         self.obst_mode = self.envs[0].obstacle_mode
+        self.one_pass_per_episode = one_pass_per_episode
 
         # Once change the parameter here, should also update QUADS_PARAMS_DICT to make sure it is same as run a single scenario
         # key: quads_mode
@@ -1558,7 +1559,8 @@ class Scenario_mix(QuadrotorScenario):
         self.scenario = create_scenario(quads_mode=mode, envs=self.envs, num_agents=self.num_agents,
                                         room_dims=self.room_dims, room_dims_callback=self.room_dims_callback,
                                         rew_coeff=self.rew_coeff, quads_formation=self.formation,
-                                        quads_formation_size=self.formation_size)
+                                        quads_formation_size=self.formation_size,
+                                        one_pass_per_episode=self.one_pass_per_episode)
 
         if mode in QUADS_MODE_OBST_INFO_LIST:
             self.scenario.reset(obst_level=obst_level)
