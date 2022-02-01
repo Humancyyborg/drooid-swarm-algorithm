@@ -11,7 +11,7 @@ class MultiObstacles:
     def __init__(self, mode='no_obstacles', num_obstacles=0, max_init_vel=1., init_box=2.0, dt=0.005,
                  quad_size=0.046, shape='sphere', size=0.0, traj='gravity', obs_mode='relative', num_local_obst=-1,
                  obs_type='pos_size', drone_env=None, level=-1, stack_num=4, level_mode=0, inf_height=False,
-                 room_dims=(10.0, 10.0, 10.0), rel_pos_mode=0, rel_pos_clip_value=2.0):
+                 room_dims=(10.0, 10.0, 10.0), rel_pos_mode=0, rel_pos_clip_value=2.0, obst_level_num_window=4):
         if 'static_door' in mode:
             self.num_obstacles = len(STATIC_OBSTACLE_DOOR)
         else:
@@ -36,6 +36,7 @@ class MultiObstacles:
         self.start_range_list = []
         self.scenario_mode = None
         self.rel_pos_clip_value = rel_pos_clip_value
+        self.obst_level_num_window = obst_level_num_window
         # self.counter = 0
         # self.counter_list = []
 
@@ -360,7 +361,7 @@ class MultiObstacles:
 
     def generate_inf_pos_by_level(self, level=-1, goal_start_point=np.array([-3.0, -3.0, 2.0]),
                                   goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal'):
-        pos_arr = []
+
         init_box_range = self.drone_env.init_box_range
         pos_z = 0.5 * self.room_height
 
@@ -391,7 +392,10 @@ class MultiObstacles:
 
                 self.start_range_list.append(start_range)
 
-        obst_in_room = np.random.randint(low=1, high=level + 2)  # randint: [low, high)
+        obst_in_room_low = np.clip(level - (self.obst_level_num_window - 2), a_min=1, a_max=self.num_obstacles)
+        obst_in_room_high = np.clip(level + 1, a_min=1, a_max=self.num_obstacles)
+
+        obst_in_room = np.random.randint(low=obst_in_room_low, high=obst_in_room_high + 1)  # randint: [low, high)
         pos_arr = [pos_item for _ in range(self.num_obstacles - obst_in_room)]
         for i in range(obst_in_room):
             pos_x, pos_y = self.generate_pos()

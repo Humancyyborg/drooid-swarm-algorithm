@@ -77,8 +77,8 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obst_level_col_obst_quad_min', default=2.0, type=float, help='when collision b/w obst & drones < quads_obst_level_col_obst_quad_min for 10 continuous episodes, we change level')
     p.add_argument('--quads_obst_level_col_obst_quad_max', default=4.0, type=float, help='when collision b/w obst & drones > quads_obst_level_col_obst_quad_max for 10 continuous episodes, we change level')
 
-    p.add_argument('--quads_obst_level_col_quad_min', default=0.3, type=float, help='when crash value >= quads_obst_level_col_quad_min for 10 continuous episodes, we change level')
-    p.add_argument('--quads_obst_level_col_quad_max', default=0.6, type=float, help='when crash value < quads_obst_level_col_quad_max for 10 continuous episodes, we change level')
+    p.add_argument('--quads_obst_level_col_quad_min', default=0.5, type=float, help='when crash value >= quads_obst_level_col_quad_min for 10 continuous episodes, we change level')
+    p.add_argument('--quads_obst_level_col_quad_max', default=0.8, type=float, help='when crash value < quads_obst_level_col_quad_max for 10 continuous episodes, we change level')
 
     p.add_argument('--quads_obst_level_pos_min', default=110.0, type=float, help='when crash value >= -1.0 * quads_obst_level_pos_min for 10 continuous episodes, we change level')
     p.add_argument('--quads_obst_level_pos_max', default=130.0, type=float, help='when crash value < -1.0 * quads_obst_level_pos_max for 10 continuous episodes, we change level')

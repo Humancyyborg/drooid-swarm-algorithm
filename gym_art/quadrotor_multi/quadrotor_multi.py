@@ -193,6 +193,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.obst_level = obst_level
         self.obst_level_mode = obst_level_mode
         self.episode_num_control_level = 10
+        self.obst_level_num_window = 4
         self.obst_level_condition_dict = {
             'crash': {
                 'low_bound': obst_level_crash_min,
@@ -241,7 +242,8 @@ class QuadrotorEnvMulti(gym.Env):
                 size=quads_obstacle_size, traj=obstacle_traj, obs_mode=obstacle_obs_mode, num_local_obst=local_obst_obs,
                 obs_type=self.obst_obs_type, drone_env=self.envs[0], level=self.obst_level,
                 stack_num=obst_stack_num, level_mode=obst_level_mode, inf_height=obst_inf_height,
-                room_dims=self.room_dims, rel_pos_mode=obst_rel_pos_mode, rel_pos_clip_value=obst_rel_pos_clip_value
+                room_dims=self.room_dims, rel_pos_mode=obst_rel_pos_mode, rel_pos_clip_value=obst_rel_pos_clip_value,
+                obst_level_num_window=self.obst_level_num_window
             )
 
             # collisions between obstacles and quadrotors
@@ -605,7 +607,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         if all(upgrade_flag):
             self.obst_level += 1
-            self.obst_level = np.clip(self.obst_level, a_min=-1, a_max=self.obstacle_num - 1)
+            self.obst_level = np.clip(self.obst_level, a_min=-1, a_max=self.obstacle_num - 2 + self.obst_level_num_window)
             self.obst_level_condition_dict['crash']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
             self.obst_level_condition_dict['pos']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
             self.obst_level_condition_dict['collision_obst_quad']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
@@ -622,7 +624,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         if downgrade_flag:
             self.obst_level -= 1
-            self.obst_level = np.clip(self.obst_level, a_min=-1, a_max=self.obstacle_num - 1)
+            self.obst_level = np.clip(self.obst_level, a_min=-1, a_max=self.obstacle_num - 2 + self.obst_level_num_window)
             self.obst_level_condition_dict['crash']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
             self.obst_level_condition_dict['pos']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
             self.obst_level_condition_dict['collision_obst_quad']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
