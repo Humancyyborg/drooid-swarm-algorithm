@@ -4,17 +4,17 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_8_OBSTACLES
 
 _params = ParamGrid([
     ('seed', seeds(2)),
-    ('quads_episode_duration', [20.0]),
-    ('quads_local_obst_obs', [4, 6, -1]),
+    ('quads_episode_duration', [40.0]),
+    ('quads_local_obst_obs', [2, 4, 6, -1]),
 ])
 
 SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
     ' --hidden_size=16 --quads_neighbor_hidden_size=8 --quads_obstacle_hidden_size=8 --quads_obstacle_type=cylinder '
-    '--obst_obs_type=posxy_size --quads_one_pass_per_episode=True --num_workers=36'
+    '--obst_obs_type=posxy_size --quads_one_pass_per_episode=False --num_workers=36'
 )
 
 _experiment = Experiment(
-    'one_pass_per_episode-cylinder-small_model',
+    'search-obst_num-cylinder-small_model',
     SMALL_MODEL_CLI,
     _params.generate_params(randomize=False),
 )
