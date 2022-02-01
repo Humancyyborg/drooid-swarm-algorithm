@@ -587,8 +587,8 @@ class QuadrotorEnvMulti(gym.Env):
             return
 
         collected_episode_num = len(self.obst_level_condition_dict['crash']['value_arr'])
-        # if collected_episode_num < self.episode_num_control_level:
-        #     return
+        if collected_episode_num < self.episode_num_control_level:
+            return
 
         mean_crash = abs(np.mean(self.obst_level_condition_dict['crash']['value_arr']))
         mean_pos = abs(np.mean(self.obst_level_condition_dict['pos']['value_arr']))

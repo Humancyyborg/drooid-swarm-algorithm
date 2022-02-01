@@ -391,8 +391,9 @@ class MultiObstacles:
 
                 self.start_range_list.append(start_range)
 
-        pos_arr = [pos_item for _ in range(self.num_obstacles - level - 1)]
-        for i in range(level+1):
+        obst_in_room = np.random.randint(low=1, high=level + 2)  # randint: [low, high)
+        pos_arr = [pos_item for _ in range(self.num_obstacles - obst_in_room)]
+        for i in range(obst_in_room):
             pos_x, pos_y = self.generate_pos()
             pos_item = np.array([pos_x, pos_y, pos_z])
             final_pos_item = self.get_pos_no_overlap(pos_item, pos_arr)
