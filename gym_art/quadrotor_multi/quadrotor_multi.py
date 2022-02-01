@@ -605,6 +605,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         if all(upgrade_flag):
             self.obst_level += 1
+            self.obst_level = np.clip(self.obst_level, a_min=-1, a_max=self.obstacle_num - 1)
             self.obst_level_condition_dict['crash']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
             self.obst_level_condition_dict['pos']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
             self.obst_level_condition_dict['collision_obst_quad']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
@@ -621,6 +622,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         if downgrade_flag:
             self.obst_level -= 1
+            self.obst_level = np.clip(self.obst_level, a_min=-1, a_max=self.obstacle_num - 1)
             self.obst_level_condition_dict['crash']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
             self.obst_level_condition_dict['pos']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
             self.obst_level_condition_dict['collision_obst_quad']['value_arr'] = deque([], maxlen=self.episode_num_control_level)

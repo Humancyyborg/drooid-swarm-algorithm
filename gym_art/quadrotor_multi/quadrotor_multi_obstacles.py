@@ -368,7 +368,6 @@ class MultiObstacles:
                              self.half_room_width + self.size + self.rel_pos_clip_value,
                              pos_z])
 
-        level = np.clip(level, a_min=-1, a_max=self.num_obstacles - 1)
         if level <= -1:
             pos_arr = np.array([pos_item for _ in range(self.num_obstacles)])
             return pos_arr
