@@ -71,7 +71,18 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_freeze_obst_level', default=False, choices=[True, False], type=str2bool, help='True: Never change obstacles level')
     p.add_argument('--quads_obst_level', default=-1, type=int, help='Obstacle start level, -1 means underearth')
     p.add_argument('--quads_obst_level_mode', default=1, type=int, help='0: Directly move obsatcles from underground to above ground, 1: Gradually change the location of obstacles')
-    p.add_argument('--quads_obst_level_change_cond', default=0.5, type=float, help='when crash value >= -1.0 * quads_obst_level_change_cond for 5 continuous episodes, we move obstacles above the ground')
+    p.add_argument('--quads_obst_level_crash_min', default=2.0, type=float, help='when crash value >= -1.0 * quads_obst_level_crash_min for 10 continuous episodes, we change level')
+    p.add_argument('--quads_obst_level_crash_max', default=3.0, type=float, help='when crash value < -1.0 * quads_obst_level_crash_max for 10 continuous episodes, we change level')
+
+    p.add_argument('--quads_obst_level_col_obst_quad_min', default=2.0, type=float, help='when collision b/w obst & drones < quads_obst_level_col_obst_quad_min for 10 continuous episodes, we change level')
+    p.add_argument('--quads_obst_level_col_obst_quad_max', default=4.0, type=float, help='when collision b/w obst & drones > quads_obst_level_col_obst_quad_max for 10 continuous episodes, we change level')
+
+    p.add_argument('--quads_obst_level_col_quad_min', default=0.3, type=float, help='when crash value >= quads_obst_level_col_quad_min for 10 continuous episodes, we change level')
+    p.add_argument('--quads_obst_level_col_quad_max', default=0.6, type=float, help='when crash value < quads_obst_level_col_quad_max for 10 continuous episodes, we change level')
+
+    p.add_argument('--quads_obst_level_pos_min', default=110.0, type=float, help='when crash value >= -1.0 * quads_obst_level_pos_min for 10 continuous episodes, we change level')
+    p.add_argument('--quads_obst_level_pos_max', default=130.0, type=float, help='when crash value < -1.0 * quads_obst_level_pos_max for 10 continuous episodes, we change level')
+
     p.add_argument('--quads_obstacle_stack_num', default=4, type=int, help='Choose the number of obstacle(s) per stack')
     p.add_argument('--quads_enable_sim_room', default='none', type=str, help='room: simulate crash with ceiling, wall, floor; ceiling: crash with ceiling; wall: crash with wall; floor: crash with floor')
 

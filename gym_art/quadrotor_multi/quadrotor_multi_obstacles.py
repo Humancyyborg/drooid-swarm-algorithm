@@ -364,10 +364,12 @@ class MultiObstacles:
         init_box_range = self.drone_env.init_box_range
         pos_z = 0.5 * self.room_height
 
+        pos_item = np.array([self.half_room_length + self.size + self.rel_pos_clip_value,
+                             self.half_room_width + self.size + self.rel_pos_clip_value,
+                             pos_z])
+
+        level = np.clip(level, a_min=-1, a_max=self.num_obstacles - 1)
         if level <= -1:
-            pos_item = np.array([self.half_room_length + self.size + self.rel_pos_clip_value,
-                                 self.half_room_width + self.size + self.rel_pos_clip_value,
-                                 pos_z])
             pos_arr = np.array([pos_item for _ in range(self.num_obstacles)])
             return pos_arr
 
@@ -390,7 +392,8 @@ class MultiObstacles:
 
                 self.start_range_list.append(start_range)
 
-        for i in range(self.num_obstacles):
+        pos_arr = [pos_item for _ in range(self.num_obstacles - level - 1)]
+        for i in range(level+1):
             pos_x, pos_y = self.generate_pos()
             pos_item = np.array([pos_x, pos_y, pos_z])
             final_pos_item = self.get_pos_no_overlap(pos_item, pos_arr)
@@ -401,4 +404,4 @@ class MultiObstacles:
         # print('mean: ', np.mean(self.counter_list))
         # print('list counter: ', self.counter_list)
 
-        return pos_arr
+        return np.array(pos_arr)

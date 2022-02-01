@@ -98,7 +98,7 @@ def make_quadrotor_env_multi(cfg, **kwargs):
         quads_reward_ep_len=cfg.quads_reward_ep_len, obst_level=cfg.quads_obst_level,
         obst_stack_num=cfg.quads_obstacle_stack_num, enable_sim_room=cfg.quads_enable_sim_room,
         obst_level_mode=cfg.quads_obst_level_mode, obst_proximity_mode=cfg.quads_obst_proximity_mode,
-        obst_inf_height=cfg.quads_obst_inf_height, obst_level_change_cond=cfg.quads_obst_level_change_cond,
+        obst_inf_height=cfg.quads_obst_inf_height,
         obst_collision_enable_grace_period=cfg.quads_obst_collision_enable_grace_period, crash_mode=cfg.quads_crash_mode,
         clip_floor_vel_mode=cfg.quads_clip_floor_vel_mode, midreset=cfg.quads_midreset,
         crash_reset_threshold=cfg.quads_crash_reset_threshold, neighbor_rel_pos_mode=cfg.quads_neighbor_rel_pos_mode,
@@ -106,7 +106,13 @@ def make_quadrotor_env_multi(cfg, **kwargs):
         obst_midreset=cfg.quads_obst_midreset, obst_col_reset_threshold=cfg.quads_obst_col_reset_threshold,
         print_info=cfg.quads_print_info, apply_downwash=cfg.quads_apply_downwash, normalize_obs=cfg.quads_normalize_obs,
         freeze_obst_level=cfg.quads_freeze_obst_level, obst_rel_pos_clip_value=cfg.quads_obst_rel_pos_clip_value,
-        one_pass_per_episode=cfg.quads_one_pass_per_episode
+        one_pass_per_episode=cfg.quads_one_pass_per_episode,
+        obst_level_crash_min=cfg.quads_obst_level_crash_min, obst_level_crash_max=cfg.quads_obst_level_crash_max,
+        obst_level_col_obst_quad_min=cfg.quads_obst_level_col_obst_quad_min,
+        obst_level_col_obst_quad_max=cfg.quads_obst_level_col_obst_quad_max,
+        obst_level_col_quad_min=cfg.quads_obst_level_col_quad_min,
+        obst_level_col_quad_max=cfg.quads_obst_level_col_quad_max,
+        obst_level_pos_min=cfg.quads_obst_level_pos_min, obst_level_pos_max=cfg.quads_obst_level_pos_max,
     )
 
     if use_replay_buffer:
