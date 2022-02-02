@@ -113,6 +113,7 @@ def make_quadrotor_env_multi(cfg, **kwargs):
         obst_level_col_quad_min=cfg.quads_obst_level_col_quad_min,
         obst_level_col_quad_max=cfg.quads_obst_level_col_quad_max,
         obst_level_pos_min=cfg.quads_obst_level_pos_min, obst_level_pos_max=cfg.quads_obst_level_pos_max,
+        extra_crash_reward=cfg.quads_extra_crash_reward
     )
 
     if use_replay_buffer:

@@ -46,7 +46,7 @@ class QuadrotorEnvMulti(gym.Env):
                  freeze_obst_level=False, obst_rel_pos_clip_value=2.0, one_pass_per_episode=False,
                  obst_level_crash_min=2.0, obst_level_crash_max=3.0, obst_level_col_obst_quad_min=2.0,
                  obst_level_col_obst_quad_max=4.0, obst_level_col_quad_min=0.5, obst_level_col_quad_max=1.0,
-                 obst_level_pos_min=110.0, obst_level_pos_max=130.0):
+                 obst_level_pos_min=110.0, obst_level_pos_max=130.0, extra_crash_reward=False):
 
         super().__init__()
 
@@ -93,6 +93,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.obs_mean = (self.observation_space.high + self.observation_space.low) / 2.0
         self.obs_std = (self.observation_space.high - self.observation_space.low) / 2.0
         # # Reward shaping
+        self.extra_crash_reward = extra_crash_reward
         self.rew_coeff = dict(
             pos=1., effort=0.05, action_change=0., crash=1., orient=1., yaw=0., rot=0., attitude=0., spin=0.1, vel=0.,
             quadcol_bin=0., quadcol_bin_smooth_max=0., quadcol_bin_obst=0., quadcol_bin_obst_smooth_max=0.0
@@ -391,6 +392,61 @@ class QuadrotorEnvMulti(gym.Env):
         else:
             return obs
 
+    def get_collision_penalty_by_vel(self, drone_pair):
+        rew_quad_prox_vel_collision = np.zeros(self.num_agents)
+        if len(drone_pair) == 0:
+            return rew_quad_prox_vel_collision
+        for pair in drone_pair:
+            # get drone id
+            d0 = pair[0]
+            d1 = pair[1]
+
+            # get vel
+            v0 = self.envs[d0].dynamics.vel
+            v1 = self.envs[d1].dynamics.vel
+
+            # get speed
+            s0 = np.linalg.norm(v0)
+            s1 = np.linalg.norm(v1)
+
+            # calculate penalty
+            # p = 2.0 * (s0 * s1 - v0 * v1) = 2.0 * (s0 * s1 * (1 - cos(v0, v1)))
+            penalty = 2.0 * (1.01 * s0 * s1 - np.dot(v0, v1))
+
+            rew_quad_prox_vel_collision[d0] = penalty
+            rew_quad_prox_vel_collision[d1] = penalty
+
+        return rew_quad_prox_vel_collision
+
+    def get_collision_obst_penalty_by_vel(self, drone_obst_pair):
+        rew_drone_obst_prox_vel_collision = np.zeros(self.num_agents)
+        if len(drone_obst_pair) == 0:
+            return rew_drone_obst_prox_vel_collision
+
+        for pair in drone_obst_pair:
+            # get drone id
+            drone_id = pair[0]
+            obst_id = pair[1]
+
+            # get drone vel & obst pos
+            drone_vel = self.envs[drone_id].dynamics.vel
+
+            drone_pos = self.envs[drone_id].dynamics.pos
+            obst_pos = self.multi_obstacles.obstacle[obst_id].pos
+            rel_pos = obst_pos - drone_pos
+
+            rel_pos_size = np.linalg.norm(rel_pos)
+            drone_speed = np.linalg.norm(self.envs[drone_id].dynamics.vel)
+            cos_theta = np.dot(drone_vel, rel_pos) / (drone_speed * rel_pos_size)
+
+            # calculate penalty
+            # p = 2.0 * drone_speed * cos(rel_pos, d_vel)
+            penalty = 2.0 * drone_speed * cos_theta
+
+            rew_drone_obst_prox_vel_collision[drone_id] = penalty
+
+        return rew_drone_obst_prox_vel_collision
+
     def neighbor_collision_info(self):
         # Calculating collisions between drones
         drone_col_matrix, self.curr_drone_collisions, distance_matrix = \
@@ -409,8 +465,14 @@ class QuadrotorEnvMulti(gym.Env):
         self.prev_drone_collisions = self.curr_drone_collisions
 
         rew_collisions_raw = np.zeros(self.num_agents)
+        rew_quad_prox_vel_collision = np.zeros(self.num_agents)
         if self.last_step_unique_collisions.any():
             rew_collisions_raw[self.last_step_unique_collisions] = -1.0
+            # self.curr_drone_collisions
+            if self.extra_crash_reward:
+                rew_quad_prox_vel_collision = self.get_collision_penalty_by_vel(drone_pair=self.curr_drone_collisions)
+
+
         rew_collisions = self.rew_coeff["quadcol_bin"] * rew_collisions_raw
 
         # penalties for being too close to other drones
@@ -421,7 +483,7 @@ class QuadrotorEnvMulti(gym.Env):
             num_agents=self.num_agents, proximity_mode=self.neighbor_prox_mode
         )
 
-        return drone_col_matrix, rew_collisions_raw, rew_collisions, rew_proximity
+        return drone_col_matrix, rew_collisions_raw, rew_collisions, rew_proximity, rew_quad_prox_vel_collision
 
     def drone_obst_collision_info(self):
         if self.use_obstacles:
@@ -438,11 +500,16 @@ class QuadrotorEnvMulti(gym.Env):
                     self.obst_quad_collisions_per_episode_after_settle += len(obst_quad_last_step_unique_collisions)
 
             rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
+            rew_drone_obst_prox_vel_collision = np.zeros(self.num_agents)
             if len(obst_quad_last_step_unique_collisions) > 0:
                 # We assign penalties to the drones which collide with the obstacles
                 # And obst_quad_last_step_unique_collisions only include drones' id
                 rew_obst_quad_collisions_raw[obst_quad_last_step_unique_collisions] = -1.0
                 self.obst_midreset_list[obst_quad_last_step_unique_collisions] += 1.0
+                if self.extra_crash_reward:
+                    assert self.multi_obstacles.shape == 'cylinder'
+                    rew_drone_obst_prox_vel_collision = self.get_collision_obst_penalty_by_vel(drone_obst_pair=
+                                                                                               curr_all_collisions)
 
                 for drone_id in obst_quad_last_step_unique_collisions:
                     if not self.envs[drone_id].crashed:
@@ -467,9 +534,10 @@ class QuadrotorEnvMulti(gym.Env):
             rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
             rew_collisions_obst_quad = np.zeros(self.num_agents)
             rew_obst_quad_proximity = np.zeros(self.num_agents)
+            rew_drone_obst_prox_vel_collision = np.zeros(self.num_agents)
 
         return obst_quad_col_matrix, curr_all_collisions, rew_obst_quad_collisions_raw, rew_collisions_obst_quad, \
-               rew_obst_quad_proximity
+               rew_obst_quad_proximity, rew_drone_obst_prox_vel_collision
 
     def simulate_colliding_with_room(self, drone_col_matrix, obst_quad_col_matrix):
         applied_room_collide_flag = False
@@ -774,11 +842,12 @@ class QuadrotorEnvMulti(gym.Env):
         # # 1. collision matrix of drones, 2. raw collision penalties, 3.  collision penalties
         # # 4. smooth penalties when drones are close to each other
         applied_force_flag = False
-        drone_col_matrix, rew_collisions_raw, rew_collisions, rew_proximity = self.neighbor_collision_info()
+        drone_col_matrix, rew_collisions_raw, rew_collisions, rew_proximity, rew_quad_prox_vel_collision\
+            = self.neighbor_collision_info()
 
         # COLLISION BETWEEN QUAD AND OBSTACLE(S)
         obst_quad_col_matrix, curr_all_collisions, rew_obst_quad_collisions_raw, rew_collisions_obst_quad, \
-        rew_obst_quad_proximity = self.drone_obst_collision_info()
+        rew_obst_quad_proximity, rew_drone_obst_prox_vel_collision = self.drone_obst_collision_info()
 
         # Apply force to change vel and omega: 1. Downwash; 2. Room; 3. b/w drones 4. b/w obstacles & drones
         # # 1. Apply random force of downwash
@@ -814,13 +883,19 @@ class QuadrotorEnvMulti(gym.Env):
             rewards[i] += rew_proximity[i]
             infos[i]["rewards"]["rew_proximity"] = rew_proximity[i]
 
+            rewards[i] += rew_quad_prox_vel_collision[i]
+            infos[i]["rewards"]["rew_quad_proximity_by_vel"] = rew_quad_prox_vel_collision[i]
+
             if self.use_obstacles:
                 rewards[i] += rew_collisions_obst_quad[i]
                 rewards[i] += rew_obst_quad_proximity[i]
+                rewards[i] += rew_drone_obst_prox_vel_collision[i]
 
                 infos[i]["rewards"]["rew_quadcol_obstacle"] = rew_collisions_obst_quad[i]
                 infos[i]["rewards"]["rewraw_quadcol_obstacle"] = rew_obst_quad_collisions_raw[i]
                 infos[i]["rewards"]["rew_obst_quad_proximity"] = rew_obst_quad_proximity[i]
+
+                infos[i]["rewards"]["rew_obst_quad_proximity_by_vel"] = rew_drone_obst_prox_vel_collision[i]
 
         # Run the scenario passed to self.quads_mode
         if self.scenario.quads_mode in QUADS_MODE_OBST_INFO_LIST or (

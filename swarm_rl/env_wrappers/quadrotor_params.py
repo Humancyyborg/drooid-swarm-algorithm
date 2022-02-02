@@ -110,3 +110,5 @@ def add_quadrotors_env_args(env, parser):
 
     p.add_argument('--quads_normalize_obs', default=False, type=str2bool, help='True: Normalize all observations to [-1, 1]')
     p.add_argument('--quads_one_pass_per_episode', default=False, type=str2bool, help='True: one pass, False: multiple pass')
+
+    p.add_argument('--quads_extra_crash_reward', default=False, type=str2bool, help='True: add extra crash reward')
