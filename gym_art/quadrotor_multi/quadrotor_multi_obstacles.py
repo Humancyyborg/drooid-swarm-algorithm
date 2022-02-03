@@ -90,7 +90,15 @@ class MultiObstacles:
               goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal', obst_num_in_room=0):
 
         self.scenario_mode = scenario_mode
-        self.obst_num_in_room = obst_num_in_room
+        if obst_num_in_room == 0:
+            if level <= -1:
+                self.obst_num_in_room = 0
+            else:
+                self.obst_num_in_room = np.random.randint(low=level - self.obst_level_num_window + 2, high=level + 2)
+                self.obst_num_in_room = np.clip(self.obst_num_in_room, a_min=1, a_max=self.num_obstacles)
+        else:
+            self.obst_num_in_room = obst_num_in_room
+
         # self.counter = 0
         if self.num_obstacles <= 0:
             return obs
