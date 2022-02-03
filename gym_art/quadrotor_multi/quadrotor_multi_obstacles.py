@@ -401,13 +401,25 @@ class MultiObstacles:
 
                 self.start_range_list.append(start_range)
 
+        self.obst_num_in_room = 2
         obst_in_room = min(self.obst_num_in_room, self.num_obstacles)
         pos_arr = []
-        for i in range(obst_in_room):
-            pos_x, pos_y = self.generate_pos()
-            pos_item = np.array([pos_x, pos_y, pos_z])
-            final_pos_item = self.get_pos_no_overlap(pos_item, pos_arr)
-            pos_arr.append(final_pos_item)
+        o1 = np.array([0.0, 0.0, 5.0])
+        o2 = np.array([0.0, -1.3, 5.0])
+        o3 = np.array([0.0, -3.5, 5.0])
+        o4 = np.array([0.0, 3.5, 5.0])
+
+        pos_arr.append(o1)
+        pos_arr.append(o2)
+
+        pos_arr.append(o3)
+        pos_arr.append(o4)
+
+        # for i in range(obst_in_room):
+        #     pos_x, pos_y = self.generate_pos()
+        #     pos_item = np.array([pos_x, pos_y, pos_z])
+        #     final_pos_item = self.get_pos_no_overlap(pos_item, pos_arr)
+        #     pos_arr.append(final_pos_item)
 
         for i in range(self.num_obstacles - obst_in_room):
             pos_arr.append(outbox_pos_item)

@@ -16,7 +16,7 @@ QUADS_MODE_MULTI_GOAL_CENTER = ['o_swarm_vs_swarm']
 
 QUADS_MODE_GOAL_CENTERS = ['o_swarm_groups']
 
-QUADS_MODE_OBST_INFO_LIST = ['o_test', 'o_inside_obstacles', 'o_swap_goals', 'mix']
+QUADS_MODE_OBST_INFO_LIST = ['o_inside_obstacles', 'o_swap_goals', 'mix']
 
 QUADS_MODE_DICT = {
             'fix_size': ['static_same_goal', 'dynamic_same_goal', 'ep_lissajous3D', 'ep_rand_bezier', 'through_hole',
