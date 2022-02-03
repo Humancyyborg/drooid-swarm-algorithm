@@ -1234,6 +1234,7 @@ class Scenario_o_inside_obstacles(Scenario_o_dynamic_diff_goal):
         self.init_flag = 0
         self.spawn_flag = 0
         self.obst_level = -1
+        self.obst_num_in_room = 0
 
     def update_formation_size(self, new_formation_size):
         pass
@@ -1256,7 +1257,8 @@ class Scenario_o_inside_obstacles(Scenario_o_dynamic_diff_goal):
 
         if self.obst_level > -1:
             obst_num = len(infos[0]['obstacles'])
-            obst_id = np.random.randint(low=0, high=obst_num)
+            self.obst_num_in_room = min(self.obst_num_in_room, obst_num)
+            obst_id = np.random.randint(low=0, high=self.obst_num_in_room)
             self.obstacle_pos = infos[0]['obstacles'][obst_id].pos
         else:
             x, y = np.random.uniform(low=-3.0, high=3.0, size=2)
@@ -1273,8 +1275,12 @@ class Scenario_o_inside_obstacles(Scenario_o_dynamic_diff_goal):
 
         return infos, rewards
 
-    def reset(self, obst_level=-1):
+    def reset(self, obst_level=-1, obst_level_num_window=4):
         self.obst_level = obst_level
+        self.obst_num_in_room = np.random.randint(low=self.obst_level - obst_level_num_window + 2,
+                                                  high=self.obst_level + 2)
+        self.obst_num_in_room = max(1, self.obst_num_in_room)
+
         self.init_flag = np.random.randint(4)
         self.spawn_flag = self.init_flag
         x, y, z = self.generate_pos(shift_small=1.25, shift_big=2.0, shift_collide=2.5)
@@ -1295,6 +1301,7 @@ class Scenario_o_swap_goals(Scenario_o_inside_obstacles):
         self.spawn_flag = 0
         self.get_obst_flag = False
         self.obst_level = -1
+        self.obst_num_in_room = 0
 
     def set_end_point(self):
         self.start_point = np.copy(self.end_point)
@@ -1314,7 +1321,8 @@ class Scenario_o_swap_goals(Scenario_o_inside_obstacles):
         if self.obst_level > -1:
             if not self.get_obst_flag:
                 obst_num = len(infos[0]['obstacles'])
-                obst_id = np.random.randint(low=0, high=obst_num)
+                self.obst_num_in_room = min(self.obst_num_in_room, obst_num)
+                obst_id = np.random.randint(low=0, high=self.obst_num_in_room)
                 self.obstacle_pos = infos[0]['obstacles'][obst_id].pos
                 self.set_end_point()
                 self.get_obst_flag = True
@@ -1334,8 +1342,11 @@ class Scenario_o_swap_goals(Scenario_o_inside_obstacles):
 
         return infos, rewards
 
-    def reset(self, obst_level=-1):
+    def reset(self, obst_level=-1, obst_level_num_window=4):
         self.obst_level = obst_level
+        self.obst_num_in_room = np.random.randint(low=self.obst_level - obst_level_num_window + 2,
+                                                  high=self.obst_level + 2)
+        self.obst_num_in_room = max(1, self.obst_num_in_room)
         self.init_flag = np.random.randint(4)
         self.spawn_flag = self.init_flag
         x, y, z = self.generate_pos(shift_small=1.25, shift_big=2.0, shift_collide=2.5)
@@ -1534,6 +1545,7 @@ class Scenario_mix(QuadrotorScenario):
             self.scenario_mode = 'o_dynamic_same_goal'
             self.goals_center_list = []
             self.multi_goals = []
+            self.obst_num_in_room = 0
 
         # actual scenario being used
         self.scenario = None
@@ -1551,7 +1563,7 @@ class Scenario_mix(QuadrotorScenario):
         self.formation_size = self.scenario.formation_size
         return infos, rewards
 
-    def reset(self, obst_level=-1):
+    def reset(self, obst_level=-1, obst_level_num_window=4):
         mode_index = np.random.randint(low=0, high=len(self.quads_mode_list))
         mode = self.quads_mode_list[mode_index]
 
@@ -1577,5 +1589,8 @@ class Scenario_mix(QuadrotorScenario):
             else:
                 self.goals_center_list = self.scenario.goals_center_list
                 self.multi_goals = self.scenario.goals
+
+            if mode in QUADS_MODE_OBST_INFO_LIST:
+                self.obst_num_in_room = self.scenario.obst_num_in_room
 
             self.scenario_mode = self.scenario.quads_mode

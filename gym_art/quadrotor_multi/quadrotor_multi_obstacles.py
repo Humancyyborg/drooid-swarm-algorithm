@@ -37,6 +37,7 @@ class MultiObstacles:
         self.scenario_mode = None
         self.rel_pos_clip_value = rel_pos_clip_value
         self.obst_level_num_window = obst_level_num_window
+        self.obst_num_in_room = 0
         # self.counter = 0
         # self.counter_list = []
 
@@ -86,9 +87,10 @@ class MultiObstacles:
 
     def reset(self, obs=None, quads_pos=None, quads_vel=None, set_obstacles=None, formation_size=0.0,
               goal_central=np.array([0., 0., 2.]), level=-1, goal_start_point=np.array([-3.0, -3.0, 2.0]),
-              goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal'):
+              goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal', obst_num_in_room=0):
 
         self.scenario_mode = scenario_mode
+        self.obst_num_in_room = obst_num_in_room
         # self.counter = 0
         if self.num_obstacles <= 0:
             return obs
@@ -365,14 +367,13 @@ class MultiObstacles:
         init_box_range = self.drone_env.init_box_range
         pos_z = 0.5 * self.room_height
 
-        pos_item = np.array([self.half_room_length + self.size + self.rel_pos_clip_value,
-                             self.half_room_width + self.size + self.rel_pos_clip_value,
-                             pos_z])
+        outbox_pos_item = np.array([self.half_room_length + self.size + self.rel_pos_clip_value,
+                                    self.half_room_width + self.size + self.rel_pos_clip_value,
+                                    pos_z])
 
         if level <= -1:
-            pos_arr = np.array([pos_item for _ in range(self.num_obstacles)])
+            pos_arr = np.array([outbox_pos_item for _ in range(self.num_obstacles)])
             return pos_arr
-
 
         # Based on room_dims [10, 10, 10]
         if scenario_mode not in QUADS_MODE_GOAL_CENTERS:
@@ -392,16 +393,16 @@ class MultiObstacles:
 
                 self.start_range_list.append(start_range)
 
-        obst_in_room_low = np.clip(level - (self.obst_level_num_window - 2), a_min=1, a_max=self.num_obstacles)
-        obst_in_room_high = np.clip(level + 1, a_min=1, a_max=self.num_obstacles)
-
-        obst_in_room = np.random.randint(low=obst_in_room_low, high=obst_in_room_high + 1)  # randint: [low, high)
-        pos_arr = [pos_item for _ in range(self.num_obstacles - obst_in_room)]
+        obst_in_room = min(self.obst_num_in_room, self.num_obstacles)
+        pos_arr = []
         for i in range(obst_in_room):
             pos_x, pos_y = self.generate_pos()
             pos_item = np.array([pos_x, pos_y, pos_z])
             final_pos_item = self.get_pos_no_overlap(pos_item, pos_arr)
             pos_arr.append(final_pos_item)
+
+        for i in range(self.num_obstacles - obst_in_room):
+            pos_arr.append(outbox_pos_item)
 
         # self.counter_list.append(self.counter)
         # print('counter: ', self.counter)

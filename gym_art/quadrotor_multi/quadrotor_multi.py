@@ -195,6 +195,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.obst_level_mode = obst_level_mode
         self.episode_num_control_level = 10
         self.obst_level_num_window = 4
+        self.obst_split_level = 6
         self.obst_level_condition_dict = {
             'crash': {
                 'low_bound': obst_level_crash_min,
@@ -666,12 +667,17 @@ class QuadrotorEnvMulti(gym.Env):
         mean_collision_quad = np.mean(self.obst_level_condition_dict['collision_quad']['value_arr'])
 
         # upgrade level
-        upgrade_flag = [
-            mean_crash < self.obst_level_condition_dict['crash']['low_bound'],
-            mean_pos < self.obst_level_condition_dict['pos']['low_bound'],
-            mean_collision_obst_quad < self.obst_level_condition_dict['collision_obst_quad']['low_bound'],
-            mean_collision_quad < self.obst_level_condition_dict['collision_quad']['low_bound']
-        ]
+        if self.obst_level <= self.obst_split_level:
+            upgrade_flag = [
+                mean_crash < self.obst_level_condition_dict['crash']['low_bound'],
+            ]
+        else:
+            upgrade_flag = [
+                mean_crash < self.obst_level_condition_dict['crash']['low_bound'],
+                mean_pos < self.obst_level_condition_dict['pos']['low_bound'],
+                mean_collision_obst_quad < self.obst_level_condition_dict['collision_obst_quad']['low_bound'],
+                mean_collision_quad < self.obst_level_condition_dict['collision_quad']['low_bound']
+            ]
 
         if all(upgrade_flag):
             self.obst_level += 1
@@ -683,14 +689,19 @@ class QuadrotorEnvMulti(gym.Env):
             return
 
         # downgrade level
-        downgrade_flag = [
-            mean_crash > self.obst_level_condition_dict['crash']['high_bound'],
-            mean_pos > self.obst_level_condition_dict['pos']['high_bound'],
-            mean_collision_obst_quad > self.obst_level_condition_dict['collision_obst_quad']['high_bound'],
-            mean_collision_quad > self.obst_level_condition_dict['collision_quad']['high_bound']
-        ]
+        if self.obst_level <= self.obst_split_level:
+            downgrade_flag = [
+                mean_crash > self.obst_level_condition_dict['crash']['high_bound'],
+            ]
+        else:
+            downgrade_flag = [
+                mean_crash > self.obst_level_condition_dict['crash']['high_bound'],
+                mean_pos > self.obst_level_condition_dict['pos']['high_bound'],
+                mean_collision_obst_quad > self.obst_level_condition_dict['collision_obst_quad']['high_bound'],
+                mean_collision_quad > self.obst_level_condition_dict['collision_quad']['high_bound']
+            ]
 
-        if downgrade_flag:
+        if any(downgrade_flag):
             self.obst_level -= 1
             self.obst_level = np.clip(self.obst_level, a_min=-1, a_max=self.obstacle_num - 2 + self.obst_level_num_window)
             self.obst_level_condition_dict['crash']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
@@ -744,19 +755,25 @@ class QuadrotorEnvMulti(gym.Env):
             else:
                 goal_points = self.scenario.goals
 
-        return scenario_mode, spawn_flag, goal_start_point, goal_end_point, goal_points
+        if scenario_mode in QUADS_MODE_OBST_INFO_LIST:
+            obst_num_in_room = self.scenario.obst_num_in_room
+        else:
+            obst_num_in_room = 0
+
+        return scenario_mode, spawn_flag, goal_start_point, goal_end_point, goal_points, obst_num_in_room
 
     def reset(self):
         obs, rewards, dones, infos = [], [], [], []
         if self.scenario.quads_mode in QUADS_MODE_OBST_INFO_LIST and self.use_obstacles:
-            self.scenario.reset(obst_level=self.obst_level)
+            self.scenario.reset(obst_level=self.obst_level, obst_level_num_window=self.obst_level_num_window)
         else:
             self.scenario.reset()
 
         self.quads_formation_size = self.scenario.formation_size
         self.goal_central = np.mean(self.scenario.goals, axis=0)
         if self.use_obstacles:
-            scenario_mode, spawn_flag, goal_start_point, goal_end_point, goal_points = self.reset_given_obst_scenario()
+            scenario_mode, spawn_flag, goal_start_point, goal_end_point, goal_points, obst_num_in_room\
+                = self.reset_given_obst_scenario()
 
         # try to activate replay buffer if enabled
         if self.use_replay_buffer and not self.activate_replay_buffer:
@@ -798,7 +815,7 @@ class QuadrotorEnvMulti(gym.Env):
                                              set_obstacles=self.set_obstacles, formation_size=self.quads_formation_size,
                                              goal_central=self.goal_central, level=self.obst_level,
                                              goal_start_point=goal_start_point, goal_end_point=goal_end_point,
-                                             scenario_mode=scenario_mode)
+                                             scenario_mode=scenario_mode, obst_num_in_room=obst_num_in_room)
             self.obst_quad_collisions_per_episode = 0
             self.obst_quad_collisions_per_episode_after_settle = 0
             self.prev_obst_quad_collisions = []
