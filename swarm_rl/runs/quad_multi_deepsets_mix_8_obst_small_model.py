@@ -4,6 +4,9 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_8_OBSTACLES
 
 _params = ParamGrid([
     ('seed', seeds(4)),
+    ('quads_collision_obst_smooth_max_penalty', [0.0]),
+    ('quads_obst_penalty_fall_off', [0.0]),
+
 ])
 
 SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
