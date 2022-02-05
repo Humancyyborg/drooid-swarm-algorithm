@@ -126,10 +126,10 @@ class QuadrotorScenario:
             raise NotImplementedError("Unknown formation")
 
         # need to update self.envs when update room size / room_dims
-        room_box = copy.deepcopy(self.envs[0].room_box)
-        room_box[0] += 0.25
-        room_box[1] -= 0.25
-        goals = np.clip(goals, a_min=room_box[0], a_max=room_box[1])
+        # room_box = copy.deepcopy(self.envs[0].room_box)
+        # room_box[0] += 0.25
+        # room_box[1] -= 0.25
+        # goals = np.clip(goals, a_min=room_box[0], a_max=room_box[1])
 
         return goals
 
@@ -237,24 +237,24 @@ class Scenario_o_test(QuadrotorScenario):
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
 
-        d_pos = np.array([env.dynamics.pos[0] for env in self.envs])
-        real_pos = np.array([env.dynamics.pos for env in self.envs])
-        dict_d = [[] for _ in range(self.num_agents)]
-        if self.envs[0].tick >= 6.0 and any(d_pos + 0.5 > 0.0):
-            if tick % 5 == 0:
-                for i in range(self.num_agents):
-                    if d_pos[i] + 0.5 > 0:
-                        print("agent", i, "pos", real_pos[i])
-                        dict_d[i].append(list(real_pos[i]))
-
-        if tick >= 1600 and tick % 200 == 0:
-            print(dict_d)
+        # d_pos = np.array([env.dynamics.pos[0] for env in self.envs])
+        # real_pos = np.array([env.dynamics.pos for env in self.envs])
+        # dict_d = [[] for _ in range(self.num_agents)]
+        # if self.envs[0].tick >= 6.0 and any(d_pos + 0.5 > 0.0):
+        #     if tick % 5 == 0:
+        #         for i in range(self.num_agents):
+        #             if d_pos[i] + 0.5 > 0:
+        #                 print("agent", i, "pos", real_pos[i])
+        #                 dict_d[i].append(list(real_pos[i]))
+        #
+        # if tick >= 1600 and tick % 200 == 0:
+        #     print(dict_d)
         if tick <= int(self.duration_time * self.envs[0].control_freq):
             return infos, rewards
 
         # self.set_end_point()
         if self.end_point[0] < 0:
-            self.end_point = np.array([4.0, 0.0, 2.0])
+            self.end_point = np.array([5.0, 0.0, 2.0])
         else:
             self.end_point = np.array([4.0, 0.0, 2.0])
 
@@ -274,7 +274,7 @@ class Scenario_o_test(QuadrotorScenario):
 
         self.start_point = np.array([-3.0, 0.0, 2.0])
         self.end_point = copy.deepcopy(self.start_point)
-        self.duration_time = 4.0
+        self.duration_time = 8.0
         self.standard_reset(formation_center=self.start_point)
 
 

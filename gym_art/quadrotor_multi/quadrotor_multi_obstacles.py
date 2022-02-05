@@ -358,7 +358,7 @@ class MultiObstacles:
     def generate_inf_pos_by_level(self, level=-1, goal_start_point=np.array([-3.0, -3.0, 2.0]),
                                   goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal'):
         pos_arr = []
-        gap = 1.0
+        gap = 0.5
         num = int((10 + gap) / (1 + gap))
         margin = (10 + gap - (1 + gap) * num) / 2
 
