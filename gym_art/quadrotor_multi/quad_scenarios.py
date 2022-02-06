@@ -4,7 +4,7 @@ import copy
 
 from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_PARAMS_DICT, update_formation_and_max_agent_per_layer, \
     update_layer_dist, get_formation_range, get_goal_by_formation, get_z_value, QUADS_MODE_LIST, \
-    QUADS_MODE_LIST_OBSTACLES, QUADS_MODE_GOAL_CENTERS
+    QUADS_MODE_LIST_OBSTACLES, QUADS_MODE_GOAL_CENTERS, get_pos_diff_decay_rate
 from gym_art.quadrotor_multi.quad_utils import generate_points, get_grid_dim_number
 
 
@@ -23,7 +23,8 @@ class QuadrotorScenario:
         self.set_room_dims = room_dims_callback  # usage example: self.set_room_dims((10, 10, 10))
         self.rew_coeff = rew_coeff
         self.goals = None
-
+        self.pos_decay_rate = rew_coeff['quad_rewards']['pos_diff_decay_rate']
+        self.cur_start_tick = 0
         #  Set formation, num_agents_per_layer, lowest_formation_size, highest_formation_size, formation_size,
         #  layer_dist, formation_center
         #  Note: num_agents_per_layer for scalability, the maximum number of agent per layer
@@ -801,6 +802,7 @@ class Scenario_o_dynamic_same_goal(QuadrotorScenario):
         self.spawn_flag = 0  # used for init spawn, check quadrotor_single.py
         self.explore_epsilon = 0.1
         self.quads_mode = quads_mode
+        self.cur_start_tick = 0
 
     def update_formation_size(self, new_formation_size):
         pass
@@ -843,17 +845,24 @@ class Scenario_o_dynamic_same_goal(QuadrotorScenario):
         tick = self.envs[0].tick
 
         if tick <= int(self.duration_time * self.envs[0].control_freq):
+            pos_diff_decay_rate = get_pos_diff_decay_rate(decay_rate=self.pos_decay_rate, tick=tick - self.cur_start_tick)
+            for i, env in enumerate(self.envs):
+                env.pos_decay_rate = pos_diff_decay_rate
+
             return infos, rewards
 
+        self.cur_start_tick = int(self.duration_time * self.envs[0].control_freq)
         self.set_end_point()
         self.duration_time += np.random.uniform(low=10.0, high=15.0)
         self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.end_point, layer_dist=0.0)
+
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
 
         return infos, rewards
 
     def reset(self):
+        self.cur_start_tick = 0
         self.explore_epsilon = np.random.uniform(low=0.1, high=0.2)
         self.init_flag = np.random.randint(4)
         self.spawn_flag = self.init_flag
@@ -874,6 +883,7 @@ class Scenario_o_dynamic_diff_goal(Scenario_o_dynamic_same_goal):
         self.spawn_flag = 0  # used for init spawn, check quadrotor_single.py
         self.explore_epsilon = 0.1
         self.quads_mode = quads_mode
+        self.cur_start_tick = 0
 
     def update_formation_size(self, new_formation_size):
         if new_formation_size != self.formation_size:
@@ -894,8 +904,13 @@ class Scenario_o_dynamic_diff_goal(Scenario_o_dynamic_same_goal):
         tick = self.envs[0].tick
 
         if tick <= int(self.duration_time * self.envs[0].control_freq):
+            pos_diff_decay_rate = get_pos_diff_decay_rate(decay_rate=self.pos_decay_rate, tick=tick - self.cur_start_tick)
+            for i, env in enumerate(self.envs):
+                env.pos_decay_rate = pos_diff_decay_rate
+
             return infos, rewards
 
+        self.cur_start_tick = int(self.duration_time * self.envs[0].control_freq)
         self.set_end_point()
         self.duration_time += np.random.uniform(low=10.0, high=15.0)
         self.update_goals()
@@ -917,6 +932,7 @@ class Scenario_o_swarm_vs_swarm(QuadrotorScenario):
         self.duration_time = 0.0
         self.quads_mode = quads_mode
         self.env_shuffle_list = np.arange(len(envs))
+        self.cur_start_tick = 0
 
     def update_formation_size(self, new_formation_size):
         if new_formation_size != self.formation_size:
@@ -979,13 +995,19 @@ class Scenario_o_swarm_vs_swarm(QuadrotorScenario):
         tick = self.envs[0].tick
 
         if tick <= int(self.duration_time * self.envs[0].control_freq):
+            pos_diff_decay_rate = get_pos_diff_decay_rate(decay_rate=self.pos_decay_rate, tick=tick - self.cur_start_tick)
+            for i, env in enumerate(self.envs):
+                env.pos_decay_rate = pos_diff_decay_rate
+
             return infos, rewards
 
+        self.cur_start_tick = int(self.duration_time * self.envs[0].control_freq)
         self.update_goals()
         self.duration_time += np.random.uniform(low=10.0, high=15.0)
         return infos, rewards
 
     def reset(self):
+        self.cur_start_tick = 0
         self.duration_time = np.random.uniform(low=4.0, high=6.0)
         self.spawn_flag = np.random.randint(4)
         np.random.shuffle(self.env_shuffle_list)
@@ -1017,6 +1039,7 @@ class Scenario_o_dynamic_formations(Scenario_o_dynamic_diff_goal):
         self.init_flag = 0
         self.spawn_flag = 0  # used for init spawn, check quadrotor_single.py
         self.quads_mode = quads_mode
+        self.cur_start_tick = 0
 
     def update_formation_size(self, new_formation_size):
         if new_formation_size != self.formation_size:
@@ -1047,8 +1070,12 @@ class Scenario_o_dynamic_formations(Scenario_o_dynamic_diff_goal):
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
         if tick <= int(self.duration_time * self.envs[0].control_freq):
+            pos_diff_decay_rate = get_pos_diff_decay_rate(decay_rate=self.pos_decay_rate, tick=tick - self.cur_start_tick)
+            for i, env in enumerate(self.envs):
+                env.pos_decay_rate = pos_diff_decay_rate
             return infos, rewards
 
+        self.cur_start_tick = int(self.duration_time * self.envs[0].control_freq)
         if self.formation_size <= -self.highest_formation_size:
             self.increase_formation_size = True
             self.control_speed = np.random.uniform(low=self.low_speed, high=self.high_speed)
@@ -1066,6 +1093,7 @@ class Scenario_o_dynamic_formations(Scenario_o_dynamic_diff_goal):
         return infos, rewards
 
     def reset(self):
+        self.cur_start_tick = 0
         self.increase_formation_size = True if np.random.uniform(low=0.0, high=1.0) < 0.5 else False
         self.control_speed = np.random.uniform(low=self.low_speed, high=self.high_speed)
         self.set_formation_center()
@@ -1105,12 +1133,16 @@ class Scenario_o_ep_lissajous3D(QuadrotorScenario):
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
 
+            # Set env decay rate
+            env.pos_decay_rate = 1.0
+
         return infos, rewards
 
     def update_formation_size(self, new_formation_size):
         pass
 
     def reset(self):
+        self.cur_start_tick = 0
         # Reset formation and related parameters
         self.update_formation_and_relate_param()
 
@@ -1132,6 +1164,7 @@ class Scenario_o_dynamic_roller(Scenario_o_dynamic_diff_goal):
         self.direction_flag = 0  # [0, 1] means update in [+, -] direction
         self.init_flag = 0
         self.spawn_flag = 0
+        self.cur_start_tick = 0
 
     def update_goals(self):
         # Reset formation and related parameters
@@ -1179,8 +1212,12 @@ class Scenario_o_dynamic_roller(Scenario_o_dynamic_diff_goal):
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
         if tick <= int(self.duration_time * self.envs[0].control_freq):
+            pos_diff_decay_rate = get_pos_diff_decay_rate(decay_rate=self.pos_decay_rate, tick=tick - self.cur_start_tick)
+            for i, env in enumerate(self.envs):
+                env.pos_decay_rate = pos_diff_decay_rate
             return infos, rewards
 
+        self.cur_start_tick = int(self.duration_time * self.envs[0].control_freq)
         self.set_end_point()
         self.update_goals()
         for i, env in enumerate(self.envs):
@@ -1189,6 +1226,7 @@ class Scenario_o_dynamic_roller(Scenario_o_dynamic_diff_goal):
         return infos, rewards
 
     def reset(self):
+        self.cur_start_tick = 0
         self.update_direction = np.random.randint(2)
         self.direction_flag = np.random.randint(2)
 
@@ -1219,6 +1257,7 @@ class Scenario_o_inside_obstacles(Scenario_o_dynamic_diff_goal):
         self.obstacle_pos = np.array([0.0, 0.0, 2.0])
         self.init_flag = 0
         self.spawn_flag = 0
+        self.cur_start_tick = 0
 
     def update_formation_size(self, new_formation_size):
         pass
@@ -1237,8 +1276,13 @@ class Scenario_o_inside_obstacles(Scenario_o_dynamic_diff_goal):
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
         if tick <= int(self.duration_time * self.envs[0].control_freq):
+            pos_diff_decay_rate = get_pos_diff_decay_rate(decay_rate=self.pos_decay_rate, tick=tick - self.cur_start_tick)
+            for i, env in enumerate(self.envs):
+                env.pos_decay_rate = pos_diff_decay_rate
+
             return infos, rewards
 
+        self.cur_start_tick = int(self.duration_time * self.envs[0].control_freq)
         obst_num = len(infos[0]['obstacles'])
         obst_id = np.random.randint(low=0, high=obst_num)
         self.obstacle_pos = infos[0]['obstacles'][obst_id].pos
@@ -1253,6 +1297,7 @@ class Scenario_o_inside_obstacles(Scenario_o_dynamic_diff_goal):
         return infos, rewards
 
     def reset(self):
+        self.cur_start_tick = 0
         self.init_flag = np.random.randint(4)
         self.spawn_flag = self.init_flag
         x, y, z = self.generate_pos(shift_small=1.25, shift_big=2.0, shift_collide=2.5)
@@ -1272,6 +1317,7 @@ class Scenario_o_swap_goals(Scenario_o_inside_obstacles):
         self.init_flag = 0
         self.spawn_flag = 0
         self.get_obst_flag = False
+        self.cur_start_tick = 0
 
     def set_end_point(self):
         self.start_point = np.copy(self.end_point)
@@ -1286,6 +1332,10 @@ class Scenario_o_swap_goals(Scenario_o_inside_obstacles):
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
         if tick <= int(self.duration_time * self.envs[0].control_freq):
+            pos_diff_decay_rate = get_pos_diff_decay_rate(decay_rate=self.pos_decay_rate, tick=tick - self.cur_start_tick)
+            for i, env in enumerate(self.envs):
+                env.pos_decay_rate = pos_diff_decay_rate
+
             return infos, rewards
 
         if not self.get_obst_flag:
@@ -1295,6 +1345,7 @@ class Scenario_o_swap_goals(Scenario_o_inside_obstacles):
             self.set_end_point()
             self.get_obst_flag = True
 
+        self.cur_start_tick = int(self.duration_time * self.envs[0].control_freq)
         self.duration_time += np.random.uniform(low=8.0, high=10.0)
         # Reset formation and related parameters
         self.update_formation_and_relate_param()
@@ -1306,6 +1357,7 @@ class Scenario_o_swap_goals(Scenario_o_inside_obstacles):
         return infos, rewards
 
     def reset(self):
+        self.cur_start_tick = 0
         self.init_flag = np.random.randint(4)
         self.spawn_flag = self.init_flag
         x, y, z = self.generate_pos(shift_small=1.25, shift_big=2.0, shift_collide=2.5)
@@ -1333,6 +1385,7 @@ class Scenario_o_swarm_groups(QuadrotorScenario):
         self.agent_num = len(envs)
         self.half_room_length = self.room_dims[0] / 2
         self.half_room_width = self.room_dims[1] / 2
+        self.cur_start_tick = 0
 
     def update_formation_size(self, new_formation_size):
         if new_formation_size != self.formation_size:
@@ -1398,13 +1451,19 @@ class Scenario_o_swarm_groups(QuadrotorScenario):
         tick = self.envs[0].tick
 
         if tick <= int(self.duration_time * self.envs[0].control_freq):
+            pos_diff_decay_rate = get_pos_diff_decay_rate(decay_rate=self.pos_decay_rate, tick=tick - self.cur_start_tick)
+            for i, env in enumerate(self.envs):
+                env.pos_decay_rate = pos_diff_decay_rate
+
             return infos, rewards
 
+        self.cur_start_tick = int(self.duration_time * self.envs[0].control_freq)
         self.update_goals()
         self.duration_time += np.random.uniform(low=10.0, high=15.0)
         return infos, rewards
 
     def reset(self):
+        self.cur_start_tick = 0
         self.duration_time = np.random.uniform(low=4.0, high=6.0)
         np.random.shuffle(self.env_shuffle_list)
         # Reset formation and related parameters
@@ -1431,6 +1490,7 @@ class Scenario_o_ep_rand_bezier(Scenario_o_dynamic_same_goal):
         self.init_flag = 0
         self.spawn_flag = 0  # used for init spawn, check quadrotor_single.py
         self.quads_mode = quads_mode
+        self.cur_start_tick = 0
 
     def step(self, infos, rewards, pos):
         # randomly sample new goal pos in free space and have the goal move there following a bezier curve
@@ -1471,10 +1531,12 @@ class Scenario_o_ep_rand_bezier(Scenario_o_dynamic_same_goal):
 
             for i, env in enumerate(self.envs):
                 env.goal = self.goals[i]
+                env.pos_decay_rate = 1.0
 
         return infos, rewards
 
     def reset(self):
+        self.cur_start_tick = 0
         self.init_flag = np.random.randint(4)
         self.spawn_flag = self.init_flag
         self.start_point = self.generate_pos(shift_small=1.25, shift_big=2.0, shift_collide=2.5)
@@ -1506,6 +1568,7 @@ class Scenario_mix(QuadrotorScenario):
 
         # actual scenario being used
         self.scenario = None
+        self.cur_start_tick = 0
 
     def name(self):
         """
@@ -1521,6 +1584,7 @@ class Scenario_mix(QuadrotorScenario):
         return infos, rewards
 
     def reset(self):
+        self.cur_start_tick = 0
         mode_index = np.random.randint(low=0, high=len(self.quads_mode_list))
         mode = self.quads_mode_list[mode_index]
 

@@ -127,3 +127,7 @@ def get_z_value(num_agents, num_agents_per_layer, box_size, formation, formation
 
     z = max(z_lower_bound, z)
     return z
+
+
+def get_pos_diff_decay_rate(decay_rate=1.0, tick=0):
+    return np.power(decay_rate, tick)

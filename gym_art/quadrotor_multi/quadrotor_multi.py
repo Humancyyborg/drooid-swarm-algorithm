@@ -42,7 +42,8 @@ class QuadrotorEnvMulti(gym.Env):
                  obst_inf_height=False, obst_level_change_cond=0.5, obst_collision_enable_grace_period=False,
                  crash_mode=0, clip_floor_vel_mode=0, midreset=False, crash_reset_threshold=200,
                  neighbor_rel_pos_mode=0, obst_rel_pos_mode=0, neighbor_prox_mode=0, obst_midreset=False,
-                 obst_col_reset_threshold=1, print_info=False, apply_downwash=False, normalize_obs=False):
+                 obst_col_reset_threshold=1, print_info=False, apply_downwash=False, normalize_obs=False,
+                 pos_diff_decay_rate=1.0):
 
         super().__init__()
 
@@ -80,7 +81,7 @@ class QuadrotorEnvMulti(gym.Env):
                 quads_vel_reward_out_range=quads_vel_reward_out_range, view_mode=quads_view_mode,
                 obstacle_mode=quads_obstacle_mode, obstacle_num=quads_obstacle_num, num_use_neighbor_obs=local_obs,
                 num_local_obst=local_obst_obs, obst_obs_type=obst_obs_type, quads_reward_ep_len=quads_reward_ep_len,
-                clip_floor_vel_mode=clip_floor_vel_mode, normalize_obs=normalize_obs
+                clip_floor_vel_mode=clip_floor_vel_mode, normalize_obs=normalize_obs,
             )
             self.envs.append(e)
 

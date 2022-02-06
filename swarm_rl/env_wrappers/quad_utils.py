@@ -104,7 +104,8 @@ def make_quadrotor_env_multi(cfg, **kwargs):
         crash_reset_threshold=cfg.quads_crash_reset_threshold, neighbor_rel_pos_mode=cfg.quads_neighbor_rel_pos_mode,
         obst_rel_pos_mode=cfg.quads_obst_rel_pos_mode, neighbor_prox_mode=cfg.quads_neighbor_proximity_mode,
         obst_midreset=cfg.quads_obst_midreset, obst_col_reset_threshold=cfg.quads_obst_col_reset_threshold,
-        print_info=cfg.quads_print_info, apply_downwash=cfg.quads_apply_downwash, normalize_obs=cfg.quads_normalize_obs
+        print_info=cfg.quads_print_info, apply_downwash=cfg.quads_apply_downwash, normalize_obs=cfg.quads_normalize_obs,
+        pos_diff_decay_rate=cfg.quads_pos_diff_decay_rate
     )
 
     if use_replay_buffer:
@@ -120,6 +121,7 @@ def make_quadrotor_env_multi(cfg, **kwargs):
     reward_shaping['quad_rewards']['quadcol_bin_smooth_max'] = cfg.quads_collision_smooth_max_penalty
 
     reward_shaping['quad_rewards']['pos_diff'] = cfg.quads_pos_diff_reward
+    reward_shaping['quad_rewards']['pos_diff_decay_rate'] = cfg.quads_pos_diff_decay_rate
 
     # this is annealed by the reward shaping wrapper
     if cfg.anneal_collision_steps > 0:

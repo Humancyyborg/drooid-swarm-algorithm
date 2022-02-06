@@ -630,7 +630,7 @@ class QuadrotorDynamics:
 # reasonable reward function for hovering at a goal and not flying too high
 def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, rew_coeff, action_prev,
                             quads_settle=False, quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8,
-                            quads_reward_ep_len=True, pre_pos=None):
+                            quads_reward_ep_len=True, pre_pos=None, pos_decay_rate=1.0):
     ##################################################
     ## log to create a sharp peak at the goal
     dist = np.linalg.norm(goal - dynamics.pos)
@@ -644,7 +644,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
     pos_diff = pre_dist - dist
     cost_pos_diff_raw = pos_diff
 
-    cost_pos_diff = rew_coeff["pos_diff"] * cost_pos_diff_raw
+    cost_pos_diff = pos_decay_rate * rew_coeff["pos_diff"] * cost_pos_diff_raw
 
     # sphere of equal reward if drones are close to the goal position
     vel_coeff = rew_coeff["vel"]
@@ -870,6 +870,7 @@ class QuadrotorSingle:
 
         # reward aux
         self.pre_pos = None
+        self.pos_decay_rate = 1.0
 
         self.room_box = np.array(
             [[-self.room_length/2, -self.room_width/2, 0], [self.room_length/2, self.room_width/2, self.room_height]]) # diagonal coordinates of box (?)
@@ -1162,7 +1163,8 @@ class QuadrotorSingle:
                                                    rew_coeff=self.rew_coeff, action_prev=self.actions[1], quads_settle=self.quads_settle,
                                                    quads_settle_range_meters=self.quads_settle_range_meters,
                                                    quads_vel_reward_out_range=self.quads_vel_reward_out_range,
-                                                   quads_reward_ep_len=self.quads_reward_ep_len, pre_pos=self.pre_pos
+                                                   quads_reward_ep_len=self.quads_reward_ep_len, pre_pos=self.pre_pos,
+                                                   pos_decay_rate=self.pos_decay_rate
         )
         self.pre_pos = copy.deepcopy(self.dynamics.pos)
 
@@ -1316,6 +1318,7 @@ class QuadrotorSingle:
         state = self.state_vector(self)
 
         self.pre_pos = pos
+        self.pos_decay_rate = 1.0
 
         return state
 
