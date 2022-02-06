@@ -18,6 +18,7 @@ References:
 [7] Rodrigues' rotation formula: https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
 """
 import argparse
+import copy
 import logging
 import sys
 import time
@@ -629,12 +630,21 @@ class QuadrotorDynamics:
 # reasonable reward function for hovering at a goal and not flying too high
 def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, rew_coeff, action_prev,
                             quads_settle=False, quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8,
-                            quads_reward_ep_len=True):
+                            quads_reward_ep_len=True, pre_pos=None):
     ##################################################
     ## log to create a sharp peak at the goal
     dist = np.linalg.norm(goal - dynamics.pos)
     cost_pos_raw = dist
-    cost_pos = rew_coeff["pos"] * cost_pos_raw
+    cost_pos = 0.0 * rew_coeff["pos"] * cost_pos_raw
+
+    if pre_pos is None:
+        pre_pos = dynamics.pos
+
+    pre_dist = np.linalg.norm(goal - pre_pos)
+    pos_diff = pre_dist - dist
+    cost_pos_diff_raw = pos_diff
+
+    cost_pos_diff = rew_coeff["pos_diff"] * cost_pos_diff_raw
 
     # sphere of equal reward if drones are close to the goal position
     vel_coeff = rew_coeff["vel"]
@@ -700,6 +710,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
         dt_coeff = 1.0
     reward = -dt_coeff * dt * np.sum([
         cost_pos,
+        -1.0 * cost_pos_diff,
         cost_effort,
         cost_crash,
         cost_orient,
@@ -714,6 +725,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
     rew_info = {
         "rew_main": -cost_pos,
         'rew_pos': -cost_pos,
+        'rew_pos_diff': cost_pos_diff,
         'rew_action': -cost_effort,
         'rew_crash': -cost_crash,
         'rew_crash_wall': -cost_crash_wall,
@@ -729,6 +741,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
 
         "rewraw_main": -cost_pos_raw,
         'rewraw_pos': -cost_pos_raw,
+        'rewraw_pos_diff': cost_pos_diff_raw,
         'rewraw_action': -cost_effort_raw,
         'rewraw_crash': -cost_crash_raw,
         'rewraw_crash_wall': -cost_crash_wall_raw,
@@ -854,6 +867,9 @@ class QuadrotorSingle:
 
         # Reward scale
         self.quads_reward_ep_len = quads_reward_ep_len
+
+        # reward aux
+        self.pre_pos = None
 
         self.room_box = np.array(
             [[-self.room_length/2, -self.room_width/2, 0], [self.room_length/2, self.room_width/2, self.room_height]]) # diagonal coordinates of box (?)
@@ -1146,8 +1162,10 @@ class QuadrotorSingle:
                                                    rew_coeff=self.rew_coeff, action_prev=self.actions[1], quads_settle=self.quads_settle,
                                                    quads_settle_range_meters=self.quads_settle_range_meters,
                                                    quads_vel_reward_out_range=self.quads_vel_reward_out_range,
-                                                   quads_reward_ep_len=self.quads_reward_ep_len
+                                                   quads_reward_ep_len=self.quads_reward_ep_len, pre_pos=self.pre_pos
         )
+        self.pre_pos = copy.deepcopy(self.dynamics.pos)
+
         self.tick += 1
         done = self.tick >= self.ep_len  # or self.crashed
         sv = self.state_vector(self)
@@ -1296,6 +1314,9 @@ class QuadrotorSingle:
         self.actions = [np.zeros([4, ]), np.zeros([4, ])]
 
         state = self.state_vector(self)
+
+        self.pre_pos = pos
+
         return state
 
     def reset(self, midreset=False):
