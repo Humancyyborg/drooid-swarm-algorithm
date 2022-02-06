@@ -23,7 +23,7 @@ class QuadrotorScenario:
         self.set_room_dims = room_dims_callback  # usage example: self.set_room_dims((10, 10, 10))
         self.rew_coeff = rew_coeff
         self.goals = None
-        self.pos_decay_rate = rew_coeff['quad_rewards']['pos_diff_decay_rate']
+        self.pos_decay_rate = rew_coeff['pos_diff_decay_rate']
         self.cur_start_tick = 0
         #  Set formation, num_agents_per_layer, lowest_formation_size, highest_formation_size, formation_size,
         #  layer_dist, formation_center
@@ -858,6 +858,7 @@ class Scenario_o_dynamic_same_goal(QuadrotorScenario):
 
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
+            env.pos_decay_rate = self.pos_decay_rate
 
         return infos, rewards
 
@@ -916,6 +917,7 @@ class Scenario_o_dynamic_diff_goal(Scenario_o_dynamic_same_goal):
         self.update_goals()
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
+            env.pos_decay_rate = self.pos_decay_rate
 
         return infos, rewards
 
@@ -990,6 +992,7 @@ class Scenario_o_swarm_vs_swarm(QuadrotorScenario):
         self.create_formations(self.goal_center_1, self.goal_center_2)
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
+            env.pos_decay_rate = self.pos_decay_rate
 
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
@@ -1222,6 +1225,7 @@ class Scenario_o_dynamic_roller(Scenario_o_dynamic_diff_goal):
         self.update_goals()
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
+            env.pos_decay_rate = self.pos_decay_rate
 
         return infos, rewards
 
@@ -1293,6 +1297,7 @@ class Scenario_o_inside_obstacles(Scenario_o_dynamic_diff_goal):
         np.random.shuffle(self.goals)
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
+            env.pos_decay_rate = self.pos_decay_rate
 
         return infos, rewards
 
@@ -1353,6 +1358,7 @@ class Scenario_o_swap_goals(Scenario_o_inside_obstacles):
         np.random.shuffle(self.goals)
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
+            env.pos_decay_rate = self.pos_decay_rate
 
         return infos, rewards
 
@@ -1446,6 +1452,7 @@ class Scenario_o_swarm_groups(QuadrotorScenario):
         self.create_formations()
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
+            env.pos_decay_rate = self.pos_decay_rate
 
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick

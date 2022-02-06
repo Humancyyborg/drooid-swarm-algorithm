@@ -92,7 +92,8 @@ class QuadrotorEnvMulti(gym.Env):
         # # Reward shaping
         self.rew_coeff = dict(
             pos=1., effort=0.05, action_change=0., crash=1., orient=1., yaw=0., rot=0., attitude=0., spin=0.1, vel=0.,
-            quadcol_bin=0., quadcol_bin_smooth_max=0., quadcol_bin_obst=0., quadcol_bin_obst_smooth_max=0.0
+            quadcol_bin=0., quadcol_bin_smooth_max=0., quadcol_bin_obst=0., quadcol_bin_obst_smooth_max=0.0,
+            pos_diff_decay_rate=pos_diff_decay_rate
         )
         rew_coeff_orig = copy.deepcopy(self.rew_coeff)
         if rew_coeff is not None:
