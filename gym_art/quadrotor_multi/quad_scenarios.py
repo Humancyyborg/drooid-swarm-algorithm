@@ -1411,7 +1411,11 @@ class Scenario_o_swarm_groups(QuadrotorScenario):
         self.update_formation_and_relate_param()
 
         # Initialize group number
-        self.group_num = np.random.randint(3, self.agent_num + 1)  # [low, high)
+        if self.agent_num >= 3:
+            self.group_num = np.random.randint(3, self.agent_num + 1)  # [low, high)
+        else:
+            self.group_num = np.random.randint(1, self.agent_num + 1)  # [low, high)
+
         self.set_agent_groups()
 
         # Initialize self.goals_center_list
