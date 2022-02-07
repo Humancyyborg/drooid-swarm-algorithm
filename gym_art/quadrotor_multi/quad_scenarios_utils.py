@@ -8,6 +8,7 @@ QUADS_MODE_LIST_OBSTACLES = ['o_dynamic_same_goal', 'o_dynamic_diff_goal', 'o_sw
                              'o_dynamic_roller', 'o_inside_obstacles', 'o_swarm_groups', 'o_ep_rand_bezier',
                              'o_swap_goals']
 
+SINGLE_QUAD_MODE_LIST_OBSTACLES = ['o_dynamic_same_goal', 'o_dynamic_roller', 'o_inside_obstacles', 'o_ep_rand_bezier']
 
 QUADS_MODE_MULTI_GOAL_CENTER = ['o_swarm_vs_swarm']
 

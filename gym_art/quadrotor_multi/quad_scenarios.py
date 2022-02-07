@@ -4,7 +4,7 @@ import copy
 
 from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_PARAMS_DICT, update_formation_and_max_agent_per_layer, \
     update_layer_dist, get_formation_range, get_goal_by_formation, get_z_value, QUADS_MODE_LIST, \
-    QUADS_MODE_LIST_OBSTACLES, QUADS_MODE_GOAL_CENTERS
+    QUADS_MODE_LIST_OBSTACLES, QUADS_MODE_GOAL_CENTERS, SINGLE_QUAD_MODE_LIST_OBSTACLES
 from gym_art.quadrotor_multi.quad_utils import generate_points, get_grid_dim_number
 
 
@@ -1500,7 +1500,11 @@ class Scenario_mix(QuadrotorScenario):
         if self.obst_mode == 'no_obstacles':
             self.quads_mode_list = QUADS_MODE_LIST
         else:
-            self.quads_mode_list = QUADS_MODE_LIST_OBSTACLES
+            if len(envs) > 1:
+                self.quads_mode_list = QUADS_MODE_LIST_OBSTACLES
+            else:
+                self.quads_mode_list = SINGLE_QUAD_MODE_LIST_OBSTACLES
+
             self.spawn_flag = 0
             self.start_point = np.array([-3.0, -3.0, 2.0])
             self.end_point = np.array([3.0, 3.0, 2.0])
