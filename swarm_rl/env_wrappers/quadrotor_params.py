@@ -112,3 +112,4 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_one_pass_per_episode', default=False, type=str2bool, help='True: one pass, False: multiple pass')
 
     p.add_argument('--quads_extra_crash_reward', default=False, type=str2bool, help='True: add extra crash reward')
+    p.add_argument('--quads_obst_generation_mode', default='random', type=str, choices=['random', 'cube'], help='random: randomly place obstacles; cube: sample the center points of obstacles in a gradually increased cube')
