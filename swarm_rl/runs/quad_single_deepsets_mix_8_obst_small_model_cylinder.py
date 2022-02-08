@@ -9,7 +9,8 @@ _params = ParamGrid([
 
 SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
     ' --hidden_size=16 --quads_neighbor_hidden_size=8 --quads_obstacle_hidden_size=8 --quads_obstacle_type=cylinder '
-    '--neighbor_obs_type=none --quads_num_agents=1 --quads_local_obs=-1'
+    '--neighbor_obs_type=none --quads_num_agents=1 --quads_local_obs=-1 --with_wandb=False '
+    '--quads_neighbor_encoder_type=no_encoder --quads_collision_smooth_max_penalty=0.0'
 )
 
 _experiment = Experiment(
