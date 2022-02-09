@@ -40,6 +40,8 @@ class MultiObstacles:
         self.obst_level_num_window = obst_level_num_window
         self.obst_num_in_room = 0
         self.obst_generation_mode = obst_generation_mode
+        self.change_step = 1.0
+        self.max_obst_num = int((self.half_room_length - 0.5 * self.size) / self.change_step)
         # self.counter = 0
         # self.counter_list = []
 
@@ -331,22 +333,20 @@ class MultiObstacles:
         return pos_xy, collide_flag
 
     def cube_pos(self, obst_id=0):
-        change_step = 1.0
         if obst_id == 0:
-            pos_x = np.random.uniform(low=-1.0 * change_step, high=change_step)
-            pos_y = np.random.uniform(low=-1.0 * change_step, high=change_step)
+            pos_x = np.random.uniform(low=-1.0 * self.change_step, high=self.change_step)
+            pos_y = np.random.uniform(low=-1.0 * self.change_step, high=self.change_step)
             pos_xy = np.array([pos_x, pos_y])
             return pos_xy, False
 
-        max_obst_num = int((self.half_room_length - 0.5 * self.size) / change_step)
-        if obst_id + 1 > max_obst_num:
-            high_id = max(max_obst_num, 2)
+        if obst_id + 1 > self.max_obst_num:
+            high_id = max(self.max_obst_num, 2)
             tmp_id = np.random.randint(low=1, high=high_id)  # [low, high)
-            area_half = change_step * (tmp_id + 1)
+            area_half = self.change_step * (tmp_id + 1)
         else:
-            area_half = change_step * (obst_id + 1)
+            area_half = self.change_step * (obst_id + 1)
 
-        pre_half = area_half - change_step
+        pre_half = area_half - self.change_step
 
         area_id = np.random.randint(low=0, high=4)  # [0, 4)
         if area_id == 0:
