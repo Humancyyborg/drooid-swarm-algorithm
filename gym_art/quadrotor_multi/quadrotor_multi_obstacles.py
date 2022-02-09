@@ -398,9 +398,12 @@ class MultiObstacles:
 
         return pos_xy
 
-    def get_pos_no_overlap(self, pos_item, pos_arr):
+    def get_pos_no_overlap(self, pos_item, pos_arr, obst_id):
         # In this function, we assume the shape of all obstacles is cube
         # But even if we have this assumption, we can still roughly use it for shapes like cylinder
+        if len(pos_arr) == 0:
+            return pos_item
+
         if self.shape not in ['cube', 'cylinder']:
             raise NotImplementedError(f'{self.shape} not supported!')
 
@@ -411,20 +414,24 @@ class MultiObstacles:
 
         min_pos = pos_item - range_shape
         max_pos = pos_item + range_shape
+        min_pos_arr = pos_arr - range_shape
+        max_pos_arr = pos_arr + range_shape
 
-        for pos_i in pos_arr:
-            tmp_min_pos = pos_i - range_shape
-            tmp_max_pos = pos_i + range_shape
-            count = 0
-            while all(min_pos <= tmp_max_pos) and all(max_pos >= tmp_min_pos):
-                if count > 5:
+        for i in range(5):
+            overlap_flag = False
+            for j in range(len(pos_arr)):
+                if all(min_pos <= max_pos_arr[j]) and all(max_pos >= min_pos_arr[j]):
+                    overlap_flag = True
                     break
-                # self.counter += 1
-                pos_x, pos_y = self.generate_pos()
+
+            if overlap_flag:
+                pos_x, pos_y = self.generate_pos(obst_id=obst_id)
                 pos_item = np.array([pos_x, pos_y, pos_item[2]])
                 min_pos = pos_item - range_shape
                 max_pos = pos_item + range_shape
-                count += 1
+                continue
+            else:
+                break
 
         return pos_item
 
@@ -465,7 +472,7 @@ class MultiObstacles:
         for i in range(self.obst_num_in_room):
             pos_x, pos_y = self.generate_pos(obst_id=i)
             pos_item = np.array([pos_x, pos_y, pos_z])
-            final_pos_item = self.get_pos_no_overlap(pos_item, pos_arr)
+            final_pos_item = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=pos_arr, obst_id=i)
             pos_arr.append(final_pos_item)
 
         for i in range(self.num_obstacles - self.obst_num_in_room):
