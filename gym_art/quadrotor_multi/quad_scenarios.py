@@ -4,7 +4,8 @@ import copy
 
 from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_PARAMS_DICT, update_formation_and_max_agent_per_layer, \
     update_layer_dist, get_formation_range, get_goal_by_formation, get_z_value, QUADS_MODE_LIST, \
-    QUADS_MODE_LIST_OBSTACLES, QUADS_MODE_GOAL_CENTERS, QUADS_MODE_OBST_INFO_LIST
+    QUADS_MODE_LIST_OBSTACLES, QUADS_MODE_GOAL_CENTERS, QUADS_MODE_OBST_INFO_LIST, \
+    QUADS_MODE_LIST_OBSTACLES_START_CURRICULUM
 from gym_art.quadrotor_multi.quad_utils import generate_points, get_grid_dim_number
 
 
@@ -47,6 +48,9 @@ class QuadrotorScenario:
 
         # Aux variables for scenario: pursuit evasion
         self.interp = None
+
+        # Aux obstacle
+        self.obst_num_in_room = 0
 
     def name(self):
         """
@@ -831,8 +835,35 @@ class Scenario_o_dynamic_same_goal(QuadrotorScenario):
         z = np.random.uniform(low=2.0, high=3.0)
         return np.array([x, y, z])
 
-    def set_end_point(self):
+    def set_end_point(self, info):
         explore_prob = np.random.uniform(low=0.0, high=1.0)
+
+        if 'num_obst_in_room' in info:
+            num_obst_in_room = info['num_obst_in_room']
+            max_obst_num = info['max_obst_num']
+            obst_change_step = info['obst_change_step']
+
+            if 0 < num_obst_in_room <= max_obst_num:
+                area_length = obst_change_step * num_obst_in_room
+                area_shift_x, area_shift_y = np.random.uniform(low=0.0, high=0.25 * area_length, size=2)
+
+                area_center = np.array([area_shift_x, area_shift_y])
+                direct_dir = area_center - self.start_point[:2]
+                direct_mag = np.linalg.norm(direct_dir)
+                direct_mag = max(direct_mag, 1e-6)
+                direct_norm = direct_dir / np.linalg.norm(direct_mag)
+
+                end_length = np.random.uniform(low=self.room_dims[0] / 2 - 3, high=self.room_dims[0] / 2 - 1)
+                end_length = np.clip(end_length, a_min=1.0, a_max=self.room_dims[0] / 2)
+                e_x, e_y = area_center + direct_norm * end_length
+                e_x = np.clip(e_x, a_min=-self.room_dims[0] / 2 + 1, a_max=self.room_dims[0] / 2 - 1)
+                e_y = np.clip(e_y, a_min=-self.room_dims[1] / 2 + 1, a_max=self.room_dims[1] / 2 - 1)
+
+                e_z = np.random.uniform(low=2.0, high=3.0)
+                self.end_point = np.array([e_x, e_y, e_z])
+                self.start_point = copy.deepcopy(self.end_point)
+
+                return
 
         if explore_prob < self.explore_epsilon:
             flag = np.random.randint(2)
@@ -851,7 +882,7 @@ class Scenario_o_dynamic_same_goal(QuadrotorScenario):
         if tick <= int(self.duration_time * self.envs[0].control_freq):
             return infos, rewards
 
-        self.set_end_point()
+        self.set_end_point(info=infos[0])
         self.duration_time += np.random.uniform(low=self.per_pass_time[0], high=self.per_pass_time[1])
         self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.end_point, layer_dist=0.0)
         for i, env in enumerate(self.envs):
@@ -906,7 +937,7 @@ class Scenario_o_dynamic_diff_goal(Scenario_o_dynamic_same_goal):
         if tick <= int(self.duration_time * self.envs[0].control_freq):
             return infos, rewards
 
-        self.set_end_point()
+        self.set_end_point(info=infos[0])
         self.duration_time += np.random.uniform(low=self.per_pass_time[0], high=self.per_pass_time[1])
         self.update_goals()
         for i, env in enumerate(self.envs):
@@ -1563,7 +1594,20 @@ class Scenario_mix(QuadrotorScenario):
         self.formation_size = self.scenario.formation_size
         return infos, rewards
 
-    def reset(self, obst_level=-1, obst_level_num_window=4):
+    def reset(self, obst_level=-1, obst_level_num_window=4, obst_num=8, max_obst_num=4):
+        if obst_level <= -1:
+            self.obst_num_in_room = 0
+        else:
+            self.obst_num_in_room = np.random.randint(low=obst_level - obst_level_num_window + 2,
+                                                      high=obst_level + 2)
+            self.obst_num_in_room = np.clip(self.obst_num_in_room, a_min=1, a_max=obst_num)
+
+        if self.obst_mode != 'no_obstacles':
+            if 0 < self.obst_num_in_room <= max_obst_num:
+                self.quads_mode_list = QUADS_MODE_LIST_OBSTACLES_START_CURRICULUM
+            else:
+                self.quads_mode_list = QUADS_MODE_LIST_OBSTACLES
+
         mode_index = np.random.randint(low=0, high=len(self.quads_mode_list))
         mode = self.quads_mode_list[mode_index]
 

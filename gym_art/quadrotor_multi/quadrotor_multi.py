@@ -189,6 +189,8 @@ class QuadrotorEnvMulti(gym.Env):
         self.obst_midreset = obst_midreset
         self.obst_col_reset_threshold = obst_col_reset_threshold
         self.obst_midreset_list = np.zeros(self.num_agents)
+        self.obst_generation_mode = obst_generation_mode
+        self.obst_change_step = 1.0
 
         # # Parameters used in controlling different level of obstacles (curriculum learning)
         self.freeze_obst_level = freeze_obst_level
@@ -246,7 +248,8 @@ class QuadrotorEnvMulti(gym.Env):
                 obs_type=self.obst_obs_type, drone_env=self.envs[0], level=self.obst_level,
                 stack_num=obst_stack_num, level_mode=obst_level_mode, inf_height=obst_inf_height,
                 room_dims=self.room_dims, rel_pos_mode=obst_rel_pos_mode, rel_pos_clip_value=obst_rel_pos_clip_value,
-                obst_level_num_window=self.obst_level_num_window, obst_generation_mode=obst_generation_mode
+                obst_level_num_window=self.obst_level_num_window, obst_generation_mode=obst_generation_mode,
+                obst_change_step=self.obst_change_step
             )
 
             # collisions between obstacles and quadrotors
@@ -651,6 +654,12 @@ class QuadrotorEnvMulti(gym.Env):
             obst_inf_height=self.obst_inf_height
         )
 
+    def add_extra_info(self, info):
+        info['num_obst_in_room'] = self.multi_obstacles.obst_num_in_room
+        info['max_obst_num'] = self.multi_obstacles.max_obst_num
+        info['obst_change_step'] = self.obst_change_step
+        return info
+
     def change_level(self):
         self.obst_level_condition_dict['crash']['cur_val'] = 0.0
         self.obst_level_condition_dict['pos']['cur_val'] = 0.0
@@ -756,10 +765,7 @@ class QuadrotorEnvMulti(gym.Env):
             else:
                 goal_points = self.scenario.goals
 
-        if scenario_mode in QUADS_MODE_OBST_INFO_LIST:
-            obst_num_in_room = self.scenario.obst_num_in_room
-        else:
-            obst_num_in_room = 0
+        obst_num_in_room = self.scenario.obst_num_in_room
 
         return scenario_mode, spawn_flag, goal_start_point, goal_end_point, goal_points, obst_num_in_room
 
@@ -767,6 +773,9 @@ class QuadrotorEnvMulti(gym.Env):
         obs, rewards, dones, infos = [], [], [], []
         if self.scenario.quads_mode in QUADS_MODE_OBST_INFO_LIST and self.use_obstacles:
             self.scenario.reset(obst_level=self.obst_level, obst_level_num_window=self.obst_level_num_window)
+        elif self.scenario.quads_mode == 'mix' and self.use_obstacles:
+            self.scenario.reset(obst_level=self.obst_level, obst_level_num_window=self.obst_level_num_window,
+                                obst_num=self.obstacle_num, max_obst_num=self.multi_obstacles.max_obst_num)
         else:
             self.scenario.reset()
 
@@ -856,6 +865,8 @@ class QuadrotorEnvMulti(gym.Env):
         if self.use_replay_buffer and not self.activate_replay_buffer:
             self.crashes_last_episode += infos[0]["rewards"]["rew_crash"]
 
+        if self.obst_generation_mode == 'cube':
+            infos[0] = self.add_extra_info(info=infos[0])
         # Deal with collisions b/w drones
         # # 1. collision matrix of drones, 2. raw collision penalties, 3.  collision penalties
         # # 4. smooth penalties when drones are close to each other

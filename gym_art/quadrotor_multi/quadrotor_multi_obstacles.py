@@ -12,7 +12,7 @@ class MultiObstacles:
                  quad_size=0.046, shape='sphere', size=0.0, traj='gravity', obs_mode='relative', num_local_obst=-1,
                  obs_type='pos_size', drone_env=None, level=-1, stack_num=4, level_mode=0, inf_height=False,
                  room_dims=(10.0, 10.0, 10.0), rel_pos_mode=0, rel_pos_clip_value=2.0, obst_level_num_window=4,
-                 obst_generation_mode='random'):
+                 obst_generation_mode='random', obst_change_step=1.0):
         if 'static_door' in mode:
             self.num_obstacles = len(STATIC_OBSTACLE_DOOR)
         else:
@@ -40,7 +40,7 @@ class MultiObstacles:
         self.obst_level_num_window = obst_level_num_window
         self.obst_num_in_room = 0
         self.obst_generation_mode = obst_generation_mode
-        self.change_step = 1.0
+        self.change_step = obst_change_step
         self.max_obst_num = int((self.half_room_length - 0.5 * self.size) / self.change_step)
         # self.counter = 0
         # self.counter_list = []
@@ -94,14 +94,7 @@ class MultiObstacles:
               goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal', obst_num_in_room=0):
 
         self.scenario_mode = scenario_mode
-        if obst_num_in_room == 0:
-            if level <= -1:
-                self.obst_num_in_room = 0
-            else:
-                self.obst_num_in_room = np.random.randint(low=level - self.obst_level_num_window + 2, high=level + 2)
-                self.obst_num_in_room = np.clip(self.obst_num_in_room, a_min=1, a_max=self.num_obstacles)
-        else:
-            self.obst_num_in_room = obst_num_in_room
+        self.obst_num_in_room = obst_num_in_room
 
         # self.counter = 0
         if self.num_obstacles <= 0:
