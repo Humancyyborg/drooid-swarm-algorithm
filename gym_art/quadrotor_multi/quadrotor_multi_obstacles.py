@@ -380,7 +380,10 @@ class MultiObstacles:
         if self.obst_generation_mode == 'random':
             pos_generation = self.random_pos
         elif self.obst_generation_mode == 'cube':
-            pos_generation = self.cube_pos
+            if self.obst_num_in_room <= self.max_obst_num:
+                pos_generation = self.cube_pos
+            else:
+                pos_generation = self.random_pos
         else:
             raise NotImplementedError(f'obst_generation_mode: {self.obst_generation_mode} is not supported!')
 
@@ -457,15 +460,15 @@ class MultiObstacles:
 
                 self.start_range_list.append(start_range)
 
-        obst_in_room = min(self.obst_num_in_room, self.num_obstacles)
+        self.obst_num_in_room = min(self.obst_num_in_room, self.num_obstacles)
         pos_arr = []
-        for i in range(obst_in_room):
+        for i in range(self.obst_num_in_room):
             pos_x, pos_y = self.generate_pos(obst_id=i)
             pos_item = np.array([pos_x, pos_y, pos_z])
             final_pos_item = self.get_pos_no_overlap(pos_item, pos_arr)
             pos_arr.append(final_pos_item)
 
-        for i in range(self.num_obstacles - obst_in_room):
+        for i in range(self.num_obstacles - self.obst_num_in_room):
             pos_arr.append(outbox_pos_item)
 
         # self.counter_list.append(self.counter)
