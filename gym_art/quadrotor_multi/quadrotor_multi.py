@@ -567,7 +567,7 @@ class QuadrotorEnvMulti(gym.Env):
                 if len(floor_crash_list) > 0:
                     applied_room_collide_flag = True
                 for val in floor_crash_list:
-                    perform_collision_with_floor(drone_dyn=self.envs[val].dynamics)
+                    perform_collision_with_floor(drone_dyn=self.envs[val].dynamics, crash_mode=self.crash_mode)
             if 'wall' in sim_list:
                 wall_crash_list = np.where(wall_collisions >= 1)[0]
                 if len(wall_crash_list) > 0:

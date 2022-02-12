@@ -518,13 +518,18 @@ def perform_collision_with_ceiling(drone_dyn):
     drone_dyn.omega += new_omega
 
 
-def perform_collision_with_floor(drone_dyn):
+def perform_collision_with_floor(drone_dyn, crash_mode):
+    damp_low_speed_ratio = crash_params[crash_mode]['low']
+    damp_high_speed_ratio = crash_params[crash_mode]['high']
+    lowest_speed = crash_params[crash_mode]['low_speed']
+    highest_speed = crash_params[crash_mode]['high_speed']
+
     drone_speed = np.linalg.norm(drone_dyn.vel)
-    real_speed = np.random.uniform(low=1.0 * drone_speed, high=1.5 * drone_speed)
-    real_speed = np.clip(real_speed, a_min=1.0, a_max=10.0)
+    real_speed = np.random.uniform(low=damp_low_speed_ratio * drone_speed, high=damp_high_speed_ratio * drone_speed)
+    real_speed = np.clip(real_speed, a_min=lowest_speed, a_max=highest_speed)
 
     direction = np.random.uniform(low=-1.0, high=1.0, size=(3,))
-    direction[2] = np.random.uniform(low=-0.001, high=0.001)
+    direction[2] = np.random.uniform(low=0.1, high=0.5)
     direction_mag = np.linalg.norm(direction)
     direction_norm = direction / (direction_mag + 0.00001 if direction_mag == 0.0 else direction_mag)
 
