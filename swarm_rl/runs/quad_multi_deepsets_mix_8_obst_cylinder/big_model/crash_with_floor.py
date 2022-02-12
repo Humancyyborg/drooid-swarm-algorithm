@@ -10,7 +10,7 @@ _params = ParamGrid([
 
 BIG_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
     ' --hidden_size=256 --quads_neighbor_hidden_size=128 --quads_obstacle_hidden_size=128 --quads_obst_level_mode=0 '
-    '--quads_extra_crash_reward=False --num_workers=32'
+    '--quads_extra_crash_reward=False --num_workers=32 --with_wandb=False'
 )
 
 _experiment = Experiment(
