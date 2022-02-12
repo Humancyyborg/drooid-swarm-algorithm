@@ -467,16 +467,21 @@ class MultiObstacles:
                     if len(pos_arr) <= i:
                         pos_arr.append(final_pos_item)
 
-
-                return pos_arr
+                return np.array(pos_arr)
 
         self.obst_num_in_room = min(self.obst_num_in_room, self.num_obstacles)
         pos_arr = []
         for i in range(self.obst_num_in_room):
-            pos_x, pos_y = self.generate_pos(obst_id=i)
-            pos_item = np.array([pos_x, pos_y, pos_z])
-            final_pos_item = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=pos_arr, obst_id=i)
-            pos_arr.append(final_pos_item)
+            for regen_id in range(10):
+                pos_xy, collide_flag = self.generate_pos(obst_id=i)
+                pos_item = np.array([pos_xy[0], pos_xy[1], pos_z])
+                final_pos_item, overlap_flag = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=pos_arr, obst_id=i)
+                if collide_flag is False and overlap_flag is False:
+                    pos_arr.append(final_pos_item)
+                    break
+
+            if len(pos_arr) <= i:
+                pos_arr.append(final_pos_item)
 
         for i in range(self.num_obstacles - self.obst_num_in_room):
             pos_arr.append(outbox_pos_item)
