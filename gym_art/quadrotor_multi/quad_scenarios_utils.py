@@ -31,7 +31,7 @@ QUADS_FORMATION_LIST = ['circle_horizontal', 'circle_vertical_xz', 'circle_verti
 # value: 0. formation, 1: [formation_low_size, formation_high_size], 2: episode_time
 quad_arm_size = 0.04596194077712559
 duration = 16.0
-obstacle_duration = 40.0
+obstacle_duration = 20.0
 QUADS_PARAMS_DICT = {
                 'static_same_goal': [['circle_horizontal'], [0.0, 0.0], duration],
                 'dynamic_same_goal': [['circle_horizontal'], [0.0, 0.0], duration],

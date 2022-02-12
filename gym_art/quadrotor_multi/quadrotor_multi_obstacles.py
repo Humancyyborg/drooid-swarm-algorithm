@@ -364,41 +364,91 @@ class MultiObstacles:
 
         return pos_item
 
+    # def generate_inf_pos_by_level(self, level=-1, goal_start_point=np.array([-3.0, -3.0, 2.0]),
+    #                               goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal'):
+    #     pos_arr = []
+    #     init_box_range = self.drone_env.init_box_range
+    #     pos_z = 0.5 * self.room_height
+    #
+    #     if level <= -1:
+    #         pos_item = np.array([self.half_room_length + self.size, self.half_room_width + self.size, pos_z])
+    #         pos_arr = np.array([pos_item for _ in range(self.num_obstacles)])
+    #         return pos_arr
+    #
+    #
+    #     # Based on room_dims [10, 10, 10]
+    #     if scenario_mode not in QUADS_MODE_GOAL_CENTERS:
+    #         self.start_range = np.array([goal_start_point[:2] + init_box_range[0][:2],
+    #                                      goal_start_point[:2] + init_box_range[1][:2]])
+    #
+    #         if scenario_mode in QUADS_MODE_MULTI_GOAL_CENTER:
+    #             self.end_range = np.array([goal_end_point[:2] + init_box_range[0][:2],
+    #                                        goal_end_point[:2] + init_box_range[1][:2]])
+    #         else:
+    #             self.end_range = np.array([goal_end_point[:2] + np.array([-0.5, -0.5]),
+    #                                        goal_end_point[:2] + np.array([0.5, 0.5])])
+    #     else:
+    #         for start_point in goal_start_point:
+    #             start_range = np.array([start_point[:2] + init_box_range[0][:2],
+    #                                     start_point[:2] + init_box_range[1][:2]])
+    #
+    #             self.start_range_list.append(start_range)
+    #
+    #     for i in range(self.num_obstacles):
+    #         pos_x, pos_y = self.generate_pos()
+    #         pos_item = np.array([pos_x, pos_y, pos_z])
+    #         final_pos_item = self.get_pos_no_overlap(pos_item, pos_arr)
+    #         pos_arr.append(final_pos_item)
+    #
+    #     # self.counter_list.append(self.counter)
+    #     # print('counter: ', self.counter)
+    #     # print('mean: ', np.mean(self.counter_list))
+    #     # print('list counter: ', self.counter_list)
+    #
+    #     return pos_arr
+
     def generate_inf_pos_by_level(self, level=-1, goal_start_point=np.array([-3.0, -3.0, 2.0]),
                                   goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal'):
         pos_arr = []
-        init_box_range = self.drone_env.init_box_range
-        pos_z = 0.5 * self.room_height
+        gap = 0.60
+        num = int((10 + gap) / (1 + gap))
+        margin = (10 + gap - (1 + gap) * num) / 2
 
-        if level <= -1:
-            pos_item = np.array([self.half_room_length + self.size, self.half_room_width + self.size, pos_z])
-            pos_arr = np.array([pos_item for _ in range(self.num_obstacles)])
-            return pos_arr
+        x = -5 + self.size / 2 + margin
+        for i in range(num):
+            pos_item = np.array([0.0, x, 0.5 * self.room_height])
+            pos_arr.append(pos_item)
+            x += self.size + gap
 
-
-        # Based on room_dims [10, 10, 10]
-        if scenario_mode not in QUADS_MODE_GOAL_CENTERS:
-            self.start_range = np.array([goal_start_point[:2] + init_box_range[0][:2],
-                                         goal_start_point[:2] + init_box_range[1][:2]])
-
-            if scenario_mode in QUADS_MODE_MULTI_GOAL_CENTER:
-                self.end_range = np.array([goal_end_point[:2] + init_box_range[0][:2],
-                                           goal_end_point[:2] + init_box_range[1][:2]])
-            else:
-                self.end_range = np.array([goal_end_point[:2] + np.array([-0.5, -0.5]),
-                                           goal_end_point[:2] + np.array([0.5, 0.5])])
-        else:
-            for start_point in goal_start_point:
-                start_range = np.array([start_point[:2] + init_box_range[0][:2],
-                                        start_point[:2] + init_box_range[1][:2]])
-
-                self.start_range_list.append(start_range)
-
-        for i in range(self.num_obstacles):
-            pos_x, pos_y = self.generate_pos()
-            pos_item = np.array([pos_x, pos_y, pos_z])
-            final_pos_item = self.get_pos_no_overlap(pos_item, pos_arr)
-            pos_arr.append(final_pos_item)
+        # init_box_range = self.drone_env.init_box_range
+        # if level <= -1:
+        #     pos_z = -0.5 * self.room_height - 1.0
+        # else:
+        #     pos_z = 0.5 * self.room_height
+        #
+        # # Based on room_dims [10, 10, 10]
+        # if scenario_mode not in QUADS_MODE_GOAL_CENTERS:
+        #     self.start_range = np.array([goal_start_point[:2] + init_box_range[0][:2],
+        #                                  goal_start_point[:2] + init_box_range[1][:2]])
+        #
+        #     if scenario_mode in QUADS_MODE_MULTI_GOAL_CENTER:
+        #         self.end_range = np.array([goal_end_point[:2] + init_box_range[0][:2],
+        #                                    goal_end_point[:2] + init_box_range[1][:2]])
+        #     else:
+        #         self.end_range = np.array([goal_end_point[:2] + np.array([-0.5, -0.5]),
+        #                                    goal_end_point[:2] + np.array([0.5, 0.5])])
+        # else:
+        #     for start_point in goal_start_point:
+        #         start_range = np.array([start_point[:2] + init_box_range[0][:2],
+        #                                 start_point[:2] + init_box_range[1][:2]])
+        #
+        #         self.start_range_list.append(start_range)
+        #
+        # for i in range(self.num_obstacles):
+        #     pos_x, pos_y = self.generate_pos()
+        #     pos_item = np.array([pos_x, pos_y, pos_z])
+        #     final_pos_item = self.get_pos_no_overlap(pos_item, pos_arr)
+        #     pos_arr.append(final_pos_item)
 
         # self.counter_list.append(self.counter)
         # print('counter: ', self.counter)
