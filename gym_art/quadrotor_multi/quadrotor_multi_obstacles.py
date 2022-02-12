@@ -389,20 +389,14 @@ class MultiObstacles:
 
         pos_xy, collide_flag = pos_generation(obst_id=obst_id)
 
-        if collide_flag:
-            for i in range(3):
-                # self.counter += 1
-                pos_xy, collide_flag = pos_generation(obst_id=obst_id)
-                if not collide_flag:
-                    break
 
-        return pos_xy
+        return pos_xy, collide_flag
 
     def get_pos_no_overlap(self, pos_item, pos_arr, obst_id):
         # In this function, we assume the shape of all obstacles is cube
         # But even if we have this assumption, we can still roughly use it for shapes like cylinder
         if len(pos_arr) == 0:
-            return pos_item
+            return pos_item, False
 
         if self.shape not in ['cube', 'cylinder']:
             raise NotImplementedError(f'{self.shape} not supported!')
@@ -417,23 +411,13 @@ class MultiObstacles:
         min_pos_arr = pos_arr - range_shape
         max_pos_arr = pos_arr + range_shape
 
-        for i in range(5):
-            overlap_flag = False
-            for j in range(len(pos_arr)):
-                if all(min_pos <= max_pos_arr[j]) and all(max_pos >= min_pos_arr[j]):
-                    overlap_flag = True
-                    break
-
-            if overlap_flag:
-                pos_x, pos_y = self.generate_pos(obst_id=obst_id)
-                pos_item = np.array([pos_x, pos_y, pos_item[2]])
-                min_pos = pos_item - range_shape
-                max_pos = pos_item + range_shape
-                continue
-            else:
+        overlap_flag = False
+        for j in range(len(pos_arr)):
+            if all(min_pos < max_pos_arr[j]) and all(max_pos > min_pos_arr[j]):
+                overlap_flag = True
                 break
 
-        return pos_item
+        return pos_item, overlap_flag
 
     def generate_inf_pos_by_level(self, level=-1, goal_start_point=np.array([-3.0, -3.0, 2.0]),
                                   goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal'):
@@ -472,10 +456,18 @@ class MultiObstacles:
             if level > -1:
                 pos_arr = []
                 for i in range(self.num_obstacles):
-                    pos_x, pos_y = self.generate_pos(obst_id=i)
-                    pos_item = np.array([pos_x, pos_y, pos_z])
-                    final_pos_item = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=pos_arr, obst_id=i)
-                    pos_arr.append(final_pos_item)
+                    for regen_id in range(10):
+                        pos_xy, collide_flag = self.generate_pos(obst_id=i)
+                        pos_item = np.array([pos_xy[0], pos_xy[1], pos_z])
+                        final_pos_item, overlap_flag = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=pos_arr, obst_id=i)
+                        if collide_flag is False and overlap_flag is False:
+                            pos_arr.append(final_pos_item)
+                            break
+
+                    if len(pos_arr) <= i:
+                        pos_arr.append(final_pos_item)
+
+
                 return pos_arr
 
         self.obst_num_in_room = min(self.obst_num_in_room, self.num_obstacles)
