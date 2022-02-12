@@ -307,9 +307,9 @@ class MultiObstacles:
             return False
 
     def random_pos(self, obst_id=0):
-        pos_x = np.random.uniform(low=-1.0 * self.half_room_length + 1.0, high=self.half_room_length - 1.0)
-        pos_y = np.random.uniform(low=-1.0 * self.half_room_width + 1.0, high=self.half_room_width - 1.0)
-        pos_xy = np.array([pos_x, pos_y])
+        pos_x = int(np.random.uniform(low=-1.0 * self.half_room_length + 1.0, high=self.half_room_length - 1.0))
+        pos_y = int(np.random.uniform(low=-1.0 * self.half_room_width + 1.0, high=self.half_room_width - 1.0))
+        pos_xy = np.array([pos_x, pos_y]) + self.size / 2
 
         if self.scenario_mode not in QUADS_MODE_GOAL_CENTERS:
             collide_start = self.check_pos(pos_xy, self.start_range)
@@ -357,10 +357,10 @@ class MultiObstacles:
         else:
             raise NotImplementedError(f'area_id: {area_id} is not supported!')
 
-        pos_x = np.random.uniform(low=x_area[0], high=x_area[1])
-        pos_y = np.random.uniform(low=y_area[0], high=y_area[1])
+        pos_x = int(np.random.uniform(low=x_area[0], high=x_area[1]))
+        pos_y = int(np.random.uniform(low=y_area[0], high=y_area[1]))
 
-        pos_xy = np.array([pos_x, pos_y])
+        pos_xy = np.array([pos_x, pos_y]) + self.size / 2
 
         if self.scenario_mode not in QUADS_MODE_GOAL_CENTERS:
             collide_start = self.check_pos(pos_xy, self.start_range)
@@ -482,5 +482,6 @@ class MultiObstacles:
         # print('counter: ', self.counter)
         # print('mean: ', np.mean(self.counter_list))
         # print('list counter: ', self.counter_list)
+        # print('pos_arr: ', np.array(pos_arr))
 
         return np.array(pos_arr)

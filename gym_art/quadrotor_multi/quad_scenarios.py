@@ -845,7 +845,7 @@ class Scenario_o_dynamic_same_goal(QuadrotorScenario):
 
             if 0 < num_obst_in_room <= max_obst_num:
                 area_length = obst_change_step * num_obst_in_room
-                area_shift_x, area_shift_y = np.random.uniform(low=0.0, high=0.25 * area_length, size=2)
+                area_shift_x, area_shift_y = np.random.uniform(low=-0.25 * area_length, high=0.25 * area_length, size=2)
 
                 area_center = np.array([area_shift_x, area_shift_y])
                 direct_dir = area_center - self.start_point[:2]
