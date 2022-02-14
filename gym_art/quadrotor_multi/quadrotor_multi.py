@@ -417,7 +417,7 @@ class QuadrotorEnvMulti(gym.Env):
 
             # calculate penalty
             # p = 2.0 * (s0 * s1 - v0 * v1) = 2.0 * (s0 * s1 * (1 - cos(v0, v1)))
-            penalty = 2.0 * (1.01 * s0 * s1 - np.dot(v0, v1))
+            penalty = -2.0 * (1.01 * s0 * s1 - np.dot(v0, v1))
 
             rew_quad_prox_vel_collision[d0] = penalty
             rew_quad_prox_vel_collision[d1] = penalty
@@ -447,7 +447,7 @@ class QuadrotorEnvMulti(gym.Env):
 
             # calculate penalty
             # p = 2.0 * drone_speed * cos(rel_pos, d_vel)
-            penalty = 2.0 * drone_speed * cos_theta
+            penalty = -2.0 * drone_speed * cos_theta
 
             rew_drone_obst_prox_vel_collision[drone_id] = penalty
 
