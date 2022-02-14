@@ -630,21 +630,34 @@ class QuadrotorDynamics:
 # reasonable reward function for hovering at a goal and not flying too high
 def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, rew_coeff, action_prev,
                             quads_settle=False, quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8,
-                            quads_reward_ep_len=True, pre_pos=None, pos_decay_rate=1.0):
+                            quads_reward_ep_len=True, pre_pos=None, pos_decay_rate=1.0, use_pos_diff=False):
     ##################################################
     ## log to create a sharp peak at the goal
     dist = np.linalg.norm(goal - dynamics.pos)
-    cost_pos_raw = dist
-    cost_pos = 0.0 * rew_coeff["pos"] * cost_pos_raw
+    if use_pos_diff:
+        cost_pos_raw = dist
+        cost_pos = 0.0 * rew_coeff["pos"] * cost_pos_raw
 
-    if pre_pos is None:
-        pre_pos = dynamics.pos
+        if pre_pos is None:
+            pre_pos = dynamics.pos
 
-    pre_dist = np.linalg.norm(goal - pre_pos)
-    pos_diff = pre_dist - dist
-    cost_pos_diff_raw = pos_diff
+        pre_dist = np.linalg.norm(goal - pre_pos)
+        pos_diff = pre_dist - dist
+        cost_pos_diff_raw = pos_diff
 
-    cost_pos_diff = pos_decay_rate * rew_coeff["pos_diff"] * cost_pos_diff_raw
+        cost_pos_diff = pos_decay_rate * rew_coeff["pos_diff"] * cost_pos_diff_raw
+    else:
+        cost_pos_raw = dist
+        cost_pos = rew_coeff["pos"] * cost_pos_raw
+
+        if pre_pos is None:
+            pre_pos = dynamics.pos
+
+        pre_dist = np.linalg.norm(goal - pre_pos)
+        pos_diff = pre_dist - dist
+        cost_pos_diff_raw = pos_diff
+
+        cost_pos_diff = 0.0 * rew_coeff["pos_diff"] * cost_pos_diff_raw
 
     # sphere of equal reward if drones are close to the goal position
     vel_coeff = rew_coeff["vel"]
@@ -789,7 +802,7 @@ class QuadrotorSingle:
                  quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8, view_mode='local',
                  obstacle_mode='no_obstacles', obstacle_num=0, num_use_neighbor_obs=0, num_local_obst=0,
                  obst_obs_type='none', quads_reward_ep_len=True, clip_floor_vel_mode=0, normalize_obs=False,
-                 obst_inf_height=False):
+                 obst_inf_height=False, use_pos_diff=False):
         np.seterr(under='ignore')
         """
         Args:
@@ -870,6 +883,7 @@ class QuadrotorSingle:
         self.quads_reward_ep_len = quads_reward_ep_len
 
         # reward aux
+        self.use_pos_diff = use_pos_diff
         self.pre_pos = None
         self.pos_decay_rate = 1.0
 
@@ -1170,7 +1184,7 @@ class QuadrotorSingle:
                                                    quads_settle_range_meters=self.quads_settle_range_meters,
                                                    quads_vel_reward_out_range=self.quads_vel_reward_out_range,
                                                    quads_reward_ep_len=self.quads_reward_ep_len, pre_pos=self.pre_pos,
-                                                   pos_decay_rate=self.pos_decay_rate
+                                                   pos_decay_rate=self.pos_decay_rate, use_pos_diff=self.use_pos_diff
         )
         self.pre_pos = copy.deepcopy(self.dynamics.pos)
 

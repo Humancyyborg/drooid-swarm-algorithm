@@ -114,5 +114,6 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_extra_crash_reward', default=False, type=str2bool, help='True: add extra crash reward')
     p.add_argument('--quads_obst_generation_mode', default='random', type=str, choices=['random', 'cube'], help='random: randomly place obstacles; cube: sample the center points of obstacles in a gradually increased cube')
 
+    p.add_argument('--quads_use_pos_diff', default=False, type=str2bool, help='Use pos diff as pos metric')
     p.add_argument('--quads_pos_diff_reward', default=1.0, type=float, help='Override default value for pos_diff reward')
     p.add_argument('--quads_pos_diff_decay_rate', default=1.0, type=float, help='Control decay rate of pos_diff reward')
