@@ -1594,7 +1594,7 @@ class Scenario_mix(QuadrotorScenario):
         self.formation_size = self.scenario.formation_size
         return infos, rewards
 
-    def reset(self, obst_level=-1, obst_level_num_window=4, obst_num=8, max_obst_num=4):
+    def reset(self, obst_level=-1, obst_level_num_window=4, obst_num=8, max_obst_num=4, obst_level_mode=1):
         if obst_level <= -1:
             self.obst_num_in_room = 0
         else:
@@ -1603,7 +1603,7 @@ class Scenario_mix(QuadrotorScenario):
             self.obst_num_in_room = np.clip(self.obst_num_in_room, a_min=1, a_max=obst_num)
 
         if self.obst_mode != 'no_obstacles':
-            if 0 < self.obst_num_in_room <= max_obst_num:
+            if 0 < self.obst_num_in_room <= max_obst_num and obst_level_mode == 1:
                 self.quads_mode_list = QUADS_MODE_LIST_OBSTACLES_START_CURRICULUM
             else:
                 self.quads_mode_list = QUADS_MODE_LIST_OBSTACLES

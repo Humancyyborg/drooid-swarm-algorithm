@@ -777,7 +777,8 @@ class QuadrotorEnvMulti(gym.Env):
             self.scenario.reset(obst_level=self.obst_level, obst_level_num_window=self.obst_level_num_window)
         elif self.scenario.quads_mode == 'mix' and self.use_obstacles:
             self.scenario.reset(obst_level=self.obst_level, obst_level_num_window=self.obst_level_num_window,
-                                obst_num=self.obstacle_num, max_obst_num=self.multi_obstacles.max_obst_num)
+                                obst_num=self.obstacle_num, max_obst_num=self.multi_obstacles.max_obst_num,
+                                obst_level_mode=self.obst_level_mode)
         else:
             self.scenario.reset()
 
