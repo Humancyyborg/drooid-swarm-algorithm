@@ -117,3 +117,5 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_use_pos_diff', default=False, type=str2bool, help='Use pos diff as pos metric')
     p.add_argument('--quads_pos_diff_reward', default=1.0, type=float, help='Override default value for pos_diff reward')
     p.add_argument('--quads_pos_diff_decay_rate', default=1.0, type=float, help='Control decay rate of pos_diff reward')
+
+    p.add_argument('--quads_obst_smooth_penalty_mode', default='linear', type=str, choices=['linear', 'square'], help='linear: linear function, square: square function')

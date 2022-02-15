@@ -47,7 +47,8 @@ class QuadrotorEnvMulti(gym.Env):
                  obst_level_crash_min=2.0, obst_level_crash_max=3.0, obst_level_col_obst_quad_min=2.0,
                  obst_level_col_obst_quad_max=4.0, obst_level_col_quad_min=0.5, obst_level_col_quad_max=1.0,
                  obst_level_pos_min=110.0, obst_level_pos_max=130.0, extra_crash_reward=False,
-                 obst_generation_mode='random', pos_diff_decay_rate=1.0, use_pos_diff=False):
+                 obst_generation_mode='random', pos_diff_decay_rate=1.0, use_pos_diff=False,
+                 obst_smooth_penalty_mode='linear'):
 
         super().__init__()
 
@@ -193,6 +194,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.obst_midreset_list = np.zeros(self.num_agents)
         self.obst_generation_mode = obst_generation_mode
         self.obst_change_step = 1.0
+        self.obst_smooth_penalty_mode = obst_smooth_penalty_mode
 
         # # Parameters used in controlling different level of obstacles (curriculum learning)
         self.freeze_obst_level = freeze_obst_level
@@ -533,7 +535,8 @@ class QuadrotorEnvMulti(gym.Env):
                 penalty_fall_off=self.obst_penalty_fall_off,
                 max_penalty=self.rew_coeff["quadcol_bin_obst_smooth_max"],
                 num_agents=self.num_agents,
-                proximity_mode=self.obst_proximity_mode
+                proximity_mode=self.obst_proximity_mode,
+                obst_smooth_penalty_mode=self.obst_smooth_penalty_mode
             )
         else:
             obst_quad_col_matrix = np.zeros((self.num_agents, self.obstacle_num))

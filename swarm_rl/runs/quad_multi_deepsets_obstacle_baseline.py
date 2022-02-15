@@ -196,7 +196,8 @@ QUAD_8_OBSTACLES_PARAMETERZE_CLI = (
     '--quads_obst_proximity_mode=0 --quads_obst_inf_height=True --quads_obst_collision_enable_grace_period=True '
     '--gamma=0.998 --quads_neighbor_proximity_mode=0 --quads_crash_mode=1 '
     '--quads_obs_repr=xyz_vxyz_R_omega_wall --quads_obst_midreset=False '
-    '--with_wandb=True --wandb_tags obst_quad num_collisions rew_pos --wandb_user=multi-drone'
+    '--with_wandb=True --wandb_tags obst_quad num_collisions rew_pos --wandb_user=multi-drone '
+    '--quads_use_pos_diff=True --quads_pos_diff_reward=500 --quads_pos_diff_decay_rate=0.999'
 )
 
 
