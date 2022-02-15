@@ -439,7 +439,7 @@ class QuadrotorEnvMulti(gym.Env):
             drone_vel = self.envs[drone_id].dynamics.vel
 
             drone_pos = self.envs[drone_id].dynamics.pos
-            obst_pos = self.multi_obstacles.obstacle[obst_id].pos
+            obst_pos = self.multi_obstacles.obstacles[obst_id].pos
             rel_pos = obst_pos - drone_pos
 
             rel_pos_size = np.linalg.norm(rel_pos)
