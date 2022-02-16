@@ -4,14 +4,13 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_8_OBSTACLES
 
 _params = ParamGrid([
     ('seed', seeds(2)),
-    ('quads_extra_crash_reward', [True]),
-    ('quads_pos_diff_reward', [500]),
-    ('quads_pos_diff_decay_rate', [0.995, 0.999]),
+    ('quads_obstacle_type', ['cylinder']),
+    ('quads_extra_crash_reward', [True, False]),
 ])
 
 BIG_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
     ' --hidden_size=256 --quads_neighbor_hidden_size=128 --quads_obstacle_hidden_size=128 --quads_obst_level_mode=0 '
-    '--with_wandb=False --quads_use_pos_diff=True --quads_obstacle_type=cylinder'
+    '--with_wandb=False'
 )
 
 _experiment = Experiment(
