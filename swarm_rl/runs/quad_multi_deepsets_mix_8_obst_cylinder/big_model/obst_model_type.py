@@ -14,7 +14,7 @@ BIG_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
 )
 
 _experiment = Experiment(
-    'baseline-cylinder-big_model',
+    'obst_model_type_nei_obst-baseline-cylinder-big_model',
     BIG_MODEL_CLI,
     _params.generate_params(randomize=False),
 )
