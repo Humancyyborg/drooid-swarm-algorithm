@@ -119,3 +119,5 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_pos_diff_decay_rate', default=1.0, type=float, help='Control decay rate of pos_diff reward')
 
     p.add_argument('--quads_obst_smooth_penalty_mode', default='linear', type=str, choices=['linear', 'square'], help='linear: linear function, square: square function')
+
+    p.add_argument('--quads_larger_obst_encoder', default=False, type=str2bool, help='Use larger obst encoder')

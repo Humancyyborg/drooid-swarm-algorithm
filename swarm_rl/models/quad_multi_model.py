@@ -188,14 +188,30 @@ class QuadMultiEncoder(EncoderBase):
         # encode the obstacle observations
         obstacle_encoder_out_size = 0
         if self.obstacle_mode != 'no_obstacles':
-            self.obstacle_hidden_size = cfg.quads_obstacle_hidden_size  # internal param
-            self.obstacle_encoder = nn.Sequential(
-                fc_layer(self.obstacle_obs_dim, self.obstacle_hidden_size, spec_norm=self.use_spectral_norm),
-                nonlinearity(cfg),
-                fc_layer(self.obstacle_hidden_size, self.obstacle_hidden_size, spec_norm=self.use_spectral_norm),
-                nonlinearity(cfg),
-            )
-            obstacle_encoder_out_size = calc_num_elements(self.obstacle_encoder, (self.obstacle_obs_dim,))
+            if cfg.quads_larger_obst_encoder:
+                self.obstacle_hidden_size = cfg.quads_obstacle_hidden_size  # internal param
+                self.obstacle_encoder = nn.Sequential(
+                    fc_layer(self.obstacle_obs_dim, self.obstacle_hidden_size, spec_norm=self.use_spectral_norm),
+                    nonlinearity(cfg),
+                    fc_layer(self.obstacle_hidden_size, self.obstacle_hidden_size * 2, spec_norm=self.use_spectral_norm),
+                    nonlinearity(cfg),
+                    fc_layer(self.obstacle_hidden_size * 2, self.obstacle_hidden_size * 2, spec_norm=self.use_spectral_norm),
+                    nonlinearity(cfg),
+                    fc_layer(self.obstacle_hidden_size * 2, self.obstacle_hidden_size * 2, spec_norm=self.use_spectral_norm),
+                    nonlinearity(cfg),
+                    fc_layer(self.obstacle_hidden_size * 2, self.obstacle_hidden_size, spec_norm=self.use_spectral_norm),
+                    nonlinearity(cfg),
+                )
+                obstacle_encoder_out_size = calc_num_elements(self.obstacle_encoder, (self.obstacle_obs_dim,))
+            else:
+                self.obstacle_hidden_size = cfg.quads_obstacle_hidden_size  # internal param
+                self.obstacle_encoder = nn.Sequential(
+                    fc_layer(self.obstacle_obs_dim, self.obstacle_hidden_size, spec_norm=self.use_spectral_norm),
+                    nonlinearity(cfg),
+                    fc_layer(self.obstacle_hidden_size, self.obstacle_hidden_size, spec_norm=self.use_spectral_norm),
+                    nonlinearity(cfg),
+                )
+                obstacle_encoder_out_size = calc_num_elements(self.obstacle_encoder, (self.obstacle_obs_dim,))
 
         if self.quads_obst_model_type == 'nei_obst':
             in_size = neighbor_encoder_out_size + obstacle_encoder_out_size
