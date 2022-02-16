@@ -1118,7 +1118,10 @@ class QuadrotorSingle:
                 if self.obst_obs_type == 'none':
                     raise NotImplementedError(f'{self.obst_obs_type} is not supported!')
                 elif self.obst_obs_type == 'cpoint':
-                    obst_obs_comps = rel_pos * obstacle_num
+                    if self.obst_inf_height:
+                        obst_obs_comps = ['roxy'] * obstacle_num
+                    else:
+                        obst_obs_comps = ['roxyz'] * obstacle_num
                 elif self.obst_obs_type == 'pos_size':
                     obst_obs_comps = (rel_pos + ['osize']) * obstacle_num
                 elif self.obst_obs_type == 'posxy_size':

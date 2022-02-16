@@ -241,7 +241,10 @@ class SingleObstacle:
             obst_shape = self.shape_list.index(self.shape) * np.ones((len(quads_pos), 1))
             if self.obs_type == 'cpoint':
                 closest_points = self.get_closest_points(quads_pos)
-                obs = closest_points - quads_pos
+                if self.shape == 'cylinder' and self.inf_height:
+                    obs = copy.deepcopy(closest_points)
+                else:
+                    obs = closest_points - quads_pos
             elif self.obs_type == 'pos_size' or self.obs_type == 'posxy_size':
                 obs = np.concatenate((rel_pos, obst_size), axis=1)
             elif self.obs_type == 'pos_vel_size':
@@ -457,12 +460,29 @@ class SingleObstacle:
             raise NotImplementedError(f'inside_collision_detection, {self.shape} not supported!')
 
     def get_closest_points(self, quads_pos):
-        if self.inf_height:
-            obst_min_pos = self.pos - np.array([0.5 * self.size, 0.5 * self.size, 0.5 * self.room_dims[2]])
-            obst_max_pos = self.pos + np.array([0.5 * self.size, 0.5 * self.size, 0.5 * self.room_dims[2]])
-        else:
-            obst_min_pos = self.pos - 0.5 * self.size
-            obst_max_pos = self.pos + 0.5 * self.size
+        if self.shape == 'cube':
+            if self.inf_height:
+                obst_min_pos = self.pos - np.array([0.5 * self.size, 0.5 * self.size, 0.5 * self.room_dims[2]])
+                obst_max_pos = self.pos + np.array([0.5 * self.size, 0.5 * self.size, 0.5 * self.room_dims[2]])
+            else:
+                obst_min_pos = self.pos - 0.5 * self.size
+                obst_max_pos = self.pos + 0.5 * self.size
 
-        closest_points = np.maximum(obst_min_pos, np.minimum(quads_pos, obst_max_pos))
+            closest_points = np.maximum(obst_min_pos, np.minimum(quads_pos, obst_max_pos))
+
+        elif self.shape == 'cylinder':
+            if self.inf_height:
+                rel_pos_xy = self.pos[:2] - quads_pos[:, :2]
+                rel_dist_xy = np.linalg.norm(rel_pos_xy, axis=1)
+                rel_dist_xy = np.maximum(rel_dist_xy, 1e-6)
+                rel_pos_xy_unit = rel_pos_xy / rel_dist_xy[:, None]
+                closest_points = rel_pos_xy - rel_pos_xy_unit * (0.5 * self.size)
+            else:
+                raise NotImplementedError(f'quadrotor_single_obstacle: Not inf height, not supported!')
+
+        else:
+            raise NotImplementedError(f'self.shape: {self.shape} not supported!')
+
+
+
         return closest_points
