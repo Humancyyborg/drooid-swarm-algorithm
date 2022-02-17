@@ -19,7 +19,7 @@ BIG_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
 )
 
 _experiment = Experiment(
-    '8pbt-only-downwash-big_model-256_128_128',
+    '8pbt-no-downwash-big_model-256_128_128',
     BIG_MODEL_CLI,
     _params.generate_params(randomize=False),
 )
