@@ -6,10 +6,11 @@ _params = ParamGrid([
     ('pbt_optimize_batch_size', [False]),
     ('quads_apply_downwash', [False]),
     ('quads_obstacle_size', [1.0]),
+    ('quads_local_obst_obs', [2]),
 ])
 
 BIG_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
-    ' --quads_local_obst_obs=4 --quads_obst_level_mode=0 --with_wandb=False --quads_obstacle_type=cylinder '
+    ' --quads_obst_level_mode=0 --with_wandb=False --quads_obstacle_type=cylinder '
     '--hidden_size=256 --quads_neighbor_hidden_size=128 --quads_obstacle_hidden_size=128 '
     '--with_pbt=True --num_policies=8 --pbt_mix_policies_in_one_env=False --pbt_period_env_steps=4000000 '
     '--pbt_start_mutation=50000000 --pbt_mutation_rate=0.25 --pbt_replace_reward_gap=0.2 '
