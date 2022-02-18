@@ -10,8 +10,7 @@ _params = ParamGrid([
 
 BIG_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
     ' --hidden_size=256 --quads_neighbor_hidden_size=128 --quads_obstacle_hidden_size=128 --quads_obst_level_mode=0 '
-    '--with_wandb=False --quads_use_pos_diff=True --quads_obstacle_type=cylinder --quads_pos_diff_reward=500 '
-    '--quads_pos_diff_decay_rate=0.999'
+    '--with_wandb=False --quads_obstacle_type=cylinder'
 )
 
 _experiment = Experiment(
