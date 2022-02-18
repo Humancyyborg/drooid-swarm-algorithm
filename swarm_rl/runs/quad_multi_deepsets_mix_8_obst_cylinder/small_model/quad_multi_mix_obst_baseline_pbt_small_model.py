@@ -5,7 +5,7 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_8_OBSTACLES
 _params = ParamGrid([
     ('pbt_optimize_batch_size', [False]),
     ('quads_obstacle_size', [0.7]),
-    ('quads_local_obst_obs', [4]),
+    ('quads_local_obst_obs', [2]),
 ])
 
 SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
@@ -14,7 +14,7 @@ SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
     '--with_pbt=True --num_policies=8 --pbt_mix_policies_in_one_env=False --pbt_period_env_steps=10000000 '
     '--pbt_start_mutation=50000000 --pbt_mutation_rate=0.25 --pbt_replace_reward_gap=0.2 '
     '--pbt_replace_reward_gap_absolute=5.0 --pbt_optimize_gamma=True --pbt_perturb_max=1.2 '
-    '--num_workers=72 --num_envs_per_worker=8'
+    '--num_workers=96 --num_envs_per_worker=8'
 )
 
 _experiment = Experiment(
