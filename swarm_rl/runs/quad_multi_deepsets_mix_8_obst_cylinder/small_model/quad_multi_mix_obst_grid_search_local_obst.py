@@ -9,7 +9,7 @@ _params = ParamGrid([
 ])
 
 SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
-    ' --hidden_size=16 --quads_neighbor_hidden_size=8 --quads_obstacle_hidden_size=8 ----num_workers=32'
+    ' --hidden_size=16 --quads_neighbor_hidden_size=8 --quads_obstacle_hidden_size=8 --num_workers=32'
 )
 
 _experiment = Experiment(
