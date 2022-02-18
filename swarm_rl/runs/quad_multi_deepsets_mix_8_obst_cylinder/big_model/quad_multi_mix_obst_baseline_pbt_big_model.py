@@ -6,7 +6,7 @@ _params = ParamGrid([
     ('pbt_optimize_batch_size', [False]),
     ('quads_apply_downwash', [False]),
     ('quads_obstacle_size', [1.0]),
-    ('quads_local_obst_obs', [2]),
+    ('quads_local_obst_obs', [4]),
 ])
 
 BIG_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
