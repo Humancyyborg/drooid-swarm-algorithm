@@ -10,7 +10,7 @@ _params = ParamGrid([
 SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
     ' --quads_local_obst_obs=2 --quads_obst_level_mode=0 --with_wandb=False --quads_obstacle_type=cylinder '
     '--quads_apply_downwash=True --hidden_size=16 --quads_neighbor_hidden_size=8 --quads_obstacle_hidden_size=8 '
-    '--with_pbt=True --num_policies=8 --pbt_mix_policies_in_one_env=False --pbt_period_env_steps=4000000 '
+    '--with_pbt=True --num_policies=8 --pbt_mix_policies_in_one_env=False --pbt_period_env_steps=10000000 '
     '--pbt_start_mutation=50000000 --pbt_mutation_rate=0.25 --pbt_replace_reward_gap=0.2 '
     '--pbt_replace_reward_gap_absolute=5.0 --pbt_optimize_gamma=True --pbt_perturb_max=1.2 '
     '--num_workers=72 --num_envs_per_worker=8'
