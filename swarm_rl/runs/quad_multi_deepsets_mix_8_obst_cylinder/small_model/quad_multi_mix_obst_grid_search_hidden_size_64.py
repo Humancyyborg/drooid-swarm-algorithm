@@ -14,7 +14,7 @@ SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
 )
 
 _experiment = Experiment(
-    '16-hidden-cylinder-small_model',
+    '64-hidden-cylinder-small_model',
     SMALL_MODEL_CLI,
     _params.generate_params(randomize=False),
 )
