@@ -5,7 +5,7 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_8_OBSTACLES
 _params = ParamGrid([
     ('seed', seeds(4)),
     ('quads_obstacle_type', ['cylinder']),
-    ('quads_local_obst_obs', [0, 2, 4, 8]),
+    ('quads_local_obst_obs', [2, 4]),
     ('num_workers', [48]),
 ])
 
