@@ -6,7 +6,7 @@ _params = ParamGrid([
     ('seed', seeds(4)),
     ('quads_obstacle_type', ['cylinder']),
     ('quads_local_obst_obs', [0, 2, 4, 8]),
-    ('num_workers', [24]),
+    ('num_workers', [48]),
 ])
 
 SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
