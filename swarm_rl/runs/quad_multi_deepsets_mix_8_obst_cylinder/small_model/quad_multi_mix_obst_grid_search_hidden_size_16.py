@@ -3,7 +3,7 @@ from sample_factory.runner.run_description import RunDescription, Experiment, Pa
 from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_8_OBSTACLES_PARAMETERZE_CLI, seeds
 
 _params = ParamGrid([
-    ('seed', seeds(4)),
+    ('seed', [1161130, 9171076, 3137463, 3386884]),
     ('hidden_size', [16]),
     ('quads_neighbor_hidden_size', [8]),
     ('quads_obstacle_hidden_size', [8]),
