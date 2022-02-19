@@ -125,7 +125,9 @@ class MultiObstacles:
             all_obst_obs.append(obst_obs)
 
         all_obst_obs = np.stack(all_obst_obs)
-        obs = self.concat_obstacle_obs(obs=obs, quads_pos=quads_pos, quads_vel=quads_vel, all_obst_obs=all_obst_obs)
+
+        if self.num_local_obst != 0:
+            obs = self.concat_obstacle_obs(obs=obs, quads_pos=quads_pos, quads_vel=quads_vel, all_obst_obs=all_obst_obs)
         return obs
 
     def step(self, obs=None, quads_pos=None, quads_vel=None, set_obstacles=None):
@@ -138,7 +140,8 @@ class MultiObstacles:
             all_obst_obs.append(obst_obs)
 
         all_obst_obs = np.stack(all_obst_obs)
-        obs = self.concat_obstacle_obs(obs=obs, quads_pos=quads_pos, quads_vel=quads_vel, all_obst_obs=all_obst_obs)
+        if self.num_local_obst != 0:
+            obs = self.concat_obstacle_obs(obs=obs, quads_pos=quads_pos, quads_vel=quads_vel, all_obst_obs=all_obst_obs)
         return obs
 
     def collision_detection(self, pos_quads=None, set_obstacles=None):

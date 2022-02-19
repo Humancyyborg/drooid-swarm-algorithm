@@ -137,6 +137,9 @@ class QuadMultiEncoder(EncoderBase):
         else:
             self.local_obstacle_num = cfg.quads_local_obst_obs
 
+        if cfg.quads_local_obst_obs == 0 or cfg.quads_obstacle_mode == 'no_obstacles':
+            self.use_obst_encoder = False
+
         if self.neighbor_obs_type == 'none':
             self.num_use_neighbor_obs = 0
         else:
@@ -187,7 +190,7 @@ class QuadMultiEncoder(EncoderBase):
 
         # encode the obstacle observations
         obstacle_encoder_out_size = 0
-        if self.obstacle_mode != 'no_obstacles':
+        if self.obstacle_mode != 'no_obstacles' and self.use_obst_encoder:
             if cfg.quads_larger_obst_encoder:
                 self.obstacle_hidden_size = cfg.quads_obstacle_hidden_size  # internal param
                 self.obstacle_encoder = nn.Sequential(
@@ -263,7 +266,7 @@ class QuadMultiEncoder(EncoderBase):
                 neighborhood_embedding = self.neighbor_encoder(obs_self, obs, all_neighbor_obs_size, batch_size)
                 embeddings = torch.cat((embeddings, neighborhood_embedding), dim=1)
 
-            if self.obstacle_mode != 'no_obstacles':
+            if self.obstacle_mode != 'no_obstacles' and self.use_obst_encoder:
                 obs_obstacles = obs[:, self.self_obs_dim + all_neighbor_obs_size:]
                 obs_obstacles = obs_obstacles.reshape(-1, self.obstacle_obs_dim)
                 obstacle_embeds = self.obstacle_encoder(obs_obstacles)
