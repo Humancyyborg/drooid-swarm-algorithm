@@ -181,7 +181,7 @@ QUAD_8_OBSTACLES_PARAMETERZE_CLI = (
     '--nonlinearity=tanh --actor_critic_share_weights=False --policy_initialization=xavier_uniform '
     '--adaptive_stddev=False --with_vtrace=False --max_policy_lag=100000000 --hidden_size=256 '
     '--gae_lambda=1.00 --max_grad_norm=5.0 --exploration_loss_coeff=0.0 --rollout=128 --batch_size=1024 '
-    '--quads_use_numba=True --quads_mode=mix --quads_episode_duration=40.0 --quads_formation_size=0.0 '
+    '--quads_use_numba=True --quads_mode=mix --quads_episode_duration=20.0 --quads_formation_size=0.0 '
     '--encoder_custom=quad_multi_encoder --with_pbt=False --quads_collision_reward=5.0 '
     '--quads_neighbor_hidden_size=128 --neighbor_obs_type=pos_vel '
     '--quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
