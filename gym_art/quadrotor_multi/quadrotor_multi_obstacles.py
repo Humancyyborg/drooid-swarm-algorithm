@@ -3,7 +3,7 @@ import numpy as np
 from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_MODE_MULTI_GOAL_CENTER, QUADS_MODE_GOAL_CENTERS
 from gym_art.quadrotor_multi.quadrotor_single_obstacle import SingleObstacle
 from gym_art.quadrotor_multi.quad_obstacle_utils import OBSTACLES_SHAPE_LIST, STATIC_OBSTACLE_DOOR
-
+import math
 EPS = 1e-6
 
 
@@ -332,14 +332,25 @@ class MultiObstacles:
     def gaussian_pos(self, obst_id=0, goal_start_point=np.array([-3.0, -2.0, 2.0]), goal_end_point=np.array([3.0, 2.0, 2.0])):
         middle_point = (goal_start_point + goal_end_point)/2
 
+        goal_vector = goal_end_point - goal_start_point
+        alpha = math.atan2(goal_vector[1], goal_vector[0])
+
         gaussian_scale = np.random.uniform(low=0.25 * self.half_room_length, high=0.5 * self.half_room_length, size=2)
-        pos_x = round(np.random.normal(loc=middle_point[0], scale=gaussian_scale[0]))
-        pos_x = np.clip(pos_x, low=-self.half_room_length + 1.0, high=self.half_room_length - 1.0)
 
-        pos_y = round(np.random.normal(loc=middle_point[1], scale=gaussian_scale[1]))
-        pos_y = np.clip(pos_y, low=-self.half_room_width + 1.0, high=self.half_room_width - 1.0)
+        pos_x = np.random.normal(loc=middle_point[0], scale=gaussian_scale[0])
 
-        pos_xy = np.array([pos_x, pos_y]) + self.grid_size / 2
+        pos_y = np.random.normal(loc=middle_point[1], scale=gaussian_scale[1])
+
+        rot_pos_x = middle_point[0] + math.cos(alpha) * (pos_x - middle_point[0]) - math.sin(alpha) * (pos_y - middle_point[1])
+        rot_pos_y = middle_point[1] + math.sin(alpha) * (pos_x - middle_point[0]) + math.cos(alpha) * (pos_y - middle_point[1])
+
+        rot_pos_x = round(rot_pos_x)
+        rot_pos_y = round(rot_pos_y)
+
+        rot_pos_x = np.clip(rot_pos_x, a_min=-self.half_room_length + 1.0, a_max=self.half_room_length - 1.0)
+        rot_pos_y = np.clip(rot_pos_y, a_min=-self.half_room_width + 1.0, a_max=self.half_room_width - 1.0)
+
+        pos_xy = np.array([rot_pos_x, rot_pos_y]) + self.grid_size / 2
 
         if self.scenario_mode not in QUADS_MODE_GOAL_CENTERS:
             collide_start = self.check_pos(pos_xy, self.start_range)
@@ -499,19 +510,22 @@ class MultiObstacles:
 
                     if len(pos_arr) <= i:
                         pos_arr.append(final_pos_item)
-
+                print('pos_arr: ', np.array(pos_arr))
                 return np.array(pos_arr)
 
         self.obst_num_in_room = min(self.obst_num_in_room, self.num_obstacles)
         pos_arr = []
         for i in range(self.obst_num_in_room):
-            for regen_id in range(10):
+            for regen_id in range(20):
                 pos_xy, collide_flag = self.generate_pos(obst_id=i, goal_start_point=goal_start_point,
                                                          goal_end_point=goal_end_point)
                 pos_item = np.array([pos_xy[0], pos_xy[1], pos_z])
                 final_pos_item, overlap_flag = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=pos_arr, obst_id=i)
                 if collide_flag is False and overlap_flag is False:
                     pos_arr.append(final_pos_item)
+
+                    print('regen_id: ', regen_id)
+
                     break
 
             if len(pos_arr) <= i:

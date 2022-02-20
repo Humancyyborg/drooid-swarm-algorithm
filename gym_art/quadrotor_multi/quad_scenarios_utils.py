@@ -4,9 +4,12 @@ from gym_art.quadrotor_multi.quad_utils import get_circle_radius, get_sphere_rad
 QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal', 'ep_lissajous3D',
                    'ep_rand_bezier', 'swarm_vs_swarm', 'dynamic_formations', 'swap_goals']
 
-QUADS_MODE_LIST_OBSTACLES = ['o_dynamic_same_goal', 'o_dynamic_diff_goal', 'o_swarm_vs_swarm', 'o_dynamic_formations',
-                             'o_dynamic_roller', 'o_inside_obstacles', 'o_swarm_groups', 'o_ep_rand_bezier',
-                             'o_swap_goals']
+# QUADS_MODE_LIST_OBSTACLES = ['o_dynamic_same_goal', 'o_dynamic_diff_goal', 'o_swarm_vs_swarm', 'o_dynamic_formations',
+#                              'o_dynamic_roller', 'o_inside_obstacles', 'o_swarm_groups', 'o_ep_rand_bezier',
+#                              'o_swap_goals']
+
+QUADS_MODE_LIST_OBSTACLES = ['o_uniform_goal_spawn', 'o_uniform_diff_goal_spawn', 'o_uniform_swarm_vs_swarm']
+
 
 QUADS_MODE_LIST_OBSTACLES_START_CURRICULUM = ['o_dynamic_same_goal', 'o_dynamic_diff_goal']
 
@@ -14,7 +17,7 @@ QUADS_MODE_LIST_OBSTACLES_START_CURRICULUM = ['o_dynamic_same_goal', 'o_dynamic_
 #                              'o_swap_goals']
 
 
-QUADS_MODE_MULTI_GOAL_CENTER = ['o_swarm_vs_swarm']
+QUADS_MODE_MULTI_GOAL_CENTER = ['o_swarm_vs_swarm', 'o_uniform_swarm_vs_swarm']
 
 QUADS_MODE_GOAL_CENTERS = ['o_swarm_groups']
 
@@ -27,14 +30,18 @@ QUADS_MODE_DICT = {
             'swap_goals': ['swarm_vs_swarm', 'swap_goals', 'dynamic_formations']
 }
 
-QUADS_FORMATION_LIST = ['circle_horizontal', 'circle_vertical_xz', 'circle_vertical_yz', 'sphere', 'grid_horizontal',
-                        'grid_vertical_xz', 'grid_vertical_yz', 'cube']
+# QUADS_FORMATION_LIST = ['circle_horizontal', 'circle_vertical_xz', 'circle_vertical_yz', 'sphere', 'grid_horizontal',
+#                         'grid_vertical_xz', 'grid_vertical_yz', 'cube']
+
+
+QUADS_FORMATION_LIST = ['circle_horizontal', 'grid_horizontal']
+
 
 # key: quads_mode
 # value: 0. formation, 1: [formation_low_size, formation_high_size], 2: episode_time
 quad_arm_size = 0.04596194077712559
 duration = 16.0
-obstacle_duration = 40.0
+obstacle_duration = 20.0
 QUADS_PARAMS_DICT = {
                 'static_same_goal': [['circle_horizontal'], [0.0, 0.0], duration],
                 'dynamic_same_goal': [['circle_horizontal'], [0.0, 0.0], duration],
@@ -61,7 +68,9 @@ QUADS_PARAMS_DICT = {
                 'o_ep_rand_bezier': [['circle_horizontal'], [0.0, 0.0], obstacle_duration],
                 'o_test': [['circle_horizontal'], [0.0, 0.0], obstacle_duration],
                 'o_test_stack': [['circle_horizontal'], [0.0, 0.0], obstacle_duration],
-                'o_uniform_goal_spawn': [QUADS_FORMATION_LIST, [-0.5, 0.5], obstacle_duration],
+                'o_uniform_goal_spawn': [['circle_horizontal'], [0.0, 0.0], obstacle_duration],
+                'o_uniform_diff_goal_spawn': [QUADS_FORMATION_LIST, [0.3, 0.6], obstacle_duration],
+                'o_uniform_swarm_vs_swarm': [QUADS_FORMATION_LIST, [0.3, 0.6], obstacle_duration],
 }
 
 
