@@ -139,6 +139,8 @@ class QuadMultiEncoder(EncoderBase):
 
         if cfg.quads_local_obst_obs == 0 or cfg.quads_obstacle_mode == 'no_obstacles':
             self.use_obst_encoder = False
+        else:
+            self.use_obst_encoder = True
 
         if self.neighbor_obs_type == 'none':
             self.num_use_neighbor_obs = 0
