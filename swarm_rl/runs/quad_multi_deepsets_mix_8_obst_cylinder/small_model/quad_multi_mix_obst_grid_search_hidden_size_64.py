@@ -7,10 +7,14 @@ _params = ParamGrid([
     ('hidden_size', [64]),
     ('quads_neighbor_hidden_size', [32]),
     ('quads_obstacle_hidden_size', [32]),
+    ('quads_obstacle_num', [6]),
 ])
 
 SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
-    ' --num_workers=32 --quads_obstacle_type=cylinder --quads_local_obst_obs=2'
+    ' --num_workers=32 --quads_obstacle_type=cylinder --quads_local_obst_obs=2 '
+    '--quads_obst_level_mode=0 --with_wandb=False --quads_obstacle_type=cylinder '
+    '--quads_apply_downwash=False '
+    '--quads_use_pos_diff=True --quads_episode_duration=20.0'
 )
 
 _experiment = Experiment(
