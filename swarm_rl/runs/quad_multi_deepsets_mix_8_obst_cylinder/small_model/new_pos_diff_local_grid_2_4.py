@@ -3,24 +3,26 @@ from sample_factory.runner.run_description import RunDescription, Experiment, Pa
 from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_8_OBSTACLES_PARAMETERZE_CLI, seeds
 
 _params = ParamGrid([
-    ('seed', seeds(2)),
-    ('quads_local_obst_obs', [2, 4]),
+    ('seed', [1161130, 9171076, 3137463, 3386884]),
+    ('quads_local_obst_obs', [4, 6]),
     ('num_workers', [32]),
+    ('quads_obstacle_num', [6]),
+    ('quads_obstacle_size', [0.7]),
 ])
 
-BIG_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
+SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
     ' --hidden_size=16 --quads_neighbor_hidden_size=8 --quads_obstacle_hidden_size=8 --quads_obst_level_mode=0 '
-    '--with_wandb=False --quads_use_pos_diff=True --quads_obstacle_type=cylinder --quads_pos_diff_reward=500 '
-    '--quads_pos_diff_decay_rate=0.999'
+    '--with_wandb=False --quads_use_pos_diff=True --quads_obstacle_type=cylinder '
+    '--quads_local_obst_obs=2 --quads_apply_downwash=True --quads_episode_duration=20.0'
 )
 
 _experiment = Experiment(
-    'local_2_4-new_pos_diff-cylinder-small_model',
-    BIG_MODEL_CLI,
+    'local_4_6-new_pos_diff-cylinder-small_model',
+    SMALL_MODEL_CLI,
     _params.generate_params(randomize=False),
 )
 
-RUN_DESCRIPTION = RunDescription('8_obst_2_local_quads_multi_obst_mix_8a_v116', experiments=[_experiment])
+RUN_DESCRIPTION = RunDescription('6_obst_quads_multi_obst_mix_8a_v116', experiments=[_experiment])
 
 # On Brain server, when you use num_workers = 72, if the system reports: Resource temporarily unavailable,
 # then, try to use two commands below
