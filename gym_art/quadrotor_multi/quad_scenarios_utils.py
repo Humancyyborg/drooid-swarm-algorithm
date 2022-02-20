@@ -69,8 +69,8 @@ QUADS_PARAMS_DICT = {
                 'o_test': [['circle_horizontal'], [0.0, 0.0], obstacle_duration],
                 'o_test_stack': [['circle_horizontal'], [0.0, 0.0], obstacle_duration],
                 'o_uniform_goal_spawn': [['circle_horizontal'], [0.0, 0.0], obstacle_duration],
-                'o_uniform_diff_goal_spawn': [QUADS_FORMATION_LIST, [0.3, 0.6], obstacle_duration],
-                'o_uniform_swarm_vs_swarm': [QUADS_FORMATION_LIST, [0.3, 0.6], obstacle_duration],
+                'o_uniform_diff_goal_spawn': [QUADS_FORMATION_LIST, [0.4, 0.8], obstacle_duration],
+                'o_uniform_swarm_vs_swarm': [QUADS_FORMATION_LIST, [0.4, 0.8], obstacle_duration],
 }
 
 
