@@ -16,7 +16,7 @@ SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
     '--pbt_start_mutation=50000000 --pbt_mutation_rate=0.25 --pbt_replace_reward_gap=0.2 '
     '--pbt_replace_reward_gap_absolute=5.0 --pbt_optimize_gamma=True --pbt_perturb_max=1.2 '
     '--num_workers=96 --num_envs_per_worker=8 '
-    '--quads_use_pos_diff=True --quads_pos_diff_reward=500 --quads_pos_diff_decay_rate=0.999'
+    '--quads_use_pos_diff=True'
 )
 
 _experiment = Experiment(
