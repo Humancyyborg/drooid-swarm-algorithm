@@ -190,14 +190,14 @@ QUAD_8_OBSTACLES_PARAMETERZE_CLI = (
     '--replay_buffer_sample_prob=0.0 --anneal_collision_steps=0.0 --quads_obstacle_type=cube '
     '--quads_collision_obstacle_reward=5.0 --quads_collision_obst_smooth_max_penalty=2.0 '
     '--quads_obstacle_hidden_size=128 --quads_obst_penalty_fall_off=3.0 --quads_obstacle_size=1.0 '
-    '--quads_obstacle_num=8 --quads_local_obst_obs=2 --quads_obstacle_mode=static_pillar_fixsize '
+    '--quads_obstacle_num=6 --quads_local_obst_obs=2 --quads_obstacle_mode=static_pillar_fixsize '
     '--obst_obs_type=posxy_size --room_length=10.0 --room_width=10.0 --room_height=10.0 --quads_obstacle_stack_num=2 '
     '--save_milestones_sec=10000 --reward_scale=0.05 --quads_obst_level_mode=0 --quads_enable_sim_room=wall-ceiling '
     '--quads_obst_proximity_mode=0 --quads_obst_inf_height=True --quads_obst_collision_enable_grace_period=True '
     '--gamma=0.998 --quads_neighbor_proximity_mode=0 --quads_crash_mode=1 '
     '--quads_obs_repr=xyz_vxyz_R_omega_wall --quads_obst_midreset=False '
     '--with_wandb=False --wandb_tags obst_quad num_collisions rew_pos --wandb_user=multi-drone '
-    '--quads_use_pos_diff=False --quads_pos_diff_reward=500 --quads_pos_diff_decay_rate=0.999'
+    '--quads_use_pos_diff=True --quads_pos_diff_reward=500 --quads_pos_diff_decay_rate=0.999 --quads_obst_generation_mode=gaussian'
 )
 
 
