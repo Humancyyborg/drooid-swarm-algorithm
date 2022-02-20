@@ -25,7 +25,7 @@ class QuadrotorScenario:
         self.rew_coeff = rew_coeff
         self.goals = None
         self.one_pass_per_episode = one_pass_per_episode
-        self.pos_decay_rate = rew_coeff['pos_diff_decay_rate']
+        self.pos_decay_rate = 0.999
         self.cur_start_tick = 0
 
         #  Set formation, num_agents_per_layer, lowest_formation_size, highest_formation_size, formation_size,
@@ -1620,6 +1620,58 @@ class Scenario_o_ep_rand_bezier(Scenario_o_dynamic_same_goal):
         self.spawn_flag = self.init_flag
         self.start_point = self.generate_pos(shift_small=1.25, shift_big=2.0, shift_collide=2.5)
         self.end_point = copy.deepcopy(self.start_point)
+        self.duration_time = np.random.uniform(low=4.0, high=6.0)
+        self.standard_reset(formation_center=self.start_point)
+
+
+class Scenario_o_uniform_goal_spawn(QuadrotorScenario):
+    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode):
+        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size, one_pass_per_episode)
+        self.start_point = np.array([0.0, -3.0, 2.0])
+        self.end_point = np.array([0.0, 3.0, 2.0])
+        self.room_dims = room_dims
+        self.duration_time = 0.0
+        self.init_flag = -1
+        self.spawn_flag = -1  # used for init spawn, check quadrotor_single.py
+        self.quads_mode = quads_mode
+        self.obst_num_in_room = 0
+        self.pos_decay_rate = 0.999
+
+    def update_formation_size(self, new_formation_size):
+        pass
+
+    def generate_pos(self):
+        half_room_length = self.room_dims[0] / 2
+        half_room_width = self.room_dims[1] / 2
+
+        x = np.random.uniform(low=-1.0 * half_room_length + 0.5, high=half_room_length - 0.5)
+        y = np.random.uniform(low=-1.0 * half_room_width + 0.5, high=half_room_width - 0.5)
+        z = np.random.uniform(low=1.0, high=2.5)
+        return np.array([x, y, z])
+
+    def step(self, infos, rewards, pos):
+        tick = self.envs[0].tick
+
+        if tick <= int(self.duration_time * self.envs[0].control_freq):
+            pos_diff_decay_rate = get_pos_diff_decay_rate(decay_rate=self.pos_decay_rate, tick=tick - self.cur_start_tick)
+            for i, env in enumerate(self.envs):
+                env.pos_decay_rate = pos_diff_decay_rate
+
+            return infos, rewards
+
+        self.cur_start_tick = int(self.duration_time * self.envs[0].control_freq)
+        self.duration_time += self.envs[0].ep_time + 1
+        self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.end_point, layer_dist=0.0)
+        for i, env in enumerate(self.envs):
+            env.goal = self.goals[i]
+            env.pos_decay_rate = self.pos_decay_rate
+
+        return infos, rewards
+
+    def reset(self):
+        self.cur_start_tick = 0
+        self.start_point = self.generate_pos()
+        self.end_point = self.generate_pos()
         self.duration_time = np.random.uniform(low=4.0, high=6.0)
         self.standard_reset(formation_center=self.start_point)
 

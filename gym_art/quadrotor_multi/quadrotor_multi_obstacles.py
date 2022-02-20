@@ -310,7 +310,7 @@ class MultiObstacles:
         else:
             return False
 
-    def random_pos(self, obst_id=0):
+    def random_pos(self, obst_id=0, goal_start_point=np.array([-3.0, -2.0, 2.0]), goal_end_point=np.array([3.0, 2.0, 2.0])):
         pos_x = round(np.random.uniform(low=-1.0 * self.half_room_length + 1.0, high=self.half_room_length - 1.0))
         pos_y = round(np.random.uniform(low=-1.0 * self.half_room_width + 1.0, high=self.half_room_width - 1.0))
         pos_xy = np.array([pos_x, pos_y]) + self.grid_size / 2
@@ -329,7 +329,33 @@ class MultiObstacles:
 
         return pos_xy, collide_flag
 
-    def cube_pos(self, obst_id=0):
+    def gaussian_pos(self, obst_id=0, goal_start_point=np.array([-3.0, -2.0, 2.0]), goal_end_point=np.array([3.0, 2.0, 2.0])):
+        middle_point = (goal_start_point + goal_end_point)/2
+
+        gaussian_scale = np.random.uniform(low=0.25 * self.half_room_length, high=0.5 * self.half_room_length, size=2)
+        pos_x = round(np.random.normal(loc=middle_point[0], scale=gaussian_scale[0]))
+        pos_x = np.clip(pos_x, low=-self.half_room_length + 1.0, high=self.half_room_length - 1.0)
+
+        pos_y = round(np.random.normal(loc=middle_point[1], scale=gaussian_scale[1]))
+        pos_y = np.clip(pos_y, low=-self.half_room_width + 1.0, high=self.half_room_width - 1.0)
+
+        pos_xy = np.array([pos_x, pos_y]) + self.grid_size / 2
+
+        if self.scenario_mode not in QUADS_MODE_GOAL_CENTERS:
+            collide_start = self.check_pos(pos_xy, self.start_range)
+            collide_end = self.check_pos(pos_xy, self.end_range)
+            collide_flag = collide_start or collide_end
+        else:
+            collide_flag = False
+            for start_range in self.start_range_list:
+                collide_start = self.check_pos(pos_xy, start_range)
+                if collide_start:
+                    collide_flag = True
+                    break
+
+        return pos_xy, collide_flag
+
+    def cube_pos(self, obst_id=0, goal_start_point=np.array([-3.0, -2.0, 2.0]), goal_end_point=np.array([3.0, 2.0, 2.0])):
         if obst_id == 0:
             pos_x = np.random.uniform(low=-1.0 * self.change_step, high=self.change_step)
             pos_y = np.random.uniform(low=-1.0 * self.change_step, high=self.change_step)
@@ -380,9 +406,11 @@ class MultiObstacles:
 
         return pos_xy, collide_flag
 
-    def generate_pos(self, obst_id=0):
+    def generate_pos(self, obst_id=0, goal_start_point=np.array([-3.0, -2.0, 2.0]), goal_end_point=np.array([3.0, 2.0, 2.0])):
         if self.obst_generation_mode == 'random':
             pos_generation = self.random_pos
+        elif self.obst_generation_mode == 'gaussian':
+            pos_generation = self.gaussian_pos
         elif self.obst_generation_mode == 'cube':
             if self.obst_num_in_room <= self.max_obst_num:
                 pos_generation = self.cube_pos
@@ -391,7 +419,8 @@ class MultiObstacles:
         else:
             raise NotImplementedError(f'obst_generation_mode: {self.obst_generation_mode} is not supported!')
 
-        pos_xy, collide_flag = pos_generation(obst_id=obst_id)
+        pos_xy, collide_flag = pos_generation(obst_id=obst_id, goal_start_point=goal_start_point,
+                                              goal_end_point=goal_end_point)
 
 
         return pos_xy, collide_flag
@@ -455,13 +484,13 @@ class MultiObstacles:
 
                 self.start_range_list.append(start_range)
 
-
         if self.level_mode == 0:
             if level > -1:
                 pos_arr = []
                 for i in range(self.num_obstacles):
-                    for regen_id in range(10):
-                        pos_xy, collide_flag = self.generate_pos(obst_id=i)
+                    for regen_id in range(20):
+                        pos_xy, collide_flag = self.generate_pos(obst_id=i, goal_start_point=goal_start_point,
+                                                                 goal_end_point=goal_end_point)
                         pos_item = np.array([pos_xy[0], pos_xy[1], pos_z])
                         final_pos_item, overlap_flag = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=pos_arr, obst_id=i)
                         if collide_flag is False and overlap_flag is False:
@@ -477,7 +506,8 @@ class MultiObstacles:
         pos_arr = []
         for i in range(self.obst_num_in_room):
             for regen_id in range(10):
-                pos_xy, collide_flag = self.generate_pos(obst_id=i)
+                pos_xy, collide_flag = self.generate_pos(obst_id=i, goal_start_point=goal_start_point,
+                                                         goal_end_point=goal_end_point)
                 pos_item = np.array([pos_xy[0], pos_xy[1], pos_z])
                 final_pos_item, overlap_flag = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=pos_arr, obst_id=i)
                 if collide_flag is False and overlap_flag is False:

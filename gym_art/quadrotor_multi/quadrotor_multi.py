@@ -47,8 +47,7 @@ class QuadrotorEnvMulti(gym.Env):
                  obst_level_crash_min=2.0, obst_level_crash_max=3.0, obst_level_col_obst_quad_min=2.0,
                  obst_level_col_obst_quad_max=4.0, obst_level_col_quad_min=0.5, obst_level_col_quad_max=1.0,
                  obst_level_pos_min=110.0, obst_level_pos_max=130.0, extra_crash_reward=False,
-                 obst_generation_mode='random', pos_diff_decay_rate=1.0, use_pos_diff=False,
-                 obst_smooth_penalty_mode='linear'):
+                 obst_generation_mode='random', use_pos_diff=False, obst_smooth_penalty_mode='linear'):
 
         super().__init__()
 
@@ -100,7 +99,6 @@ class QuadrotorEnvMulti(gym.Env):
         self.rew_coeff = dict(
             pos=1., effort=0.05, action_change=0., crash=1., orient=1., yaw=0., rot=0., attitude=0., spin=0.1, vel=0.,
             quadcol_bin=0., quadcol_bin_smooth_max=0., quadcol_bin_obst=0., quadcol_bin_obst_smooth_max=0.0,
-            pos_diff_decay_rate=pos_diff_decay_rate
         )
         rew_coeff_orig = copy.deepcopy(self.rew_coeff)
         if rew_coeff is not None:

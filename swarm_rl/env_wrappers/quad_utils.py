@@ -114,7 +114,7 @@ def make_quadrotor_env_multi(cfg, **kwargs):
         obst_level_col_quad_max=cfg.quads_obst_level_col_quad_max,
         obst_level_pos_min=cfg.quads_obst_level_pos_min, obst_level_pos_max=cfg.quads_obst_level_pos_max,
         extra_crash_reward=cfg.quads_extra_crash_reward, obst_generation_mode=cfg.quads_obst_generation_mode,
-        pos_diff_decay_rate=cfg.quads_pos_diff_decay_rate, use_pos_diff=cfg.quads_use_pos_diff,
+        use_pos_diff=cfg.quads_use_pos_diff,
         obst_smooth_penalty_mode=cfg.quads_obst_smooth_penalty_mode
     )
 
@@ -130,8 +130,7 @@ def make_quadrotor_env_multi(cfg, **kwargs):
     reward_shaping['quad_rewards']['quadcol_bin'] = cfg.quads_collision_reward
     reward_shaping['quad_rewards']['quadcol_bin_smooth_max'] = cfg.quads_collision_smooth_max_penalty
 
-    reward_shaping['quad_rewards']['pos_diff'] = cfg.quads_pos_diff_reward
-    reward_shaping['quad_rewards']['pos_diff_decay_rate'] = cfg.quads_pos_diff_decay_rate
+
     # this is annealed by the reward shaping wrapper
     if cfg.anneal_collision_steps > 0:
         reward_shaping['quad_rewards']['quadcol_bin'] = 0.0

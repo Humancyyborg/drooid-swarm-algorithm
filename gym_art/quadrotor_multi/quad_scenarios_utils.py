@@ -61,6 +61,7 @@ QUADS_PARAMS_DICT = {
                 'o_ep_rand_bezier': [['circle_horizontal'], [0.0, 0.0], obstacle_duration],
                 'o_test': [['circle_horizontal'], [0.0, 0.0], obstacle_duration],
                 'o_test_stack': [['circle_horizontal'], [0.0, 0.0], obstacle_duration],
+                'o_uniform_goal_spawn': [QUADS_FORMATION_LIST, [-0.5, 0.5], obstacle_duration],
 }
 
 

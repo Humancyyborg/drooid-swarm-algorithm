@@ -645,7 +645,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
         pos_diff = pre_dist - dist
         cost_pos_diff_raw = pos_diff
 
-        cost_pos_diff = pos_decay_rate * rew_coeff["pos_diff"] * cost_pos_diff_raw
+        cost_pos_diff = pos_decay_rate * 500 * cost_pos_diff_raw
     else:
         cost_pos_raw = dist
         cost_pos = rew_coeff["pos"] * cost_pos_raw
@@ -657,7 +657,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
         pos_diff = pre_dist - dist
         cost_pos_diff_raw = pos_diff
 
-        cost_pos_diff = 0.0 * rew_coeff["pos_diff"] * cost_pos_diff_raw
+        cost_pos_diff = 0.0
 
     # sphere of equal reward if drones are close to the goal position
     vel_coeff = rew_coeff["vel"]
