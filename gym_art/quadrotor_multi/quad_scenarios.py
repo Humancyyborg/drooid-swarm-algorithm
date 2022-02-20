@@ -1876,9 +1876,6 @@ class Scenario_mix(QuadrotorScenario):
         mode_index = np.random.randint(low=0, high=len(self.quads_mode_list))
         mode = self.quads_mode_list[mode_index]
 
-
-        print('mode: ', mode)
-
         # Init the scenario
         self.scenario = create_scenario(quads_mode=mode, envs=self.envs, num_agents=self.num_agents,
                                         room_dims=self.room_dims, room_dims_callback=self.room_dims_callback,
