@@ -990,7 +990,7 @@ class QuadrotorEnvMulti(gym.Env):
                         infos[i]['episode_extra_stats']['episode_id'] = self.episode_id
                         infos[i]['episode_extra_stats']['obst_level'] = self.obst_level
 
-                        infos[i]['episode_extra_stats']['obst_counter_air'] = self.cur_ep_obst_counter
+                        infos[i]['episode_extra_stats'][f'obst_counter_air_{self.scenario.name()}'] = self.cur_ep_obst_counter
 
             obs = self.reset()
             dones = [True] * len(dones)  # terminate the episode for all "sub-envs"
