@@ -4,8 +4,8 @@ import copy
 
 from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_PARAMS_DICT, update_formation_and_max_agent_per_layer, \
     update_layer_dist, get_formation_range, get_goal_by_formation, get_z_value, QUADS_MODE_LIST, \
-    QUADS_MODE_LIST_OBSTACLES, QUADS_MODE_GOAL_CENTERS, QUADS_MODE_OBST_INFO_LIST, \
-    QUADS_MODE_LIST_OBSTACLES_START_CURRICULUM, get_pos_diff_decay_rate
+    QUADS_MODE_LIST_OBSTACLES, QUADS_MODE_GOAL_CENTERS, QUADS_MODE_OBST_INFO_LIST, get_pos_diff_decay_rate
+
 from gym_art.quadrotor_multi.quad_utils import generate_points, get_grid_dim_number
 
 
@@ -1866,12 +1866,6 @@ class Scenario_mix(QuadrotorScenario):
             self.obst_num_in_room = np.random.randint(low=obst_level - obst_level_num_window + 2,
                                                       high=obst_level + 2)
             self.obst_num_in_room = np.clip(self.obst_num_in_room, a_min=1, a_max=obst_num)
-
-        if self.obst_mode != 'no_obstacles':
-            if 0 < self.obst_num_in_room <= max_obst_num and obst_level_mode == 1:
-                self.quads_mode_list = QUADS_MODE_LIST_OBSTACLES_START_CURRICULUM
-            else:
-                self.quads_mode_list = QUADS_MODE_LIST_OBSTACLES
 
         mode_index = np.random.randint(low=0, high=len(self.quads_mode_list))
         mode = self.quads_mode_list[mode_index]

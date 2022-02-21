@@ -11,8 +11,6 @@ QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 
 QUADS_MODE_LIST_OBSTACLES = ['o_uniform_goal_spawn', 'o_uniform_diff_goal_spawn', 'o_uniform_swarm_vs_swarm']
 
 
-QUADS_MODE_LIST_OBSTACLES_START_CURRICULUM = ['o_dynamic_same_goal', 'o_dynamic_diff_goal']
-
 # QUADS_MODE_LIST_OBSTACLES = ['o_dynamic_same_goal', 'o_dynamic_diff_goal', 'o_dynamic_roller', 'o_inside_obstacles',
 #                              'o_swap_goals']
 
