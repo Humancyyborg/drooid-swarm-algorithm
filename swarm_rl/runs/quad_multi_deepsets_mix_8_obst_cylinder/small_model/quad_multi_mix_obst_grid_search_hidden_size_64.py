@@ -3,7 +3,7 @@ from sample_factory.runner.run_description import RunDescription, Experiment, Pa
 from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_8_OBSTACLES_PARAMETERZE_CLI, seeds
 
 _params = ParamGrid([
-    ('seed', [1161130, 9171076]),
+    ('seed', [1161130, 9171076, 3137463, 3386884]),
     ('hidden_size', [64]),
     ('quads_neighbor_hidden_size', [32]),
     ('quads_obstacle_hidden_size', [32]),
@@ -19,12 +19,12 @@ SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
 )
 
 _experiment = Experiment(
-    '64-hidden-cylinder-small_model',
+    'curri-64-hidden-cylinder-small_model',
     SMALL_MODEL_CLI,
     _params.generate_params(randomize=False),
 )
 
-RUN_DESCRIPTION = RunDescription('6_obst_quads_multi_obst_mix_8a_v116', experiments=[_experiment])
+RUN_DESCRIPTION = RunDescription('curri-6_obst_quads_multi_obst_mix_8a_v116', experiments=[_experiment])
 
 # On Brain server, when you use num_workers = 72, if the system reports: Resource temporarily unavailable,
 # then, try to use two commands below
