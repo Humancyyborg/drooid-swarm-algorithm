@@ -124,7 +124,7 @@ class QuadMultiEncoder(EncoderBase):
         super().__init__(cfg, timing)
         # internal params -- cannot change from cmd line
         self.self_obs_dim = obs_self_size_dict[cfg.quads_obs_repr]
-        self.neighbor_hidden_size = cfg.quads_neighbor_hidden_size
+        self.neighbor_hidden_size = int(cfg.hidden_size / 2)
 
         self.neighbor_obs_type = cfg.neighbor_obs_type
         self.use_spectral_norm = cfg.use_spectral_norm
@@ -194,7 +194,7 @@ class QuadMultiEncoder(EncoderBase):
         obstacle_encoder_out_size = 0
         if self.obstacle_mode != 'no_obstacles' and self.use_obst_encoder:
             if cfg.quads_larger_obst_encoder:
-                self.obstacle_hidden_size = cfg.quads_obstacle_hidden_size  # internal param
+                self.obstacle_hidden_size = int(cfg.hidden_size / 2)  # internal param
                 self.obstacle_encoder = nn.Sequential(
                     fc_layer(self.obstacle_obs_dim, self.obstacle_hidden_size, spec_norm=self.use_spectral_norm),
                     nonlinearity(cfg),
@@ -209,7 +209,7 @@ class QuadMultiEncoder(EncoderBase):
                 )
                 obstacle_encoder_out_size = calc_num_elements(self.obstacle_encoder, (self.obstacle_obs_dim,))
             else:
-                self.obstacle_hidden_size = cfg.quads_obstacle_hidden_size  # internal param
+                self.obstacle_hidden_size = int(cfg.hidden_size / 2)  # internal param
                 self.obstacle_encoder = nn.Sequential(
                     fc_layer(self.obstacle_obs_dim, self.obstacle_hidden_size, spec_norm=self.use_spectral_norm),
                     nonlinearity(cfg),
