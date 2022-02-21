@@ -200,7 +200,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.obst_level_mode = obst_level_mode
         self.episode_num_control_level = 10
         self.obst_level_num_window = 4
-        self.obst_split_level = 6
+        self.obst_split_level = 0
         self.obst_level_condition_dict = {
             'crash': {
                 'low_bound': obst_level_crash_min,
@@ -682,16 +682,14 @@ class QuadrotorEnvMulti(gym.Env):
         mean_collision_quad = np.mean(self.obst_level_condition_dict['collision_quad']['value_arr'])
 
         # upgrade level
-        if self.obst_level <= self.obst_split_level:
+        metric_obst_quad = 1 + np.clip(self.obst_level, a_min=0, a_max=6) * 0.33  # The metric of moving to the next level is in [1, 3]
+        if self.obst_level < 0:  # -1
             upgrade_flag = [
-                mean_crash < self.obst_level_condition_dict['crash']['low_bound'],
+                mean_crash < 3.0,
             ]
         else:
             upgrade_flag = [
-                mean_crash < self.obst_level_condition_dict['crash']['low_bound'],
-                mean_pos < self.obst_level_condition_dict['pos']['low_bound'],
-                mean_collision_obst_quad < self.obst_level_condition_dict['collision_obst_quad']['low_bound'],
-                mean_collision_quad < self.obst_level_condition_dict['collision_quad']['low_bound']
+                mean_collision_obst_quad < metric_obst_quad,
             ]
 
         if all(upgrade_flag):
@@ -704,19 +702,11 @@ class QuadrotorEnvMulti(gym.Env):
             return
 
         # downgrade level
-        if self.obst_level <= self.obst_split_level:
-            downgrade_flag = [
-                mean_crash > self.obst_level_condition_dict['crash']['high_bound'],
-            ]
-        else:
-            downgrade_flag = [
-                mean_crash > self.obst_level_condition_dict['crash']['high_bound'],
-                mean_pos > self.obst_level_condition_dict['pos']['high_bound'],
-                mean_collision_obst_quad > self.obst_level_condition_dict['collision_obst_quad']['high_bound'],
-                mean_collision_quad > self.obst_level_condition_dict['collision_quad']['high_bound']
-            ]
+        downgrade_flag = [
+            mean_collision_obst_quad > 2.0 * metric_obst_quad,
+        ]
 
-        if any(downgrade_flag):
+        if self.obst_level > -1 and any(downgrade_flag):
             self.obst_level -= 1
             self.obst_level = np.clip(self.obst_level, a_min=-1, a_max=self.obstacle_num - 2 + self.obst_level_num_window)
             self.obst_level_condition_dict['crash']['value_arr'] = deque([], maxlen=self.episode_num_control_level)

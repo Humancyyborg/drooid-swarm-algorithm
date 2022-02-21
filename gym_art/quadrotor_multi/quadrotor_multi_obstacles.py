@@ -36,7 +36,7 @@ class MultiObstacles:
         self.end_range = np.zeros((2, 2))
         self.start_range_list = []
         self.scenario_mode = None
-        self.rel_pos_clip_value = rel_pos_clip_value
+        self.rel_pos_clip_value = 15.0
         self.obst_level_num_window = obst_level_num_window
         self.obst_num_in_room = 0
         self.obst_generation_mode = obst_generation_mode
@@ -113,15 +113,18 @@ class MultiObstacles:
         pos_arr = [None for _ in range(self.num_obstacles)]
         if 'static_pillar' in self.mode:
             if self.inf_height:
-                pos_arr = self.generate_inf_pos_by_level(level=level, goal_start_point=goal_start_point,
+                pos_arr, inside_room_flag = self.generate_inf_pos_by_level(level=level, goal_start_point=goal_start_point,
                                                          goal_end_point=goal_end_point, scenario_mode=scenario_mode)
             else:
                 pos_arr = self.generate_pos_by_level(level=level)
+                inside_room_flag = [True] * self.num_obstacles
+        else:
+            inside_room_flag = [True] * self.num_obstacles
 
         for i, obstacle in enumerate(self.obstacles):
             obst_obs = obstacle.reset(set_obstacle=set_obstacles[i], formation_size=formation_size,
                                       goal_central=goal_central, shape=shape_list[i], quads_pos=quads_pos,
-                                      quads_vel=quads_vel, new_pos=pos_arr[i])
+                                      quads_vel=quads_vel, new_pos=pos_arr[i], inside_room_box_flag=inside_room_flag[i])
             all_obst_obs.append(obst_obs)
 
         all_obst_obs = np.stack(all_obst_obs)
@@ -335,11 +338,11 @@ class MultiObstacles:
         goal_vector = goal_end_point - goal_start_point
         alpha = math.atan2(goal_vector[1], goal_vector[0])
 
-        gaussian_scale = np.random.uniform(low=0.25 * self.half_room_length, high=0.5 * self.half_room_length, size=2)
+        gaussian_scale = np.random.uniform(low=0.2 * self.half_room_length, high=0.4 * self.half_room_length, size=2)
 
         pos_x = np.random.normal(loc=middle_point[0], scale=gaussian_scale[0])
 
-        pos_y = np.random.normal(loc=middle_point[1], scale=gaussian_scale[1])
+        pos_y = np.random.normal(loc=middle_point[1], scale=gaussian_scale[1] * 0.5)
 
         rot_pos_x = middle_point[0] + math.cos(alpha) * (pos_x - middle_point[0]) - math.sin(alpha) * (pos_y - middle_point[1])
         rot_pos_y = middle_point[1] + math.sin(alpha) * (pos_x - middle_point[0]) + math.cos(alpha) * (pos_y - middle_point[1])
@@ -468,14 +471,15 @@ class MultiObstacles:
 
         init_box_range = self.drone_env.init_box_range
         pos_z = 0.5 * self.room_height
-
+        inside_room_flag = []
         outbox_pos_item = np.array([self.half_room_length + self.size + self.rel_pos_clip_value,
                                     self.half_room_width + self.size + self.rel_pos_clip_value,
                                     pos_z])
 
         if level <= -1:
             pos_arr = np.array([outbox_pos_item for _ in range(self.num_obstacles)])
-            return pos_arr
+            inside_room_flag = [False] * self.num_obstacles
+            return pos_arr, inside_room_flag
 
         # Based on room_dims [10, 10, 10]
         if scenario_mode not in QUADS_MODE_GOAL_CENTERS:
@@ -511,7 +515,9 @@ class MultiObstacles:
                     if len(pos_arr) <= i:
                         pos_arr.append(final_pos_item)
 
-                return np.array(pos_arr)
+                inside_room_flag = [True] * self.num_obstacles
+
+                return np.array(pos_arr), inside_room_flag
 
         self.obst_num_in_room = min(self.obst_num_in_room, self.num_obstacles)
         pos_arr = []
@@ -528,8 +534,12 @@ class MultiObstacles:
             if len(pos_arr) <= i:
                 pos_arr.append(final_pos_item)
 
+            inside_room_flag.append(True)
+
+
         for i in range(self.num_obstacles - self.obst_num_in_room):
             pos_arr.append(outbox_pos_item)
+            inside_room_flag.append(False)
 
         # self.counter_list.append(self.counter)
         # print('counter: ', self.counter)
@@ -537,4 +547,4 @@ class MultiObstacles:
         # print('list counter: ', self.counter_list)
         # print('pos_arr: ', np.array(pos_arr))
 
-        return np.array(pos_arr)
+        return np.array(pos_arr), inside_room_flag

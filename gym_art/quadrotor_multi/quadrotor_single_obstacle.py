@@ -21,6 +21,7 @@ class SingleObstacle:
         self.init_box = init_box  # means the size of initial space that the obstacles spawn at
         self.mode = mode
         self.shape = shape
+        self.origin_size = size
         self.size = size  # sphere: diameter, cube: edge length; cylinder: diameter
         self.quad_size = quad_size
         self.dt = dt
@@ -39,9 +40,17 @@ class SingleObstacle:
         self.room_dims = room_dims
         self.rel_pos_mode = rel_pos_mode
         self.rel_pos_clip_value = rel_pos_clip_value
+        self.inside_room_box_flag = True
 
     def reset(self, set_obstacle=None, formation_size=0.0, goal_central=np.array([0., 0., 2.]), shape='sphere',
-              quads_pos=None, quads_vel=None, new_pos=None):
+              quads_pos=None, quads_vel=None, new_pos=None, inside_room_box_flag=True):
+        self.inside_room_box_flag = inside_room_box_flag
+        if self.inside_room_box_flag:
+            self.size = self.origin_size
+        else:
+            self.size = 1e-6
+
+
         # Initial position and velocity
         if set_obstacle is None:
             raise ValueError('set_obstacle is None')
