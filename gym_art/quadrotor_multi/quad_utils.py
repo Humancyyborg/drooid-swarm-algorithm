@@ -300,6 +300,9 @@ def calculate_obst_drone_proximity_penalties(distance_matrix, arm, dt, penalty_f
     else:
         raise NotImplementedError(f'obst_smooth_penalty_mode: {obst_smooth_penalty_mode} is not supported!')
 
+    if np.sum(penalties, axis=1)[0] > 0:
+        print('penalties, 0: ', penalties[0])
+
     penalties = np.sum(penalties, axis=1)
 
     if proximity_mode == 0:

@@ -23,6 +23,8 @@ import logging
 import sys
 import time
 
+import numpy as np
+
 import gym_art.quadrotor_multi.get_state as get_state
 
 # MY LIBS
@@ -35,6 +37,8 @@ import transforms3d as t3d
 # GYM
 from gym.utils import seeding
 from gym_art.quadrotor_multi.inertia import QuadLink, QuadLinkSimplified
+from gym_art.quadrotor_multi.params import test_start_pos, test_end_pos, test_vel, test_omega, test_rot, \
+    test_other_drone_pos
 from gym_art.quadrotor_multi.quad_crash_utils import clip_floor_vel_params
 from gym_art.quadrotor_multi.quadrotor_control import *
 from gym_art.quadrotor_multi.quadrotor_visualization import *
@@ -272,13 +276,26 @@ class QuadrotorDynamics:
         rot = t3d.euler.euler2mat(roll, pitch, yaw)
         return pos, vel, rot, omega
 
-    def step(self, thrust_cmds, dt):
-        thrust_noise = self.thrust_noise.noise()
-
-        if self.use_numba:
-            [self.step1_numba(thrust_cmds, dt, thrust_noise) for t in range(self.dynamics_steps_num)]
+    def step(self, thrust_cmds, dt, drone_id):
+        # thrust_noise = self.thrust_noise.noise()
+        # if self.use_numba:
+        #     [self.step1_numba(thrust_cmds, dt, thrust_noise) for t in range(self.dynamics_steps_num)]
+        # else:
+        #     [self.step1(thrust_cmds, dt, thrust_noise) for t in range(self.dynamics_steps_num)]
+        if drone_id == 0:
+            if self.pos[1] >= test_end_pos[1] - 0.0001:
+                self.vel = np.zeros(3)
+            else:
+                self.pos += test_vel * 0.01
+                self.vel = copy.deepcopy(test_vel)
         else:
-            [self.step1(thrust_cmds, dt, thrust_noise) for t in range(self.dynamics_steps_num)]
+            self.vel = np.zeros(3)
+
+        self.omega = test_omega
+        self.rot = test_rot
+        self.acc = np.zeros(3)
+        self.omega_dot = np.zeros(3)
+        self.torque = np.zeros(3)
 
     ## Step function integrates based on current derivative values (best fits affine dynamics model)
     # thrust_cmds is motor thrusts given in normalized range [0, 1].
@@ -646,6 +663,8 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
         cost_pos_diff_raw = pos_diff
 
         cost_pos_diff = pos_decay_rate * 500 * cost_pos_diff_raw
+        print('cost_pos_diff_raw: ', cost_pos_diff_raw)
+        print('cost_pos_diff: ', cost_pos_diff)
     else:
         cost_pos_raw = dist
         cost_pos = rew_coeff["pos"] * cost_pos_raw
@@ -1162,7 +1181,7 @@ class QuadrotorSingle:
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def _step(self, action):
+    def _step(self, action, drone_id):
         self.actions[1] = copy.deepcopy(self.actions[0])
         self.actions[0] = copy.deepcopy(action)
         # print('actions_norm: ', np.linalg.norm(self.actions[0]-self.actions[1]))
@@ -1174,9 +1193,11 @@ class QuadrotorSingle:
                                   goal=self.goal,
                                   dt=self.dt,
                                   # observation=np.expand_dims(self.state_vector(self), axis=0))
-                                  observation=None)  # assuming we aren't using observations in step function
+                                  observation=None,
+                                  drone_id=drone_id)  # assuming we aren't using observations in step function
         # self.oracle.step(self.dynamics, self.goal, self.dt)
         # self.scene.update_state(self.dynamics, self.goal)
+
 
         self.crashed = self.dynamics.crashed_wall or self.dynamics.crashed_ceiling or self.dynamics.crashed_floor
 
@@ -1189,6 +1210,7 @@ class QuadrotorSingle:
                                                    quads_reward_ep_len=self.quads_reward_ep_len, pre_pos=self.pre_pos,
                                                    pos_decay_rate=self.pos_decay_rate, use_pos_diff=self.use_pos_diff
         )
+
         self.pre_pos = copy.deepcopy(self.dynamics.pos)
 
         self.tick += 1
@@ -1233,7 +1255,12 @@ class QuadrotorSingle:
             "dt": [self.dt * self.sim_steps],
         }
 
-        # print(sv, obs_comp, dyn_params, self.obs_comp_sizes)      
+        # print(sv, obs_comp, dyn_params, self.obs_comp_sizes)
+        if drone_id == 0:
+            self.goal = copy.deepcopy(test_end_pos)
+            print('tick: ', self.tick)
+            print('pos: ', self.dynamics.pos)
+
         return sv, reward, done, {'rewards': rew_info, "obs_comp": obs_comp, "dyn_params": dyn_params}
 
     def resample_dynamics(self):
@@ -1307,53 +1334,54 @@ class QuadrotorSingle:
         pos = npa(x, y, z)
         return pos
 
-    def _reset(self, midreset=False):
-        if self.dynamics_randomize_every is not None and (self.traj_count + 1) % (self.dynamics_randomize_every) == 0:
-            self.resample_dynamics()
+    def _reset(self, midreset=False, droneid=0):
+        print("droneid: ", droneid)
+        if droneid == 0:
+            pos = copy.deepcopy(test_start_pos)
+            self.goal = copy.deepcopy(test_end_pos)
+            vel = copy.deepcopy(test_vel)
 
-        if midreset:
-            pos = self.set_pos(goal_pos=self.goal_start_point)
+            wall_box_0 = np.clip(pos - self.room_box[0], a_min=0, a_max=2)
+            wall_box_1 = np.clip(self.room_box[1] - pos, a_min=0, a_max=2)
+            test_state = np.concatenate([pos - self.goal[:3], vel, test_rot.flatten(), test_omega, wall_box_0, wall_box_1])
         else:
-            self.tick = 0
-            self.set_init_box_range()
-            pos = self.set_pos(goal_pos=self.goal)
+            test_x, test_y, test_z = copy.deepcopy(test_other_drone_pos)
+            pos = np.array([test_x + 1.0 * (droneid - 1), test_y, test_z])
+            self.goal = copy.deepcopy(pos)
+            vel = np.zeros(3)
 
-        if self.init_random_state:
-            _, vel, rotation, omega = self.dynamics.random_state(
-                box=(self.room_length, self.room_width, self.room_height), vel_max=self.max_init_vel, omega_max=self.max_init_omega
-            )
-        else:
-            pos[2] = np.random.uniform(low=0.00, high=0.01)
-            ## INIT HORIZONTALLY WITH 0 VEL and OMEGA
-            vel, omega = npa(0, 0, 0), npa(0, 0, 0)
-            rotation = randyaw()
+            wall_box_0 = np.clip(pos - self.room_box[0], a_min=0, a_max=2)
+            wall_box_1 = np.clip(self.room_box[1] - pos, a_min=0, a_max=2)
+            test_state = np.concatenate([pos - self.goal[:3], vel, test_rot.flatten(), test_omega, wall_box_0, wall_box_1])
 
-        # Setting the generated state
-        # print("QuadEnv: init: pos/vel/rot/omega:", pos, vel, rotation, omega)
-        self.init_state = [pos, vel, rotation, omega]
-        self.dynamics.set_state(pos, vel, rotation, omega)
+        self.init_state = [pos, vel, test_rot, test_omega]
+        self.dynamics.set_state(pos, vel, test_rot, test_omega)
         self.dynamics.reset()
+
+        self.tick = 0
+        self.set_init_box_range()
+
 
         # Reseting some internal state (counters, etc)
         self.crashed = False
         self.actions = [np.zeros([4, ]), np.zeros([4, ])]
 
-        state = self.state_vector(self)
+        # state = self.state_vector(self)
 
         self.pre_pos = pos
         self.pos_decay_rate = 1.0
 
-        return state
+        return test_state
 
-    def reset(self, midreset=False):
-        return self._reset(midreset=midreset)
+    def reset(self, midreset=False, droneid=0):
+        return self._reset(midreset=midreset, droneid=droneid)
 
     def render(self, mode='human', **kwargs):
         """This class is only meant to be used as a component of QuadMultiEnv."""
         raise NotImplementedError()
 
-    def step(self, action):
-        return self._step(action)
+    def step(self, action, i):
+        return self._step(action, i)
 
 
 class DummyPolicy(object):

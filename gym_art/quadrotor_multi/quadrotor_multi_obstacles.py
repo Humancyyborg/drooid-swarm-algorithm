@@ -1,5 +1,8 @@
+import copy
+
 import numpy as np
 
+from gym_art.quadrotor_multi.params import test_obst_pp
 from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_MODE_MULTI_GOAL_CENTER, QUADS_MODE_GOAL_CENTERS
 from gym_art.quadrotor_multi.quadrotor_single_obstacle import SingleObstacle
 from gym_art.quadrotor_multi.quad_obstacle_utils import OBSTACLES_SHAPE_LIST, STATIC_OBSTACLE_DOOR
@@ -476,75 +479,87 @@ class MultiObstacles:
                                     self.half_room_width + self.size + self.rel_pos_clip_value,
                                     pos_z])
 
-        if level <= -1:
-            pos_arr = np.array([outbox_pos_item for _ in range(self.num_obstacles)])
-            inside_room_flag = [False] * self.num_obstacles
-            return pos_arr, inside_room_flag
-
-        # Based on room_dims [10, 10, 10]
-        if scenario_mode not in QUADS_MODE_GOAL_CENTERS:
-            self.start_range = np.array([goal_start_point[:2] + init_box_range[0][:2],
-                                         goal_start_point[:2] + init_box_range[1][:2]])
-
-            if scenario_mode in QUADS_MODE_MULTI_GOAL_CENTER:
-                self.end_range = np.array([goal_end_point[:2] + init_box_range[0][:2],
-                                           goal_end_point[:2] + init_box_range[1][:2]])
-            else:
-                self.end_range = np.array([goal_end_point[:2] + np.array([-0.5, -0.5]),
-                                           goal_end_point[:2] + np.array([0.5, 0.5])])
-        else:
-            for start_point in goal_start_point:
-                start_range = np.array([start_point[:2] + init_box_range[0][:2],
-                                        start_point[:2] + init_box_range[1][:2]])
-
-                self.start_range_list.append(start_range)
-
-        if self.level_mode == 0:
-            if level > -1:
-                pos_arr = []
-                for i in range(self.num_obstacles):
-                    for regen_id in range(20):
-                        pos_xy, collide_flag = self.generate_pos(obst_id=i, goal_start_point=goal_start_point,
-                                                                 goal_end_point=goal_end_point)
-                        pos_item = np.array([pos_xy[0], pos_xy[1], pos_z])
-                        final_pos_item, overlap_flag = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=pos_arr, obst_id=i)
-                        if collide_flag is False and overlap_flag is False:
-                            pos_arr.append(final_pos_item)
-                            break
-
-                    if len(pos_arr) <= i:
-                        pos_arr.append(final_pos_item)
-
-                inside_room_flag = [True] * self.num_obstacles
-
-                return np.array(pos_arr), inside_room_flag
-
-        self.obst_num_in_room = min(self.obst_num_in_room, self.num_obstacles)
         pos_arr = []
-        for i in range(self.obst_num_in_room):
-            for regen_id in range(20):
-                pos_xy, collide_flag = self.generate_pos(obst_id=i, goal_start_point=goal_start_point,
-                                                         goal_end_point=goal_end_point)
-                pos_item = np.array([pos_xy[0], pos_xy[1], pos_z])
-                final_pos_item, overlap_flag = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=pos_arr, obst_id=i)
-                if collide_flag is False and overlap_flag is False:
-                    pos_arr.append(final_pos_item)
-                    break
+        pp = copy.deepcopy(test_obst_pp)
+        x, y, z = pp
+        for i in range(6):
+            x += 1.5
+            tmp_pp = np.array([x, y, z])
+            pos_arr.append(tmp_pp)
 
-            if len(pos_arr) <= i:
-                pos_arr.append(final_pos_item)
-
-            inside_room_flag.append(True)
+        inside_room_flag = [True] * self.num_obstacles
+        return pos_arr, inside_room_flag
 
 
-        for i in range(self.num_obstacles - self.obst_num_in_room):
-            pos_arr.append(outbox_pos_item)
-            inside_room_flag.append(False)
-
-        # self.counter_list.append(self.counter)
-        # print('counter: ', self.counter)
-        # print('mean: ', np.mean(self.counter_list))
-        # print('list counter: ', self.counter_list)
-        # print('pos_arr: ', np.array(pos_arr))
-
-        return np.array(pos_arr), inside_room_flag
+        # if level <= -1:
+        #     pos_arr = np.array([outbox_pos_item for _ in range(self.num_obstacles)])
+        #     inside_room_flag = [False] * self.num_obstacles
+        #     return pos_arr, inside_room_flag
+        #
+        # # Based on room_dims [10, 10, 10]
+        # if scenario_mode not in QUADS_MODE_GOAL_CENTERS:
+        #     self.start_range = np.array([goal_start_point[:2] + init_box_range[0][:2],
+        #                                  goal_start_point[:2] + init_box_range[1][:2]])
+        #
+        #     if scenario_mode in QUADS_MODE_MULTI_GOAL_CENTER:
+        #         self.end_range = np.array([goal_end_point[:2] + init_box_range[0][:2],
+        #                                    goal_end_point[:2] + init_box_range[1][:2]])
+        #     else:
+        #         self.end_range = np.array([goal_end_point[:2] + np.array([-0.5, -0.5]),
+        #                                    goal_end_point[:2] + np.array([0.5, 0.5])])
+        # else:
+        #     for start_point in goal_start_point:
+        #         start_range = np.array([start_point[:2] + init_box_range[0][:2],
+        #                                 start_point[:2] + init_box_range[1][:2]])
+        #
+        #         self.start_range_list.append(start_range)
+        #
+        # if self.level_mode == 0:
+        #     if level > -1:
+        #         pos_arr = []
+        #         for i in range(self.num_obstacles):
+        #             for regen_id in range(20):
+        #                 pos_xy, collide_flag = self.generate_pos(obst_id=i, goal_start_point=goal_start_point,
+        #                                                          goal_end_point=goal_end_point)
+        #                 pos_item = np.array([pos_xy[0], pos_xy[1], pos_z])
+        #                 final_pos_item, overlap_flag = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=pos_arr, obst_id=i)
+        #                 if collide_flag is False and overlap_flag is False:
+        #                     pos_arr.append(final_pos_item)
+        #                     break
+        #
+        #             if len(pos_arr) <= i:
+        #                 pos_arr.append(final_pos_item)
+        #
+        #         inside_room_flag = [True] * self.num_obstacles
+        #
+        #         return np.array(pos_arr), inside_room_flag
+        #
+        # self.obst_num_in_room = min(self.obst_num_in_room, self.num_obstacles)
+        # pos_arr = []
+        # for i in range(self.obst_num_in_room):
+        #     for regen_id in range(20):
+        #         pos_xy, collide_flag = self.generate_pos(obst_id=i, goal_start_point=goal_start_point,
+        #                                                  goal_end_point=goal_end_point)
+        #         pos_item = np.array([pos_xy[0], pos_xy[1], pos_z])
+        #         final_pos_item, overlap_flag = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=pos_arr, obst_id=i)
+        #         if collide_flag is False and overlap_flag is False:
+        #             pos_arr.append(final_pos_item)
+        #             break
+        #
+        #     if len(pos_arr) <= i:
+        #         pos_arr.append(final_pos_item)
+        #
+        #     inside_room_flag.append(True)
+        #
+        #
+        # for i in range(self.num_obstacles - self.obst_num_in_room):
+        #     pos_arr.append(outbox_pos_item)
+        #     inside_room_flag.append(False)
+        #
+        # # self.counter_list.append(self.counter)
+        # # print('counter: ', self.counter)
+        # # print('mean: ', np.mean(self.counter_list))
+        # # print('list counter: ', self.counter_list)
+        # # print('pos_arr: ', np.array(pos_arr))
+        #
+        # return np.array(pos_arr), inside_room_flag

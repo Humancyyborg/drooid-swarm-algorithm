@@ -8,7 +8,7 @@ QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 
 #                              'o_dynamic_roller', 'o_inside_obstacles', 'o_swarm_groups', 'o_ep_rand_bezier',
 #                              'o_swap_goals']
 
-QUADS_MODE_LIST_OBSTACLES = ['o_uniform_goal_spawn', 'o_uniform_diff_goal_spawn', 'o_uniform_swarm_vs_swarm']
+QUADS_MODE_LIST_OBSTACLES = ['o_test']
 
 
 # QUADS_MODE_LIST_OBSTACLES = ['o_dynamic_same_goal', 'o_dynamic_diff_goal', 'o_dynamic_roller', 'o_inside_obstacles',
@@ -19,7 +19,7 @@ QUADS_MODE_MULTI_GOAL_CENTER = ['o_swarm_vs_swarm', 'o_uniform_swarm_vs_swarm']
 
 QUADS_MODE_GOAL_CENTERS = ['o_swarm_groups']
 
-QUADS_MODE_OBST_INFO_LIST = ['o_test', 'o_inside_obstacles', 'o_swap_goals']
+QUADS_MODE_OBST_INFO_LIST = ['o_inside_obstacles', 'o_swap_goals']
 
 QUADS_MODE_DICT = {
             'fix_size': ['static_same_goal', 'dynamic_same_goal', 'ep_lissajous3D', 'ep_rand_bezier', 'through_hole',

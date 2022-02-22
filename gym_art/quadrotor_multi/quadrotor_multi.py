@@ -802,7 +802,7 @@ class QuadrotorEnvMulti(gym.Env):
                 else:
                     e.reset_spawn_flag_and_start_point(spawn_flag=spawn_flag, goal_start_point=goal_start_point)
 
-            observation = e.reset()
+            observation = e.reset(midreset=False, droneid=i)
             obs.append(observation)
 
         # extend obs to see neighbors
@@ -850,7 +850,7 @@ class QuadrotorEnvMulti(gym.Env):
         for i, a in enumerate(actions):
             self.envs[i].rew_coeff = self.rew_coeff
 
-            observation, reward, done, info = self.envs[i].step(a)
+            observation, reward, done, info = self.envs[i].step(a, i)
             obs.append(observation)
             rewards.append(reward)
             dones.append(done)

@@ -2,6 +2,7 @@ import numpy as np
 import bezier
 import copy
 
+from gym_art.quadrotor_multi.params import test_start_pos, test_end_pos
 from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_PARAMS_DICT, update_formation_and_max_agent_per_layer, \
     update_layer_dist, get_formation_range, get_goal_by_formation, get_z_value, QUADS_MODE_LIST, \
     QUADS_MODE_LIST_OBSTACLES, QUADS_MODE_GOAL_CENTERS, QUADS_MODE_OBST_INFO_LIST, get_pos_diff_decay_rate
@@ -198,6 +199,7 @@ class Scenario_o_test(QuadrotorScenario):
         self.end_point = np.array([0.0, 3.0, 2.0])
         self.duration_time = 1.0
         self.obstacle_pos = np.array([0.0, 0.0, 2.0])
+        self.spawn_flag = -1
 
     def update_formation_size(self, new_formation_size):
         pass
@@ -210,9 +212,11 @@ class Scenario_o_test(QuadrotorScenario):
 
     def step(self, infos, rewards, pos):
         tick = self.envs[0].tick
-        self.obstacle_pos = infos[0]['obstacles'][0].pos
 
         if tick < int(self.duration_time * self.envs[0].control_freq):
+            pos_diff_decay_rate = get_pos_diff_decay_rate(decay_rate=self.pos_decay_rate, tick=tick - self.cur_start_tick)
+            for i, env in enumerate(self.envs):
+                env.pos_decay_rate = pos_diff_decay_rate
             return infos, rewards
 
         self.set_end_point()
@@ -223,9 +227,9 @@ class Scenario_o_test(QuadrotorScenario):
         return infos, rewards
 
     def reset(self):
-        self.start_point = np.array([0.0, 0.0, 5.5])
-        self.end_point = np.array([0.0, 0.0, 5.5])
-        self.duration_time = 1.0
+        self.start_point = copy.deepcopy(test_start_pos)
+        self.end_point = copy.deepcopy(test_end_pos)
+        self.duration_time = 1000
         self.standard_reset(formation_center=self.start_point)
 
 

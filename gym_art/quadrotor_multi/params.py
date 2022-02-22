@@ -1,3 +1,5 @@
+import numpy as np
+
 quad_color = (
     (1.0, 0.0, 0.0),  # red
     (0.4, 0.4, 0.4),  # darkgrey
@@ -40,3 +42,11 @@ obs_obst_size_dict = {
 }
 
 quad_arm_size = 0.04596194077712559
+
+test_vel = np.array([0.0, 1.0, 0.0])
+test_omega = np.array([0.0, 0.0, 0.0])
+test_start_pos = np.array([0.0, -3.3, 2.0])
+test_end_pos = np.array([0.0, -2.8, 2.0])
+test_other_drone_pos = np.array([-4.5, 0.0, 3.0])
+test_rot = np.identity(3)
+test_obst_pp = np.array([-3.9, -3.0, 5.0])
