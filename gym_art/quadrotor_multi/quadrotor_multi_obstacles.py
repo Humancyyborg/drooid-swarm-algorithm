@@ -18,6 +18,7 @@ class MultiObstacles:
         else:
             self.num_obstacles = num_obstacles
 
+        self.yaml_obst_list = []
         self.obstacles = []
         self.shape = shape
         self.shape_list = OBSTACLES_SHAPE_LIST
@@ -92,8 +93,10 @@ class MultiObstacles:
 
     def reset(self, obs=None, quads_pos=None, quads_vel=None, set_obstacles=None, formation_size=0.0,
               goal_central=np.array([0., 0., 2.]), level=-1, goal_start_point=np.array([-3.0, -3.0, 2.0]),
-              goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal', obst_num_in_room=0):
+              goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal', obst_num_in_room=0,
+              yaml_obst_list=[]):
 
+        self.yaml_obst_list = yaml_obst_list
         self.scenario_mode = scenario_mode
         self.obst_num_in_room = obst_num_in_room
 
@@ -468,6 +471,11 @@ class MultiObstacles:
 
     def generate_inf_pos_by_level(self, level=-1, goal_start_point=np.array([-3.0, -3.0, 2.0]),
                                   goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal'):
+
+        if len(self.yaml_obst_list) > 0:
+            pos_arr = self.yaml_obst_list
+            inside_room_flag = [True] * self.num_obstacles
+            return pos_arr, inside_room_flag
 
         init_box_range = self.drone_env.init_box_range
         pos_z = 0.5 * self.room_height

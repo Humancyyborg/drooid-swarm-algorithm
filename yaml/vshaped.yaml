@@ -1,0 +1,35 @@
+agents:
+-   goal: [3, 4]
+    name: agent0
+    start: [0.001, 0.001]
+-   goal: [3, 4]
+    name: agent1
+    start: [1.00123, 0.0112]
+-   goal: [3, 4]
+    name: agent2
+    start: [2.09012, 0.0001223]
+-   goal: [3, 4]
+    name: agent3
+    start: [3.0000112, 0.00011010]
+-   goal: [3, 4]
+    name: agent4
+    start: [4.000065, 0.000433]
+-   goal: [3, 4]
+    name: agent5
+    start: [5.0000012, 0.000123102]
+-   goal: [3, 4]
+    name: agent6
+    start: [6.00918283, 0.000122358]
+-   goal: [3, 4]
+    name: agent7
+    start: [7.0001222, 0.0000299]
+
+map:
+    dimensions: [9, 9]
+    obstacles:
+    - [1, 2]
+    - [2, 3]
+    - [3, 4]
+    - [4, 3]
+    - [4, 2]
+    - [-1, 1]

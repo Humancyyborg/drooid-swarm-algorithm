@@ -19,6 +19,10 @@ from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSce
 from gym_art.quadrotor_multi.quad_scenarios import create_scenario
 from gym_art.quadrotor_multi.quad_obstacle_utils import OBSTACLES_SHAPE_LIST
 
+import yaml
+from os import listdir
+from os.path import isfile, join
+
 EPS = 1E-6
 
 
@@ -50,6 +54,13 @@ class QuadrotorEnvMulti(gym.Env):
                  obst_generation_mode='random', use_pos_diff=False, obst_smooth_penalty_mode='linear'):
 
         super().__init__()
+
+        yaml_path = '../yaml'
+        self.yaml_list = [f for f in listdir(yaml_path) if isfile(join(yaml_path, f))]
+        self.yaml_file_id = 0
+        self.yaml_agents_list = [] #start, goal
+        self.yaml_obstacles_list = [] # obst
+
 
         assert local_obs <= num_agents - 1 or local_obs == -1, \
             f'Invalid value ({local_obs}) passed to --local_obs. Should be 0 < n < num_agents - 1, or -1'
@@ -124,7 +135,7 @@ class QuadrotorEnvMulti(gym.Env):
                                         room_dims=self.room_dims, room_dims_callback=self.set_room_dims,
                                         rew_coeff=self.rew_coeff, quads_formation=quads_formation,
                                         quads_formation_size=quads_formation_size,
-                                        one_pass_per_episode=one_pass_per_episode)
+                                        one_pass_per_episode=one_pass_per_episode, yaml_pos_list=self.yaml_agents_list)
         self.quads_formation_size = quads_formation_size
         self.goal_central = np.array([0., 0., 2.])
 
@@ -764,14 +775,35 @@ class QuadrotorEnvMulti(gym.Env):
 
         return scenario_mode, spawn_flag, goal_start_point, goal_end_point, goal_points, obst_num_in_room
 
+    def read_yaml(self, yaml_name):
+        yaml_path = '../yaml/'
+        with open(yaml_path+yaml_name) as file:
+            documents = yaml.full_load(file)
+            self.yaml_agents_list = []
+            self.yaml_obstacles_list = []
+            for item, doc in documents.items():
+                if item == 'agents':
+                    for agent in doc:
+                        self.yaml_agents_list.append([agent['start'] + [1.5], agent['goal'] + [1.5]])
+                elif item == 'map':
+                    for name, obj in doc.items():
+                        if name == 'obstacles':
+                            for obst in obj:
+                                t_obst = [obst[0] + 0.5, obst[1] + 0.5, 5.0]
+                                self.yaml_obstacles_list.append(t_obst)
+
     def reset(self):
+        tmp_yaml_file = self.yaml_list[self.yaml_file_id]
+        self.read_yaml(tmp_yaml_file)
+
+
         obs, rewards, dones, infos = [], [], [], []
         if self.scenario.quads_mode in QUADS_MODE_OBST_INFO_LIST and self.use_obstacles:
             self.scenario.reset(obst_level=self.obst_level, obst_level_num_window=self.obst_level_num_window)
         elif self.scenario.quads_mode == 'mix' and self.use_obstacles:
             self.scenario.reset(obst_level=self.obst_level, obst_level_num_window=self.obst_level_num_window,
                                 obst_num=self.obstacle_num, max_obst_num=self.multi_obstacles.max_obst_num,
-                                obst_level_mode=self.obst_level_mode)
+                                obst_level_mode=self.obst_level_mode, yaml_pos_list=self.yaml_agents_list)
         else:
             self.scenario.reset()
 
@@ -821,7 +853,8 @@ class QuadrotorEnvMulti(gym.Env):
                                              set_obstacles=self.set_obstacles, formation_size=self.quads_formation_size,
                                              goal_central=self.goal_central, level=self.obst_level,
                                              goal_start_point=goal_start_point, goal_end_point=goal_end_point,
-                                             scenario_mode=scenario_mode, obst_num_in_room=obst_num_in_room)
+                                             scenario_mode=scenario_mode, obst_num_in_room=obst_num_in_room,
+                                             yaml_obst_list=self.yaml_obstacles_list)
             self.obst_quad_collisions_per_episode = 0
             self.obst_quad_collisions_per_episode_after_settle = 0
             self.prev_obst_quad_collisions = []
