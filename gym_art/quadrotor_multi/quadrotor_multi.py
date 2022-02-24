@@ -903,7 +903,9 @@ class QuadrotorEnvMulti(gym.Env):
             if self.all_collisions['ground'][i]:
                 for k in infos[i]['rewards'].keys():
                     infos[i]['rewards'][k] = 0
-
+                infos[i]["rewards"]["rew_proximity"] = 0
+                infos[i]["rewards"]["rew_quadcol"] = 0
+                infos[i]["rewards"]["rewraw_quadcol"] = 0
                 if self.use_obstacles:
                     infos[i]["rewards"]["rew_quadcol_obstacle"] = 0
                     infos[i]["rewards"]["rewraw_quadcol_obstacle"] = 0
