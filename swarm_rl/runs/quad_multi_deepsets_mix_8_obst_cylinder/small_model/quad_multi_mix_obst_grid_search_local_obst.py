@@ -8,6 +8,7 @@ _params = ParamGrid([
     ('quads_obstacle_num', [10]),
     ('quads_early_termination', [True]),
     ('quads_local_obst_obs', [4]),
+    ('quads_init_random_state', [False]),
 ])
 
 SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
