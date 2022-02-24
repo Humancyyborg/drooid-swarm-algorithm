@@ -711,7 +711,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
         cost_pos_raw = dist
         # cost_pos = rew_coeff["pos"] * cost_pos_raw
         # 5 / 2 ^ (0.8 * x)
-        cost_pos = 0.01 * 5 / np.power(2, 0.8 * x)
+        cost_pos = 5 / np.power(2, 0.8 * cost_pos_raw)
 
         if pre_pos is None:
             pre_pos = dynamics.pos

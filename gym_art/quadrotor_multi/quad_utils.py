@@ -271,11 +271,10 @@ def calculate_drone_proximity_penalties(distance_matrix, arm, dt, penalty_fall_o
     distance_matrix = np.minimum(distance_matrix, 0.2)
     drone_col_reward = distance_matrix * 5.0
 
-    np.fill_diagonal(penalties, 0.0)
+    np.fill_diagonal(drone_col_reward, 0.0)
 
-    drone_col_reward = drone_col_reward / num_agents
-    drone_col_reward = np.sum(penalties, axis=0)
-
+    drone_col_reward = drone_col_reward / (num_agents - 1)
+    drone_col_reward = np.sum(drone_col_reward, axis=0)
 
     if proximity_mode == 0:
         return drone_col_reward
