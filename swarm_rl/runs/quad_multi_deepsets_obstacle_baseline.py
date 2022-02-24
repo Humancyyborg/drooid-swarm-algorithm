@@ -176,7 +176,7 @@ QUAD_OBSTACLE_PARAMETERZE_LONG_DURATION_CLI = (
 
 
 QUAD_8_OBSTACLES_PARAMETERZE_CLI = (
-    'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=1500000000 --algo=APPO --use_rnn=False '
+    'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=3000000000 --algo=APPO --use_rnn=False '
     '--num_workers=36 --num_envs_per_worker=4 --learning_rate=0.0001 --ppo_clip_value=5.0 --recurrence=1 '
     '--nonlinearity=tanh --actor_critic_share_weights=False --policy_initialization=xavier_uniform '
     '--adaptive_stddev=False --with_vtrace=False --max_policy_lag=100000000 --hidden_size=256 '
@@ -197,7 +197,7 @@ QUAD_8_OBSTACLES_PARAMETERZE_CLI = (
     '--gamma=0.998 --quads_neighbor_proximity_mode=0 --quads_crash_mode=1 '
     '--quads_obs_repr=xyz_vxyz_R_omega_wall --quads_obst_midreset=False '
     '--with_wandb=False --wandb_tags obst_quad num_collisions rew_pos --wandb_user=multi-drone '
-    '--quads_use_pos_diff=True --quads_obst_generation_mode=gaussian'
+    '--quads_use_pos_diff=False --quads_obst_generation_mode=gaussian'
 )
 
 
