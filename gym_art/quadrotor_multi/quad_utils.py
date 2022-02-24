@@ -352,8 +352,11 @@ def perform_collision_between_drones(dyn1, dyn2):
     new_omega *= new_omega_magn
 
     # add the disturbance to drone's angular velocities while preserving angular momentum
-    dyn1.omega += new_omega
-    dyn2.omega -= new_omega
+    if dyn1.pos[2] > 0.05:
+        dyn1.omega += new_omega
+    if dyn2.pos[2] > 0.05:
+        dyn2.omega -= new_omega
+
 
 def perform_collision_with_obstacle(drone_dyn, obstacle_dyn, quad_arm, room_dims, inf_height, crash_mode):
     # Check if drones are inside obstacles
@@ -399,7 +402,8 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_dyn, quad_arm, room_dims
         new_omega *= new_omega_magn
 
         # add the disturbance to drone's angular velocities while preserving angular momentum
-        drone_dyn.omega += new_omega
+        if drone_dyn.pos[2] > 0.05:
+            drone_dyn.omega += new_omega
     else:
         v1new, v2new, collision_norm = compute_col_norm_and_new_velocities(obstacle_dyn, drone_dyn)
         drone_dyn.vel = (v1new - v2new) * collision_norm
@@ -422,7 +426,8 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_dyn, quad_arm, room_dims
 
         # add the disturbance to drone's angular velocities while preserving angular momentum
         # Currently, our obstacle doesn't support omega / angle velocity, we only change omega of drone
-        drone_dyn.omega += new_omega
+        if drone_dyn.pos[2] > 0.05:
+            drone_dyn.omega += new_omega
 
 
 def perform_collision_with_obstacle_v2(drone_dyn, obstacle_dyn, quad_arm=0.046):
@@ -502,7 +507,8 @@ def perform_collision_with_wall(drone_dyn, room_box, crash_mode):
     new_omega *= new_omega_magn
 
     # add the disturbance to drone's angular velocities while preserving angular momentum
-    drone_dyn.omega += new_omega
+    if drone_dyn.pos[2] > 0.05:
+        drone_dyn.omega += new_omega
 
 
 def perform_collision_with_ceiling(drone_dyn):

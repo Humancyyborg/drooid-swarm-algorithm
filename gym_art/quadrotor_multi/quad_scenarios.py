@@ -1646,7 +1646,7 @@ class Scenario_o_uniform_goal_spawn(QuadrotorScenario):
 
         x = np.random.uniform(low=-1.0 * half_room_length + 0.5, high=half_room_length - 0.5)
         y = np.random.uniform(low=-1.0 * half_room_width + 0.5, high=half_room_width - 0.5)
-        z = np.random.uniform(low=1.0, high=2.5)
+        z = np.random.uniform(low=6.0, high=7.5)
         return np.array([x, y, z])
 
     def step(self, infos, rewards, pos):
@@ -1756,7 +1756,7 @@ class Scenario_o_uniform_swarm_vs_swarm(QuadrotorScenario):
         x_2 = np.random.uniform(low=-1.0 * half_room_length + 0.5, high=half_room_length - 0.5)
         y_2 = np.random.uniform(low=-1.0 * half_room_width + 0.5, high=half_room_width - 0.5)
 
-        z_1, z_2 = np.random.uniform(low=1.0, high=2.5, size=2)
+        z_1, z_2 = np.random.uniform(low=6.0, high=7.5, size=2)
 
         pos_1 = np.array([x_1, y_1, z_1])
         pos_2 = np.array([x_2, y_2, z_2])

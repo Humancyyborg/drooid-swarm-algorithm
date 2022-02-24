@@ -208,20 +208,9 @@ class QuadrotorEnvMulti(gym.Env):
                 'cur_val': 0.0,
                 'value_arr': deque([], maxlen=self.episode_num_control_level)
             },
-            'pos': {
-                'low_bound': obst_level_pos_min,
-                'high_bound': obst_level_pos_max,
-                'cur_val': 0.0,
-                'value_arr': deque([], maxlen=self.episode_num_control_level)
-            },
             'collision_obst_quad': {
                 'low_bound': obst_level_col_obst_quad_min,
                 'high_bound': obst_level_col_obst_quad_max,
-                'value_arr': deque([], maxlen=self.episode_num_control_level)
-            },
-            'collision_quad': {
-                'low_bound': obst_level_col_quad_min,
-                'high_bound': obst_level_col_quad_max,
                 'value_arr': deque([], maxlen=self.episode_num_control_level)
             },
         }
@@ -664,25 +653,22 @@ class QuadrotorEnvMulti(gym.Env):
         return info
 
     def change_level(self):
-        self.obst_level_condition_dict['crash']['cur_val'] = 0.0
-        self.obst_level_condition_dict['pos']['cur_val'] = 0.0
-
         if self.freeze_obst_level:
             return
         if self.obst_level_mode == 0 and self.obst_level > -1:
             return
 
-        collected_episode_num = len(self.obst_level_condition_dict['crash']['value_arr'])
+        collected_episode_num = max(len(self.obst_level_condition_dict['crash']['value_arr']),
+                                    len(self.obst_level_condition_dict['collision_obst_quad']['value_arr']))
+
         if collected_episode_num < self.episode_num_control_level:
             return
 
         mean_crash = abs(np.mean(self.obst_level_condition_dict['crash']['value_arr']))
-        mean_pos = abs(np.mean(self.obst_level_condition_dict['pos']['value_arr']))
         mean_collision_obst_quad = np.mean(self.obst_level_condition_dict['collision_obst_quad']['value_arr'])
-        mean_collision_quad = np.mean(self.obst_level_condition_dict['collision_quad']['value_arr'])
 
         # upgrade level
-        metric_obst_quad = 1 + np.clip(self.obst_level, a_min=0, a_max=6) * 0.33  # The metric of moving to the next level is in [1, 3]
+        metric_obst_quad = 1 + np.clip(self.obst_level, a_min=0, a_max=8) * 0.12  # The metric of moving to the next level is in [1, 3]
         if self.obst_level < 0:  # -1
             upgrade_flag = [
                 mean_crash < 3.0,
@@ -696,9 +682,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.obst_level += 1
             self.obst_level = np.clip(self.obst_level, a_min=-1, a_max=self.obstacle_num - 2 + self.obst_level_num_window)
             self.obst_level_condition_dict['crash']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
-            self.obst_level_condition_dict['pos']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
             self.obst_level_condition_dict['collision_obst_quad']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
-            self.obst_level_condition_dict['collision_quad']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
             return
 
         # downgrade level
@@ -710,9 +694,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.obst_level -= 1
             self.obst_level = np.clip(self.obst_level, a_min=-1, a_max=self.obstacle_num - 2 + self.obst_level_num_window)
             self.obst_level_condition_dict['crash']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
-            self.obst_level_condition_dict['pos']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
             self.obst_level_condition_dict['collision_obst_quad']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
-            self.obst_level_condition_dict['collision_quad']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
             return
 
         return
@@ -941,12 +923,10 @@ class QuadrotorEnvMulti(gym.Env):
         # Reset a drone if it's crash time on the floor larger than a predefined threshold
         self.reset_crashed_drones()
 
-        # Used to check if we need to increase the level or decrease the level
-        self.obst_level_condition_dict['crash']['cur_val'] += np.mean([infos[i]["rewards"]["rewraw_crash"] for i in range(self.num_agents)])
-        self.obst_level_condition_dict['pos']['cur_val'] += np.mean([infos[i]["rewards"]["rewraw_pos"] for i in range(self.num_agents)])
-
         # DONES
-        if any(dones):
+        ground_crashed = np.array([env.dynamics.crashed_floor for env in self.envs])
+        num_crashed_floor = len(np.where(ground_crashed == True)[0])
+        if any(dones) or num_crashed_floor >= 6:
             if self.print_info:
                 self.obst_counter_list.append(self.cur_ep_obst_counter)
                 self.real_obst_counter_list.append(self.real_cur_ep_obst_counter)
@@ -958,12 +938,15 @@ class QuadrotorEnvMulti(gym.Env):
                 self.real_cur_ep_obst_counter = 0
 
             self.episode_id += 1
-            self.obst_level_condition_dict['crash']['value_arr'].append(self.obst_level_condition_dict['crash']['cur_val'])
-            self.obst_level_condition_dict['pos']['value_arr'].append(self.obst_level_condition_dict['pos']['cur_val'])
-            self.obst_level_condition_dict['collision_obst_quad']['value_arr'].append(self.cur_ep_obst_counter)
-            self.obst_level_condition_dict['collision_quad']['value_arr'].append(self.collisions_after_settle)
 
-            self.change_level()
+            real_air_tick = self.envs[0].tick
+            total_tick = self.envs[0].ep_len
+            air_rate = real_air_tick / total_tick
+
+            if air_rate > 0.8:  # 16 out of 20 seconds
+                self.obst_level_condition_dict['crash']['value_arr'].append(num_crashed_floor / air_rate)
+                self.obst_level_condition_dict['collision_obst_quad']['value_arr'].append(self.cur_ep_obst_counter / air_rate)
+                self.change_level()
 
             for i in range(len(infos)):
                 if self.saved_in_replay_buffer:
@@ -991,6 +974,7 @@ class QuadrotorEnvMulti(gym.Env):
                         infos[i]['episode_extra_stats']['obst_level'] = self.obst_level
 
                         infos[i]['episode_extra_stats'][f'obst_counter_air_{self.scenario.name()}'] = self.cur_ep_obst_counter
+                        infos[i]['episode_extra_stats'][f'air_rate{self.scenario.name()}'] = air_rate
 
             obs = self.reset()
             dones = [True] * len(dones)  # terminate the episode for all "sub-envs"

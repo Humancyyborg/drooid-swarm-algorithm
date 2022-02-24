@@ -23,6 +23,8 @@ import logging
 import sys
 import time
 
+import numpy as np
+
 import gym_art.quadrotor_multi.get_state as get_state
 
 # MY LIBS
@@ -126,6 +128,11 @@ class QuadrotorDynamics:
         self.crashed_wall = False
         self.crashed_ceiling = False
         self.crashed_floor = False
+
+        # Friction
+        friction_floor = 0.2
+        self.friction_acc = friction_floor * GRAV
+        self.friction_omega_acc = 5.0
 
         ## Selecting 1D, Planar or Full 3D modes
         self.dim_mode = dim_mode
@@ -272,8 +279,11 @@ class QuadrotorDynamics:
         rot = t3d.euler.euler2mat(roll, pitch, yaw)
         return pos, vel, rot, omega
 
-    def step(self, thrust_cmds, dt):
-        thrust_noise = self.thrust_noise.noise()
+    def step(self, thrust_cmds, dt, crashed_floor):
+        if crashed_floor:
+            thrust_noise = np.zeros(4)
+        else:
+            thrust_noise = self.thrust_noise.noise()
 
         if self.use_numba:
             [self.step1_numba(thrust_cmds, dt, thrust_noise) for t in range(self.dynamics_steps_num)]
@@ -455,10 +465,38 @@ class QuadrotorDynamics:
 
         ## Computing velocities
         self.vel = (1.0 - self.vel_damp) * self.vel + dt * acc
-        if self.crashed_floor and self.clip_floor_vel_mode > 0:
-            min_vel = clip_floor_vel_params[self.clip_floor_vel_mode]['min']
-            max_vel = clip_floor_vel_params[self.clip_floor_vel_mode]['max']
-            self.vel = np.clip(self.vel, a_min=min_vel, a_max=max_vel)
+        if self.crashed_floor:
+            # Friction
+            vel_xy = self.vel[:2]
+            vel_xy_norm = np.linalg.norm(vel_xy)
+            if vel_xy_norm != 0:
+                vel_xy_dir = vel_xy / vel_xy_norm
+                tmp_vel_xy = vel_xy - self.friction_acc * vel_xy_dir * dt
+                if vel_xy[0] * tmp_vel_xy[0] <= 0.0:
+                    tmp_vel_xy[0] = 0.0
+                if vel_xy[1] * tmp_vel_xy[1] <= 0.0:
+                    tmp_vel_xy[1] = 0.0
+
+                self.vel = np.array([tmp_vel_xy[0], tmp_vel_xy[1], 0.0])
+
+            # Omega
+            omega_xyz = copy.deepcopy(self.omega)
+            omega_xyz_norm = np.linalg.norm(omega_xyz)
+            if omega_xyz_norm != 0:
+                omega_xyz_dir = omega_xyz / omega_xyz_norm
+                tmp_omega_xyz = omega_xyz - self.friction_omega_acc * omega_xyz_dir * dt
+                for omega_id in range(len(omega_xyz)):
+                    if omega_xyz[omega_id] * tmp_omega_xyz[omega_id] <= 0.0:
+                        tmp_omega_xyz[omega_id] = 0.0
+
+                self.omega = np.array([tmp_omega_xyz[0], tmp_omega_xyz[1], tmp_omega_xyz[2]])
+
+            if self.clip_floor_vel_mode == 0:
+                self.vel[2] = 0.0
+            else:
+                min_vel = clip_floor_vel_params[self.clip_floor_vel_mode]['min']
+                max_vel = clip_floor_vel_params[self.clip_floor_vel_mode]['max']
+                self.vel = np.clip(self.vel, a_min=min_vel, a_max=max_vel)
 
         if self.normalize_obs and False:
             self.vel = np.clip(self.vel, a_min=-self.vxyz_max, a_max=self.vxyz_max)
@@ -500,10 +538,33 @@ class QuadrotorDynamics:
                                                                                    sum_thr_drag, self.vel_damp, dt,
                                                                                    self.rot.T,
                                                                                    grav_arr)
-        if self.crashed_floor and self.clip_floor_vel_mode > 0:
-            min_vel = clip_floor_vel_params[self.clip_floor_vel_mode]['min']
-            max_vel = clip_floor_vel_params[self.clip_floor_vel_mode]['max']
-            self.vel = np.clip(self.vel, a_min=min_vel, a_max=max_vel)
+
+        if self.crashed_floor:
+            # Friction
+            vel_xy = self.vel[:2]
+            vel_xy_norm = np.linalg.norm(vel_xy)
+            if vel_xy_norm != 0:
+                vel_xy_dir = vel_xy / vel_xy_norm
+                tmp_vel_xy = vel_xy - self.friction_acc * vel_xy_dir * dt
+                if vel_xy[0] * tmp_vel_xy[0] <= 0.0:
+                    tmp_vel_xy[0] = 0.0
+                if vel_xy[1] * tmp_vel_xy[1] <= 0.0:
+                    tmp_vel_xy[1] = 0.0
+
+                self.vel = np.array([tmp_vel_xy[0], tmp_vel_xy[1], 0.0])
+
+            # Omega
+            omega_xyz = copy.deepcopy(self.omega)
+            omega_xyz_norm = np.linalg.norm(omega_xyz)
+            if omega_xyz_norm != 0:
+                omega_xyz_dir = omega_xyz / omega_xyz_norm
+                tmp_omega_xyz = omega_xyz - self.friction_omega_acc * omega_xyz_dir * dt
+                for omega_id in range(len(omega_xyz)):
+                    if omega_xyz[omega_id] * tmp_omega_xyz[omega_id] <= 0.0:
+                        tmp_omega_xyz[omega_id] = 0.0
+
+                self.omega = np.array([tmp_omega_xyz[0], tmp_omega_xyz[1], tmp_omega_xyz[2]])
+
 
         if self.normalize_obs and False:
             self.vel = np.clip(self.vel, a_min=-self.vxyz_max, a_max=self.vxyz_max)
@@ -1091,7 +1152,7 @@ class QuadrotorSingle:
             "goal": [-room_range, room_range],
             "nbr_dist": [np.zeros(1), room_max_dist],
             "nbr_goal_dist": [np.zeros(1), room_max_dist],
-            "wall": [np.zeros(6), 2.0 * np.ones(6)],
+            "wall": [np.zeros(6), 1.0 * np.ones(6)],
             "floor": [np.zeros(1), 2.0 * np.ones(1)],
             "cwallid": [np.zeros(1), 3 * np.ones(1)],
             "cwall": [np.zeros(1), 10.0 * np.ones(1)],
@@ -1174,7 +1235,8 @@ class QuadrotorSingle:
                                   goal=self.goal,
                                   dt=self.dt,
                                   # observation=np.expand_dims(self.state_vector(self), axis=0))
-                                  observation=None)  # assuming we aren't using observations in step function
+                                  observation=None,
+                                  crashed_floor=self.dynamics.crashed_floor)  # assuming we aren't using observations in step function
         # self.oracle.step(self.dynamics, self.goal, self.dt)
         # self.scene.update_state(self.dynamics, self.goal)
 
@@ -1323,7 +1385,7 @@ class QuadrotorSingle:
                 box=(self.room_length, self.room_width, self.room_height), vel_max=self.max_init_vel, omega_max=self.max_init_omega
             )
         else:
-            pos[2] = np.random.uniform(low=0.00, high=0.01)
+            pos[2] = np.random.uniform(low=6.0, high=7.5)
             ## INIT HORIZONTALLY WITH 0 VEL and OMEGA
             vel, omega = npa(0, 0, 0), npa(0, 0, 0)
             rotation = randyaw()
