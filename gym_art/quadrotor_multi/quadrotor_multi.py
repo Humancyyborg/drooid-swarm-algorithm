@@ -18,6 +18,7 @@ from gym_art.quadrotor_multi.quadrotor_single import GRAV, QuadrotorSingle
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
 from gym_art.quadrotor_multi.quad_scenarios import create_scenario
 from gym_art.quadrotor_multi.quad_obstacle_utils import OBSTACLES_SHAPE_LIST
+from sample_factory.utils.utils import log
 
 EPS = 1E-6
 
@@ -47,7 +48,7 @@ class QuadrotorEnvMulti(gym.Env):
                  obst_level_crash_min=2.0, obst_level_crash_max=3.0, obst_level_col_obst_quad_min=2.0,
                  obst_level_col_obst_quad_max=4.0, obst_level_col_quad_min=0.5, obst_level_col_quad_max=1.0,
                  obst_level_pos_min=110.0, obst_level_pos_max=130.0, extra_crash_reward=False,
-                 obst_generation_mode='random', use_pos_diff=False, obst_smooth_penalty_mode='linear'):
+                 obst_generation_mode='random', use_pos_diff=False, obst_smooth_penalty_mode='linear', early_termination=False):
 
         super().__init__()
 
@@ -267,6 +268,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.last_step_unique_collisions = False
         self.crashes_in_recent_episodes = deque([], maxlen=100)
         self.crashes_last_episode = 0
+        self.early_termination = early_termination
 
         # Parameters for physical deployment
         self.apply_downwash = apply_downwash
@@ -298,6 +300,17 @@ class QuadrotorEnvMulti(gym.Env):
 
         vel_rel = vel_neighbor - cur_vel
         return pos_rel, vel_rel
+
+    def early_terminate(self, infos, rewards):
+        """
+         Disable experience collection for drones that collide with each other and stay on the ground
+         for more than 1 second.
+         """
+        for i in range(self.num_agents):
+            if self.all_collisions['ground'][i] and self.early_termination:
+                infos[i]['is_active'] = False
+                log.debug(f'Early Terminate agent {i}')
+                rewards[i] = 0
 
     def get_rel_pos_vel_stack(self):
         rel_pos_stack, rel_vel_stack = [], []
@@ -888,27 +901,40 @@ class QuadrotorEnvMulti(gym.Env):
                         quad_arm=self.quad_arm, room_dims=self.room_dims, inf_height=self.obst_inf_height,
                         crash_mode=self.crash_mode)
 
+        self.early_terminate(infos, rewards)
         for i in range(self.num_agents):
-            # rewards[i] += rew_collisions[i]
-            infos[i]["rewards"]["rew_quadcol"] = rew_collisions[i]
-            infos[i]["rewards"]["rewraw_quadcol"] = rew_collisions_raw[i]
+            if self.all_collisions['ground'][i]:
+                for k in infos[i]['rewards'].keys():
+                    infos[i]['rewards'][k] = 0
+                infos[i]["rewards"]["rew_proximity"] = 0
+                infos[i]["rewards"]["rew_quadcol"] = 0
+                infos[i]["rewards"]["rewraw_quadcol"] = 0
+                if self.use_obstacles:
+                    infos[i]["rewards"]["rew_quadcol_obstacle"] = 0
+                    infos[i]["rewards"]["rewraw_quadcol_obstacle"] = 0
+                    infos[i]["rewards"]["rew_obst_quad_proximity"] = 0
+                    infos[i]["rewards"]["rew_obst_quad_proximity_by_vel"] = 0
+            else:
+                # rewards[i] += rew_collisions[i]
+                infos[i]["rewards"]["rew_quadcol"] = rew_collisions[i]
+                infos[i]["rewards"]["rewraw_quadcol"] = rew_collisions_raw[i]
 
-            rewards[i] += rew_proximity[i]
-            infos[i]["rewards"]["rew_proximity"] = rew_proximity[i]
+                rewards[i] += rew_proximity[i]
+                infos[i]["rewards"]["rew_proximity"] = rew_proximity[i]
 
-            # rewards[i] += rew_quad_prox_vel_collision[i]
-            # infos[i]["rewards"]["rew_quad_proximity_by_vel"] = rew_quad_prox_vel_collision[i]
+                # rewards[i] += rew_quad_prox_vel_collision[i]
+                # infos[i]["rewards"]["rew_quad_proximity_by_vel"] = rew_quad_prox_vel_collision[i]
 
-            if self.use_obstacles:
-                # rewards[i] += rew_collisions_obst_quad[i]
-                rewards[i] += rew_obst_quad_proximity[i]
-                # rewards[i] += rew_drone_obst_prox_vel_collision[i]
+                if self.use_obstacles:
+                    # rewards[i] += rew_collisions_obst_quad[i]
+                    rewards[i] += rew_obst_quad_proximity[i]
+                    # rewards[i] += rew_drone_obst_prox_vel_collision[i]
 
-                infos[i]["rewards"]["rew_quadcol_obstacle"] = rew_collisions_obst_quad[i]
-                infos[i]["rewards"]["rewraw_quadcol_obstacle"] = rew_obst_quad_collisions_raw[i]
-                infos[i]["rewards"]["rew_obst_quad_proximity"] = rew_obst_quad_proximity[i]
+                    infos[i]["rewards"]["rew_quadcol_obstacle"] = rew_collisions_obst_quad[i]
+                    infos[i]["rewards"]["rewraw_quadcol_obstacle"] = rew_obst_quad_collisions_raw[i]
+                    infos[i]["rewards"]["rew_obst_quad_proximity"] = rew_obst_quad_proximity[i]
 
-                infos[i]["rewards"]["rew_obst_quad_proximity_by_vel"] = rew_drone_obst_prox_vel_collision[i]
+                    infos[i]["rewards"]["rew_obst_quad_proximity_by_vel"] = rew_drone_obst_prox_vel_collision[i]
 
         # Run the scenario passed to self.quads_mode
         if self.scenario.quads_mode in QUADS_MODE_OBST_INFO_LIST or (
