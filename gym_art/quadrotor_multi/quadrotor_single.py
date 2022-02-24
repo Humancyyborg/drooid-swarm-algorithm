@@ -1393,7 +1393,7 @@ class QuadrotorSingle:
                 box=(self.room_length, self.room_width, self.room_height), vel_max=self.max_init_vel, omega_max=self.max_init_omega
             )
         else:
-            pos[2] = np.random.uniform(low=6.0, high=7.5)
+            pos[2] = 7.0
             ## INIT HORIZONTALLY WITH 0 VEL and OMEGA
             vel, omega = npa(0, 0, 0), npa(0, 0, 0)
             rotation = randyaw()
