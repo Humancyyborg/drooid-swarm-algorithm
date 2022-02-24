@@ -41,8 +41,13 @@ class MultiObstacles:
         self.obst_num_in_room = 0
         self.obst_generation_mode = obst_generation_mode
         self.change_step = obst_change_step
-        self.grid_size = 1.0
+        self.grid_size = self.size
         self.max_obst_num = int((self.half_room_length - 0.5 * self.grid_size) / self.change_step)
+        self.x_cells, self.y_cells = int(self.room_dims[0] / self.grid_size), int(self.room_dims[1] / self.grid_size)
+        self.cell_centers = [
+            (i + (self.grid_size / 2) - self.half_room_length, j + (self.grid_size / 2) - self.half_room_width) for i in
+            np.arange(0, self.room_dims[0], self.grid_size) for j in np.arange(0, self.room_dims[1], self.grid_size)]
+
         # self.counter = 0
         # self.counter_list = []
 
@@ -347,13 +352,13 @@ class MultiObstacles:
         rot_pos_x = middle_point[0] + math.cos(alpha) * (pos_x - middle_point[0]) - math.sin(alpha) * (pos_y - middle_point[1])
         rot_pos_y = middle_point[1] + math.sin(alpha) * (pos_x - middle_point[0]) + math.cos(alpha) * (pos_y - middle_point[1])
 
-        rot_pos_x = round(rot_pos_x)
-        rot_pos_y = round(rot_pos_y)
+        dist = lambda p1, p2: (p1[0] - p2[0])**2 + (p1[1] - p2[1])**2
+        rot_pos_x, rot_pos_y = min(self.cell_centers, key=lambda coord: dist(coord, (rot_pos_x, rot_pos_y)))
 
-        rot_pos_x = np.clip(rot_pos_x, a_min=-self.half_room_length + 1.0, a_max=self.half_room_length - 1.0)
-        rot_pos_y = np.clip(rot_pos_y, a_min=-self.half_room_width + 1.0, a_max=self.half_room_width - 1.0)
+        rot_pos_x = np.clip(rot_pos_x, a_min=-self.half_room_length + self.grid_size, a_max=self.half_room_length - self.grid_size)
+        rot_pos_y = np.clip(rot_pos_y, a_min=-self.half_room_width + self.grid_size, a_max=self.half_room_width - self.grid_size)
 
-        pos_xy = np.array([rot_pos_x, rot_pos_y]) + self.grid_size / 2
+        pos_xy = np.array([rot_pos_x, rot_pos_y])
 
         if self.scenario_mode not in QUADS_MODE_GOAL_CENTERS:
             collide_start = self.check_pos(pos_xy, self.start_range)
