@@ -1355,11 +1355,11 @@ class Scenario_o_inside_obstacles(Scenario_o_dynamic_diff_goal):
 
         return infos, rewards
 
-    def reset(self, obst_level=-1, obst_level_num_window=4):
+    def reset(self, obst_level=-1, obst_level_num_window=2):
         self.cur_start_tick = 0
         self.obst_level = obst_level
-        self.obst_num_in_room = np.random.randint(low=self.obst_level - obst_level_num_window + 2,
-                                                  high=self.obst_level + 2)
+        self.obst_num_in_room = np.random.randint(low=self.obst_level + 2,
+                                                  high=self.obst_level + obst_level_num_window + 2)
         self.obst_num_in_room = max(1, self.obst_num_in_room)
 
         self.init_flag = np.random.randint(4)
@@ -1430,11 +1430,11 @@ class Scenario_o_swap_goals(Scenario_o_inside_obstacles):
 
         return infos, rewards
 
-    def reset(self, obst_level=-1, obst_level_num_window=4):
+    def reset(self, obst_level=-1, obst_level_num_window=2):
         self.cur_start_tick = 0
         self.obst_level = obst_level
-        self.obst_num_in_room = np.random.randint(low=self.obst_level - obst_level_num_window + 2,
-                                                  high=self.obst_level + 2)
+        self.obst_num_in_room = np.random.randint(low=self.obst_level + 2,
+                                                  high=self.obst_level + obst_level_num_window + 2)
         self.obst_num_in_room = max(1, self.obst_num_in_room)
         self.init_flag = np.random.randint(4)
         self.spawn_flag = self.init_flag
@@ -1644,8 +1644,8 @@ class Scenario_o_uniform_goal_spawn(QuadrotorScenario):
         half_room_length = self.room_dims[0] / 2
         half_room_width = self.room_dims[1] / 2
 
-        x = np.random.uniform(low=-1.0 * half_room_length + 0.5, high=half_room_length - 0.5)
-        y = np.random.uniform(low=-1.0 * half_room_width + 0.5, high=half_room_width - 0.5)
+        x = np.random.uniform(low=-1.0 * half_room_length + 1.0, high=half_room_length - 1.0)
+        y = np.random.uniform(low=-1.0 * half_room_width + 1.0, high=half_room_width - 1.0)
         z = np.random.uniform(low=6.0, high=7.5)
         return np.array([x, y, z])
 
@@ -1750,11 +1750,11 @@ class Scenario_o_uniform_swarm_vs_swarm(QuadrotorScenario):
         half_room_length = self.room_dims[0] / 2
         half_room_width = self.room_dims[1] / 2
 
-        x_1 = np.random.uniform(low=-1.0 * half_room_length + 0.5, high=half_room_length - 0.5)
-        y_1 = np.random.uniform(low=-1.0 * half_room_width + 0.5, high=half_room_width - 0.5)
+        x_1 = np.random.uniform(low=-1.0 * half_room_length + 1.0, high=half_room_length - 1.0)
+        y_1 = np.random.uniform(low=-1.0 * half_room_width + 1.0, high=half_room_width - 1.0)
 
-        x_2 = np.random.uniform(low=-1.0 * half_room_length + 0.5, high=half_room_length - 0.5)
-        y_2 = np.random.uniform(low=-1.0 * half_room_width + 0.5, high=half_room_width - 0.5)
+        x_2 = np.random.uniform(low=-1.0 * half_room_length + 1.0, high=half_room_length - 1.0)
+        y_2 = np.random.uniform(low=-1.0 * half_room_width + 1.0, high=half_room_width - 1.0)
 
         z_1, z_2 = np.random.uniform(low=6.0, high=7.5, size=2)
 
@@ -1858,13 +1858,13 @@ class Scenario_mix(QuadrotorScenario):
         self.formation_size = self.scenario.formation_size
         return infos, rewards
 
-    def reset(self, obst_level=-1, obst_level_num_window=4, obst_num=8, max_obst_num=4, obst_level_mode=1):
+    def reset(self, obst_level=-1, obst_level_num_window=2, obst_num=8, max_obst_num=4, obst_level_mode=1):
         self.cur_start_tick = 0
         if obst_level <= -1:
             self.obst_num_in_room = 0
         else:
-            self.obst_num_in_room = np.random.randint(low=obst_level - obst_level_num_window + 2,
-                                                      high=obst_level + 2)
+            self.obst_num_in_room = np.random.randint(low=obst_level + 2,
+                                                      high=obst_level + obst_level_num_window + 2)
             self.obst_num_in_room = np.clip(self.obst_num_in_room, a_min=1, a_max=obst_num)
 
         mode_index = np.random.randint(low=0, high=len(self.quads_mode_list))

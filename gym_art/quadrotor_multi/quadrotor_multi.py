@@ -199,7 +199,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.obst_level = obst_level
         self.obst_level_mode = obst_level_mode
         self.episode_num_control_level = 10
-        self.obst_level_num_window = 4
+        self.obst_level_num_window = 2
         self.obst_split_level = 0
         self.obst_level_condition_dict = {
             'crash': {
@@ -683,7 +683,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         if all(upgrade_flag):
             self.obst_level += 1
-            self.obst_level = np.clip(self.obst_level, a_min=-1, a_max=self.obstacle_num - 2 + self.obst_level_num_window)
+            self.obst_level = np.clip(self.obst_level, a_min=-1, a_max=self.obstacle_num - 2)
             self.obst_level_condition_dict['crash']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
             self.obst_level_condition_dict['collision_obst_quad']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
             return
@@ -695,7 +695,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         if self.obst_level > -1 and any(downgrade_flag):
             self.obst_level -= 1
-            self.obst_level = np.clip(self.obst_level, a_min=-1, a_max=self.obstacle_num - 2 + self.obst_level_num_window)
+            self.obst_level = np.clip(self.obst_level, a_min=-1, a_max=self.obstacle_num - 2)
             self.obst_level_condition_dict['crash']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
             self.obst_level_condition_dict['collision_obst_quad']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
             return
@@ -979,8 +979,12 @@ class QuadrotorEnvMulti(gym.Env):
                         infos[i]['episode_extra_stats']['episode_id'] = self.episode_id
                         infos[i]['episode_extra_stats']['obst_level'] = self.obst_level
 
-                        infos[i]['episode_extra_stats'][f'obst_counter_air_{self.scenario.name()}'] = self.cur_ep_obst_counter
-                        infos[i]['episode_extra_stats'][f'air_rate{self.scenario.name()}'] = air_rate
+                        if air_rate > 0.8:
+                            infos[i]['episode_extra_stats'][f'obst_counter_air_{self.scenario.name()}'] = self.cur_ep_obst_counter
+
+                        infos[i]['episode_extra_stats'][f'overall_obst_a_i_r_{self.scenario.name()}'] = self.cur_ep_obst_counter
+
+                        infos[i]['episode_extra_stats'][f'air_rate_{self.scenario.name()}'] = air_rate
 
             obs = self.reset()
             dones = [True] * len(dones)  # terminate the episode for all "sub-envs"

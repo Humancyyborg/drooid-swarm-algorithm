@@ -1160,7 +1160,7 @@ class QuadrotorSingle:
             "goal": [-room_range, room_range],
             "nbr_dist": [np.zeros(1), room_max_dist],
             "nbr_goal_dist": [np.zeros(1), room_max_dist],
-            "wall": [np.zeros(6), 1.0 * np.ones(6)],
+            "wall": [np.zeros(6), 2.0 * np.ones(6)],
             "floor": [np.zeros(1), 2.0 * np.ones(1)],
             "cwallid": [np.zeros(1), 3 * np.ones(1)],
             "cwall": [np.zeros(1), 10.0 * np.ones(1)],
