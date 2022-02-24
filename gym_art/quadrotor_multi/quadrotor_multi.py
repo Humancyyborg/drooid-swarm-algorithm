@@ -950,6 +950,9 @@ class QuadrotorEnvMulti(gym.Env):
                 self.obst_level_condition_dict['crash']['value_arr'].append(num_crashed_floor / air_rate)
                 self.obst_level_condition_dict['collision_obst_quad']['value_arr'].append(self.cur_ep_obst_counter / air_rate)
                 self.change_level()
+            else:
+                self.obst_level_condition_dict['crash']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
+                self.obst_level_condition_dict['collision_obst_quad']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
 
             for i in range(len(infos)):
                 if self.saved_in_replay_buffer:
