@@ -7,8 +7,9 @@ _params = ParamGrid([
     ('hidden_size', [256]),
     ('quads_neighbor_hidden_size', [128]),
     ('quads_obstacle_hidden_size', [128]),
-    ('quads_obstacle_num', [6]),
+    ('quads_obstacle_num', [10]),
     ('quads_obstacle_size', [1.0]),
+    ('quads_early_termination', [True]),
 ])
 
 SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
