@@ -309,7 +309,6 @@ class QuadrotorEnvMulti(gym.Env):
         for i in range(self.num_agents):
             if self.all_collisions['ground'][i] and self.early_termination:
                 infos[i]['is_active'] = False
-                log.debug(f'Early Terminate agent {i}')
                 rewards[i] = 0
 
     def get_rel_pos_vel_stack(self):
