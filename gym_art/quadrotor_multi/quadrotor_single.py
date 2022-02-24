@@ -279,8 +279,8 @@ class QuadrotorDynamics:
         rot = t3d.euler.euler2mat(roll, pitch, yaw)
         return pos, vel, rot, omega
 
-    def step(self, thrust_cmds, dt, crashed_floor):
-        if crashed_floor:
+    def step(self, thrust_cmds, dt, crashed_floor, broken_flag):
+        if crashed_floor or broken_flag:
             thrust_noise = np.zeros(4)
         else:
             thrust_noise = self.thrust_noise.noise()
@@ -1055,6 +1055,9 @@ class QuadrotorSingle:
         #########################################
         self._seed()
 
+        # Broken
+        self.broken_flag = False
+
     def reset_ep_len(self, ep_time):
         self.ep_time = ep_time
         self.ep_len = int(self.ep_time / (self.dt * self.sim_steps))
@@ -1244,7 +1247,8 @@ class QuadrotorSingle:
                                   dt=self.dt,
                                   # observation=np.expand_dims(self.state_vector(self), axis=0))
                                   observation=None,
-                                  crashed_floor=self.dynamics.crashed_floor)  # assuming we aren't using observations in step function
+                                  crashed_floor=self.dynamics.crashed_floor,
+                                  broken_flag=self.broken_flag)  # assuming we aren't using observations in step function
         # self.oracle.step(self.dynamics, self.goal, self.dt)
         # self.scene.update_state(self.dynamics, self.goal)
 
@@ -1378,6 +1382,8 @@ class QuadrotorSingle:
         return pos
 
     def _reset(self, midreset=False):
+        self.broken_flag = False
+
         if self.dynamics_randomize_every is not None and (self.traj_count + 1) % (self.dynamics_randomize_every) == 0:
             self.resample_dynamics()
 

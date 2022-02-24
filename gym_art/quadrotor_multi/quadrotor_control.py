@@ -85,12 +85,12 @@ class RawControl(object):
 
     # modifies the dynamics in place.
     #@profile
-    def step(self, dynamics, action, goal, dt, observation=None, crashed_floor=False):
+    def step(self, dynamics, action, goal, dt, observation=None, crashed_floor=False, broken_flag=False):
         action = self.scale * (action + self.bias)
         action = np.clip(action, a_min=self.low, a_max=self.high)
-        if crashed_floor:
+        if crashed_floor or broken_flag:
             action = self.low * np.ones(4)
-        dynamics.step(action, dt, crashed_floor)
+        dynamics.step(action, dt, crashed_floor, broken_flag)
         self.action = action.copy()
     #@profile
     def step_tf(self, dynamics, action, goal, dt, observation=None):

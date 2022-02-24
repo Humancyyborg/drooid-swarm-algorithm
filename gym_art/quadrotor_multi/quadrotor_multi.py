@@ -502,6 +502,9 @@ class QuadrotorEnvMulti(gym.Env):
                 # We assign penalties to the drones which collide with the obstacles
                 # And obst_quad_last_step_unique_collisions only include drones' id
                 rew_obst_quad_collisions_raw[obst_quad_last_step_unique_collisions] = -1.0
+                for collide_obst_id in obst_quad_last_step_unique_collisions:
+                    self.envs[collide_obst_id].broken_flag = True
+
                 self.obst_midreset_list[obst_quad_last_step_unique_collisions] += 1.0
                 if self.extra_crash_reward:
                     assert self.multi_obstacles.shape == 'cylinder'
