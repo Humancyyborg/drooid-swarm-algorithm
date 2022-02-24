@@ -472,7 +472,7 @@ class QuadrotorEnvMulti(gym.Env):
         rew_collisions = self.rew_coeff["quadcol_bin"] * rew_collisions_raw
 
         # penalties for being too close to other drones
-        rew_proximity = -1.0 * calculate_drone_proximity_penalties(
+        rew_proximity = calculate_drone_proximity_penalties(
             distance_matrix=distance_matrix, arm=self.quad_arm, dt=self.control_dt,
             penalty_fall_off=self.collision_falloff_radius,
             max_penalty=self.rew_coeff["quadcol_bin_smooth_max"],
