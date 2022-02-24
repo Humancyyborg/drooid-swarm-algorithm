@@ -15,7 +15,7 @@ _params = ParamGrid([
 SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
     ' --num_workers=36 --quads_obstacle_type=cylinder --quads_local_obst_obs=2 '
     '--quads_obst_level_mode=1 --with_wandb=False '
-    '--quads_apply_downwash=False --quads_obstacle_num=6 '
+    '--quads_apply_downwash=False '
     '--quads_use_pos_diff=False --quads_episode_duration=20.0'
     '--quads_collision_reward=0.0 --quads_collision_obstacle_reward=0.0 '
     '--quads_neighbor_proximity_mode=1 --quads_obst_proximity_mode=1'
