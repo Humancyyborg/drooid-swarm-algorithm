@@ -495,8 +495,9 @@ def perform_collision_with_wall(drone_dyn, room_box, crash_mode):
     elif y_list[1]:
         direction[1] = np.random.uniform(low=-1.0, high=-0.1)
 
+    direction[2] = np.random.uniform(low=-1.0, high=-0.5)
     if z_list[0]:
-        direction[2] = np.random.uniform(low=-0.01, high=0.01)
+        direction[2] = np.random.uniform(low=0.0, high=0.01)
     elif z_list[1]:
         direction[2] = np.random.uniform(low=-1.0, high=-0.5)
 

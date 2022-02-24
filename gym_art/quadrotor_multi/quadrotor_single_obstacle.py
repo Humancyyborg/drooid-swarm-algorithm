@@ -376,6 +376,7 @@ class SingleObstacle:
                   abs_shift_pos[2] > obst_z_size and shift_pos[2] < 0]
 
         direction = np.random.uniform(low=-1.0, high=1.0, size=(3,))
+        direction[2] = np.random.uniform(low=-1.0, high=-0.5)
         if drone_pos[2] == 0.0:
             direction[2] = np.random.uniform(low=-0.01, high=0.01)
 
@@ -411,13 +412,14 @@ class SingleObstacle:
                   abs_shift_pos[2] > obst_z_size and shift_pos[2] < 0]
 
         direction = shift_pos
+        direction[2] = np.random.uniform(low=-1.0, high=-0.5)
         direction_mag = np.linalg.norm(direction)
         direction = direction / (direction_mag + 0.00001 if direction_mag == 0.0 else direction_mag)
 
         direction += np.random.uniform(low=-0.2 * direction, high=0.2*direction)
 
         if drone_pos[2] == 0.0:
-            direction[2] = np.random.uniform(low=-0.01, high=0.01)
+            direction[2] = np.random.uniform(low=0.0, high=0.01)
 
         # if any item in z_list, we should reconsider direction in xy plane
         if z_list[0]:
