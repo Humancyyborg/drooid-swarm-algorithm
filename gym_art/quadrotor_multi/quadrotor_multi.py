@@ -49,7 +49,7 @@ class QuadrotorEnvMulti(gym.Env):
                  obst_level_col_obst_quad_max=4.0, obst_level_col_quad_min=0.5, obst_level_col_quad_max=1.0,
                  obst_level_pos_min=110.0, obst_level_pos_max=130.0, extra_crash_reward=False,
                  obst_generation_mode='random', use_pos_diff=False, obst_smooth_penalty_mode='linear', early_termination=False,
-                 pos_metric='normal', spawn_height_mode=0):
+                 pos_metric='normal', spawn_height_mode=0, broken_mode=False):
 
         super().__init__()
 
@@ -73,6 +73,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         # # Init multi drone envs
         self.envs = []
+        self.broken_mode = broken_mode
         for i in range(self.num_agents):
             e = QuadrotorSingle(
                 dynamics_params=dynamics_params, dynamics_change=dynamics_change,
@@ -525,7 +526,10 @@ class QuadrotorEnvMulti(gym.Env):
                 # And obst_quad_last_step_unique_collisions only include drones' id
                 rew_obst_quad_collisions_raw[obst_quad_last_step_unique_collisions] = -1.0
                 for collide_obst_id in obst_quad_last_step_unique_collisions:
-                    self.envs[collide_obst_id].broken_flag = True
+                    if self.broken_mode:
+                        self.envs[collide_obst_id].broken_flag = True
+                    else:
+                        self.envs[collide_obst_id].broken_flag = False
 
                 self.obst_midreset_list[obst_quad_last_step_unique_collisions] += 1.0
                 if self.extra_crash_reward:
