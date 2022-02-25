@@ -274,6 +274,10 @@ class QuadrotorEnvMulti(gym.Env):
         # Parameters for physical deployment
         self.apply_downwash = apply_downwash
 
+        # Change obst level
+        # Decrease obst level give air_rate
+        self.obst_level_air_rate_counter = 0
+
     def set_room_dims(self, dims):
         # dims is a (x, y, z) tuple
         self.room_dims = dims
@@ -979,7 +983,14 @@ class QuadrotorEnvMulti(gym.Env):
                 self.obst_level_condition_dict['crash']['value_arr'].append(num_crashed_floor / air_rate)
                 self.obst_level_condition_dict['collision_obst_quad']['value_arr'].append(self.cur_ep_obst_counter / air_rate)
                 self.change_level()
+                self.obst_level_air_rate_counter = 0
             else:
+                self.obst_level_air_rate_counter += 1
+                if self.obst_level_air_rate_counter >= self.episode_num_control_level:
+                    self.obst_level -= 1
+                    self.obst_level = np.clip(self.obst_level, a_min=-1, a_max=self.obstacle_num - 2)
+                    self.obst_level_air_rate_counter = 0
+
                 self.obst_level_condition_dict['crash']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
                 self.obst_level_condition_dict['collision_obst_quad']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
 
