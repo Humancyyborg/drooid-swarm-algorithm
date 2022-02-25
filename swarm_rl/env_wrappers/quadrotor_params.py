@@ -123,3 +123,5 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_cfg_path', default=None, type=str, help='Path to init model cfg. Must be specified if --quads_init_from_model enabled')
     p.add_argument('--quads_model_path', default=None, type=str, help='Path to init model checkpoint. Must be specified if --quads_init_from_model enabled')
     p.add_argument('--quads_early_termination', default=False, type=str2bool, help='Early terminate experience collection and set rewards to 0 for remainder of episode of drones that collide with the floor')
+
+    p.add_argument('--quads_pos_metric', default='normal', choices=['normal', 'piecewise'], type=str, help='Early terminate experience collection and set rewards to 0 for remainder of episode of drones that collide with the floor')

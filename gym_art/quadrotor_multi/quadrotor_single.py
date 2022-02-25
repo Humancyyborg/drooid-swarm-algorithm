@@ -691,7 +691,8 @@ class QuadrotorDynamics:
 # reasonable reward function for hovering at a goal and not flying too high
 def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, rew_coeff, action_prev,
                             quads_settle=False, quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8,
-                            quads_reward_ep_len=True, pre_pos=None, pos_decay_rate=1.0, use_pos_diff=False):
+                            quads_reward_ep_len=True, pre_pos=None, pos_decay_rate=1.0, use_pos_diff=False,
+                            pos_metric='normal'):
     ##################################################
     ## log to create a sharp peak at the goal
     dist = np.linalg.norm(goal - dynamics.pos)
@@ -711,7 +712,17 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
         cost_pos_raw = dist
         # cost_pos = rew_coeff["pos"] * cost_pos_raw
         # 5 / 2 ^ (0.8 * x)
-        cost_pos = 5 / np.power(2, 0.8 * cost_pos_raw)
+        if pos_metric == 'normal':
+            cost_pos = 5 / np.power(2, 0.8 * cost_pos_raw)
+        elif pos_metric == 'piecewise':
+            if dist >= 1.0:
+                cost_pos = 5 / np.power(2, 0.8 * cost_pos_raw)
+            else:
+                # 4.177/(x * 20)^0.125)
+                cost_pos = 4.177 / np.power(20 * cost_pos_raw, 0.125)
+                cost_pos = min(cost_pos, 5.0)
+        else:
+            raise NotImplementedError(f'pos_metric: {pos_metric} is not supported!')
 
         if pre_pos is None:
             pre_pos = dynamics.pos
@@ -871,7 +882,7 @@ class QuadrotorSingle:
                  quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8, view_mode='local',
                  obstacle_mode='no_obstacles', obstacle_num=0, num_use_neighbor_obs=0, num_local_obst=0,
                  obst_obs_type='none', quads_reward_ep_len=True, clip_floor_vel_mode=0, normalize_obs=False,
-                 obst_inf_height=False, use_pos_diff=False):
+                 obst_inf_height=False, use_pos_diff=False, pos_metric='normal'):
         np.seterr(under='ignore')
         """
         Args:
@@ -1057,6 +1068,9 @@ class QuadrotorSingle:
 
         # Broken
         self.broken_flag = False
+
+        # Pos metric
+        self.pos_metric = pos_metric
 
     def reset_ep_len(self, ep_time):
         self.ep_time = ep_time
@@ -1261,7 +1275,8 @@ class QuadrotorSingle:
                                                    quads_settle_range_meters=self.quads_settle_range_meters,
                                                    quads_vel_reward_out_range=self.quads_vel_reward_out_range,
                                                    quads_reward_ep_len=self.quads_reward_ep_len, pre_pos=self.pre_pos,
-                                                   pos_decay_rate=self.pos_decay_rate, use_pos_diff=self.use_pos_diff
+                                                   pos_decay_rate=self.pos_decay_rate, use_pos_diff=self.use_pos_diff,
+                                                   pos_metric=self.pos_metric
         )
         self.pre_pos = copy.deepcopy(self.dynamics.pos)
 
