@@ -3,12 +3,13 @@ from sample_factory.runner.run_description import RunDescription, Experiment, Pa
 from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_8_OBSTACLES_PARAMETERZE_CLI, seeds
 
 _params = ParamGrid([
-    ('seed', seeds(4)),
+    ('seed', seeds(2)),
     ('quads_obstacle_num', [10]),
     ('quads_obstacle_size', [0.6]),
     ('quads_early_termination', [True]),
     ('quads_init_random_state', [False]),
     ('quads_pos_metric', ['piecewise']),
+    ('quads_spawn_height_mode', [0, 1]),
 ])
 
 SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
