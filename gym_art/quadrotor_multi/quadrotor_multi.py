@@ -18,7 +18,6 @@ from gym_art.quadrotor_multi.quadrotor_single import GRAV, QuadrotorSingle
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
 from gym_art.quadrotor_multi.quad_scenarios import create_scenario
 from gym_art.quadrotor_multi.quad_obstacle_utils import OBSTACLES_SHAPE_LIST
-from sample_factory.utils.utils import log
 
 EPS = 1E-6
 
@@ -49,7 +48,7 @@ class QuadrotorEnvMulti(gym.Env):
                  obst_level_col_obst_quad_max=4.0, obst_level_col_quad_min=0.5, obst_level_col_quad_max=1.0,
                  obst_level_pos_min=110.0, obst_level_pos_max=130.0, extra_crash_reward=False,
                  obst_generation_mode='random', use_pos_diff=False, obst_smooth_penalty_mode='linear', early_termination=False,
-                 pos_metric='normal', spawn_height_mode=0, broken_mode=False):
+                 pos_metric='normal', spawn_height_mode=0, broken_mode=False, curriculum_min_obst=0):
 
         super().__init__()
 
@@ -196,6 +195,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.obst_generation_mode = obst_generation_mode
         self.obst_change_step = 1.0
         self.obst_smooth_penalty_mode = obst_smooth_penalty_mode
+        self.curriculum_min_obst = curriculum_min_obst
 
         # # Parameters used in controlling different level of obstacles (curriculum learning)
         self.freeze_obst_level = freeze_obst_level
@@ -214,11 +214,6 @@ class QuadrotorEnvMulti(gym.Env):
             'collision_obst_quad': {
                 'low_bound': obst_level_col_obst_quad_min,
                 'high_bound': obst_level_col_obst_quad_max,
-                'value_arr': deque([], maxlen=self.episode_num_control_level)
-            },
-            'collision_quad': {
-                'low_bound': obst_level_col_quad_min,
-                'high_bound': obst_level_col_quad_max,
                 'value_arr': deque([], maxlen=self.episode_num_control_level)
             },
         }
@@ -698,11 +693,9 @@ class QuadrotorEnvMulti(gym.Env):
 
         mean_crash = abs(np.mean(self.obst_level_condition_dict['crash']['value_arr']))
         mean_collision_obst_quad = np.mean(self.obst_level_condition_dict['collision_obst_quad']['value_arr'])
-        mean_collision_quad = np.mean(self.obst_level_condition_dict['collision_quad']['value_arr'])
 
         # upgrade level
         metric_obst_quad = 1 + np.clip(self.obst_level, a_min=0, a_max=8) * 0.12  # The metric of moving to the next level is in [1, 3]
-        metric_quad = 1.0
 
         if self.obst_level < 0:  # -1
             upgrade_flag = [
@@ -711,7 +704,6 @@ class QuadrotorEnvMulti(gym.Env):
         else:
             upgrade_flag = [
                 mean_collision_obst_quad < metric_obst_quad,
-                mean_collision_quad < metric_quad,
             ]
 
         if all(upgrade_flag):
@@ -724,7 +716,6 @@ class QuadrotorEnvMulti(gym.Env):
         # downgrade level
         downgrade_flag = [
             mean_collision_obst_quad > 2.0 * metric_obst_quad,
-            mean_collision_quad > 2.0 * metric_quad,
         ]
 
         if self.obst_level > -1 and any(downgrade_flag):
@@ -790,7 +781,7 @@ class QuadrotorEnvMulti(gym.Env):
         elif self.scenario.quads_mode == 'mix' and self.use_obstacles:
             self.scenario.reset(obst_level=self.obst_level, obst_level_num_window=self.obst_level_num_window,
                                 obst_num=self.obstacle_num, max_obst_num=self.multi_obstacles.max_obst_num,
-                                obst_level_mode=self.obst_level_mode)
+                                obst_level_mode=self.obst_level_mode, curriculum_min_obst=self.curriculum_min_obst)
         else:
             self.scenario.reset()
 
@@ -996,7 +987,6 @@ class QuadrotorEnvMulti(gym.Env):
             if air_rate > 0.8:  # 16 out of 20 seconds
                 self.obst_level_condition_dict['crash']['value_arr'].append(num_crashed_floor / air_rate)
                 self.obst_level_condition_dict['collision_obst_quad']['value_arr'].append(self.cur_ep_obst_counter / air_rate)
-                self.obst_level_condition_dict['collision_quad']['value_arr'].append(self.collisions_after_settle / air_rate)
                 self.change_level()
                 self.obst_level_air_rate_counter = 0
             else:
@@ -1008,7 +998,6 @@ class QuadrotorEnvMulti(gym.Env):
 
                 self.obst_level_condition_dict['crash']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
                 self.obst_level_condition_dict['collision_obst_quad']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
-                self.obst_level_condition_dict['collision_quad']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
 
             for i in range(len(infos)):
                 if self.saved_in_replay_buffer:
