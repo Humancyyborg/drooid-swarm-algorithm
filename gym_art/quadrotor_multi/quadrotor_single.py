@@ -37,6 +37,7 @@ import transforms3d as t3d
 # GYM
 from gym.utils import seeding
 from gym_art.quadrotor_multi.inertia import QuadLink, QuadLinkSimplified
+from gym_art.quadrotor_multi.params import spawn_height_dict
 from gym_art.quadrotor_multi.quad_crash_utils import clip_floor_vel_params
 from gym_art.quadrotor_multi.quadrotor_control import *
 from gym_art.quadrotor_multi.quadrotor_visualization import *
@@ -882,7 +883,7 @@ class QuadrotorSingle:
                  quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8, view_mode='local',
                  obstacle_mode='no_obstacles', obstacle_num=0, num_use_neighbor_obs=0, num_local_obst=0,
                  obst_obs_type='none', quads_reward_ep_len=True, clip_floor_vel_mode=0, normalize_obs=False,
-                 obst_inf_height=False, use_pos_diff=False, pos_metric='normal'):
+                 obst_inf_height=False, use_pos_diff=False, pos_metric='normal', spawn_height_mode=0):
         np.seterr(under='ignore')
         """
         Args:
@@ -1071,6 +1072,7 @@ class QuadrotorSingle:
 
         # Pos metric
         self.pos_metric = pos_metric
+        self.spawn_height_mode = spawn_height_mode
 
     def reset_ep_len(self, ep_time):
         self.ep_time = ep_time
@@ -1414,7 +1416,7 @@ class QuadrotorSingle:
                 box=(self.room_length, self.room_width, self.room_height), vel_max=self.max_init_vel, omega_max=self.max_init_omega
             )
         else:
-            pos[2] = 7.0
+            pos[2] = spawn_height_dict[self.spawn_height_mode]['drone_z']
             ## INIT HORIZONTALLY WITH 0 VEL and OMEGA
             vel, omega = npa(0, 0, 0), npa(0, 0, 0)
             rotation = randyaw()

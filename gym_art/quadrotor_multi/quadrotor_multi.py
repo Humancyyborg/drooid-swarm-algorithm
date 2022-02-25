@@ -49,7 +49,7 @@ class QuadrotorEnvMulti(gym.Env):
                  obst_level_col_obst_quad_max=4.0, obst_level_col_quad_min=0.5, obst_level_col_quad_max=1.0,
                  obst_level_pos_min=110.0, obst_level_pos_max=130.0, extra_crash_reward=False,
                  obst_generation_mode='random', use_pos_diff=False, obst_smooth_penalty_mode='linear', early_termination=False,
-                 pos_metric='normal'):
+                 pos_metric='normal', spawn_height_mode=0):
 
         super().__init__()
 
@@ -88,7 +88,7 @@ class QuadrotorEnvMulti(gym.Env):
                 obstacle_mode=quads_obstacle_mode, obstacle_num=quads_obstacle_num, num_use_neighbor_obs=local_obs,
                 num_local_obst=local_obst_obs, obst_obs_type=obst_obs_type, quads_reward_ep_len=quads_reward_ep_len,
                 clip_floor_vel_mode=clip_floor_vel_mode, normalize_obs=normalize_obs, obst_inf_height=obst_inf_height,
-                use_pos_diff=use_pos_diff, pos_metric=pos_metric
+                use_pos_diff=use_pos_diff, pos_metric=pos_metric, spawn_height_mode=spawn_height_mode
             )
             self.envs.append(e)
 
@@ -126,7 +126,7 @@ class QuadrotorEnvMulti(gym.Env):
                                         room_dims=self.room_dims, room_dims_callback=self.set_room_dims,
                                         rew_coeff=self.rew_coeff, quads_formation=quads_formation,
                                         quads_formation_size=quads_formation_size,
-                                        one_pass_per_episode=one_pass_per_episode)
+                                        one_pass_per_episode=one_pass_per_episode, spawn_height_mode=spawn_height_mode)
         self.quads_formation_size = quads_formation_size
         self.goal_central = np.array([0., 0., 2.])
 

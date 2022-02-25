@@ -39,4 +39,17 @@ obs_obst_size_dict = {
     'pos_vel_size_shape': 8
 }
 
+spawn_height_dict = {
+    0: {
+        'goal_min_z': 1.0,
+        'goal_max_z': 2.5,
+        'drone_z': 2.0,
+    },
+    1: {
+        'goal_min_z': 6.0,
+        'goal_max_z': 7.5,
+        'drone_z': 7.0,
+    }
+}
+
 quad_arm_size = 0.04596194077712559

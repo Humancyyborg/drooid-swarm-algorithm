@@ -125,3 +125,4 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_early_termination', default=False, type=str2bool, help='Early terminate experience collection and set rewards to 0 for remainder of episode of drones that collide with the floor')
 
     p.add_argument('--quads_pos_metric', default='normal', choices=['normal', 'piecewise'], type=str, help='Early terminate experience collection and set rewards to 0 for remainder of episode of drones that collide with the floor')
+    p.add_argument('--quads_spawn_height_mode', default=1, choices=[0, 1], type=int, help='spawn height of drones')
