@@ -19,7 +19,7 @@ SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
     '--quads_collision_reward=0.0 --quads_collision_obstacle_reward=0.0 '
     '--quads_neighbor_proximity_mode=1 --quads_obst_proximity_mode=1 '
     '--hidden_size=16 --quads_neighbor_hidden_size=16 --quads_obstacle_hidden_size=16 '
-    '--quads_pos_metric=normal --quads_spawn_height_mode=1 --quads_broken_mode=False '
+    '--quads_pos_metric=piecewise --quads_spawn_height_mode=1 --quads_broken_mode=False '
     '--nearest_nbrs=9 --quads_local_obs=-1 --quads_local_obst_obs=-1 --neighbor_obs_type=pos_vel_size '
     '--obst_obs_type=pos_vel_size'
 )
