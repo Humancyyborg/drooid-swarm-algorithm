@@ -497,7 +497,8 @@ class MultiObstacles:
                                     self.half_room_width + self.size + self.rel_pos_clip_value,
                                     pos_z])
 
-        if level <= -1:
+        self.obst_num_in_room = min(self.obst_num_in_room, self.num_obstacles)
+        if level <= -1 and self.obst_num_in_room == 0:
             pos_arr = np.array([outbox_pos_item for _ in range(self.num_obstacles)])
             inside_room_flag = [False] * self.num_obstacles
             return pos_arr, inside_room_flag
@@ -557,7 +558,6 @@ class MultiObstacles:
 
                 return np.array(pos_arr), inside_room_flag
 
-        self.obst_num_in_room = min(self.obst_num_in_room, self.num_obstacles)
         pos_arr = []
         for i in range(self.obst_num_in_room):
             for regen_id in range(20):

@@ -1876,10 +1876,10 @@ class Scenario_mix(QuadrotorScenario):
         self.formation_size = self.scenario.formation_size
         return infos, rewards
 
-    def reset(self, obst_level=-1, obst_level_num_window=2, obst_num=8, max_obst_num=4, obst_level_mode=1):
+    def reset(self, obst_level=-1, obst_level_num_window=2, obst_num=8, max_obst_num=4, obst_level_mode=1, curriculum_min_obst=0):
         self.cur_start_tick = 0
         if obst_level <= -1:
-            self.obst_num_in_room = 0
+            self.obst_num_in_room = curriculum_min_obst
         else:
             self.obst_num_in_room = np.random.randint(low=obst_level + 2,
                                                       high=obst_level + obst_level_num_window + 2)

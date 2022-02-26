@@ -118,6 +118,7 @@ def make_quadrotor_env_multi(cfg, **kwargs):
         obst_smooth_penalty_mode=cfg.quads_obst_smooth_penalty_mode,
         early_termination=cfg.quads_early_termination, pos_metric=cfg.quads_pos_metric,
         spawn_height_mode=cfg.quads_spawn_height_mode, broken_mode=cfg.quads_broken_mode,
+        curriculum_min_obst=cfg.quads_curriculum_min_obst
     )
 
     if use_replay_buffer:

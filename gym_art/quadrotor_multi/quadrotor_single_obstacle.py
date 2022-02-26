@@ -231,7 +231,11 @@ class SingleObstacle:
             obs = np.concatenate((rel_pos, rel_vel, obst_size, obst_shape), axis=1)
         elif 'static' in self.mode:
             if self.inf_height or 'posxy' in self.obs_type:
-                rel_pos = self.pos[:2] - quads_pos[:, :2]
+                if self.obs_type == 'pos_vel_size':
+                    rel_pos = self.pos - quads_pos
+                    rel_pos[:, 2] = 0.0
+                else:
+                    rel_pos = self.pos[:2] - quads_pos[:, :2]
             else:
                 rel_pos = self.pos - quads_pos
 
