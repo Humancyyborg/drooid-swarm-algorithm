@@ -64,7 +64,7 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_collision_obst_smooth_max_penalty', default=10.0, type=float, help='The upper bound of the collision function given distance among drones')
     p.add_argument('--quads_obst_penalty_fall_off', default=10.0, type=float, help='The upper bound of the collision function given distance among drones')
     p.add_argument('--quads_obst_enable_sim', default=True, type=str2bool, help='That parameter is for testing, True: Enable simulation for collision with obstacles, False: Ignore obstacles even collide with that')
-    p.add_argument('--obst_obs_type', default='none', type=str, choices=['none', 'cpoint', 'pos_size', 'pos_vel_size', 'pos_vel_size_shape'], help='Choose what kind of obs to send to encoder.')
+    p.add_argument('--obst_obs_type', default='none', type=str, choices=['none', 'cpoint', 'pos_size', 'pos_vel', 'pos_vel_size', 'pos_vel_size_shape'], help='Choose what kind of obs to send to encoder.')
     p.add_argument('--quads_obst_model_type', default='whole', type=str, help='Whole: self, neighbor, obstacle, we use seperate model deal with them, then concate them together. nei_obst, we concate nei_obst first, then concate with self_encoder')
 
     p.add_argument('--quads_reward_ep_len', default=True, type=str2bool, help='For each drone, reward scale is same as ep_len or not. For example, ep_len=1600, then rew_crash should equals to 16')

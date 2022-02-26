@@ -249,9 +249,11 @@ class Scenario_dynamic_same_goal(QuadrotorScenario):
         tick = self.envs[0].tick
         if tick % self.control_step_for_sec == 0 and tick > 0:
             box_size = self.envs[0].box
-            x, y = np.random.uniform(low=-box_size, high=box_size, size=(2,))
-            z = np.random.uniform(low=-0.5 * box_size, high=0.5 * box_size) + 2.0
-            z = max(0.25, z)
+            # x, y = np.random.uniform(low=-box_size, high=box_size, size=(2,))
+            # z = np.random.uniform(low=-0.5 * box_size, high=0.5 * box_size) + 2.0
+            # z = max(0.25, z)
+            x, y, z = self.s_point
+            x = -x
             self.formation_center = np.array([x, y, z])
             self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=0.0)
             for i, env in enumerate(self.envs):
@@ -263,7 +265,7 @@ class Scenario_dynamic_same_goal(QuadrotorScenario):
         # Update duration time
         duration_time = np.random.uniform(low=4.0, high=6.0)
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
-
+        self.s_point = np.array([-3.0, -3.0, 2.0])
         # Reset formation, and parameters related to the formation; formation center; goals
         self.standard_reset()
 

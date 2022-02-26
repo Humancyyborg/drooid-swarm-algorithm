@@ -237,6 +237,14 @@ class SingleObstacle:
                 obs = closest_points - quads_pos
             elif self.obs_type == 'pos_size':
                 obs = np.concatenate((rel_pos, obst_size), axis=1)
+            elif self.obs_type == 'pos_vel':
+                closest_points = self.get_closest_points(quads_pos)
+                rel_pos = closest_points - quads_pos
+                # rel_dist = np.linalg.norm(rel_pos, axis=1)
+                # rel_dist = np.maximum(rel_dist, 1e-6)
+                # rel_pos_unit = rel_pos / rel_dist[:, None]
+                # rel_pos -= rel_pos_unit * 0.5 * self.size
+                obs = np.concatenate((rel_pos, rel_vel), axis=1)
             elif self.obs_type == 'pos_vel_size':
                 obs = np.concatenate((rel_pos, rel_vel, obst_size), axis=1)
             elif self.obs_type == 'pos_vel_size_shape':

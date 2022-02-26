@@ -1089,6 +1089,8 @@ class QuadrotorSingle:
                     obst_obs_comps = rel_pos * obstacle_num
                 elif self.obst_obs_type == 'pos_size':
                     obst_obs_comps = (rel_pos + ['osize']) * obstacle_num
+                elif self.obst_obs_type == 'pos_vel':
+                    obst_obs_comps = (rel_pos + ['rovxyz']) * obstacle_num
                 elif self.obst_obs_type == 'pos_vel_size':
                     obst_obs_comps = (rel_pos + ['rovxyz'] + ['osize']) * obstacle_num
                 elif self.obst_obs_type == 'pos_vel_size_shape':

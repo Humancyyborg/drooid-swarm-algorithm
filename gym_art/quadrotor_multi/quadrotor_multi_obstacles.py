@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 
 from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_MODE_MULTI_GOAL_CENTER, QUADS_MODE_GOAL_CENTERS
@@ -35,6 +37,15 @@ class MultiObstacles:
         self.end_range = np.zeros((2, 2))
         self.start_range_list = []
         self.scenario_mode = None
+        self.obst_num_in_room = 8
+
+
+        self.grid_size = self.size
+
+        self.x_cells, self.y_cells = int(self.room_dims[0] / self.grid_size), int(self.room_dims[1] / self.grid_size)
+        self.cell_centers = [
+            (i + (self.grid_size / 2) - self.half_room_length, j + (self.grid_size / 2) - self.half_room_width) for i in
+            np.arange(0, self.room_dims[0], self.grid_size) for j in np.arange(0, self.room_dims[1], self.grid_size)]
         # self.counter = 0
         # self.counter_list = []
 
@@ -130,6 +141,14 @@ class MultiObstacles:
         all_obst_obs = np.stack(all_obst_obs)
         obs = self.concat_obstacle_obs(obs=obs, quads_pos=quads_pos, quads_vel=quads_vel, all_obst_obs=all_obst_obs)
         return obs
+
+
+    def generate_pos(self, obst_id=0, goal_start_point=np.array([-3.0, -2.0, 2.0]), goal_end_point=np.array([3.0, 2.0, 2.0]),
+                     y_gaussian_scale=None):
+
+        pos_xy, collide_flag = self.random_pos(obst_id=obst_id, goal_start_point=goal_start_point,
+                                              goal_end_point=goal_end_point, y_gaussian_scale=y_gaussian_scale)
+        return pos_xy, collide_flag
 
     def collision_detection(self, pos_quads=None, set_obstacles=None):
         if set_obstacles is None:
@@ -297,10 +316,31 @@ class MultiObstacles:
         else:
             return False
 
-    def random_pos(self):
-        pos_x = np.random.uniform(low=-1.0 * self.half_room_length + 1.0, high=self.half_room_length - 1.0)
-        pos_y = np.random.uniform(low=-1.0 * self.half_room_width + 1.0, high=self.half_room_width - 1.0)
-        pos_xy = np.array([pos_x, pos_y])
+    def random_pos(self, obst_id=0, goal_start_point=np.array([-3.0, -2.0, 2.0]), goal_end_point=np.array([3.0, 2.0, 2.0]),
+                   y_gaussian_scale=None):
+        middle_point = (goal_start_point + goal_end_point)/2
+
+        goal_vector = goal_end_point - goal_start_point
+        goal_distance = np.linalg.norm(goal_vector)
+
+        alpha = math.atan2(goal_vector[1], goal_vector[0])
+
+        pos_x = np.random.normal(loc=middle_point[0], scale=goal_distance / 4.0)
+        if y_gaussian_scale is None:
+            y_gaussian_scale = np.random.uniform(low=0.2, high=0.5)
+
+        pos_y = np.random.normal(loc=middle_point[1], scale=y_gaussian_scale)
+
+        rot_pos_x = middle_point[0] + math.cos(alpha) * (pos_x - middle_point[0]) - math.sin(alpha) * (pos_y - middle_point[1])
+        rot_pos_y = middle_point[1] + math.sin(alpha) * (pos_x - middle_point[0]) + math.cos(alpha) * (pos_y - middle_point[1])
+
+        dist = lambda p1, p2: (p1[0] - p2[0])**2 + (p1[1] - p2[1])**2
+        rot_pos_x, rot_pos_y = min(self.cell_centers, key=lambda coord: dist(coord, (rot_pos_x, rot_pos_y)))
+
+        rot_pos_x = np.clip(rot_pos_x, a_min=-self.half_room_length + self.grid_size, a_max=self.half_room_length - self.grid_size)
+        rot_pos_y = np.clip(rot_pos_y, a_min=-self.half_room_width + self.grid_size, a_max=self.half_room_width - self.grid_size)
+
+        pos_xy = np.array([rot_pos_x, rot_pos_y])
 
         if self.scenario_mode not in QUADS_MODE_GOAL_CENTERS:
             collide_start = self.check_pos(pos_xy, self.start_range)
@@ -316,19 +356,13 @@ class MultiObstacles:
 
         return pos_xy, collide_flag
 
-    def generate_pos(self):
-        pos_xy, collide_flag = self.random_pos()
-        if collide_flag:
-            for i in range(3):
-                # self.counter += 1
-                pos_xy, collide_flag = self.random_pos()
-                if not collide_flag:
-                    break
+    def get_pos_no_overlap(self, pos_item, pos_arr, obst_id):
+        # In this function, we assume the shape of all obstacles is cube
+        # But even if we have this assumption, we can still roughly use it for shapes like cylinder
+        if len(pos_arr) == 0:
+            return pos_item, False
 
-        return pos_xy
-
-    def get_pos_no_overlap(self, pos_item, pos_arr):
-        if self.shape != 'cube':
+        if self.shape not in ['cube', 'cylinder']:
             raise NotImplementedError(f'{self.shape} not supported!')
 
         if self.inf_height:
@@ -338,55 +372,87 @@ class MultiObstacles:
 
         min_pos = pos_item - range_shape
         max_pos = pos_item + range_shape
+        min_pos_arr = pos_arr - range_shape
+        max_pos_arr = pos_arr + range_shape
 
-        for pos_i in pos_arr:
-            tmp_min_pos = pos_i - range_shape
-            tmp_max_pos = pos_i + range_shape
-            count = 0
-            while all(min_pos <= tmp_max_pos) and all(max_pos >= tmp_min_pos):
-                if count > 5:
-                    break
-                # self.counter += 1
-                pos_x, pos_y = self.generate_pos()
-                pos_item = np.array([pos_x, pos_y, pos_item[2]])
-                min_pos = pos_item - range_shape
-                max_pos = pos_item + range_shape
-                count += 1
+        overlap_flag = False
+        for j in range(len(pos_arr)):
+            if all(min_pos < max_pos_arr[j]) and all(max_pos > min_pos_arr[j]):
+                overlap_flag = True
+                break
 
-        return pos_item
+        return pos_item, overlap_flag
+
+    def y_gaussian_generation(self, regen_id=0):
+        if regen_id < 3:
+            return None
+
+        y_low = 0.13 * regen_id - 0.1
+        y_high = y_low * np.random.uniform(low=1.5, high=2.5)
+        y_gaussian_scale = np.random.uniform(low=y_low, high=y_high)
+        return y_gaussian_scale
 
     def generate_inf_pos_by_level(self, level=-1, goal_start_point=np.array([-3.0, -3.0, 2.0]),
                                   goal_end_point=np.array([3.0, 3.0, 2.0]), scenario_mode='o_dynamic_same_goal'):
         pos_arr = []
-        init_box_range = self.drone_env.init_box_range
-        if level <= -1:
-            pos_z = -0.5 * self.room_height - 1.0
-        else:
-            pos_z = 0.5 * self.room_height
-
-        # Based on room_dims [10, 10, 10]
-        if scenario_mode not in QUADS_MODE_GOAL_CENTERS:
-            self.start_range = np.array([goal_start_point[:2] + init_box_range[0][:2],
-                                         goal_start_point[:2] + init_box_range[1][:2]])
-
-            if scenario_mode in QUADS_MODE_MULTI_GOAL_CENTER:
-                self.end_range = np.array([goal_end_point[:2] + init_box_range[0][:2],
-                                           goal_end_point[:2] + init_box_range[1][:2]])
-            else:
-                self.end_range = np.array([goal_end_point[:2] + np.array([-0.5, -0.5]),
-                                           goal_end_point[:2] + np.array([0.5, 0.5])])
-        else:
-            for start_point in goal_start_point:
-                start_range = np.array([start_point[:2] + init_box_range[0][:2],
-                                        start_point[:2] + init_box_range[1][:2]])
-
-                self.start_range_list.append(start_range)
-
+        x = 0.0
+        y = -4.0
         for i in range(self.num_obstacles):
-            pos_x, pos_y = self.generate_pos()
-            pos_item = np.array([pos_x, pos_y, pos_z])
-            final_pos_item = self.get_pos_no_overlap(pos_item, pos_arr)
-            pos_arr.append(final_pos_item)
+            pos_arr.append(np.array([x, y, 5.0]))
+            y += 1.5
+        return pos_arr
+
+        # init_box_range = self.drone_env.init_box_range
+        # if level <= -1:
+        #     pos_z = -0.5 * self.room_height - 1.0
+        # else:
+        #     pos_z = 0.5 * self.room_height
+        #
+        # # Based on room_dims [10, 10, 10]
+        # if scenario_mode not in QUADS_MODE_GOAL_CENTERS:
+        #     self.start_range = np.array([goal_start_point[:2] + init_box_range[0][:2],
+        #                                  goal_start_point[:2] + init_box_range[1][:2]])
+        #
+        #     if scenario_mode in QUADS_MODE_MULTI_GOAL_CENTER:
+        #         self.end_range = np.array([goal_end_point[:2] + init_box_range[0][:2],
+        #                                    goal_end_point[:2] + init_box_range[1][:2]])
+        #     else:
+        #         self.end_range = np.array([goal_end_point[:2] + np.array([-0.5, -0.5]),
+        #                                    goal_end_point[:2] + np.array([0.5, 0.5])])
+        # else:
+        #     for start_point in goal_start_point:
+        #         start_range = np.array([start_point[:2] + init_box_range[0][:2],
+        #                                 start_point[:2] + init_box_range[1][:2]])
+        #
+        #         self.start_range_list.append(start_range)
+        #
+        # pos_arr = []
+        # for i in range(self.obst_num_in_room):
+        #     for regen_id in range(20):
+        #         y_gaussian_scale = self.y_gaussian_generation(regen_id=regen_id)
+        #         pos_xy, collide_flag = self.generate_pos(obst_id=i, goal_start_point=goal_start_point,
+        #                                                  goal_end_point=goal_end_point, y_gaussian_scale=y_gaussian_scale)
+        #         pos_item = np.array([pos_xy[0], pos_xy[1], pos_z])
+        #         final_pos_item, overlap_flag = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=pos_arr, obst_id=i)
+        #         if collide_flag is False and overlap_flag is False:
+        #             pos_arr.append(final_pos_item)
+        #             break
+        #
+        #     if len(pos_arr) <= i:
+        #         for double_regen_id in range(20):
+        #             y_gaussian_scale = np.random.uniform(low=0.5 * self.half_room_length, high=1.0 * self.half_room_length)
+        #             pos_xy, collide_flag = self.generate_pos(obst_id=i, goal_start_point=goal_start_point,
+        #                                                      goal_end_point=goal_end_point, y_gaussian_scale=y_gaussian_scale)
+        #             pos_item = np.array([pos_xy[0], pos_xy[1], pos_z])
+        #             final_pos_item, overlap_flag = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=pos_arr,
+        #                                                                    obst_id=i)
+        #             if collide_flag is False and overlap_flag is False:
+        #                 pos_arr.append(final_pos_item)
+        #                 break
+        #
+        #     if len(pos_arr) <= i:
+        #         pos_arr.append(final_pos_item)
+
 
         # self.counter_list.append(self.counter)
         # print('counter: ', self.counter)
