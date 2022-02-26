@@ -29,8 +29,8 @@ class QuadNeighborhoodEncoderDeepsets(QuadNeighborhoodEncoder):
             nonlinearity(cfg)
         )
 
-    def forward(self, self_obs, obs, all_neighbor_obs_size, batch_size):
-        obs_neighbors = obs[:, self.self_obs_dim:self.self_obs_dim + all_neighbor_obs_size]
+    def forward(self, self_obs, obs, all_neighbor_obs_size, batch_size, nbr_obs=None):
+        obs_neighbors = obs[:, self.self_obs_dim:self.self_obs_dim + all_neighbor_obs_size] if nbr_obs is None else nbr_obs
         obs_neighbors = obs_neighbors.reshape(-1, self.neighbor_obs_dim)
         neighbor_embeds = self.embedding_mlp(obs_neighbors)
         neighbor_embeds = neighbor_embeds.reshape(batch_size, -1, self.neighbor_hidden_size)
@@ -69,7 +69,7 @@ class QuadNeighborhoodEncoderAttention(QuadNeighborhoodEncoder):
             fc_layer(neighbor_hidden_size, 1),
         )
 
-    def forward(self, self_obs, obs, all_neighbor_obs_size, batch_size):
+    def forward(self, self_obs, obs, all_neighbor_obs_size, batch_size, nbr_obs=None):
         obs_neighbors = obs[:, self.self_obs_dim:self.self_obs_dim + all_neighbor_obs_size]
         obs_neighbors = obs_neighbors.reshape(-1, self.neighbor_obs_dim)
 
@@ -112,10 +112,108 @@ class QuadNeighborhoodEncoderMlp(QuadNeighborhoodEncoder):
             nonlinearity(cfg),
         )
 
-    def forward(self, self_obs, obs, all_neighbor_obs_size, batch_size):
+    def forward(self, self_obs, obs, all_neighbor_obs_size, batch_size, nbr_obs=None):
         obs_neighbors = obs[:, self.self_obs_dim:self.self_obs_dim + all_neighbor_obs_size]
         final_neighborhood_embedding = self.neighbor_mlp(obs_neighbors)
         return final_neighborhood_embedding
+
+
+class QuadUniformNeighborEncoder(EncoderBase):
+    # use one encoder for obstacles and drones. Assumes same observation space for both objects
+    def __init__(self, cfg, obs_space, timing):
+        super().__init__(cfg, timing)
+        self.self_obs_dim = obs_self_size_dict[cfg.quads_obs_repr]
+        self.neighbor_hidden_size = cfg.quads_neighbor_hidden_size
+        self.neighbor_obs_type = cfg.neighbor_obs_type
+        assert self.neighbor_obs_type == 'pos_vel_size', "Neighbor obs type must be pos_vel_size in order to combine with obstacle obs"
+
+        self.use_spectral_norm = cfg.use_spectral_norm
+        self.obstacle_mode = cfg.quads_obstacle_mode
+        self.quads_obst_model_type = cfg.quads_obst_model_type
+        assert self.obstacle_mode != 'no_obstacles', "Only use this encoder when combining obstacle obs and drone obs into one network"
+        self.obst_type = cfg.obst_obs_type
+        assert self.obst_type == 'pos_vel_size', "Obstacle obs type must be pos_vel_size in order to combine with drone obs"
+
+
+        self.num_use_neighbor_obs = cfg.nearest_nbrs
+
+        self.neighbor_obs_dim = obs_neighbor_size_dict[self.neighbor_obs_type]
+
+        # encode the neighboring drone's observations
+        neighbor_encoder_out_size = 0
+        self.neighbor_encoder = None
+
+        if self.num_use_neighbor_obs > 0:
+            neighbor_encoder_type = cfg.quads_neighbor_encoder_type
+            if neighbor_encoder_type == 'mean_embed':
+                self.neighbor_encoder = QuadNeighborhoodEncoderDeepsets(cfg, self.neighbor_obs_dim,
+                                                                        self.neighbor_hidden_size, self.use_spectral_norm,
+                                                                        self.self_obs_dim, self.num_use_neighbor_obs)
+            elif neighbor_encoder_type == 'attention':
+                self.neighbor_encoder = QuadNeighborhoodEncoderAttention(cfg, self.neighbor_obs_dim,
+                                                                         self.neighbor_hidden_size, self.use_spectral_norm,
+                                                                         self.self_obs_dim, self.num_use_neighbor_obs)
+            elif neighbor_encoder_type == 'mlp':
+                self.neighbor_encoder = QuadNeighborhoodEncoderMlp(cfg, self.neighbor_obs_dim,
+                                                                   self.neighbor_hidden_size, self.use_spectral_norm,
+                                                                   self.self_obs_dim, self.num_use_neighbor_obs)
+            elif neighbor_encoder_type == 'no_encoder':
+                self.neighbor_encoder = None  # blind agent
+            else:
+                raise NotImplementedError
+
+        if self.neighbor_encoder:
+            neighbor_encoder_out_size = self.neighbor_hidden_size
+
+        fc_encoder_layer = cfg.hidden_size
+        # encode the current drone's observations
+        self.self_encoder = nn.Sequential(
+            fc_layer(self.self_obs_dim, fc_encoder_layer, spec_norm=self.use_spectral_norm),
+            nonlinearity(cfg),
+            fc_layer(fc_encoder_layer, fc_encoder_layer, spec_norm=self.use_spectral_norm),
+            nonlinearity(cfg)
+        )
+        self_encoder_out_size = calc_num_elements(self.self_encoder, (self.self_obs_dim,))
+
+        total_encoder_out_size = self_encoder_out_size + neighbor_encoder_out_size
+
+        # this is followed by another fully connected layer in the action parameterization, so we add a nonlinearity here
+        self.feed_forward = nn.Sequential(
+            fc_layer(total_encoder_out_size, 2 * cfg.hidden_size, spec_norm=self.use_spectral_norm),
+            nn.Tanh(),
+        )
+
+        self.encoder_out_size = 2 * cfg.hidden_size
+
+
+    def forward(self, obs_dict):
+        obs = obs_dict['obs']
+        obs_self = obs[:, :self.self_obs_dim]
+        self_embed = self.self_encoder(obs_self)
+        embeddings = self_embed
+        batch_size = obs_self.shape[0]
+        # relative xyz and vxyz for the entire minibatch (batch dimension is batch_size * num_neighbors)
+        all_neighbor_obs_size = self.neighbor_obs_dim * self.num_use_neighbor_obs
+
+        nbr_obs = obs[:, self.self_obs_dim:]  # N nbrs * 7 obs / nbr
+        nbr_obs = nbr_obs.reshape(nbr_obs.shape[0], -1, self.neighbor_obs_dim)
+        nbr_obs_sorted = torch.zeros_like(nbr_obs)
+        with torch.no_grad():
+            for i in range(nbr_obs.shape[0]):
+                # sort all neighbor objects according to their distances
+                nbr_obs_i = nbr_obs[i]
+                dists = torch.linalg.norm(nbr_obs_i[:, :3], dim=1)
+                inds_sorted = torch.argsort(dists)
+                nbr_obs_sorted[i] = nbr_obs[i, inds_sorted, :]
+
+
+        nbr_obs_sorted = nbr_obs_sorted.view(nbr_obs.shape[0], -1)
+        nbr_obs_sorted = nbr_obs_sorted[:, :all_neighbor_obs_size]
+        neighborhood_embedding = self.neighbor_encoder(obs_self, obs, all_neighbor_obs_size, batch_size, nbr_obs_sorted)
+        embeddings = torch.cat((embeddings, neighborhood_embedding), dim=1)
+
+        out = self.feed_forward(embeddings)
+        return out
 
 
 class QuadMultiEncoder(EncoderBase):
@@ -283,4 +381,4 @@ class QuadMultiEncoder(EncoderBase):
 def register_models():
     quad_custom_encoder_name = 'quad_multi_encoder'
     if quad_custom_encoder_name not in ENCODER_REGISTRY:
-        register_custom_encoder(quad_custom_encoder_name, QuadMultiEncoder)
+        register_custom_encoder(quad_custom_encoder_name, QuadUniformNeighborEncoder)

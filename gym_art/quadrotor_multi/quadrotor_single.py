@@ -1183,6 +1183,7 @@ class QuadrotorSingle:
             "floor": [np.zeros(1), 2.0 * np.ones(1)],
             "cwallid": [np.zeros(1), 3 * np.ones(1)],
             "cwall": [np.zeros(1), 10.0 * np.ones(1)],
+            "nsize": [np.zeros(1), np.array([self.dynamics.arm])]
         }
         self.obs_comp_names = list(self.obs_space_low_high.keys())
         self.obs_comp_sizes = [self.obs_space_low_high[name][1].size for name in self.obs_comp_names]
@@ -1190,6 +1191,8 @@ class QuadrotorSingle:
         obs_comps = self.obs_repr.split("_")
         if self.swarm_obs == 'pos_vel' and self.num_agents > 1:
             obs_comps = obs_comps + (['rxyz'] + ['rvxyz']) * self.num_use_neighbor_obs
+        elif self.swarm_obs == 'pos_vel_size' and self.num_agents > 1:
+            obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['nsize']) * self.num_use_neighbor_obs
         elif self.swarm_obs == 'pos_vel_goals' and self.num_agents > 1:
             obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['goal']) * self.num_use_neighbor_obs
         elif self.swarm_obs == 'pos_vel_goals_ndist_gdist' and self.num_agents > 1:

@@ -129,3 +129,5 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_broken_mode', default=False, type=str2bool, help='Will drone broken if it collide with the obstacles')
 
     p.add_argument('--quads_curriculum_min_obst', default=0, type=int, help='Minimum obstacle number if obst_level=-1')
+
+    p.add_argument('--nearest_nbrs', default=9, type=int, help='Number of nearest objects (drones or obstacles) that the drones see')

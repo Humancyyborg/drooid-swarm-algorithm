@@ -331,6 +331,9 @@ class QuadrotorEnvMulti(gym.Env):
 
         if self.swarm_obs == 'pos_vel':
             obs_neighbor_rel = np.concatenate((pos_neighbors_rel, vel_neighbors_rel), axis=1)
+        elif self.swarm_obs == 'pos_vel_size':
+            sizes = np.ones((pos_neighbors_rel.shape[0], 1)) * self.envs[0].dynamics.arm
+            obs_neighbor_rel = np.concatenate((pos_neighbors_rel, vel_neighbors_rel, sizes), axis=1)
         else:
             neighbor_goals_rel = np.stack([self.envs[j].goal for j in closest_drones[i]]) - self.envs[i].dynamics.pos
 
@@ -346,7 +349,7 @@ class QuadrotorEnvMulti(gym.Env):
         return obs_neighbor_rel
 
     def extend_obs_space(self, obs, closest_drones):
-        assert self.swarm_obs in ['pos_vel', 'pos_vel_goals', 'pos_vel_goals_ndist_gdist'], \
+        assert self.swarm_obs in ['pos_vel', 'pos_vel_goals', 'pos_vel_size', 'pos_vel_goals_ndist_gdist'], \
             f'Invalid parameter {self.swarm_obs} passed in --obs_space'
 
         obs_neighbors = []
