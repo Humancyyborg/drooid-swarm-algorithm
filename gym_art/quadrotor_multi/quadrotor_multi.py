@@ -222,6 +222,7 @@ class QuadrotorEnvMulti(gym.Env):
         # # Ignore penalties of smooth collision with obstacles and real collision penalties at the very beginning.
         self.obst_collision_enable_grace_period = obst_collision_enable_grace_period
         self.obst_collisions_grace_period_seconds = 1.0
+        self.num_obst_inside_room_box = 0
 
         if self.use_obstacles:
             obstacle_max_init_vel = 4.0 * self.envs[0].max_init_vel
@@ -774,6 +775,7 @@ class QuadrotorEnvMulti(gym.Env):
                 goal_points = self.scenario.goals
 
         obst_num_in_room = self.scenario.obst_num_in_room
+        self.num_obst_inside_room_box = self.scenario.obst_num_in_room
 
         return scenario_mode, spawn_flag, goal_start_point, goal_end_point, goal_points, obst_num_in_room
 
@@ -1033,6 +1035,8 @@ class QuadrotorEnvMulti(gym.Env):
                         infos[i]['episode_extra_stats'][f'overall_obst_a_i_r_{self.scenario.name()}'] = self.cur_ep_obst_counter
 
                         infos[i]['episode_extra_stats'][f'air_rate_{self.scenario.name()}'] = air_rate
+
+                        infos[i]['episode_extra_stats'][f'num_obst_in_room'] = self.num_obst_inside_room_box
 
             obs = self.reset()
             dones = [True] * len(dones)  # terminate the episode for all "sub-envs"

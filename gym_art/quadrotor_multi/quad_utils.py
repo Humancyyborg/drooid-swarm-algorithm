@@ -268,8 +268,9 @@ def calculate_drone_proximity_penalties(distance_matrix, arm, dt, penalty_fall_o
         # smooth penalties is disabled, so noop
         return np.zeros(num_agents)
 
-    distance_matrix = np.minimum(distance_matrix, 0.2)
-    drone_col_reward = distance_matrix * 5.0
+    distance_matrix -= arm
+    distance_matrix = np.minimum(distance_matrix, 0.15)
+    drone_col_reward = distance_matrix * 6.67
 
     np.fill_diagonal(drone_col_reward, 0.0)
 
