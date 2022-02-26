@@ -34,7 +34,7 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_collision_falloff_radius', default=0.0, type=float, help='The falloff radius for the smooth penalty. 0: radius is 0 arm_length, which means we would not add extra penalty except drones collide')
     p.add_argument('--quads_collision_smooth_max_penalty', default=10.0, type=float, help='The upper bound of the collision function given distance among drones')
 
-    p.add_argument('--neighbor_obs_type', default='none', type=str, choices=['none', 'pos_vel', 'pos_vel_goals', 'pos_vel_goals_ndist_gdist'], help='Choose what kind of obs to send to encoder.')
+    p.add_argument('--neighbor_obs_type', default='none', type=str, choices=['none', 'pos_vel', 'pos_vel_size', 'pos_vel_goals', 'pos_vel_goals_ndist_gdist'], help='Choose what kind of obs to send to encoder.')
     p.add_argument('--quads_use_numba', default=False, type=str2bool, help='Whether to use numba for jit or not')
     p.add_argument('--quads_obstacle_mode', default='no_obstacles', type=str, choices=['no_obstacles', 'static', 'dynamic', 'static_door', 'static_door_fixsize', 'static_random_place_fixsize', 'static_pillar_fixsize'], help='Choose which obstacle mode to run')
     p.add_argument('--quads_obstacle_num', default=0, type=int, help='Choose the number of obstacle(s)')
@@ -127,3 +127,4 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_pos_metric', default='normal', choices=['normal', 'piecewise'], type=str, help='Early terminate experience collection and set rewards to 0 for remainder of episode of drones that collide with the floor')
     p.add_argument('--quads_spawn_height_mode', default=1, choices=[0, 1], type=int, help='spawn height of drones')
     p.add_argument('--quads_broken_mode', default=False, type=str2bool, help='Will drone broken if it collide with the obstacles')
+    p.add_argument('--nearest_nbrs', default=9, type=int, help='Number of nearest objects (drones or obstacles) that the drones see')

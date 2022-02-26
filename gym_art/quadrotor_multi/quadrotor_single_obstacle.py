@@ -257,6 +257,7 @@ class SingleObstacle:
             elif self.obs_type == 'pos_size' or self.obs_type == 'posxy_size':
                 obs = np.concatenate((rel_pos, obst_size), axis=1)
             elif self.obs_type == 'pos_vel_size':
+                rel_pos = np.concatenate((rel_pos, np.zeros((rel_pos.shape[0], 1))), axis=1) # make this N x 3 again
                 obs = np.concatenate((rel_pos, rel_vel, obst_size), axis=1)
             elif self.obs_type == 'pos_vel_size_shape':
                 obs = np.concatenate((rel_pos, rel_vel, obst_size, obst_shape), axis=1)
