@@ -33,6 +33,7 @@ class QuadsRewardShapingWrapper(gym.Wrapper, RewardShapingInterface, TrainingInf
 
         self.reward_shaping_updated = True
 
+
         self.annealing = annealing
 
     def get_default_reward_shaping(self):
@@ -111,14 +112,24 @@ class QuadsRewardShapingWrapper(gym.Wrapper, RewardShapingInterface, TrainingInf
                 self.cumulative_rewards[i] = dict()
 
                 if self.annealing:
-                    env_reward_shaping = self.env.unwrapped.rew_coeff
+                    obst_collision_coeff_shaping = self.env.unwrapped.obst_collision_coeff
                     # annealing from 0.0 to final value
                     for anneal_schedule in self.annealing:
                         coeff_name = anneal_schedule.coeff_name
                         final_value = anneal_schedule.final_value
                         anneal_steps = anneal_schedule.anneal_env_steps
-                        env_reward_shaping[coeff_name] = min(final_value * approx_total_training_steps / anneal_steps, final_value)
-                        extra_stats[f'z_anneal_{coeff_name}'] = env_reward_shaping[coeff_name]
+                        obst_collision_coeff_shaping[coeff_name] = min(final_value * approx_total_training_steps / anneal_steps, final_value)
+                        extra_stats[f'z_anneal_{coeff_name}'] = obst_collision_coeff_shaping
+
+
+                    # env_reward_shaping = self.env.unwrapped.rew_coeff
+                    # # annealing from 0.0 to final value
+                    # for anneal_schedule in self.annealing:
+                    #     coeff_name = anneal_schedule.coeff_name
+                    #     final_value = anneal_schedule.final_value
+                    #     anneal_steps = anneal_schedule.anneal_env_steps
+                    #     env_reward_shaping[coeff_name] = min(final_value * approx_total_training_steps / anneal_steps, final_value)
+                    #     extra_stats[f'z_anneal_{coeff_name}'] = env_reward_shaping[coeff_name]
 
         if any(dones_multi):
             self.episode_actions = []
