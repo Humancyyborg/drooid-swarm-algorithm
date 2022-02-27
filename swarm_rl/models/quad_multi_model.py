@@ -194,22 +194,7 @@ class QuadUniformNeighborEncoder(EncoderBase):
         batch_size = obs_self.shape[0]
         # relative xyz and vxyz for the entire minibatch (batch dimension is batch_size * num_neighbors)
         all_neighbor_obs_size = self.neighbor_obs_dim * self.num_use_neighbor_obs
-
-        nbr_obs = obs[:, self.self_obs_dim:]  # N nbrs * 7 obs / nbr
-        nbr_obs = nbr_obs.reshape(nbr_obs.shape[0], -1, self.neighbor_obs_dim)
-        nbr_obs_sorted = torch.zeros_like(nbr_obs)
-        with torch.no_grad():
-            for i in range(nbr_obs.shape[0]):
-                # sort all neighbor objects according to their distances
-                nbr_obs_i = nbr_obs[i]
-                dists = torch.linalg.norm(nbr_obs_i[:, :3], dim=1)
-                inds_sorted = torch.argsort(dists)
-                nbr_obs_sorted[i] = nbr_obs[i, inds_sorted, :]
-
-
-        nbr_obs_sorted = nbr_obs_sorted.view(nbr_obs.shape[0], -1)
-        nbr_obs_sorted = nbr_obs_sorted[:, :all_neighbor_obs_size]
-        neighborhood_embedding = self.neighbor_encoder(obs_self, obs, all_neighbor_obs_size, batch_size, nbr_obs_sorted)
+        neighborhood_embedding = self.neighbor_encoder(obs_self, obs, all_neighbor_obs_size, batch_size)
         embeddings = torch.cat((embeddings, neighborhood_embedding), dim=1)
 
         out = self.feed_forward(embeddings)
