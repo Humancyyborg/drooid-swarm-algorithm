@@ -714,7 +714,8 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
         # cost_pos = rew_coeff["pos"] * cost_pos_raw
         # 5 / 2 ^ (0.8 * x)
         if pos_metric == 'normal':
-            cost_pos = 5 / np.power(2, 0.8 * cost_pos_raw)
+            cost_pos = 5 - 0.3 * dist
+            cost_pos = np.clip(cost_pos, a_min=0.0, a_max=5.0)
         elif pos_metric == 'piecewise':
             if dist >= 1.0:
                 cost_pos = 5 / np.power(2, 0.8 * cost_pos_raw)
@@ -745,7 +746,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
     cost_effort_raw = np.linalg.norm(action)
     # cost_effort = rew_coeff["effort"] * cost_effort_raw
     # e ^ (-0.5 * | | actions | |^ 2)
-    cost_effort = np.exp(-0.5 * (cost_effort_raw ** 2))
+    cost_effort = np.exp(-0.5 * (cost_effort_raw ** 2)) * 0.05
 
     dact = action - action_prev
     cost_act_change_raw = (dact[0] ** 2 + dact[1] ** 2 + dact[2] ** 2 + dact[3] ** 2) ** 0.5
