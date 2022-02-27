@@ -1881,8 +1881,8 @@ class Scenario_mix(QuadrotorScenario):
         if obst_level <= -1:
             self.obst_num_in_room = curriculum_min_obst
         else:
-            self.obst_num_in_room = np.random.randint(low=obst_level + 2,
-                                                      high=obst_level + obst_level_num_window + 2)
+            self.obst_num_in_room = np.random.randint(low=obst_level + curriculum_min_obst,
+                                                      high=obst_level + obst_level_num_window + curriculum_min_obst)
             self.obst_num_in_room = np.clip(self.obst_num_in_room, a_min=1, a_max=obst_num)
 
         mode_index = np.random.randint(low=0, high=len(self.quads_mode_list))

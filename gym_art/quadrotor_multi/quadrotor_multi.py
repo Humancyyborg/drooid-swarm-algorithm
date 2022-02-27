@@ -48,7 +48,8 @@ class QuadrotorEnvMulti(gym.Env):
                  obst_level_col_obst_quad_max=4.0, obst_level_col_quad_min=0.5, obst_level_col_quad_max=1.0,
                  obst_level_pos_min=110.0, obst_level_pos_max=130.0, extra_crash_reward=False,
                  obst_generation_mode='random', use_pos_diff=False, obst_smooth_penalty_mode='linear', early_termination=False,
-                 pos_metric='normal', spawn_height_mode=0, broken_mode=False, curriculum_min_obst=0):
+                 pos_metric='normal', spawn_height_mode=0, broken_mode=False, curriculum_min_obst=0,
+                 crash_floor_broken_mode=False):
 
         super().__init__()
 
@@ -56,6 +57,12 @@ class QuadrotorEnvMulti(gym.Env):
             f'Invalid value ({local_obs}) passed to --local_obs. Should be 0 < n < num_agents - 1, or -1'
         if local_obs == -1:
             local_obs = num_agents - 1
+
+        if local_obst_obs == -1:
+            self.local_obst_obs = quads_obstacle_num
+        else:
+            self.local_obst_obs = local_obst_obs
+
 
         # Parameters for multi-drones
         self.num_agents = num_agents
@@ -73,6 +80,7 @@ class QuadrotorEnvMulti(gym.Env):
         # # Init multi drone envs
         self.envs = []
         self.broken_mode = broken_mode
+        self.crash_floor_broken_mode = crash_floor_broken_mode
         for i in range(self.num_agents):
             e = QuadrotorSingle(
                 dynamics_params=dynamics_params, dynamics_change=dynamics_change,
@@ -88,7 +96,8 @@ class QuadrotorEnvMulti(gym.Env):
                 obstacle_mode=quads_obstacle_mode, obstacle_num=quads_obstacle_num, num_use_neighbor_obs=local_obs,
                 num_local_obst=local_obst_obs, obst_obs_type=obst_obs_type, quads_reward_ep_len=quads_reward_ep_len,
                 clip_floor_vel_mode=clip_floor_vel_mode, normalize_obs=normalize_obs, obst_inf_height=obst_inf_height,
-                use_pos_diff=use_pos_diff, pos_metric=pos_metric, spawn_height_mode=spawn_height_mode
+                use_pos_diff=use_pos_diff, pos_metric=pos_metric, spawn_height_mode=spawn_height_mode,
+                crash_floor_broken_mode = self.crash_floor_broken_mode
             )
             self.envs.append(e)
 
@@ -912,7 +921,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         self.early_terminate(infos, rewards)
         for i in range(self.num_agents):
-            if self.all_collisions['ground'][i]:
+            if self.all_collisions['ground'][i] and self.early_termination:
                 for k in infos[i]['rewards'].keys():
                     infos[i]['rewards'][k] = 0
                 infos[i]["rewards"]["rew_proximity"] = 0

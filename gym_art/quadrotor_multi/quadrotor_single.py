@@ -280,8 +280,8 @@ class QuadrotorDynamics:
         rot = t3d.euler.euler2mat(roll, pitch, yaw)
         return pos, vel, rot, omega
 
-    def step(self, thrust_cmds, dt, crashed_floor, broken_flag):
-        if crashed_floor or broken_flag:
+    def step(self, thrust_cmds, dt, crashed_floor, broken_flag, crash_floor_broken_mode):
+        if (crashed_floor and crash_floor_broken_mode) or broken_flag:
             thrust_noise = np.zeros(4)
         else:
             thrust_noise = self.thrust_noise.noise()
@@ -714,7 +714,8 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
         # cost_pos = rew_coeff["pos"] * cost_pos_raw
         # 5 / 2 ^ (0.8 * x)
         if pos_metric == 'normal':
-            cost_pos = 5 / np.power(2, 0.8 * cost_pos_raw)
+            cost_pos = 5 - 0.3 * dist
+            cost_pos = np.clip(cost_pos, a_min=0.0, a_max=5.0)
         elif pos_metric == 'piecewise':
             if dist >= 1.0:
                 cost_pos = 5 / np.power(2, 0.8 * cost_pos_raw)
@@ -883,7 +884,8 @@ class QuadrotorSingle:
                  quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8, view_mode='local',
                  obstacle_mode='no_obstacles', obstacle_num=0, num_use_neighbor_obs=0, num_local_obst=0,
                  obst_obs_type='none', quads_reward_ep_len=True, clip_floor_vel_mode=0, normalize_obs=False,
-                 obst_inf_height=False, use_pos_diff=False, pos_metric='normal', spawn_height_mode=0):
+                 obst_inf_height=False, use_pos_diff=False, pos_metric='normal', spawn_height_mode=0,
+                 crash_floor_broken_mode=False):
         np.seterr(under='ignore')
         """
         Args:
@@ -1069,6 +1071,7 @@ class QuadrotorSingle:
 
         # Broken
         self.broken_flag = False
+        self.crash_floor_broken_mode = crash_floor_broken_mode
 
         # Pos metric
         self.pos_metric = pos_metric
@@ -1264,7 +1267,8 @@ class QuadrotorSingle:
                                   # observation=np.expand_dims(self.state_vector(self), axis=0))
                                   observation=None,
                                   crashed_floor=self.dynamics.crashed_floor,
-                                  broken_flag=self.broken_flag)  # assuming we aren't using observations in step function
+                                  broken_flag=self.broken_flag,
+                                  crash_floor_broken_mode=self.crash_floor_broken_mode)  # assuming we aren't using observations in step function
         # self.oracle.step(self.dynamics, self.goal, self.dt)
         # self.scene.update_state(self.dynamics, self.goal)
 
