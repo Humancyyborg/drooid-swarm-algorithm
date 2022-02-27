@@ -8,9 +8,10 @@ from swarm_rl.env_wrappers.reward_shaping import DEFAULT_QUAD_REWARD_SHAPING, Qu
 
 
 class AnnealSchedule:
-    def __init__(self, coeff_name, final_value, anneal_env_steps):
+    def __init__(self, coeff_name, final_value, anneal_env_steps, anneal_start_collision_steps):
         self.coeff_name = coeff_name
         self.final_value = final_value
+        self.anneal_start_collision_steps = anneal_start_collision_steps
         self.anneal_env_steps = anneal_env_steps
 
 
@@ -136,11 +137,8 @@ def make_quadrotor_env_multi(cfg, **kwargs):
 
     # this is annealed by the reward shaping wrapper
     if cfg.anneal_collision_steps > 0:
-        reward_shaping['quad_rewards']['quadcol_bin'] = 0.0
-        reward_shaping['quad_rewards']['quadcol_bin_smooth_max'] = 0.0
         annealing = [
-            AnnealSchedule('quadcol_bin', cfg.quads_collision_reward, cfg.anneal_collision_steps),
-            AnnealSchedule('quadcol_bin_smooth_max', cfg.quads_collision_smooth_max_penalty, cfg.anneal_collision_steps),
+            AnnealSchedule('anneal_obst_col', 1.0, cfg.anneal_collision_steps, cfg.anneal_start_collision_steps),
         ]
     else:
         annealing = None

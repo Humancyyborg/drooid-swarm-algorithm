@@ -102,6 +102,9 @@ class QuadrotorEnvMulti(gym.Env):
             pos=1., effort=0.05, action_change=0., crash=1., orient=1., yaw=0., rot=0., attitude=0., spin=0.1, vel=0.,
             quadcol_bin=0., quadcol_bin_smooth_max=0., quadcol_bin_obst=0., quadcol_bin_obst_smooth_max=0.0,
         )
+
+        self.obst_collision_coeff = dict(anneal_obst_col=0.0)
+
         rew_coeff_orig = copy.deepcopy(self.rew_coeff)
         if rew_coeff is not None:
             assert isinstance(rew_coeff, dict)
@@ -937,7 +940,7 @@ class QuadrotorEnvMulti(gym.Env):
                     perform_collision_with_obstacle(
                         drone_dyn=self.envs[val[0]].dynamics, obstacle_dyn=self.multi_obstacles.obstacles[val[1]],
                         quad_arm=self.quad_arm, room_dims=self.room_dims, inf_height=self.obst_inf_height,
-                        crash_mode=self.crash_mode)
+                        crash_mode=self.crash_mode, obst_collision_coeff=self.obst_collision_coeff['anneal_obst_col'])
 
         self.early_terminate(infos, rewards)
         for i in range(self.num_agents):
