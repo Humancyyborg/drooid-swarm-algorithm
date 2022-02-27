@@ -1020,17 +1020,19 @@ class QuadrotorEnvMulti(gym.Env):
             if air_rate > 0.8:  # 16 out of 20 seconds
                 self.obst_level_condition_dict['crash']['value_arr'].append(num_crashed_floor / air_rate)
                 self.obst_level_condition_dict['collision_obst_quad']['value_arr'].append(self.cur_ep_obst_counter / air_rate)
-                self.change_level()
+                # self.change_level()
                 self.obst_level_air_rate_counter = 0
+                self.obst_level = self.obstacle_num - 2
             else:
                 self.obst_level_air_rate_counter += 1
                 if self.obst_level_air_rate_counter >= self.episode_num_control_level:
-                    self.obst_level -= 1
+                    # self.obst_level -= 1
                     self.obst_level = np.clip(self.obst_level, a_min=-1, a_max=self.obstacle_num - 2)
                     self.obst_level_air_rate_counter = 0
 
                 self.obst_level_condition_dict['crash']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
                 self.obst_level_condition_dict['collision_obst_quad']['value_arr'] = deque([], maxlen=self.episode_num_control_level)
+                self.obst_level = self.obstacle_num - 2
 
             for i in range(len(infos)):
                 if self.saved_in_replay_buffer:
