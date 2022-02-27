@@ -5,7 +5,7 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_8_OBSTACLES
 _params = ParamGrid([
     ('seed', seeds(4)),
     ('quads_obstacle_num', [10]),
-    ('quads_obstacle_size', [1.0]),
+    ('quads_obstacle_size', [0.6]),
     ('quads_early_termination', [True]),
     ('quads_init_random_state', [False]),
     ('quads_curriculum_min_obst', [2]),
@@ -14,7 +14,7 @@ _params = ParamGrid([
 SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
     ' --num_workers=36 --quads_obstacle_type=cylinder '
     '--quads_obst_level_mode=1 --with_wandb=False '
-    '--quads_apply_downwash=False '
+    '--quads_apply_downwash=True '
     '--quads_use_pos_diff=False --quads_episode_duration=20.0 '
     '--quads_collision_reward=0.0 --quads_collision_obstacle_reward=0.0 '
     '--quads_neighbor_proximity_mode=1 --quads_obst_proximity_mode=1 '
@@ -25,7 +25,7 @@ SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
 )
 
 _experiment = Experiment(
-    'baseline-glas-curri-256-hidden-cylinder-big_model',
+    'physical-deploy-curri-16-hidden-cylinder-big_model',
     SMALL_MODEL_CLI,
     _params.generate_params(randomize=False),
 )
