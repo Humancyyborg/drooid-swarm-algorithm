@@ -746,7 +746,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
     cost_effort_raw = np.linalg.norm(action)
     # cost_effort = rew_coeff["effort"] * cost_effort_raw
     # e ^ (-0.5 * | | actions | |^ 2)
-    cost_effort = np.exp(-0.5 * (cost_effort_raw ** 2))
+    cost_effort = np.exp(-0.5 * (cost_effort_raw ** 2)) * 0.05
 
     dact = action - action_prev
     cost_act_change_raw = (dact[0] ** 2 + dact[1] ** 2 + dact[2] ** 2 + dact[3] ** 2) ** 0.5
@@ -762,7 +762,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
     cost_orient_raw = dynamics.rot[2, 2]
     # cost_orient = rew_coeff["orient"] * cost_orient_raw
     # max(rot, 0.0) * 0.01
-    cost_orient = max(cost_orient_raw, 0.0) * 1.5
+    cost_orient = max(cost_orient_raw, 0.0) * 2.0
 
     cost_yaw_raw = -dynamics.rot[0, 0]
     cost_yaw = rew_coeff["yaw"] * cost_yaw_raw
@@ -782,7 +782,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
     cost_spin_raw = (dynamics.omega[0] ** 2 + dynamics.omega[1] ** 2 + dynamics.omega[2] ** 2) ** 0.5
     # cost_spin = rew_coeff["spin"] * cost_spin_raw
     # e ^ (- | | omega | |^ 2)
-    cost_spin = np.exp(-1.0 * (cost_spin_raw ** 2)) * 3.0
+    cost_spin = np.exp(-1.0 * (cost_spin_raw ** 2)) * 0.5
 
     ##################################################
     # loss crash
