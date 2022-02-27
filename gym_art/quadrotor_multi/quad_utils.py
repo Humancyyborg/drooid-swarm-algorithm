@@ -368,80 +368,26 @@ def perform_collision_between_drones(dyn1, dyn2):
 
 def perform_collision_with_obstacle(drone_dyn, obstacle_dyn, quad_arm, room_dims, inf_height, crash_mode,
                                     obst_collision_coeff):
-    # Check if drones are inside obstacles
-    inside_obstacle_flag = obstacle_dyn.inside_collision_detection(pos_quad=drone_dyn.pos)
-    if inside_obstacle_flag:
-        collision_norm = drone_dyn.pos - obstacle_dyn.pos
-        collision_norm[2] = np.random.uniform(low=-0.1, high=0.1)
-        coll_norm_mag = np.linalg.norm(collision_norm)
-        collision_norm = collision_norm / (coll_norm_mag + 0.00001 if coll_norm_mag == 0.0 else coll_norm_mag)
+    v1new, v2new, collision_norm = compute_col_norm_and_new_velocities(obstacle_dyn, drone_dyn)
 
-        vel_mag = np.linalg.norm(drone_dyn.vel)
-        if obst_collision_coeff == 1.0:
-            drone_dyn.vel = drone_dyn.vel - max(1.5 * vel_mag, 10.0) * collision_norm
-        else:
-            drone_dyn.vel = drone_dyn.vel - max(1.5 * vel_mag, 10.0) * obst_collision_coeff * collision_norm
-        return
+    vel_change = (v1new - v2new - np.random.normal(0, 0.8, 3) - np.random.normal(0, 0.15, 3)) * \
+                 collision_norm * obst_collision_coeff
+    drone_dyn.vel += (v1new - v2new) * collision_norm * obst_collision_coeff
 
-    if obstacle_dyn.shape in OBSTACLES_SIMULATE_COLLISION_SUPPORT_LIST:
-        if inf_height:
-            obst_z_size = 0.5 * room_dims[2]
-        else:
-            obst_z_size = 0.5 * obstacle_dyn.size
+    # Random forces for omega
+    omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
+    eps = 1e-5
+    new_omega = np.random.uniform(low=-1, high=1, size=(3,)) + eps  # random direction in 3D space
 
-        damp_low_speed_ratio = crash_params[crash_mode]['low']
-        damp_high_speed_ratio = crash_params[crash_mode]['high']
-        lowest_speed = crash_params[crash_mode]['low_speed']
-        highest_speed = crash_params[crash_mode]['high_speed']
+    new_omega /= np.linalg.norm(new_omega) + eps  # normalize
 
-        drone_speed = np.linalg.norm(drone_dyn.vel)
-        real_speed = np.random.uniform(low=damp_low_speed_ratio * drone_speed,
-                                       high=damp_high_speed_ratio * drone_speed)
-        real_speed = np.clip(real_speed, a_min=lowest_speed, a_max=highest_speed)
+    new_omega_magn = np.random.uniform(low=omega_max / 2, high=omega_max)  # random magnitude of the force
+    new_omega *= new_omega_magn * obst_collision_coeff
 
-        direction = obstacle_dyn.get_dir_of_collision(drone_dyn=drone_dyn, obstacle_dyn=obstacle_dyn,
-                                                      obst_z_size=obst_z_size)
-        direction_mag = np.linalg.norm(direction)
-        direction_norm = direction / (direction_mag + 0.00001 if direction_mag == 0.0 else direction_mag)
-
-        drone_dyn.vel = drone_dyn.vel - real_speed * direction_norm * obst_collision_coeff
-
-        # Random forces for omega
-        omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
-        eps = 1e-5
-        new_omega = np.random.uniform(low=-1, high=1, size=(3,))  # random direction in 3D space
-        new_omega /= np.linalg.norm(new_omega) + eps  # normalize
-
-        new_omega_magn = np.random.uniform(low=omega_max / 2, high=omega_max)  # random magnitude of the force
-        new_omega *= new_omega_magn * obst_collision_coeff
-
-        # add the disturbance to drone's angular velocities while preserving angular momentum
-        if drone_dyn.pos[2] > 0.05:
-            drone_dyn.omega += new_omega
-    else:
-        v1new, v2new, collision_norm = compute_col_norm_and_new_velocities(obstacle_dyn, drone_dyn)
-        drone_dyn.vel = (v1new - v2new) * collision_norm
-
-        # Now adding two different random components,
-        # One that preserves momentum in opposite directions
-        # Second that does not preserve momentum
-        cons_rand_val = np.random.normal(0, 0.8, 3)
-        drone_dyn.vel += (cons_rand_val + np.random.normal(0, 0.15, 3)) * obst_collision_coeff
-
-        # Random forces for omega
-        omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
-        eps = 1e-5
-        new_omega = np.random.uniform(low=-1, high=1, size=(3,)) + eps  # random direction in 3D space
-
-        new_omega /= np.linalg.norm(new_omega) + eps  # normalize
-
-        new_omega_magn = np.random.uniform(low=omega_max / 2, high=omega_max)  # random magnitude of the force
-        new_omega *= new_omega_magn * obst_collision_coeff
-
-        # add the disturbance to drone's angular velocities while preserving angular momentum
-        # Currently, our obstacle doesn't support omega / angle velocity, we only change omega of drone
-        if drone_dyn.pos[2] > 0.05:
-            drone_dyn.omega += new_omega
+    # add the disturbance to drone's angular velocities while preserving angular momentum
+    # Currently, our obstacle doesn't support omega / angle velocity, we only change omega of drone
+    if drone_dyn.pos[2] > 0.05:
+        drone_dyn.omega += new_omega
 
 
 def perform_collision_with_obstacle_v2(drone_dyn, obstacle_dyn, quad_arm=0.046):

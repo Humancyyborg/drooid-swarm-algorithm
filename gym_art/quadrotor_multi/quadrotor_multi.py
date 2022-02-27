@@ -103,7 +103,7 @@ class QuadrotorEnvMulti(gym.Env):
             quadcol_bin=0., quadcol_bin_smooth_max=0., quadcol_bin_obst=0., quadcol_bin_obst_smooth_max=0.0,
         )
 
-        self.obst_collision_coeff = dict(anneal_obst_col=1.0)
+        self.obst_collision_coeff = dict(anneal_obst_col=0.0)
 
         rew_coeff_orig = copy.deepcopy(self.rew_coeff)
         if rew_coeff is not None:

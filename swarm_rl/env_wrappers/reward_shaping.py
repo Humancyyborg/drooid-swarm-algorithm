@@ -118,18 +118,17 @@ class QuadsRewardShapingWrapper(gym.Wrapper, RewardShapingInterface, TrainingInf
                         coeff_name = anneal_schedule.coeff_name
                         final_value = anneal_schedule.final_value
                         anneal_steps = anneal_schedule.anneal_env_steps
-                        obst_collision_coeff_shaping[coeff_name] = min(final_value * approx_total_training_steps / anneal_steps, final_value)
-                        extra_stats[f'z_anneal_{coeff_name}'] = obst_collision_coeff_shaping
+                        anneal_start_steps = anneal_schedule.anneal_start_collision_steps
+                        if approx_total_training_steps > anneal_schedule.anneal_start_collision_steps:
+                            obst_collision_coeff_shaping[coeff_name] = min(
+                                final_value * (approx_total_training_steps - anneal_start_steps) /
+                                anneal_steps, final_value)
+                            extra_stats[f'z_anneal_{coeff_name}'] = obst_collision_coeff_shaping[coeff_name]
+                        else:
+                            obst_collision_coeff_shaping[coeff_name] = 0.0
+                            extra_stats[f'z_anneal_{coeff_name}'] = obst_collision_coeff_shaping[coeff_name]
 
 
-                    # env_reward_shaping = self.env.unwrapped.rew_coeff
-                    # # annealing from 0.0 to final value
-                    # for anneal_schedule in self.annealing:
-                    #     coeff_name = anneal_schedule.coeff_name
-                    #     final_value = anneal_schedule.final_value
-                    #     anneal_steps = anneal_schedule.anneal_env_steps
-                    #     env_reward_shaping[coeff_name] = min(final_value * approx_total_training_steps / anneal_steps, final_value)
-                    #     extra_stats[f'z_anneal_{coeff_name}'] = env_reward_shaping[coeff_name]
 
         if any(dones_multi):
             self.episode_actions = []
