@@ -47,7 +47,8 @@ class QuadrotorEnvMulti(gym.Env):
                  obst_level_crash_min=2.0, obst_level_crash_max=3.0, obst_level_col_obst_quad_min=2.0,
                  obst_level_col_obst_quad_max=4.0, obst_level_col_quad_min=0.5, obst_level_col_quad_max=1.0,
                  obst_level_pos_min=110.0, obst_level_pos_max=130.0, extra_crash_reward=False,
-                 obst_generation_mode='random', use_pos_diff=False, obst_smooth_penalty_mode='linear', nearest_nbrs=0):
+                 obst_generation_mode='random', use_pos_diff=False, obst_smooth_penalty_mode='linear', curriculum_min_obst=0,
+                 nearest_nbrs=0):
 
         super().__init__()
 
