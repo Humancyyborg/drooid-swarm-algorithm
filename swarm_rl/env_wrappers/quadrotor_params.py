@@ -34,7 +34,7 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_collision_falloff_radius', default=0.0, type=float, help='The falloff radius for the smooth penalty. 0: radius is 0 arm_length, which means we would not add extra penalty except drones collide')
     p.add_argument('--quads_collision_smooth_max_penalty', default=10.0, type=float, help='The upper bound of the collision function given distance among drones')
 
-    p.add_argument('--neighbor_obs_type', default='none', type=str, choices=['none', 'pos_vel', 'pos_vel_goals', 'pos_vel_goals_ndist_gdist'], help='Choose what kind of obs to send to encoder.')
+    p.add_argument('--neighbor_obs_type', default='none', type=str, choices=['none', 'pos_vel', 'pos_vel_size', 'pos_vel_goals', 'pos_vel_goals_ndist_gdist'], help='Choose what kind of obs to send to encoder.')
     p.add_argument('--quads_use_numba', default=False, type=str2bool, help='Whether to use numba for jit or not')
     p.add_argument('--quads_obstacle_mode', default='no_obstacles', type=str, choices=['no_obstacles', 'static', 'dynamic', 'static_door', 'static_door_fixsize', 'static_random_place_fixsize', 'static_pillar_fixsize'], help='Choose which obstacle mode to run')
     p.add_argument('--quads_obstacle_num', default=0, type=int, help='Choose the number of obstacle(s)')
@@ -119,4 +119,6 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obst_smooth_penalty_mode', default='linear', type=str, choices=['linear', 'square'], help='linear: linear function, square: square function')
 
     p.add_argument('--quads_larger_obst_encoder', default=False, type=str2bool, help='Use larger obst encoder')
+    p.add_argument('--nearest_nbrs', default=0, type=int, help='Set to nonzero when combining obstacles and nbr drones into one observation')
+    p.add_argument('--quads_init_from_model', default=False, type=str2bool, help='Init nbr/obst encoder from existing model')
     p.add_argument('--quads_curriculum_min_obst', default=0, type=int, help='Minimum obstacle number if obst_level=-1')

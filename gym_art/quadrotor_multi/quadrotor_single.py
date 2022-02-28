@@ -802,7 +802,7 @@ class QuadrotorSingle:
                  quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8, view_mode='local',
                  obstacle_mode='no_obstacles', obstacle_num=0, num_use_neighbor_obs=0, num_local_obst=0,
                  obst_obs_type='none', quads_reward_ep_len=True, clip_floor_vel_mode=0, normalize_obs=False,
-                 obst_inf_height=False, use_pos_diff=False):
+                 obst_inf_height=False, use_pos_diff=False, nearest_nbrs=0):
         np.seterr(under='ignore')
         """
         Args:
@@ -851,6 +851,7 @@ class QuadrotorSingle:
         self.gravity = gravity
         self.swarm_obs = swarm_obs
         self.num_use_neighbor_obs = num_use_neighbor_obs
+        self.nearest_nbrs = nearest_nbrs
         self.num_agents = num_agents
         self.quads_settle = quads_settle
         self.quads_settle_range_meters = quads_settle_range_meters
@@ -1095,47 +1096,52 @@ class QuadrotorSingle:
             "floor": [np.zeros(1), 2.0 * np.ones(1)],
             "cwallid": [np.zeros(1), 3 * np.ones(1)],
             "cwall": [np.zeros(1), 10.0 * np.ones(1)],
+            "nsize": [np.zeros(1), np.array([self.dynamics.arm])]
         }
         self.obs_comp_names = list(self.obs_space_low_high.keys())
         self.obs_comp_sizes = [self.obs_space_low_high[name][1].size for name in self.obs_comp_names]
 
         obs_comps = self.obs_repr.split("_")
-        if self.swarm_obs == 'pos_vel' and self.num_agents > 1:
-            obs_comps = obs_comps + (['rxyz'] + ['rvxyz']) * self.num_use_neighbor_obs
-        elif self.swarm_obs == 'pos_vel_goals' and self.num_agents > 1:
-            obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['goal']) * self.num_use_neighbor_obs
-        elif self.swarm_obs == 'pos_vel_goals_ndist_gdist' and self.num_agents > 1:
-            obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['goal'] + ['nbr_dist'] + ['nbr_goal_dist']) * self.num_use_neighbor_obs
-        if self.obstacle_mode != 'no_obstacles' and self.obstacle_num > 0:
-            if self.num_local_obst == -1:
-                obstacle_num = self.obstacle_num
-            else:
-                obstacle_num = self.num_local_obst
-
-            if 'static' in self.obstacle_mode:
-                rel_pos = ['roxyz']
-
-                if self.obst_obs_type == 'none':
-                    raise NotImplementedError(f'{self.obst_obs_type} is not supported!')
-                elif self.obst_obs_type == 'cpoint':
-                    if self.obst_inf_height:
-                        obst_obs_comps = ['roxy'] * obstacle_num
-                    else:
-                        obst_obs_comps = ['roxyz'] * obstacle_num
-                elif self.obst_obs_type == 'pos_size':
-                    obst_obs_comps = (rel_pos + ['osize']) * obstacle_num
-                elif self.obst_obs_type == 'posxy_size':
-                    obst_obs_comps = (['roxy'] + ['osize']) * obstacle_num
-                elif self.obst_obs_type == 'pos_vel_size':
-                    obst_obs_comps = (rel_pos + ['rovxyz'] + ['osize']) * obstacle_num
-                elif self.obst_obs_type == 'pos_vel_size_shape':
-                    obst_obs_comps = (rel_pos + ['rovxyz'] + ['osize'] + ['otype']) * obstacle_num
+        if self.swarm_obs == 'pos_vel_size' and self.nearest_nbrs and self.num_agents > 1:
+            # unique case: we combine obstacles and drones into one type of observation
+            obs_comps = obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['nsize']) * self.nearest_nbrs
+        else:
+            if self.swarm_obs == 'pos_vel' and self.num_agents > 1:
+                obs_comps = obs_comps + (['rxyz'] + ['rvxyz']) * self.num_use_neighbor_obs
+            elif self.swarm_obs == 'pos_vel_goals' and self.num_agents > 1:
+                obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['goal']) * self.num_use_neighbor_obs
+            elif self.swarm_obs == 'pos_vel_goals_ndist_gdist' and self.num_agents > 1:
+                obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['goal'] + ['nbr_dist'] + ['nbr_goal_dist']) * self.num_use_neighbor_obs
+            if self.obstacle_mode != 'no_obstacles' and self.obstacle_num > 0:
+                if self.num_local_obst == -1:
+                    obstacle_num = self.obstacle_num
                 else:
-                    raise NotImplementedError(f'{self.obst_obs_type} is not supported!')
-            elif 'dynamic' in self.obstacle_mode:
-                obst_obs_comps = (['roxyz'] + ['rovxyz'] + ['osize'] + ['otype']) * obstacle_num
-            else:
-                raise NotImplementedError(f'{self.obstacle_mode} is not supported!')
+                    obstacle_num = self.num_local_obst
+
+                if 'static' in self.obstacle_mode:
+                    rel_pos = ['roxyz']
+
+                    if self.obst_obs_type == 'none':
+                        raise NotImplementedError(f'{self.obst_obs_type} is not supported!')
+                    elif self.obst_obs_type == 'cpoint':
+                        if self.obst_inf_height:
+                            obst_obs_comps = ['roxy'] * obstacle_num
+                        else:
+                            obst_obs_comps = ['roxyz'] * obstacle_num
+                    elif self.obst_obs_type == 'pos_size':
+                        obst_obs_comps = (rel_pos + ['osize']) * obstacle_num
+                    elif self.obst_obs_type == 'posxy_size':
+                        obst_obs_comps = (['roxy'] + ['osize']) * obstacle_num
+                    elif self.obst_obs_type == 'pos_vel_size':
+                        obst_obs_comps = (rel_pos + ['rovxyz'] + ['osize']) * obstacle_num
+                    elif self.obst_obs_type == 'pos_vel_size_shape':
+                        obst_obs_comps = (rel_pos + ['rovxyz'] + ['osize'] + ['otype']) * obstacle_num
+                    else:
+                        raise NotImplementedError(f'{self.obst_obs_type} is not supported!')
+                elif 'dynamic' in self.obstacle_mode:
+                    obst_obs_comps = (['roxyz'] + ['rovxyz'] + ['osize'] + ['otype']) * obstacle_num
+                else:
+                    raise NotImplementedError(f'{self.obstacle_mode} is not supported!')
 
             obs_comps = obs_comps + obst_obs_comps
 
