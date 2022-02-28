@@ -47,7 +47,7 @@ class QuadrotorEnvMulti(gym.Env):
                  obst_level_crash_min=2.0, obst_level_crash_max=3.0, obst_level_col_obst_quad_min=2.0,
                  obst_level_col_obst_quad_max=4.0, obst_level_col_quad_min=0.5, obst_level_col_quad_max=1.0,
                  obst_level_pos_min=110.0, obst_level_pos_max=130.0, extra_crash_reward=False,
-                 obst_generation_mode='random', use_pos_diff=False, obst_smooth_penalty_mode='linear'):
+                 obst_generation_mode='random', use_pos_diff=False, obst_smooth_penalty_mode='linear', nearest_nbrs=0):
 
         super().__init__()
 
@@ -86,7 +86,7 @@ class QuadrotorEnvMulti(gym.Env):
                 obstacle_mode=quads_obstacle_mode, obstacle_num=quads_obstacle_num, num_use_neighbor_obs=local_obs,
                 num_local_obst=local_obst_obs, obst_obs_type=obst_obs_type, quads_reward_ep_len=quads_reward_ep_len,
                 clip_floor_vel_mode=clip_floor_vel_mode, normalize_obs=normalize_obs, obst_inf_height=obst_inf_height,
-                use_pos_diff=use_pos_diff
+                use_pos_diff=use_pos_diff, nearest_nbrs=nearest_nbrs
             )
             self.envs.append(e)
 
@@ -150,6 +150,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.local_metric = local_metric
         self.local_coeff = local_coeff
         self.neighbor_obs_size = obs_neighbor_size_dict[swarm_obs]
+        self.nearest_nbrs = nearest_nbrs
 
         # # Clip neighbor observations
         clip_neighbor_space_length = obs_self_size + self.num_use_neighbor_obs * self.neighbor_obs_size
@@ -313,6 +314,9 @@ class QuadrotorEnvMulti(gym.Env):
 
         if self.swarm_obs == 'pos_vel':
             obs_neighbor_rel = np.concatenate((pos_neighbors_rel, vel_neighbors_rel), axis=1)
+        elif self.swarm_obs == 'pos_vel_size':
+            sizes = np.ones((pos_neighbors_rel.shape[0], 1)) * self.envs[0].dynamics.arm
+            obs_neighbor_rel = np.concatenate((pos_neighbors_rel, vel_neighbors_rel, sizes), axis=1)
         else:
             neighbor_goals_rel = np.stack([self.envs[j].goal for j in closest_drones[i]]) - self.envs[i].dynamics.pos
 
@@ -328,7 +332,7 @@ class QuadrotorEnvMulti(gym.Env):
         return obs_neighbor_rel
 
     def extend_obs_space(self, obs, closest_drones):
-        assert self.swarm_obs in ['pos_vel', 'pos_vel_goals', 'pos_vel_goals_ndist_gdist'], \
+        assert self.swarm_obs in ['pos_vel', 'pos_vel_goals', 'pos_vel_size', 'pos_vel_goals_ndist_gdist'], \
             f'Invalid parameter {self.swarm_obs} passed in --obs_space'
 
         obs_neighbors = []
@@ -722,6 +726,26 @@ class QuadrotorEnvMulti(gym.Env):
                         e.reset(midreset=True)
                         self.obst_midreset_list[i] = 0
 
+    def sort_obs(self, obs, self_obs_dim=24, nbr_obs_dim=7):
+        '''
+        Sort for the K nearest neighbor 'obstacles', where an object can be a drone or a pillar
+        Discard the other neighbor observations
+        '''
+        nbr_obs = obs[:, self_obs_dim:]
+        nbr_obs = nbr_obs.reshape(nbr_obs.shape[0], -1, nbr_obs_dim)
+        all_neighbor_obs_size = nbr_obs_dim * self.nearest_nbrs
+        for i in range(nbr_obs.shape[0]):
+            # sort all neighbor objects according to their distances
+            nbr_obs_i = nbr_obs[i]
+            dists = np.linalg.norm(nbr_obs_i[:, :3], axis=1)
+            inds_sorted = np.argsort(dists)
+            nbr_obs[i] = nbr_obs[i, inds_sorted, :]
+        nbr_obs = nbr_obs.reshape(nbr_obs.shape[0], -1)
+        nbr_obs = nbr_obs[:, :all_neighbor_obs_size]
+        obs = obs[:, :self_obs_dim + all_neighbor_obs_size]
+        obs[:, self_obs_dim:] = nbr_obs
+        return obs
+
     def reset_given_obst_scenario(self):
         if self.scenario.quads_mode == 'mix':
             scenario_mode = self.scenario.scenario_mode
@@ -819,6 +843,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.reset_scene = True
         self.crashes_last_episode = 0
 
+        obs = self.sort_obs(obs)
         if self.normalize_obs:
             # obs = np.clip(obs, a_min=self.observation_space.low, a_max=self.observation_space.high)
             obs = (obs - self.obs_mean) / self.obs_std
@@ -920,6 +945,7 @@ class QuadrotorEnvMulti(gym.Env):
         if self.use_obstacles:
             obs = self.concatenate_obstacle_obs(obs=obs)
 
+        obs = self.sort_obs(obs)
         # Reset a drone if it's crash time on the floor larger than a predefined threshold
         self.reset_crashed_drones()
 
