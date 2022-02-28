@@ -119,3 +119,4 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obst_smooth_penalty_mode', default='linear', type=str, choices=['linear', 'square'], help='linear: linear function, square: square function')
 
     p.add_argument('--quads_larger_obst_encoder', default=False, type=str2bool, help='Use larger obst encoder')
+    p.add_argument('--quads_curriculum_min_obst', default=0, type=int, help='Minimum obstacle number if obst_level=-1')
