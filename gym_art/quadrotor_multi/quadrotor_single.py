@@ -1108,6 +1108,8 @@ class QuadrotorSingle:
         else:
             if self.swarm_obs == 'pos_vel' and self.num_agents > 1:
                 obs_comps = obs_comps + (['rxyz'] + ['rvxyz']) * self.num_use_neighbor_obs
+            elif self.swarm_obs == 'pos_vel_size' and self.num_agents > 1:
+                obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['nsize']) * self.num_use_neighbor_obs # combine obstacles and drones into one type of obstacle
             elif self.swarm_obs == 'pos_vel_goals' and self.num_agents > 1:
                 obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['goal']) * self.num_use_neighbor_obs
             elif self.swarm_obs == 'pos_vel_goals_ndist_gdist' and self.num_agents > 1:

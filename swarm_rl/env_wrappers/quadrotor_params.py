@@ -58,6 +58,7 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obs_repr', default='xyz_vxyz_R_omega', choices=['xyz_vxyz_R_omega', 'xyz_vxyz_R_omega_wall', 'xyz_vxyz_R_omega_floor', 'xyz_vxyz_R_omega_floor_cwallid_cwall'], type=str, help='obs space for drone itself')
     p.add_argument('--replay_buffer_sample_prob', default=0.0, type=float, help='Probability at which we sample from it rather than resetting the env. Set to 0.0 (default) to disable the replay. Set to value in (0.0, 1.0] to use replay buffer')
 
+    p.add_argument('--anneal_start_collision_steps', default=0.0, type=float, help='Anneal collision penalties over this many steps. Default (0.0) is no annealing')
     p.add_argument('--anneal_collision_steps', default=0.0, type=float, help='Anneal collision penalties over this many steps. Default (0.0) is no annealing')
     p.add_argument('--quads_obstacle_obs_mode', default='relative', type=str, choices=['relative', 'absolute', 'half_relative'],  help='Choose the type of force to use')
     p.add_argument('--quads_obstacle_hidden_size', default=32, type=int, help='Choose the type of force to use')
