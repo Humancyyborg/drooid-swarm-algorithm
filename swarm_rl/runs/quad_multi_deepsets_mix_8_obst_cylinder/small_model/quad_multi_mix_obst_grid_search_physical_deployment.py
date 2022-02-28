@@ -4,6 +4,13 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_8_OBSTACLES
 
 _params = ParamGrid([
     ('seed', seeds(4)),
+    ('lr_schedule', ['kl_adaptive_epoch']),
+    ('lr_schedule_kl_threshold', [0.008]),
+    ('policy_initialization', ['torch_default']),
+    ('kl_loss_coeff', [0.1]),
+    ('rollout', [32]),
+    ('batch_size', [1024]),
+    ('exploration_loss_coeff', [0.003])
 ])
 
 SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
@@ -17,12 +24,12 @@ SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
 )
 
 _experiment = Experiment(
-    'curri-16-hidden-cylinder-small_model',
+    'curri-16-hidden-cylinder-small_model-adaptive_lr',
     SMALL_MODEL_CLI,
     _params.generate_params(randomize=False),
 )
 
-RUN_DESCRIPTION = RunDescription('curri-6_obst_quads_multi_obst_mix_8a_v116', experiments=[_experiment])
+RUN_DESCRIPTION = RunDescription('curri-6_obst_quads_multi_obst_mix_adaptive_lr_8a_v116', experiments=[_experiment])
 
 # On Brain server, when you use num_workers = 72, if the system reports: Resource temporarily unavailable,
 # then, try to use two commands below
