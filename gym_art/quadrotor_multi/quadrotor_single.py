@@ -1104,7 +1104,7 @@ class QuadrotorSingle:
         obs_comps = self.obs_repr.split("_")
         if self.swarm_obs == 'pos_vel_size' and self.nearest_nbrs and self.num_agents > 1:
             # unique case: we combine obstacles and drones into one type of observation
-            obs_comps = obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['nsize']) * self.nearest_nbrs
+            obs_comps = obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['R'] + ['omega'] + ['nsize']) * self.nearest_nbrs
         else:
             if self.swarm_obs == 'pos_vel' and self.num_agents > 1:
                 obs_comps = obs_comps + (['rxyz'] + ['rvxyz']) * self.num_use_neighbor_obs
