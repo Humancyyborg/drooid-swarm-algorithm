@@ -8,7 +8,7 @@ _params = ParamGrid([
     ('lr_schedule_kl_threshold', [0.008]),
     ('policy_initialization', ['torch_default']),
     ('kl_loss_coeff', [0.1]),
-    ('rollout', [16, 32]),
+    ('rollout', [32, 64]),
     ('batch_size', [1024, 4096]),
     ('exploration_loss_coeff', [0.003])
 ])
