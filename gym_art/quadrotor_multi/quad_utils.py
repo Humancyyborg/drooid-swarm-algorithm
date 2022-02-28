@@ -389,8 +389,7 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_dyn, quad_arm, room_dims
 
     # add the disturbance to drone's angular velocities while preserving angular momentum
     # Currently, our obstacle doesn't support omega / angle velocity, we only change omega of drone
-    if drone_dyn.pos[2] > 0.05:
-        drone_dyn.omega += new_omega
+    drone_dyn.omega += new_omega
 
 
 def perform_collision_with_obstacle_v2(drone_dyn, obstacle_dyn, quad_arm=0.046):
