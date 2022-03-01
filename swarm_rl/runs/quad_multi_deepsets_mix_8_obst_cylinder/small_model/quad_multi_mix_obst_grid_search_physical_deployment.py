@@ -3,20 +3,17 @@ from sample_factory.runner.run_description import RunDescription, Experiment, Pa
 from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_8_OBSTACLES_PARAMETERZE_CLI, seeds
 
 _params = ParamGrid([
-    ('seed', seeds(3)),
+    ('seed', seeds(2)),
     ('lr_schedule', ['kl_adaptive_epoch']),
     ('lr_schedule_kl_threshold', [0.008]),
     ('policy_initialization', ['torch_default']),
-    ('kl_loss_coeff', [0.1]),
-    ('rollout', [32, 64]),
-    ('batch_size', [1024, 4096]),
-    ('exploration_loss_coeff', [0.003])
+    ('quads_curriculum_min_obst', [0, 2]),
 ])
 
 SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
     ' --num_workers=36 --hidden_size=16 --quads_neighbor_hidden_size=16 --quads_obstacle_hidden_size=16 '
     '--quads_obstacle_type=cylinder --quads_obstacle_num=10 --quads_local_obst_obs=-1 --quads_obstacle_size=0.6 '
-    '--obst_obs_type=pos_vel_size --quads_obst_level_mode=1 --quads_curriculum_min_obst=2 '
+    '--obst_obs_type=pos_vel_size --quads_obst_level_mode=1 '
     '--neighbor_obs_type=pos_vel_size --quads_local_obs=-1 '
     '--nearest_nbrs=9 --quads_apply_downwash=True '
     '--quads_use_pos_diff=False --quads_episode_duration=20.0 '
