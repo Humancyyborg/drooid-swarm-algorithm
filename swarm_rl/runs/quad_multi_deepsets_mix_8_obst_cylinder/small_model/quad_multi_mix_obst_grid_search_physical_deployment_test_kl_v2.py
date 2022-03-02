@@ -5,7 +5,7 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_8_OBSTACLES
 _params = ParamGrid([
     ('seed', seeds(2)),
     ('lr_schedule', ['kl_adaptive_epoch']),
-    ('lr_schedule_kl_threshold', [0.001]),
+    ('lr_schedule_kl_threshold', [0.0006]),
     ('policy_initialization', ['torch_default']),
     ('quads_curriculum_min_obst', [0, 2]),
 ])
