@@ -659,14 +659,14 @@ class QuadrotorEnvMulti(gym.Env):
         return info
 
     def change_level(self):
+        self.obst_level_condition_dict['crash']['cur_val'] = 0.0
+
         if self.freeze_obst_level:
             return
         if self.obst_level_mode == 0 and self.obst_level > -1:
             return
 
-        collected_episode_num = max(len(self.obst_level_condition_dict['crash']['value_arr']),
-                                    len(self.obst_level_condition_dict['collision_obst_quad']['value_arr']))
-
+        collected_episode_num = len(self.obst_level_condition_dict['crash']['value_arr'])
         if collected_episode_num < self.episode_num_control_level:
             return
 
