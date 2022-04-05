@@ -176,7 +176,7 @@ QUAD_OBSTACLE_PARAMETERZE_LONG_DURATION_CLI = (
 
 
 QUAD_8_OBSTACLES_PARAMETERZE_CLI = (
-    'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=2000000000 --algo=APPO --use_rnn=False '
+    'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=10000000000 --algo=APPO --use_rnn=False '
     '--num_workers=36 --num_envs_per_worker=4 --learning_rate=0.0001 --ppo_clip_value=5.0 --recurrence=1 '
     '--nonlinearity=tanh --actor_critic_share_weights=False --policy_initialization=xavier_uniform '
     '--adaptive_stddev=False --with_vtrace=False --max_policy_lag=100000000 --hidden_size=256 '
@@ -199,6 +199,22 @@ QUAD_8_OBSTACLES_PARAMETERZE_CLI = (
     '--with_wandb=True --wandb_tags obst_quad num_collisions rew_pos --wandb_user=multi-drone'
 )
 
+
+QUAD_SINGLE_NO_OBSTACLES_PARAMETERZE_CLI = (
+    'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=10000000000 --algo=APPO --use_rnn=False '
+    '--num_workers=36 --num_envs_per_worker=4 --learning_rate=0.0001 --ppo_clip_value=5.0 --recurrence=1 '
+    '--nonlinearity=tanh --actor_critic_share_weights=False --policy_initialization=xavier_uniform '
+    '--adaptive_stddev=False --with_vtrace=False --max_policy_lag=100000000 --hidden_size=16 '
+    '--gae_lambda=1.00 --max_grad_norm=5.0 --exploration_loss_coeff=0.0 --rollout=128 --batch_size=1024 '
+    '--quads_use_numba=True --quads_mode=mix --quads_episode_duration=40.0 --quads_formation_size=0.0 '
+    '--encoder_custom=quad_multi_encoder --with_pbt=False --quads_collision_reward=5.0 '
+    '--quads_neighbor_hidden_size=16 --neighbor_obs_type=none '
+    '--quads_local_obs=0 --quads_local_metric=dist --quads_local_coeff=1.0 --quads_num_agents=1 '
+    '--replay_buffer_sample_prob=0.0 --anneal_collision_steps=0.0 '
+    '--save_milestones_sec=10000 --reward_scale=1.0 --quads_enable_sim_room=wall-ceiling --gamma=0.99 '
+    '--quads_crash_mode=1 --quads_obs_repr=xyz_vxyz_R_omega_wall '
+    '--with_wandb=True --wandb_user=multi-drone'
+)
 
 _experiment = Experiment(
     'neighbor_deepsets_cube_fix_size',
