@@ -1,8 +1,8 @@
 from sample_factory.runner.run_description import RunDescription, Experiment, ParamGrid
-from swarm_rl.runs.quad_multi_mix_baseline import QUAD_BASELINE_CLI
+from swarm_rl.runs.quad_multi_mix_baseline import QUAD_BASELINE_CLI, seeds
 
 _params = ParamGrid([
-    ('seed', [0000, 1111, 2222, 3333]),
+    ('seed', seeds(4)),
 ])
 
 SMALL_MODEL_CLI = QUAD_BASELINE_CLI + (
