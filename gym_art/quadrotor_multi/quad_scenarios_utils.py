@@ -4,6 +4,8 @@ from gym_art.quadrotor_multi.quad_utils import get_circle_radius, get_sphere_rad
 QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal', 'circular_config',
                    'ep_lissajous3D', 'ep_rand_bezier', 'swarm_vs_swarm', 'dynamic_formations', 'swap_goals']
 
+QUADS_SINGLE_MODE_LIST = ['static_same_goal', 'dynamic_same_goal', 'ep_lissajous3D', 'ep_rand_bezier']
+
 QUADS_MODE_LIST_HARD = ['swarm_vs_swarm', 'swap_goals']
 
 QUADS_MODE_LIST_SIMPLE = ['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal',
