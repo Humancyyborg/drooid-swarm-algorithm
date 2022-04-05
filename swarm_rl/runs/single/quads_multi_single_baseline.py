@@ -3,11 +3,11 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_SINGLE_NO_O
 
 _params = ParamGrid([
     ('seed', seeds(4)),
-    ('quads_obs_repr', 'xyz_vxyz_R_omega'),
+    ('quads_obs_repr', ['xyz_vxyz_R_omega']),
 ])
 
 SMALL_MODEL_CLI = QUAD_SINGLE_NO_OBSTACLES_PARAMETERZE_CLI + (
-    '--train_for_env_steps=10000000000'
+    ' --train_for_env_steps=10000000000'
 )
 
 _experiment = Experiment(
