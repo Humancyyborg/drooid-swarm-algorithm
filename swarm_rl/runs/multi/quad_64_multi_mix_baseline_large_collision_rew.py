@@ -8,7 +8,7 @@ _params = ParamGrid([
 
 SMALL_MODEL_CLI = QUADS_8_MULTI_NO_OBSTACLES_PARAMETERZE_CLI + (
     ' --quads_num_agents=64 --quads_collision_reward=50.0 --quads_collision_smooth_max_penalty=100.0 '
-    '--num_workers=9 --num_envs_per_worker=2'
+    '--num_workers=9 --num_envs_per_worker=2 --reward_scale=0.2'
 )
 
 _experiment = Experiment(
