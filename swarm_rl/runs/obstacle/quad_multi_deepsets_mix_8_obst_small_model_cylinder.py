@@ -4,16 +4,12 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUAD_8_OBSTACLES
 
 _params = ParamGrid([
     ('seed', seeds(4)),
-    ('quads_obstacle_type', ['cylinder']),
-    ('lr_schedule', ['kl_adaptive_epoch']),
-    ('lr_schedule_kl_threshold', [0.008]),
-    ('policy_initialization', ['torch_default']),
-    ('kl_loss_coeff', [0.1]),
-    ('exploration_loss_coeff', [0.003])
 ])
 
 SMALL_MODEL_CLI = QUAD_8_OBSTACLES_PARAMETERZE_CLI + (
-    ' --hidden_size=16 --quads_neighbor_hidden_size=8 --quads_obstacle_hidden_size=8 --with_wandb=False'
+    ' --hidden_size=16 --quads_neighbor_hidden_size=8 --quads_obstacle_hidden_size=8 '
+    '--quads_obstacle_type=cylinder --lr_schedule=kl_adaptive_epoch --lr_schedule_kl_threshold=0.008 '
+    '--policy_initialization=torch_default --kl_loss_coeff=0.1 --exploration_loss_coeff=0.003'
 )
 
 _experiment = Experiment(
