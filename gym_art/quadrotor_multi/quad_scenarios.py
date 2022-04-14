@@ -1499,10 +1499,7 @@ class Scenario_mix(QuadrotorScenario):
             else:
                 self.quads_mode_list = QUADS_DIFFICULT_MODE_LIST
         else:
-            if num_agents == 1:
-                self.quads_mode_list = QUADS_SINGLE_MODE_LIST
-            else:
-                self.quads_mode_list = QUADS_DIFFICULT_MODE_LIST
+            self.quads_mode_list = QUADS_MODE_LIST_OBSTACLES
 
             self.spawn_flag = 0
             self.start_point = np.array([-3.0, -3.0, 2.0])
