@@ -3,6 +3,7 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUADS_8_MULTI_NO
 
 _params = ParamGrid([
     ('seed', seeds(4)),
+    ('quads_obs_repr', ['xyz_vxyz_R_omega']),
     ('quads_init_random_state', [False]),
 ])
 
