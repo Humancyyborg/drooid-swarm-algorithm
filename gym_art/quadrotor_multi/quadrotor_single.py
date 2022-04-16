@@ -34,6 +34,7 @@ import transforms3d as t3d
 # GYM
 from gym.utils import seeding
 from gym_art.quadrotor_multi.inertia import QuadLink, QuadLinkSimplified
+from gym_art.quadrotor_multi.params import spawn_height_dict
 from gym_art.quadrotor_multi.quad_crash_utils import clip_floor_vel_params
 from gym_art.quadrotor_multi.quadrotor_control import *
 from gym_art.quadrotor_multi.quadrotor_visualization import *
@@ -1280,7 +1281,7 @@ class QuadrotorSingle:
                 box=(self.room_length, self.room_width, self.room_height), vel_max=self.max_init_vel, omega_max=self.max_init_omega
             )
         else:
-            pos[2] = np.random.uniform(low=0.00, high=0.01)
+            pos[2] = spawn_height_dict['drone_z']
             ## INIT HORIZONTALLY WITH 0 VEL and OMEGA
             vel, omega = npa(0, 0, 0), npa(0, 0, 0)
             rotation = randyaw()

@@ -6,6 +6,7 @@ from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_PARAMS_DICT, upda
     update_layer_dist, get_formation_range, get_goal_by_formation, get_z_value, QUADS_MODE_LIST, QUADS_SINGLE_MODE_LIST, \
     QUADS_MODE_LIST_OBSTACLES, QUADS_MODE_GOAL_CENTERS, QUADS_DIFFICULT_MODE_LIST
 from gym_art.quadrotor_multi.quad_utils import generate_points, get_grid_dim_number
+from gym_art.quadrotor_multi.params import spawn_height_dict
 
 
 def create_scenario(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size):
@@ -161,7 +162,7 @@ class QuadrotorScenario:
         self.update_formation_and_relate_param()
 
         # Reset formation center
-        self.formation_center = np.array([0.0, 0.0, 2.0])
+        self.formation_center = np.array([0.0, 0.0, spawn_height_dict['drone_z']])
 
         # Regenerate goals, we don't have to assign goals to the envs,
         # the reset function in quadrotor_multi.py would do that
@@ -174,7 +175,7 @@ class QuadrotorScenario:
 
         # Reset formation center
         if formation_center is None:
-            self.formation_center = np.array([0.0, 0.0, 2.0])
+            self.formation_center = np.array([0.0, 0.0, spawn_height_dict['drone_z']])
         else:
             self.formation_center = formation_center
 
@@ -297,7 +298,7 @@ class Scenario_dynamic_same_goal(QuadrotorScenario):
         if tick % self.control_step_for_sec == 0 and tick > 0:
             box_size = self.envs[0].box
             x, y = np.random.uniform(low=-box_size, high=box_size, size=(2,))
-            z = np.random.uniform(low=-0.5 * box_size, high=0.5 * box_size) + 2.0
+            z = np.random.uniform(low=-0.5 * box_size, high=0.5 * box_size) + spawn_height_dict['drone_z']
             z = max(0.25, z)
             self.formation_center = np.array([x, y, z])
             self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=0.0)
@@ -388,7 +389,7 @@ class Scenario_ep_lissajous3D(QuadrotorScenario):
         self.update_formation_and_relate_param()
 
         # Generate goals
-        self.formation_center = np.array([-2.0, 0.0, 2.0])  # prevent drones from crashing into the wall
+        self.formation_center = np.array([-2.0, 0.0, spawn_height_dict['drone_z']])  # prevent drones from crashing into the wall
         self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=0.0)
 
 
@@ -822,7 +823,7 @@ class Scenario_o_dynamic_same_goal(QuadrotorScenario):
             x = np.random.uniform(low=-1.0 * half_room_length + shift_small, high=-1.0 * half_room_length + shift_big)
             y = np.random.uniform(low=-1.0 * half_room_width + shift_collide, high=half_room_width - shift_collide)
 
-        z = np.random.uniform(low=2.0, high=3.0)
+        z = np.random.uniform(low=spawn_height_dict['goal_min_z'], high=spawn_height_dict['goal_max_z'])
         return np.array([x, y, z])
 
     def set_end_point(self):
@@ -942,7 +943,7 @@ class Scenario_o_swarm_vs_swarm(QuadrotorScenario):
             x_2 = np.random.uniform(low=-1.0 * half_room_length + shift_small, high=-1.0 * half_room_length + shift_big)
             y_2 = np.random.uniform(low=-1.0 * half_room_width + shift_collide, high=half_room_width - shift_collide)
 
-        z_1, z_2 = np.random.uniform(low=2.0, high=3.0, size=2)
+        z_1, z_2 = np.random.uniform(low=spawn_height_dict['goal_min_z'], high=spawn_height_dict['goal_max_z'], size=2)
 
         pos_1 = np.array([x_1, y_1, z_1])
         pos_2 = np.array([x_2, y_2, z_2])
@@ -1036,7 +1037,8 @@ class Scenario_o_dynamic_formations(Scenario_o_dynamic_diff_goal):
         else:
             y = np.random.uniform(low=-2.0, high=-0.01)
 
-        z = np.random.uniform(low=2.5, high=3.5)
+        z = np.random.uniform(low=spawn_height_dict['goal_min_z'], high=spawn_height_dict['goal_max_z'])
+
         self.formation_center = np.array([x, y, z])
 
     def update_goals(self):
@@ -1157,7 +1159,7 @@ class Scenario_o_dynamic_roller(Scenario_o_dynamic_diff_goal):
                     end_x = pre_x + np.random.uniform(low=1.0, high=2.0)
 
             end_y = np.random.uniform(low=-3.5, high=3.5)
-            end_z = np.random.uniform(low=2.0, high=3.0)
+            end_z = np.random.uniform(low=spawn_height_dict['goal_min_z'], high=spawn_height_dict['goal_max_z'])
         else:
             if self.direction_flag == 0:
                 end_y = pre_y + np.random.uniform(low=1.0, high=2.0)
@@ -1171,7 +1173,7 @@ class Scenario_o_dynamic_roller(Scenario_o_dynamic_diff_goal):
                     end_y = pre_y + np.random.uniform(low=1.0, high=2.0)
 
             end_x = np.random.uniform(low=-3.5, high=3.5)
-            end_z = np.random.uniform(low=2.0, high=3.0)
+            end_z = np.random.uniform(low=spawn_height_dict['goal_min_z'], high=spawn_height_dict['goal_max_z'])
 
         self.end_point = np.array([end_x, end_y, end_z])
         self.duration_time += np.random.uniform(low=8.0, high=10.0)
@@ -1280,7 +1282,8 @@ class Scenario_o_swap_goals(Scenario_o_inside_obstacles):
         end_y = obst_y + np.random.uniform(low=-0.5, high=0.5)
 
         end_z = self.start_point[2] + np.random.uniform(low=-1.0, high=1.0)
-        end_z = np.clip(end_z, a_min=1.0, a_max=4.0)
+        end_z = np.clip(end_z, a_min=spawn_height_dict['goal_min_z'] - 2.0, a_max=spawn_height_dict['goal_max_z'] + 2.0)
+        end_z = np.clip(end_z, a_min=1.0, a_max=9.0)
         self.end_point = np.array([end_x, end_y, end_z])
 
     def step(self, infos, rewards, pos):
@@ -1497,11 +1500,10 @@ class Scenario_mix(QuadrotorScenario):
             if num_agents == 1:
                 self.quads_mode_list = QUADS_SINGLE_MODE_LIST
             else:
-                self.quads_mode_list = QUADS_DIFFICULT_MODE_LIST
+                self.quads_mode_list = QUADS_MODE_LIST
         else:
             self.quads_mode_list = QUADS_MODE_LIST_OBSTACLES
-
-            self.spawn_flag = 0
+            self.spawn_flag = -1
             self.start_point = np.array([-3.0, -3.0, 2.0])
             self.end_point = np.array([3.0, 3.0, 2.0])
             self.scenario_mode = 'o_dynamic_same_goal'

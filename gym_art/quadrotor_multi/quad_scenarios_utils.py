@@ -1,4 +1,6 @@
 import numpy as np
+
+from gym_art.quadrotor_multi.params import spawn_height_dict
 from gym_art.quadrotor_multi.quad_utils import get_circle_radius, get_sphere_radius, get_grid_dim_number
 
 QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal', 'ep_lissajous3D',
@@ -120,7 +122,7 @@ def get_goal_by_formation(formation, pos_0, pos_1, layer_pos=0.):
 
 
 def get_z_value(num_agents, num_agents_per_layer, box_size, formation, formation_size):
-    z = np.random.uniform(low=-0.5 * box_size, high=0.5 * box_size) + 2.0
+    z = np.random.uniform(low=-0.5 * box_size, high=0.5 * box_size) + spawn_height_dict['drone_z']
     z_lower_bound = 0.25
     if formation == "sphere" or formation.startswith("circle_vertical"):
         z_lower_bound = formation_size + 0.25
