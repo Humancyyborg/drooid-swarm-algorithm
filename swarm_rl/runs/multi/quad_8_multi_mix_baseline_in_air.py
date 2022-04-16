@@ -8,7 +8,7 @@ _params = ParamGrid([
 ])
 
 BIG_MODEL_CLI = QUADS_8_MULTI_NO_OBSTACLES_PARAMETERZE_CLI + (
-    ' --hidden_size=256 ----quads_neighbor_hidden_size=256'
+    ' --hidden_size=256 --quads_neighbor_hidden_size=256'
 )
 
 _experiment = Experiment(
