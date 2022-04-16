@@ -7,9 +7,13 @@ _params = ParamGrid([
     ('quads_init_random_state', [False]),
 ])
 
+BIG_MODEL_CLI = QUADS_8_MULTI_NO_OBSTACLES_PARAMETERZE_CLI + (
+    ' --hidden_size=256 ----quads_neighbor_hidden_size=256'
+)
+
 _experiment = Experiment(
     '8_agents',
-    QUADS_8_MULTI_NO_OBSTACLES_PARAMETERZE_CLI,
+    BIG_MODEL_CLI,
     _params.generate_params(randomize=False),
 )
 
