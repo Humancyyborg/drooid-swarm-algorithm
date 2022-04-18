@@ -21,3 +21,5 @@ _experiment = Experiment(
 )
 
 RUN_DESCRIPTION = RunDescription('8_multi_2_local', experiments=[_experiment])
+
+# python -m sample_factory.runner.run --run=swarm_rl.runs.quad_multi_deepsets_mix_8_obst_cylinder.big_model.quad_multi_mix_obst_in_air_early_term --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
