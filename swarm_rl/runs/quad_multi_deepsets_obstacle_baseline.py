@@ -186,8 +186,8 @@ QUAD_8_OBSTACLES_PARAMETERZE_CLI = (
     '--quads_neighbor_hidden_size=128 --neighbor_obs_type=pos_vel '
     '--quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
     '--quads_local_obs=6 --quads_local_metric=dist --quads_local_coeff=1.0 --quads_num_agents=8 '
-    '--quads_collision_reward=5.0 --quads_collision_smooth_max_penalty=4.0 --quads_neighbor_encoder_type=mean_embed '
-    '--replay_buffer_sample_prob=0.0 --anneal_collision_steps=0.0 --quads_obstacle_type=cube '
+    '--quads_collision_smooth_max_penalty=4.0 --quads_neighbor_encoder_type=mean_embed '
+    '--replay_buffer_sample_prob=0.0 --anneal_collision_steps=0.0 --quads_obstacle_type=cylinder '
     '--quads_collision_obstacle_reward=5.0 --quads_collision_obst_smooth_max_penalty=2.0 '
     '--quads_obstacle_hidden_size=128 --quads_obst_penalty_fall_off=3.0 --quads_obstacle_size=1.0 '
     '--quads_obstacle_num=6 --quads_local_obst_obs=2 --quads_obstacle_mode=static_pillar_fixsize '
@@ -196,7 +196,7 @@ QUAD_8_OBSTACLES_PARAMETERZE_CLI = (
     '--quads_obst_proximity_mode=0 --quads_obst_inf_height=True --quads_obst_collision_enable_grace_period=True '
     '--gamma=0.998 --quads_neighbor_proximity_mode=0 --quads_crash_mode=1 '
     '--quads_obs_repr=xyz_vxyz_R_omega_wall --quads_obst_midreset=False '
-    '--with_wandb=False --wandb_tags obst_quad num_collisions rew_pos --wandb_user=multi-drone '
+    '--with_wandb=True --wandb_tags obst_quad num_collisions rew_pos --wandb_user=multi-drone '
     '--quads_use_pos_diff=False --quads_obst_generation_mode=gaussian --quads_init_random_state=False'
 )
 
