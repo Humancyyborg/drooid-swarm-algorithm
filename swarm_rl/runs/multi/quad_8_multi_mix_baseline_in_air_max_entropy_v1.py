@@ -4,7 +4,7 @@ from swarm_rl.runs.quad_multi_deepsets_obstacle_baseline import QUADS_8_MULTI_NO
 _params = ParamGrid([
     ('seed', seeds(4)),
     ('quads_init_random_state', [False]),
-    ('max_entropy_coeff', [0.03]),
+    ('max_entropy_coeff', [0.01]),
 ])
 
 BIG_MODEL_CLI = QUADS_8_MULTI_NO_OBSTACLES_PARAMETERZE_CLI + (
@@ -12,7 +12,7 @@ BIG_MODEL_CLI = QUADS_8_MULTI_NO_OBSTACLES_PARAMETERZE_CLI + (
 )
 
 _experiment = Experiment(
-    'max_entropy-3e-2-8_agents',
+    'max_entropy-1e-2-8_agents',
     BIG_MODEL_CLI,
     _params.generate_params(randomize=False),
 )
