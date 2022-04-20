@@ -12,7 +12,7 @@ BIG_MODEL_CLI = QUADS_8_MULTI_NO_OBSTACLES_PARAMETERZE_CLI + (
 )
 
 _experiment = Experiment(
-    'max_entropy-3e-2-adaptive_stddev-8_agents',
+    'max_entropy-3e-3-adaptive_stddev-8_agents',
     BIG_MODEL_CLI,
     _params.generate_params(randomize=False),
 )
