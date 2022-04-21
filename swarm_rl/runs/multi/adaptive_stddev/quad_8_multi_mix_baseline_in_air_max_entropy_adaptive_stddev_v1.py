@@ -19,4 +19,4 @@ _experiment = Experiment(
 
 RUN_DESCRIPTION = RunDescription('quad_multi', experiments=[_experiment])
 
-# python -m sample_factory.runner.run --run=swarm_rl.runs.multi.quad_8_multi_mix_baseline_in_air_max_entropy --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
+# python -m sample_factory.runner.run --run=swarm_rl.runs.multi.adaptive_stddev.quad_8_multi_mix_baseline_in_air_max_entropy_adaptive_stddev_v1 --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
