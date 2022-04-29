@@ -38,7 +38,7 @@ conda activate swarm-rl
 Clone and install this repo as an editable Pip package:
 
 ```
-git clone https://github.com/alex-petrenko/quad-swarm-rl
+git clone https://github.com/Zhehui-Huang/quad-swarm-rl.git
 cd quad-swarm-rl
 pip install -e .
 ```
