@@ -2,17 +2,17 @@ from sample_factory.runner.run_description import RunDescription, Experiment, Pa
 from swarm_rl.runs.quad_multi_mix_baseline import QUAD_BASELINE_CLI
 
 _params = ParamGrid([
-    ('quads_neighbor_encoder_type', ['mean_embed']),
     ('seed', [0000, 1111, 2222, 3333]),
-    ('exploration_loss_coeff', [0.003]),
-    ('max_entropy_coeff', [0.001]),
-    ('adaptive_stddev', [True]),
-    ('replay_buffer_sample_prob', [0.0]),
 ])
+
+BIG_MODEL_CLI = QUAD_BASELINE_CLI + (
+    ' --with_wandb=True --wandb_user=multi-drone --quads_neighbor_encoder_type=mean_embed '
+    '--exploration_loss_coeff=0.003 --max_entropy_coeff=0.001 --adaptive_stddev=True --replay_buffer_sample_prob=0.0'
+)
 
 _experiment = Experiment(
     'explor_3e-3-max_entropy_1e-3-quad_mix_baseline-8_mixed_attn',
-    QUAD_BASELINE_CLI,
+    BIG_MODEL_CLI,
     _params.generate_params(randomize=False),
 )
 
