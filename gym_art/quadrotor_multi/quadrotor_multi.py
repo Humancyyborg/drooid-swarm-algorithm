@@ -197,6 +197,9 @@ class QuadrotorEnvMulti(gym.Env):
         self.crashes_in_recent_episodes = deque([], maxlen=100)
         self.crashes_last_episode = 0
 
+        # print info
+        self.buf_col_per_min_per_drone = deque([], maxlen=20)
+
     def set_room_dims(self, dims):
         # dims is a (x, y, z) tuple
         self.room_dims = dims
@@ -544,6 +547,15 @@ class QuadrotorEnvMulti(gym.Env):
 
         # DONES
         if any(dones):
+
+            print('++++++++++++++++++++++++++++++')
+            self.buf_col_per_min_per_drone.append(self.collisions_after_settle)
+            print('self.buf_col_per_min_per_drone', self.buf_col_per_min_per_drone)
+
+            print('collision / (minute * drone)', sum(self.buf_col_per_min_per_drone) * 60 / (16 * self.num_agents * len(self.buf_col_per_min_per_drone)))
+            print('++++++++++++++++++++++++++++++')
+
+
             for i in range(len(infos)):
                 if self.saved_in_replay_buffer:
                     infos[i]['episode_extra_stats'] = {
