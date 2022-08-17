@@ -625,7 +625,7 @@ class Scenario_mix(QuadrotorScenario):
         # value: 0. formation, 1: [formation_low_size, formation_high_size], 2: episode_time
         if num_agents == 1:
             self.quads_mode_list = QUADS_MODE_LIST_SIMPLE
-        if obst_mode == 'no_obstacles':
+        elif obst_mode == 'no_obstacles':
             self.quads_mode_list = QUADS_MODE_LIST
         else:
             self.quads_mode_list = QUADS_MODE_LIST_OBSTACLES
