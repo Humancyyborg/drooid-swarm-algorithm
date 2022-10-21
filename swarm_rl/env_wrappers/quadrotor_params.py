@@ -5,7 +5,7 @@ def quadrotors_override_defaults(env, parser):
     parser.set_defaults(
         encoder_type='mlp',
         encoder_subtype='mlp_quads',
-        hidden_size=256,
+        rnn_size=256,
         encoder_extra_fc_layers=0,
         env_frameskip=1,
     )
@@ -61,3 +61,4 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obstacle_hidden_size', default=32, type=int, help='Choose the type of force to use')
     p.add_argument('--quads_collision_obst_smooth_max_penalty', default=10.0, type=float, help='The upper bound of the collision function given distance among drones')
     p.add_argument('--quads_obst_penalty_fall_off', default=10.0, type=float, help='The upper bound of the collision function given distance among drones')
+    p.add_argument('--use_spectral_norm', default=False, type=str2bool, help="Use spectral normalization to smoothen the gradients and stabilize training. Only supports fully connected layers")

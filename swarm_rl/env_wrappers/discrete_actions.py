@@ -2,7 +2,7 @@ import numpy as np
 
 import gym
 
-from sample_factory.algorithms.utils.spaces.discretized import Discretized
+from sample_factory.algo.utils.spaces.discretized import Discretized
 
 
 class QuadsDiscreteActionsWrapper(gym.Wrapper):
