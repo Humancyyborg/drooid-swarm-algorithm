@@ -5,6 +5,7 @@ from swarm_rl.env_wrappers.additional_input import QuadsAdditionalInputWrapper
 from swarm_rl.env_wrappers.discrete_actions import QuadsDiscreteActionsWrapper
 from swarm_rl.env_wrappers.reward_shaping import DEFAULT_QUAD_REWARD_SHAPING, QuadsRewardShapingWrapper, \
     DEFAULT_QUAD_REWARD_SHAPING_SINGLE
+from swarm_rl.env_wrappers.compatibility import QuadEnvCompatibility
 
 
 class AnnealSchedule:
@@ -14,7 +15,7 @@ class AnnealSchedule:
         self.anneal_env_steps = anneal_env_steps
 
 
-def make_quadrotor_env_single(cfg, **kwargs):
+def make_quadrotor_env_single(cfg, render_mode=None, **kwargs):
     from gym_art.quadrotor_single.quadrotor import QuadrotorEnv
 
     quad = 'Crazyflie'
@@ -51,11 +52,12 @@ def make_quadrotor_env_single(cfg, **kwargs):
 
     if cfg.quads_clip_input:
         env = QuadsAdditionalInputWrapper(env)
-
+    
+    env = QuadEnvCompatibility(env, render_mode=render_mode)
     return env
 
 
-def make_quadrotor_env_multi(cfg, **kwargs):
+def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
     from gym_art.quadrotor_multi.quadrotor_multi import QuadrotorEnvMulti
     quad = 'Crazyflie'
     dyn_randomize_every = dyn_randomization_ratio = None
@@ -121,13 +123,14 @@ def make_quadrotor_env_multi(cfg, **kwargs):
         annealing = None
 
     env = QuadsRewardShapingWrapper(env, reward_shaping_scheme=reward_shaping, annealing=annealing)
+    env = QuadEnvCompatibility(env, render_mode=render_mode)
     return env
 
 
-def make_quadrotor_env(env_name, cfg=None, **kwargs):
+def make_quadrotor_env(env_name, cfg=None, _env_config=None, render_mode=None, **kwargs):
     if env_name == 'quadrotor_single':
-        return make_quadrotor_env_single(cfg, **kwargs)
+        return make_quadrotor_env_single(cfg, render_mode, **kwargs)
     elif env_name == 'quadrotor_multi':
-        return make_quadrotor_env_multi(cfg, **kwargs)
+        return make_quadrotor_env_multi(cfg, render_mode, **kwargs)
     else:
         raise NotImplementedError

@@ -208,7 +208,7 @@ def points_in_sphere(n, x):
 
 def generate_points(n=3):
     if n < 3:
-        print("The number of goals can not smaller than 3, The system has cast it to 3")
+        # print("The number of goals can not smaller than 3, The system has cast it to 3")
         n = 3
     return points_in_sphere(n, 0.1 + 1.2 * n)
 

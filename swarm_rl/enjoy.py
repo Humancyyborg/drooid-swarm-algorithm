@@ -1,15 +1,14 @@
 import sys
 
-from sample_factory.algorithms.appo.enjoy_appo import enjoy
-from sample_factory.algorithms.utils.arguments import parse_args
+from sample_factory.enjoy import enjoy
 
-from swarm_rl.train import register_custom_components
+from swarm_rl.train import parse_swarm_cfg, register_swarm_components
 
 
 def main():
     """Script entry point."""
-    register_custom_components()
-    cfg = parse_args(evaluation=True)
+    register_swarm_components()
+    cfg = parse_swarm_cfg(evaluation=True)
     status = enjoy(cfg)
     return status
 

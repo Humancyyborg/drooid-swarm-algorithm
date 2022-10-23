@@ -6,7 +6,7 @@ _params = ParamGrid([
     ('seed', [0000, 3333]),
     ('train_for_env_steps', [5000000000]),
     ('anneal_collision_steps', [0]),
-    ('hidden_size', [32]),
+    ('rnn_size', [32]),
     ('quads_neighbor_hidden_size', [16, 32]),
 ])
 

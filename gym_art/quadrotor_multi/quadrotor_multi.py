@@ -599,7 +599,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         render_start = time.time()
         goals = tuple(e.goal for e in self.envs)
-        self.scene.render_chase(all_dynamics=self.all_dynamics(), goals=goals, collisions=self.all_collisions,
+        frame = self.scene.render_chase(all_dynamics=self.all_dynamics(), goals=goals, collisions=self.all_collisions,
                                 mode=mode, multi_obstacles=self.multi_obstacles)
         # Update the formation size of the scenario
         if self.quads_mode == "mix":
@@ -636,6 +636,9 @@ class QuadrotorEnvMulti(gym.Env):
         self.frames_since_last_render = 0
 
         self.simulation_start_time = time.time()
+
+        if mode == "rgb_array":
+            return frame
 
     def __deepcopy__(self, memo):
         """OpenGL scene can't be copied naively."""
