@@ -8,7 +8,7 @@ _params = ParamGrid([
 ])
 
 _experiment = Experiment(
-    'quad_mix_baseline-8_mixed_attn',
+    'quad_mix_baseline-48_mixed_attn',
     QUAD_BASELINE_SCALE_CLI_48,
     _params.generate_params(randomize=False),
 )
