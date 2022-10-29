@@ -45,7 +45,7 @@ QUAD_BASELINE_CLI_8 = (
 # For scale, need to change
 # num_workers / num_envs_per_worker && quads_num_agents && train_for_env_steps
 QUAD_BASELINE_SCALE_CLI_16 = (
-    'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=2000000000 --algo=APPO --use_rnn=False '
+    'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=1200000000 --algo=APPO --use_rnn=False '
     '--num_workers=36 --num_envs_per_worker=2 --learning_rate=0.0001 --ppo_clip_value=5.0 --recurrence=1 '
     '--nonlinearity=tanh --actor_critic_share_weights=False --policy_initialization=xavier_uniform '
     '--adaptive_stddev=False --with_vtrace=False --max_policy_lag=100000000 --hidden_size=256 '
@@ -66,7 +66,7 @@ QUAD_BASELINE_SCALE_CLI_16 = (
 # For scale, need to change
 # num_workers / num_envs_per_worker && quads_num_agents && train_for_env_steps
 QUAD_BASELINE_SCALE_CLI_32 = (
-    'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=2000000000 --algo=APPO --use_rnn=False '
+    'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=1200000000 --algo=APPO --use_rnn=False '
     '--num_workers=18 --num_envs_per_worker=2 --learning_rate=0.0001 --ppo_clip_value=5.0 --recurrence=1 '
     '--nonlinearity=tanh --actor_critic_share_weights=False --policy_initialization=xavier_uniform '
     '--adaptive_stddev=False --with_vtrace=False --max_policy_lag=100000000 --hidden_size=256 '
@@ -87,7 +87,7 @@ QUAD_BASELINE_SCALE_CLI_32 = (
 # For scale, need to change
 # num_workers / num_envs_per_worker && quads_num_agents && train_for_env_steps
 QUAD_BASELINE_SCALE_CLI_48 = (
-    'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=2100000000 --algo=APPO --use_rnn=False '
+    'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=1200000000 --algo=APPO --use_rnn=False '
     '--num_workers=12 --num_envs_per_worker=2 --learning_rate=0.0001 --ppo_clip_value=5.0 --recurrence=1 '
     '--nonlinearity=tanh --actor_critic_share_weights=False --policy_initialization=xavier_uniform '
     '--adaptive_stddev=False --with_vtrace=False --max_policy_lag=100000000 --hidden_size=256 '
@@ -108,7 +108,7 @@ QUAD_BASELINE_SCALE_CLI_48 = (
 # For scale, need to change
 # num_workers / num_envs_per_worker && quads_num_agents && train_for_env_steps
 QUAD_BASELINE_SCALE_CLI_64 = (
-    'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=2100000000 --algo=APPO --use_rnn=False '
+    'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=1200000000 --algo=APPO --use_rnn=False '
     '--num_workers=9 --num_envs_per_worker=2 --learning_rate=0.0001 --ppo_clip_value=5.0 --recurrence=1 '
     '--nonlinearity=tanh --actor_critic_share_weights=False --policy_initialization=xavier_uniform '
     '--adaptive_stddev=False --with_vtrace=False --max_policy_lag=100000000 --hidden_size=256 '
@@ -129,7 +129,7 @@ QUAD_BASELINE_SCALE_CLI_64 = (
 # For scale, need to change
 # num_workers / num_envs_per_worker && quads_num_agents && train_for_env_steps
 QUAD_BASELINE_SCALE_CLI_128 = (
-    'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=2100000000 --algo=APPO --use_rnn=False '
+    'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=1200000000 --algo=APPO --use_rnn=False '
     '--num_workers=4 --num_envs_per_worker=2 --learning_rate=0.0001 --ppo_clip_value=5.0 --recurrence=1 '
     '--nonlinearity=tanh --actor_critic_share_weights=False --policy_initialization=xavier_uniform '
     '--adaptive_stddev=False --with_vtrace=False --max_policy_lag=100000000 --hidden_size=256 '
