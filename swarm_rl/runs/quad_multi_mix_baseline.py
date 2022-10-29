@@ -60,7 +60,7 @@ QUAD_BASELINE_SCALE_CLI_16 = (
     '--quads_collision_smooth_max_penalty=10.0 '
     '--quads_neighbor_encoder_type=attention '
     '--replay_buffer_sample_prob=0.75 --save_milestones_sec=900 '
-    '--anneal_collision_steps=300000000 --with_wandb=True --wandb_user=multi-drones'
+    '--anneal_collision_steps=300000000'
 )
 
 # For scale, need to change
@@ -81,7 +81,7 @@ QUAD_BASELINE_SCALE_CLI_32 = (
     '--quads_collision_smooth_max_penalty=10.0 '
     '--quads_neighbor_encoder_type=attention '
     '--replay_buffer_sample_prob=0.75 --save_milestones_sec=900 '
-    '--anneal_collision_steps=300000000 --with_wandb=True --wandb_user=multi-drones'
+    '--anneal_collision_steps=300000000'
 )
 
 # For scale, need to change
@@ -102,7 +102,7 @@ QUAD_BASELINE_SCALE_CLI_48 = (
     '--quads_collision_smooth_max_penalty=10.0 '
     '--quads_neighbor_encoder_type=attention '
     '--replay_buffer_sample_prob=0.75 --save_milestones_sec=900 '
-    '--anneal_collision_steps=300000000 --with_wandb=True --wandb_user=multi-drones'
+    '--anneal_collision_steps=300000000'
 )
 
 # For scale, need to change
@@ -123,7 +123,7 @@ QUAD_BASELINE_SCALE_CLI_64 = (
     '--quads_collision_smooth_max_penalty=10.0 '
     '--quads_neighbor_encoder_type=attention '
     '--replay_buffer_sample_prob=0.75 --save_milestones_sec=900 '
-    '--anneal_collision_steps=300000000 --with_wandb=True --wandb_user=multi-drones'
+    '--anneal_collision_steps=300000000'
 )
 
 # For scale, need to change
@@ -144,7 +144,7 @@ QUAD_BASELINE_SCALE_CLI_128 = (
     '--quads_collision_smooth_max_penalty=10.0 '
     '--quads_neighbor_encoder_type=attention '
     '--replay_buffer_sample_prob=0.75 --save_milestones_sec=900 '
-    '--anneal_collision_steps=300000000 --with_wandb=True --wandb_user=multi-drones'
+    '--anneal_collision_steps=300000000'
 )
 
 # For scale, need to change
