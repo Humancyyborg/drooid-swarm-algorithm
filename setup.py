@@ -68,6 +68,6 @@ setup(
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
         'pytest', 'numpy>1.15', 'matplotlib>3', 'gym>=0.17', 'transforms3d', 'noise', 'tqdm', 'bezier<=2020.5.19', 'numba', 'scipy',
-        'sample-factory>=1.121.0',
+        'sample-factory>=1.121.0', 'pyglet<2.0.0'
     ],
 )
