@@ -59,12 +59,7 @@ class QuadrotorDynamics:
     arm_length unit: meter
     inertia unit: kg * m^2, 3-element vector representing diagonal matrix
     thrust_to_weight is the total, it will be divided among the 4 props
-    torque_to_thrust is ratio of torque produced by prop to thrust
-    thrust_noise_ratio is noise2signal ratio of the thrust noise, Ex: 0.05 = 5% of the current signal
-      It is an approximate ratio, i.e. the upper bound could still be higher, due to how OU noise operates
-    Coord frames: x configuration:
-     - x axis between arms looking forward [x - configuration]
-     - y axis pointing to the left
+    torque_to_thrust is ratio of torque produced by prop to thrustobstacles_num
      - z axis up
     TODO:
     - only diagonal inertia is used at the moment
@@ -708,11 +703,11 @@ class QuadrotorSingle:
                  dynamics_randomize_every=None, dyn_sampler_1=None, dyn_sampler_2=None,
                  raw_control=True, raw_control_zero_middle=True, dim_mode='3D', tf_control=False, sim_freq=200.,
                  sim_steps=2,
-                 obs_repr="xyz_vxyz_R_omega", ep_time=7, obstacles_num=0, room_length=10, room_width=10, room_height=10, init_random_state=False,
+                 obs_repr="xyz_vxyz_R_omega", ep_time=7, room_length=10, room_width=10, room_height=10, init_random_state=False,
                  rew_coeff=None, sense_noise=None, verbose=False, gravity=GRAV,
                  t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False, swarm_obs='none', num_agents=1,quads_settle=False,
                  quads_settle_range_meters=1.0, quads_vel_reward_out_range=0.8,
-                 view_mode='local', obstacle_mode='no_obstacles', obstacle_num=0, num_use_neighbor_obs=0):
+                 view_mode='local', num_use_neighbor_obs=0):
         np.seterr(under='ignore')
         """
         Args:
@@ -735,7 +730,6 @@ class QuadrotorSingle:
             sim_steps: [int] how many simulation steps for each control step
             obs_repr: [str] options: xyz_vxyz_rot_omega, xyz_vxyz_quat_omega
             ep_time: [float] episode time in simulated seconds. This parameter is used to compute env max time length in steps.
-            obstacles_num: [int] number of obstacle in the env
             room_size: [int] env room size. Not the same as the initialization box to allow shorter episodes
             init_random_state: [bool] use random state initialization or horizontal initialization with 0 velocities
             rew_coeff: [dict] weights for different reward components (see compute_weighted_reward() function)
@@ -755,7 +749,6 @@ class QuadrotorSingle:
         self.tf_control = tf_control
         self.dynamics_randomize_every = dynamics_randomize_every
         self.verbose = verbose
-        self.obstacles_num = obstacles_num
         self.raw_control = raw_control
         self.use_numba = use_numba
         self.update_sense_noise(sense_noise=sense_noise)
@@ -801,10 +794,6 @@ class QuadrotorSingle:
 
         ## View / Camera mode
         self.view_mode = view_mode
-
-        ## Obstacle Mode
-        self.obstacle_mode = obstacle_mode
-        self.obstacle_num = obstacle_num
 
         ###############################################################################
         ## DYNAMICS (and randomization)
@@ -931,11 +920,6 @@ class QuadrotorSingle:
 
         ################################################################################
         ## SCENE
-        if self.obstacles_num > 0:
-            #TODO: Fix unresolved reference error here???
-            self.obstacles = _random_obstacles(None, obstacles_num, self.room_size, self.dynamics.arm)
-        else:
-            self.obstacles = None
 
         ################################################################################
         ## CONTROL
@@ -998,8 +982,6 @@ class QuadrotorSingle:
             obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['goal']) * self.num_use_neighbor_obs
         elif self.swarm_obs == 'pos_vel_goals_ndist_gdist' and self.num_agents > 1:
             obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['goal'] + ['nbr_dist'] + ['nbr_goal_dist']) * self.num_use_neighbor_obs
-        if self.obstacle_mode != 'no_obstacles' and self.obstacle_num > 0:
-            obs_comps = obs_comps + (['roxyz'] + ['rovxyz'] + ['osize'] + ['otype']) * self.obstacle_num
 
         print("Observation components:", obs_comps)
         obs_low, obs_high = [], []
@@ -1040,10 +1022,7 @@ class QuadrotorSingle:
         # self.oracle.step(self.dynamics, self.goal, self.dt)
         # self.scene.update_state(self.dynamics, self.goal)
 
-        if self.obstacles is not None:
-            self.crashed = self.obstacles.detect_collision(self.dynamics)
-        else:
-            self.crashed = self.dynamics.pos[2] <= self.dynamics.arm
+        self.crashed = self.dynamics.pos[2] <= self.dynamics.arm
         self.crashed = self.crashed or not np.array_equal(self.dynamics.pos,
                                                           np.clip(self.dynamics.pos,
                                                                   a_min=self.room_box[0],

@@ -14,7 +14,7 @@ DEFAULT_QUAD_REWARD_SHAPING_SINGLE = dict(
 
 DEFAULT_QUAD_REWARD_SHAPING = copy.deepcopy(DEFAULT_QUAD_REWARD_SHAPING_SINGLE)
 DEFAULT_QUAD_REWARD_SHAPING['quad_rewards'].update(dict(
-    quadcol_bin=0.0, quadcol_bin_obst=0.0, quadsettle=0.0,
+    quadcol_bin=0.0, quadsettle=0.0,
 ))
 
 

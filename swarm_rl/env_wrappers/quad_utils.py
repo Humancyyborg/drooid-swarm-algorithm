@@ -88,14 +88,13 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         room_width=cfg.room_dims[1], room_height=cfg.room_dims[2], rew_coeff=rew_coeff,
         quads_mode=cfg.quads_mode, quads_formation=cfg.quads_formation, quads_formation_size=cfg.quads_formation_size,
         swarm_obs=extended_obs, quads_use_numba=cfg.quads_use_numba, quads_settle=cfg.quads_settle, quads_settle_range_meters=cfg.quads_settle_range_meters,
-        quads_vel_reward_out_range=cfg.quads_vel_reward_out_range, quads_obstacle_mode=cfg.quads_obstacle_mode,
-        quads_view_mode=cfg.quads_view_mode, quads_obstacle_num=cfg.quads_obstacle_num, quads_obstacle_type=cfg.quads_obstacle_type, quads_obstacle_size=cfg.quads_obstacle_size,
-        adaptive_env=cfg.quads_adaptive_env, obstacle_traj=cfg.quads_obstacle_traj, local_obs=cfg.quads_local_obs, obs_repr=cfg.quads_obs_repr,
+        quads_vel_reward_out_range=cfg.quads_vel_reward_out_range,
+        quads_view_mode=cfg.quads_view_mode,
+        adaptive_env=cfg.quads_adaptive_env, local_obs=cfg.quads_local_obs, obs_repr=cfg.quads_obs_repr,
         collision_hitbox_radius=cfg.quads_collision_hitbox_radius, collision_falloff_radius=cfg.quads_collision_falloff_radius,
         local_metric=cfg.quads_local_metric,
         local_coeff=cfg.quads_local_coeff,  # how much velocity matters in "distance" calculation
-        use_replay_buffer=use_replay_buffer, obstacle_obs_mode=cfg.quads_obstacle_obs_mode,
-        obst_penalty_fall_off=cfg.quads_obst_penalty_fall_off,
+        use_replay_buffer=use_replay_buffer,
     )
 
     if use_replay_buffer:
@@ -106,8 +105,6 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         reward_shaping['quad_rewards']['effort'] = cfg.quads_effort_reward
 
     reward_shaping['quad_rewards']['quadsettle'] = cfg.quads_settle_reward
-    reward_shaping['quad_rewards']['quadcol_bin_obst'] = cfg.quads_collision_obstacle_reward
-    reward_shaping['quad_rewards']['quadcol_bin_obst_smooth_max'] = cfg.quads_collision_obst_smooth_max_penalty
     reward_shaping['quad_rewards']['quadcol_bin'] = cfg.quads_collision_reward
     reward_shaping['quad_rewards']['quadcol_bin_smooth_max'] = cfg.quads_collision_smooth_max_penalty
 

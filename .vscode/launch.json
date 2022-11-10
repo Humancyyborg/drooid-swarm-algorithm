@@ -1,0 +1,17 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "args": ["--algo=APPO", "--env=quadrotor_multi", "--replay_buffer_sample_prob=0", "--quads_use_numba=False", "--train_dir=home/resl/quad-swarm-rl/swarm_rl/train_dir/paper_quads_multi_mix_baseline_8a_attn_v116/quad_mix_baseline-8_mixed_attn_", "--experiment=00_quad_mix_baseline-8_mixed_attn_q.n.e.typ_attention_see_0D"],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}
