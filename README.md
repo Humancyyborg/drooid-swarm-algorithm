@@ -35,6 +35,14 @@ conda create -n swarm-rl python=3.8
 conda activate swarm-rl
 ```
 
+Then clone Sample Factory and install version 2.0.0:
+```
+git clone https://github.com/alex-petrenko/sample-factory.git
+cd sample-factory
+git checkout sf2
+pip install -e .
+```
+
 Clone and install this repo as an editable Pip package:
 
 ```
@@ -43,7 +51,7 @@ cd quad-swarm-rl
 pip install -e .
 ```
 
-This should pull and install all the necessary dependencies, including Sample Factory and PyTorch.
+This should pull and install all the necessary dependencies including PyTorch.
 
 ## Running experiments
 
@@ -71,7 +79,9 @@ python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=1000000000 
 --replay_buffer_sample_prob=0.75 --anneal_collision_steps=300000000 --experiment=swarm_rl 
 ```
 
-Or, even better, you can use the runner scripts in `swarm_rl/runs/`. Runner scripts (a Sample Factory feature) are Python files that
+We also provide a training script `train.sh`, so you can simply start training by command `bash train.sh`.
+
+Or, even better, you can use the runner scripts in `swarm_rl/runs/`. These runner scripts (a Sample Factory feature) are Python files that
 contain experiment parameters, and support features such as evaluation on multiple seeds and gridsearches.
 
 To execute a runner script run the following command:
@@ -93,7 +103,7 @@ tensorboard --logdir=./
 To test the trained model, run the following command:
 
 ```
-python -m swarm_rl.enjoy --algo=APPO --env=quadrotor_multi --replay_buffer_sample_prob=0 --continuous_actions_sample=False --quads_use_numba=False --train_dir=PATH_TO_PROJECT/swarm_rl/train_dir --experiments_root=EXPERIMENT_ROOT --experiment=EXPERIMENT_NAME
+python -m swarm_rl.enjoy --algo=APPO --env=quadrotor_multi --replay_buffer_sample_prob=0 --quads_use_numba=False --train_dir=PATH_TO_PROJECT/swarm_rl/train_dir --experiment=EXPERIMENT_NAME
 ```
 
 ## Unit Tests
