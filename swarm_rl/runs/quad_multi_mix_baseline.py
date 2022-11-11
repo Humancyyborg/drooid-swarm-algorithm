@@ -1,4 +1,4 @@
-from sample_factory.runner.run_description import RunDescription, Experiment, ParamGrid
+from sample_factory.launcher.run_description import RunDescription, Experiment, ParamGrid
 
 _params = ParamGrid([
     ('quads_collision_reward', [5.0]),
