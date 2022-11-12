@@ -35,7 +35,7 @@ conda create -n swarm-rl python=3.8
 conda activate swarm-rl
 ```
 
-Then clone Sample Factory and install version 2.0.0:
+Then clone Sample Factory and install version 2.0:
 ```
 git clone https://github.com/alex-petrenko/sample-factory.git
 cd sample-factory
