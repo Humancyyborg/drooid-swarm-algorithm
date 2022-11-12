@@ -42,8 +42,9 @@ class QuadEnvCompatibility(gym.Wrapper):
             (observation, reward, terminated, truncated, info)
         """
         obs, reward, done, info = self.env.step(action)
-        if isinstance(info, dict):
-            if isinstance(done, bool):
+
+        #convert_to_terminated_truncated_step_api treats done as an iterable if info is a dictionary, fails if it not iterable
+        if isinstance(info, dict) and isinstance(done, bool):
                 done = [done]
 
         return convert_to_terminated_truncated_step_api((obs, reward, done, info), is_vector_env=True)
