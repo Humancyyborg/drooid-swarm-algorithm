@@ -27,12 +27,9 @@ class QuadrotorEnvMulti(gym.Env):
                  room_height=10, init_random_state=False, rew_coeff=None, sense_noise=None, verbose=False, gravity=GRAV,
                  resample_goals=False, t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False,
                  quads_mode='static_same_goal', quads_formation='circle_horizontal', quads_formation_size=-1.0,
-                 swarm_obs='none', quads_use_numba=False, quads_settle=False, quads_settle_range_meters=1.0,
-                 quads_vel_reward_out_range=0.8, quads_view_mode='local',
-                 collision_force=True,
-                 adaptive_env=False, local_obs=-1, collision_hitbox_radius=2.0,
-                 collision_falloff_radius=2.0, collision_smooth_max_penalty=10.0,
-                 local_metric='dist', local_coeff=0.0, use_replay_buffer=False,
+                 swarm_obs='none', quads_use_numba=False, quads_view_mode='local',
+                 collision_force=True, local_obs=-1, collision_hitbox_radius=2.0,
+                 collision_falloff_radius=2.0, collision_smooth_max_penalty=10.0, use_replay_buffer=False,
                  vis_acc_arrows=False,
                  viz_traces=25, viz_trace_nth_step=1):
 
@@ -45,16 +42,12 @@ class QuadrotorEnvMulti(gym.Env):
             self.num_use_neighbor_obs = self.num_agents - 1
         else:
             self.num_use_neighbor_obs = local_obs
-
-        self.local_metric = local_metric
-        self.local_coeff = local_coeff
         # Set to True means that sample_factory will treat it as a multi-agent vectorized environment even with
         # num_agents=1. More info, please look at sample-factory: envs/quadrotors/wrappers/reward_shaping.py
         self.is_multiagent = True
         self.room_dims = (room_length, room_width, room_height)
 
         self.envs = []
-        self.adaptive_env = adaptive_env
         self.quads_view_mode = quads_view_mode
 
         for i in range(self.num_agents):
@@ -63,8 +56,7 @@ class QuadrotorEnvMulti(gym.Env):
                 raw_control, raw_control_zero_middle, dim_mode, tf_control, sim_freq, sim_steps,
                 obs_repr, ep_time, room_length, room_width, room_height, init_random_state,
                 rew_coeff, sense_noise, verbose, gravity, t2w_std, t2t_std, excite, dynamics_simplification,
-                quads_use_numba, self.swarm_obs, self.num_agents, quads_settle, quads_settle_range_meters,
-                quads_vel_reward_out_range, quads_view_mode,
+                quads_use_numba, self.swarm_obs, self.num_agents, quads_view_mode,
                 self.num_use_neighbor_obs
             )
             self.envs.append(e)
@@ -81,7 +73,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.rew_coeff = dict(
             pos=1., effort=0.05, action_change=0., crash=1., orient=1., yaw=0., rot=0., attitude=0., spin=0.1, vel=0.,
             quadcol_bin=0., quadcol_bin_smooth_max=0.,
-            quadsettle=0., quadcol_bin_obst=0., quadcol_bin_obst_smooth_max=0.0
+            quadsettle=0.
         )
         rew_coeff_orig = copy.deepcopy(self.rew_coeff)
 
@@ -257,14 +249,9 @@ class QuadrotorEnvMulti(gym.Env):
 
                 # new relative distance is a new metric that combines relative position and relative velocity
                 # F = alpha * distance + (1 - alpha) * dot(normalized_direction_to_other_drone, relative_vel)
-                if self.local_metric == "dist":
-                    # the smaller the new_rel_dist, the closer the drones
-                    new_rel_dist = rel_dist + self.local_coeff * np.sum(rel_pos_unit * rel_vel, axis=1)
-                elif self.local_metric == "dist_inverse":
-                    new_rel_dist = 1.0 / rel_dist - self.local_coeff * np.sum(rel_pos_unit * rel_vel, axis=1)
-                    new_rel_dist = -1.0 * new_rel_dist
-                else:
-                    raise NotImplementedError(f"Unknown local metric {self.local_metric}")
+                # the smaller the new_rel_dist, the closer the drones
+                new_rel_dist = rel_dist + np.sum(rel_pos_unit * rel_vel, axis=1)
+                
 
                 rel_pos_index = new_rel_dist.argsort()
                 rel_pos_index = rel_pos_index[:self.num_use_neighbor_obs]
@@ -310,12 +297,6 @@ class QuadrotorEnvMulti(gym.Env):
         if self.use_replay_buffer and not self.activate_replay_buffer:
             self.crashes_in_recent_episodes.append(self.crashes_last_episode)
             self.activate_replay_buffer = self.can_drones_fly()
-
-        if self.adaptive_env:
-            # TODO: introduce logic to choose the new room dims i.e. based on statistics from last N episodes, etc
-            # e.g. self.room_dims = ....
-            new_length, new_width, new_height = np.random.randint(1, 31, 3)
-            self.room_dims = (new_length, new_width, new_height)
 
         for i, e in enumerate(self.envs):
             e.goal = self.scenario.goals[i]
@@ -390,7 +371,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         self.all_collisions = {'drone': np.sum(drone_col_matrix, axis=1), 'ground': ground_collisions}
 
-        # Applying random forces for all collisions between drones and obstacles
+        # Applying random forces between drones
         if self.apply_collision_force:
             for val in self.curr_drone_collisions:
                 perform_collision_between_drones(self.envs[val[0]].dynamics, self.envs[val[1]].dynamics)
