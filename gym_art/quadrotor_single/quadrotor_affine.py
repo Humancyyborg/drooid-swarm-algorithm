@@ -489,9 +489,6 @@ class AffineQuadrotorEnv(gym.Env):
 
         self._reset()
 
-        if self.spec is None:
-            self.spec = gym_reg.EnvSpec(id='Quadrotor-v0', max_episode_steps=self.ep_len)
-
     def state_xyz_vxyz_rot_omega(self):
         return np.concatenate([self.dynamics.state_vector(), self.goal[:3]])
 

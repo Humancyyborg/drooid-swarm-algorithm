@@ -519,9 +519,6 @@ class QuadrotorGazeboSyncEnv(gym.Env):
         self._seed()
         self.reset()
 
-        if self.spec is None:
-            self.spec = gym_reg.EnvSpec(id='QuadrotorGazeboEnv-v1', max_episode_steps=self.ep_len)
-
         self._elapsed_steps = 0
         self.add_goal_marker()
 
@@ -1152,7 +1149,6 @@ def test_rollout():
 
     env = QuadrotorGazeboSyncEnv(raw_control=False, vertical_only=False, goal=[0.,0.,2.])
 
-    time_limit = env.spec.max_episode_steps
     print('Reseting env ...')
 
     try:

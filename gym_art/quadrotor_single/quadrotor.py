@@ -824,9 +824,6 @@ class QuadrotorEnv(gym.Env, gym_utils.EzPickle):
         self._seed()
         self._reset()
 
-        if self.spec is None:
-            self.spec = gym_reg.EnvSpec(id='Quadrotor-v0', max_episode_steps=self.ep_len)
-
     def save_dyn_params(self, filename):
         import yaml
         with open(filename, 'w') as yaml_file:
