@@ -1,4 +1,4 @@
-from sample_factory.runner.run_description import RunDescription, Experiment, ParamGrid
+from sample_factory.launcher.run_description import RunDescription, Experiment, ParamGrid
 from swarm_rl.runs.quad_multi_mix_baseline import QUAD_BASELINE_CLI
 
 _params = ParamGrid([
@@ -29,7 +29,7 @@ RUN_DESCRIPTION = RunDescription('quads_multi_mix_obst_mix_8a_v116', experiments
 # export USE_SIMPLE_THREADED_LEVEL3=1
 
 # Command to use this script on server:
-# xvfb-run python -m runner.run --run=quad_multi_mix_baseline_obstacle_mix --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
+# xvfb-run python -m launcher.run --run=quad_multi_mix_baseline_obstacle_mix --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
 # Command to use this script on local machine:
 # Please change num_workers to the physical cores of your local machine
-# python -m runner.run --run=quad_multi_mix_baseline_obstacle_mix --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
+# python -m launcher.run --run=quad_multi_mix_baseline_obstacle_mix --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
