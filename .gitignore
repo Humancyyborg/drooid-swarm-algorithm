@@ -13,3 +13,4 @@ _results
 *.cprof
 *.egg-info/
 train_dir/
+wandb/

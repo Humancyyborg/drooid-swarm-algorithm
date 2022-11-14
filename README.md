@@ -40,7 +40,7 @@ Then clone Sample Factory and install version 2.0:
 git clone https://github.com/alex-petrenko/sample-factory.git
 cd sample-factory
 git checkout sf2
-pip install -e .
+pip install -e . && cd ..
 ```
 
 Clone and install this repo as an editable Pip package:
@@ -76,7 +76,7 @@ python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=1000000000 
 --quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 --quads_local_obs=6 \
 --quads_local_metric=dist --quads_local_coeff=1.0 --quads_num_agents=8 --quads_collision_reward=5.0 \
 --quads_collision_smooth_max_penalty=10.0 --quads_neighbor_encoder_type=attention \
---replay_buffer_sample_prob=0.75 --anneal_collision_steps=300000000 --experiment=swarm_rl 
+--replay_buffer_sample_prob=0.75 --anneal_collision_steps=300000000 --experiment=swarm_rl \
 ```
 
 We also provide a training script `train.sh`, so you can simply start training by command `bash train.sh`.
@@ -97,6 +97,21 @@ To monitor the experiments, go to the experiment folder, and run the following c
 
 ```
 tensorboard --logdir=./
+```
+### WandB support
+
+If you want to monitor training with WandB, follow the steps below: 
+- setup WandB locally by running `wandb login` in the terminal (https://docs.wandb.ai/quickstart#1.-set-up-wandb).
+* add `--with_wandb=True` in the command.
+
+Here is a total list of wandb settings: 
+```
+--with_wandb: Enables Weights and Biases integration (default: False)
+--wandb_user: WandB username (entity). Must be specified from command line! Also see https://docs.wandb.ai/quickstart#1.-set-up-wandb (default: None)
+--wandb_project: WandB "Project" (default: sample_factory)
+--wandb_group: WandB "Group" (to group your experiments). By default this is the name of the env. (default: None)
+--wandb_job_type: WandB job type (default: SF)
+--wandb_tags: [WANDB_TAGS [WANDB_TAGS ...]] Tags can help with finding experiments in WandB web console (default: [])
 ```
 
 ### Test
