@@ -638,9 +638,6 @@ class QuadrotorEnv(gym.Env, Serializable):
             self.rew_coeff.update(rew_coeff)
 
         self._reset()
-
-        if self.spec is None:
-            self.spec = gym_reg.EnvSpec(id='Quadrotor-v0', max_episode_steps=self.ep_len)
         
         # Always call Serializable constructor last
         Serializable.quick_init(self, locals())

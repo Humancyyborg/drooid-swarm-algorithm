@@ -35,7 +35,7 @@ conda create -n swarm-rl python=3.8
 conda activate swarm-rl
 ```
 
-Then clone Sample Factory and install version 2.0.0:
+Then clone Sample Factory and install version 2.0:
 ```
 git clone https://github.com/alex-petrenko/sample-factory.git
 cd sample-factory
@@ -87,7 +87,7 @@ contain experiment parameters, and support features such as evaluation on multip
 To execute a runner script run the following command:
 
 ```
-python -m sample_factory.runner.run --run=swarm_rl.runs.quad_multi_mix_baseline_attn --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
+python -m sample_factory.launcher.run --run=swarm_rl.runs.quad_multi_mix_baseline_attn --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
 ```
 
 This command will start training four different seeds in parallel on a 4-GPU server. Adjust the parameters accordingly to match
@@ -103,8 +103,9 @@ tensorboard --logdir=./
 To test the trained model, run the following command:
 
 ```
-python -m swarm_rl.enjoy --algo=APPO --env=quadrotor_multi --replay_buffer_sample_prob=0 --quads_use_numba=False --train_dir=PATH_TO_PROJECT/swarm_rl/train_dir --experiment=EXPERIMENT_NAME
+python -m swarm_rl.enjoy --algo=APPO --env=quadrotor_multi --replay_buffer_sample_prob=0 --quads_use_numba=False --train_dir=PATH_TO_TRAIN_DIR --experiment=EXPERIMENT_NAME
 ```
+EXPERIMENT_NAME and PATH_TO_TRAIN_DIR can be found in the cfg.json file of your trained model
 
 ## Unit Tests
 

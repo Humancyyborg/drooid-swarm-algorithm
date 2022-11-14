@@ -21,4 +21,4 @@ _experiment = Experiment(
 )
 
 RUN_DESCRIPTION = RunDescription("quad_multi_baseline", experiments=[_experiment])
-# python -m sample_factory.runner.run --run=swarm_rl.runs.sf2_multi_drone --runner=processes --max_parallel=1 --pause_between=1 --experiments_per_gpu=4 --num_gpus=1
+# python -m sample_factory.launcher.run --run=swarm_rl.runs.sf2_multi_drone --runner=processes --max_parallel=1 --pause_between=1 --experiments_per_gpu=4 --num_gpus=1
