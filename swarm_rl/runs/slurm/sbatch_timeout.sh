@@ -1,5 +1,4 @@
 #!/bin/bash
-source /home/zhehui/miniconda3/etc/profile.d/conda.sh
 conda activate swarm-rl
 
 timeout $TIMEOUT $CMD
