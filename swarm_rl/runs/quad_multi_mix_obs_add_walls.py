@@ -1,4 +1,4 @@
-from sample_factory.runner.run_description import RunDescription, Experiment, ParamGrid
+from sample_factory.launcher.run_description import RunDescription, Experiment, ParamGrid
 
 _params = ParamGrid([
     ('seed', [0000, 3333]),
@@ -19,7 +19,7 @@ RUN_DESCRIPTION = RunDescription('quads_multi_mixed_pvg_v112', experiments=[_exp
 # export USE_SIMPLE_THREADED_LEVEL3=1
 
 # Command to use this script on server:
-# xvfb-run python -m runner.run --run=quad_multi_mix_obs_add_walls --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
+# xvfb-run python -m launcher.run --run=quad_multi_mix_obs_add_walls --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
 # Command to use this script on local machine:
 # Please change num_workers to the physical cores of your local machine
-# python -m runner.run --run=quad_multi_mix_obs_add_walls --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4
+# python -m launcher.run --run=quad_multi_mix_obs_add_walls --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=1 --num_gpus=4

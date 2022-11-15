@@ -4,7 +4,7 @@ import copy
 
 from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_PARAMS_DICT, update_formation_and_max_agent_per_layer, \
     update_layer_dist, get_formation_range, get_goal_by_formation, get_z_value, QUADS_MODE_LIST, \
-    QUADS_MODE_LIST_OBSTACLES, QUADS_MODE_LIST_SIMPLE
+    QUADS_MODE_LIST_SIMPLE
 from gym_art.quadrotor_multi.quad_utils import generate_points, get_grid_dim_number
 
 
@@ -618,17 +618,14 @@ class Scenario_mix(QuadrotorScenario):
         super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation, quads_formation_size)
         self.room_dims_callback = room_dims_callback
 
-        obst_mode = self.envs[0].obstacle_mode
 
         # Once change the parameter here, should also update QUADS_PARAMS_DICT to make sure it is same as run a single scenario
         # key: quads_mode
         # value: 0. formation, 1: [formation_low_size, formation_high_size], 2: episode_time
         if num_agents == 1:
             self.quads_mode_list = QUADS_MODE_LIST_SIMPLE
-        elif obst_mode == 'no_obstacles':
-            self.quads_mode_list = QUADS_MODE_LIST
         else:
-            self.quads_mode_list = QUADS_MODE_LIST_OBSTACLES
+            self.quads_mode_list = QUADS_MODE_LIST
 
         # actual scenario being used
         self.scenario = None

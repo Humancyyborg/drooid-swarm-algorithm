@@ -1,0 +1,17 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "args": ["--algo=APPO", "--env=quadrotor_multi", "--replay_buffer_sample_prob=0", "--quads_use_numba=False", "--train_dir=/home/resl/quad-swarm-rl/train_dir", "--experiment=swarm_rl"],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}
