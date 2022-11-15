@@ -1,4 +1,4 @@
-from sample_factory.runner.run_description import Experiment, ParamGrid, RunDescription
+from sample_factory.launcher.run_description import Experiment, ParamGrid, RunDescription
 from swarm_rl.runs.quad_multi_mix_baseline import QUAD_BASELINE_CLI
 
 _params = ParamGrid(
@@ -20,4 +20,4 @@ _experiment = Experiment(
 )
 
 RUN_DESCRIPTION = RunDescription("quad_single_baseline", experiments=[_experiment])
-# python -m sample_factory.runner.run --run=swarm_rl.runs.sf2_single_drone --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=4 --num_gpus=1
+# python -m sample_factory.launcher.run --run=swarm_rl.runs.sf2_single_drone --runner=processes --max_parallel=4 --pause_between=1 --experiments_per_gpu=4 --num_gpus=1
