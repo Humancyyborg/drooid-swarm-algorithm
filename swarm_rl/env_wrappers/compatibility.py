@@ -41,6 +41,8 @@ class QuadEnvCompatibility(gym.Wrapper):
         Returns:
             (observation, reward, terminated, truncated, info)
         """
+        # For QuadMultiEnv, truncated is actually integrated in the env,
+        # since the termination is tick > ep_len
         obs, reward, done, info = self.env.step(action)
 
         #convert_to_terminated_truncated_step_api treats done as an iterable if info is a dictionary, fails if it not iterable
