@@ -2,6 +2,8 @@ from sample_factory.launcher.run_description import RunDescription, Experiment, 
 
 from swarm_rl.runs.quad_multi_mix_baseline import QUAD_BASELINE_CLI_8
 
+from swarm_rl.utils import timeStamped
+
 _params = ParamGrid([
     ('quads_neighbor_encoder_type', ['attention']),
     ('seed', [0000, 1111, 2222, 3333]),
@@ -12,6 +14,8 @@ _experiment = Experiment(
     QUAD_BASELINE_CLI_8,
     _params.generate_params(randomize=False),
 )
+
+run_name = timeStamped("test_anneal", fmt="{fname}_%Y%m%d_%H%M")
 
 RUN_DESCRIPTION = RunDescription('paper_quads_multi_mix_baseline_8a_attn_v116', experiments=[_experiment])
 
