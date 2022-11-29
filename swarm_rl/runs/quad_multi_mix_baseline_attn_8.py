@@ -17,7 +17,7 @@ _experiment = Experiment(
 
 run_name = timeStamped("test_anneal", fmt="{fname}_%Y%m%d_%H%M")
 
-RUN_DESCRIPTION = RunDescription('paper_quads_multi_mix_baseline_8a_attn_v116', experiments=[_experiment])
+RUN_DESCRIPTION = RunDescription(run_name, experiments=[_experiment])
 
 # On Brain server, when you use num_workers = 72, if the system reports: Resource temporarily unavailable,
 # then, try to use two commands below
