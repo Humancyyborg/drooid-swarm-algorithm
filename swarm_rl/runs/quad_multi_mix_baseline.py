@@ -41,7 +41,7 @@ QUAD_BASELINE_CLI_8 = (
     '--replay_buffer_sample_prob=0.75 --save_milestones_sec=900 '
     '--anneal_collision_steps=300000000 --normalize_input=False --normalize_returns=False --reward_clip=10 '
     '--decorrelate_experience_max_seconds=10 --force_envs_single_thread=True '
-    '--with_wandb=True --wandb_project=Quad-Swarm-RL --wandb_group=test_anneal'
+    '--with_wandb=True --wandb_project=Quad-Swarm-RL --wandb_group=swarm-rl'
 )
 
 # For scale, need to change
