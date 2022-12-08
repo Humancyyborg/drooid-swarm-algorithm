@@ -138,8 +138,11 @@ class OctTree:
 
     def generateSDF(self):
         self.octree.dynamicEDT_generate(5.0, np.array([-5.0, -5.0, -5.0]), np.array([5.0, 5.0, 5.0]))
-        self.octree.dynamicEDT_update()
-        return self.octree.edtptr
+        self.octree.dynamicEDT_update(True)
+        print(self.octree.dynamicEDT_checkConsistency())
+
+    def SDFDist(self, p):
+        return self.octree.dynamicEDT_getDistance(p)
 
         '''double coor_x = std::min(x, x_max);
                     double coor_y = std::min(y, y_max);
@@ -154,10 +157,10 @@ class OctTree:
                         }
                     }
                     octree.updateNode(coor_x, coor_y, coor_z, true);'''
-        
+            
 
 oct = OctTree()
-print(oct.generate_obstacles(3))
+p = oct.generate_obstacles(3)
 data = oct.mark_octree()[0]
 
 from mpl_toolkits import mplot3d
@@ -166,6 +169,10 @@ fig = plt.figure()
 ax = plt.axes(projection='3d')
 ax.scatter3D(data[:,0], data[:,1], data[:,2])
 
-#print(oct.generateSDF())
+oct.generateSDF()
+print(oct.SDFDist([0.0, 0.0, 0.0]))
+print(oct.SDFDist(p[0]))
+print(dir(oct.octree))
+
 
 plt.show()
