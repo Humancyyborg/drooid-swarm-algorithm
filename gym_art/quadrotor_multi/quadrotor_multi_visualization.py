@@ -180,6 +180,8 @@ class Quadrotor3DSceneMulti:
         self.scene = r3d.Scene(batches=[batch], bgcolor=(0, 0, 0))
         self.scene.initialize()
 
+        
+
         # Collision spheres have to be added in the ending after everything has been rendered, as it transparent
         bodies = []
         bodies.extend(self.collision_transforms)

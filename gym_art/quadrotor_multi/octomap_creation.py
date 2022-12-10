@@ -5,7 +5,7 @@ import octomap
 
 class OctTree:
     def __init__(self, obstacle_size=1.0):
-        self.resolution = 0.05
+        self.resolution = 0.02
         self.octree = octomap.OcTree(self.resolution)
         self.room_dims = (10, 10, 10)
         self.half_room_length = self.room_dims[0] / 2
@@ -172,7 +172,6 @@ ax.scatter3D(data[:,0], data[:,1], data[:,2])
 oct.generateSDF()
 print(oct.SDFDist([0.0, 0.0, 0.0]))
 print(oct.SDFDist(p[0]))
-print(dir(oct.octree))
 
 
 plt.show()
