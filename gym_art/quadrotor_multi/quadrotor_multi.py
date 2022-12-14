@@ -7,12 +7,13 @@ import gym
 
 from copy import deepcopy
 
-from gym_art.quadrotor_multi.quad_utils import perform_collision_between_drones, \
-    calculate_collision_matrix, calculate_drone_proximity_penalties
+from gym_art.quadrotor_multi.quad_utils import perform_collision_between_drones, calculate_obst_drone_proximity_penalties, \
+    calculate_collision_matrix, calculate_drone_proximity_penalties, perform_collision_with_obstacle
 
 from gym_art.quadrotor_multi.quadrotor_single import GRAV, QuadrotorSingle
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
 from gym_art.quadrotor_multi.quad_scenarios import create_scenario
+from gym_art.quadrotor_multi.quadrotor_multi_obstacles import MultiObstacles
 
 EPS = 1E-6
 
@@ -30,8 +31,8 @@ class QuadrotorEnvMulti(gym.Env):
                  swarm_obs='none', quads_use_numba=False, quads_view_mode='local',
                  collision_force=True, local_obs=-1, collision_hitbox_radius=2.0,
                  collision_falloff_radius=2.0, collision_smooth_max_penalty=10.0, use_replay_buffer=False,
-                 vis_acc_arrows=False,
-                 viz_traces=25, viz_trace_nth_step=1):
+                 vis_acc_arrows=False, viz_traces=25, viz_trace_nth_step=1,
+                 use_obstacles=False, num_obstacles=0, obstacle_size=0.0, octree_resolution=0.05, obstacle_inf_height=True):
 
         super().__init__()
 
@@ -57,7 +58,7 @@ class QuadrotorEnvMulti(gym.Env):
                 obs_repr, ep_time, room_length, room_width, room_height, init_random_state,
                 rew_coeff, sense_noise, verbose, gravity, t2w_std, t2t_std, excite, dynamics_simplification,
                 quads_use_numba, self.swarm_obs, self.num_agents, quads_view_mode,
-                self.num_use_neighbor_obs
+                self.num_use_neighbor_obs, use_obstacles=use_obstacles
             )
             self.envs.append(e)
 
@@ -119,12 +120,24 @@ class QuadrotorEnvMulti(gym.Env):
         self.rews_settle = np.zeros(self.num_agents)
         self.rews_settle_raw = np.zeros(self.num_agents)
 
+        self.goal_central = np.array([0., 0., 2.])
+        # Write Obstacle creation code here
+        self.use_obstacles = use_obstacles
+        self.num_obstacles = num_obstacles
+        self.obstacle_size = obstacle_size
+        self.octree_resolution = octree_resolution
+        self.obstacle_inf_height = obstacle_inf_height
+        #num_obstacles=0, room_dims = [10, 10, 10], quad_size=0.046, size=0.0, resolution=0.05, inf_height=True
+        self.obstacles = MultiObstacles(num_obstacles=self.num_obstacles, size=self.obstacle_size,
+                                        room_dims=self.room_dims, resolution=self.octree_resolution, inf_height=self.obstacle_inf_height)
+
+
         # Aux variables for scenarios
         self.scenario = create_scenario(quads_mode=quads_mode, envs=self.envs, num_agents=self.num_agents,
                                         room_dims=self.room_dims, room_dims_callback=self.set_room_dims, rew_coeff=self.rew_coeff,
                                         quads_formation=quads_formation, quads_formation_size=quads_formation_size)
         self.quads_formation_size = quads_formation_size
-        self.goal_central = np.array([0., 0., 2.])
+
 
         # set render
         self.simulation_start_time = 0
@@ -212,6 +225,23 @@ class QuadrotorEnvMulti(gym.Env):
                 raise NotImplementedError
 
         return obs_neighbor_rel
+    
+    #Call the SDF function
+    def get_obs_obstacle_rel(self, env_id):
+        i = env_id
+        
+        cur_pos = self.envs[i].dynamics.pos
+        obstacle_obs = self.obstacles.octree.getSurround(cur_pos)
+
+        return obstacle_obs
+    
+    def get_obs_obstacle_stack(self):
+        obstacle_obs_stack = []
+        for i in range(self.num_agents):
+            obstacle_obs_stack.append(self.get_obs_obstacle_rel(i))
+        
+        return obstacle_obs_stack
+
 
     def extend_obs_space(self, obs, closest_drones):
         assert self.swarm_obs in ['pos_vel', 'pos_vel_goals', 'pos_vel_goals_ndist_gdist'], \
@@ -309,7 +339,15 @@ class QuadrotorEnvMulti(gym.Env):
         # extend obs to see neighbors
         obs = self.add_neighborhood_obs(obs)
 
-        self.all_collisions = {val: [0.0 for _ in range(len(self.envs))] for val in ['drone', 'ground']}
+        if self.use_obstacles:
+            self.set_obstacles = np.zeros(self.obstacle_num, dtype=bool)
+            quads_pos = np.array([e.dynamics.pos for e in self.envs])
+
+            obs = self.obstacles.reset(obs=obs, quads_pos=quads_pos, start_point=self.scenario.start_point, end_point=self.scenario.end_point)
+            self.obst_quad_collisions_per_episode = 0
+            self.prev_obst_quad_collisions = []
+
+        self.all_collisions = {val: [0.0 for _ in range(len(self.envs))] for val in ['drone', 'ground', 'obstacle']}
 
         self.collisions_per_episode = self.collisions_after_settle = 0
         self.prev_drone_collisions, self.curr_drone_collisions = [], []
@@ -334,6 +372,44 @@ class QuadrotorEnvMulti(gym.Env):
             self.pos[i, :] = self.envs[i].dynamics.pos
 
         obs = self.add_neighborhood_obs(obs)
+
+        ### TO DO Obstacle Collision ###
+        if self.use_obstacles:
+            obst_quad_col_matrix = self.obstacles.collision_detection(pos_quads=self.pos, set_obstacles=self.set_obstacles)
+            self.obst_quad_collisions_per_episode += np.sum(obst_quad_col_matrix, axis=0)
+
+            rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
+            if obst_quad_col_matrix.any():
+                # We assign penalties to the drones which collide with the obstacles
+                # And obst_quad_last_step_unique_collisions only include drones' id
+                rew_obst_quad_collisions_raw[obst_quad_col_matrix] = -1.0
+
+            # TODO CHANGE quadcol_bin -> quadcol_bin_obst
+            rew_collisions_obst_quad = self.rew_coeff["quadcol_bin"] * rew_obst_quad_collisions_raw
+
+            # penalties for low distance between obstacles and drones
+            drone_obst_dists = np.array([self.obstacles.octree.SDFDist(i.dynamics.pos) for i in self.envs])
+
+
+            # TODO CHANGE quadcol_bin_smooth_max -> quadcol_bin_obst_smooth_max, penalty_fall_off
+            rew_obst_quad_proximity = -1.0 * calculate_obst_drone_proximity_penalties(
+                distance_matrix=drone_obst_dists, arm=self.quad_arm, dt=self.control_dt,
+                penalty_fall_off=10.0,
+                max_penalty=self.rew_coeff["quadcol_bin_smooth_max"],
+                num_agents=self.num_agents,
+                obstacles_radius=self.obstacle_size/2
+            )
+
+        else:
+            obst_quad_col_matrix = np.zeros((self.num_agents, 1))
+            rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
+
+        # Collisions with ground
+        ground_collisions = [1.0 if pos[2] < 0.25 else 0.0 for pos in self.pos]
+
+        self.all_collisions = {'drone': np.sum(drone_col_matrix, axis=1), 'ground': ground_collisions,
+                               'obstacle': np.sum(obst_quad_col_matrix, axis=1)}
+            
 
         if self.use_replay_buffer and not self.activate_replay_buffer:
             self.crashes_last_episode += infos[0]["rewards"]["rew_crash"]
@@ -375,6 +451,8 @@ class QuadrotorEnvMulti(gym.Env):
         if self.apply_collision_force:
             for val in self.curr_drone_collisions:
                 perform_collision_between_drones(self.envs[val[0]].dynamics, self.envs[val[1]].dynamics)
+            for val in obst_quad_col_matrix:
+                perform_collision_with_obstacle(drone_dyn=self.envs[val].dynamics)
 
         for i in range(self.num_agents):
             rewards[i] += rew_collisions[i]
@@ -383,6 +461,14 @@ class QuadrotorEnvMulti(gym.Env):
 
             rewards[i] += rew_proximity[i]
             infos[i]["rewards"]["rew_proximity"] = rew_proximity[i]
+
+            if self.use_obstacles:
+                rewards[i] += rew_collisions_obst_quad[i]
+                infos[i]["rewards"]["rew_quadcol_obstacle"] = rew_collisions_obst_quad[i]
+                infos[i]["rewards"]["rewraw_quadcol_obstacle"] = rew_obst_quad_collisions_raw[i]
+
+                rewards[i] += rew_obst_quad_proximity[i]
+                infos[i]["rewards"]["rew_obst_quad_proximity"] = rew_obst_quad_proximity[i]
 
         # run the scenario passed to self.quads_mode
         infos, rewards = self.scenario.step(infos=infos, rewards=rewards, pos=self.pos)

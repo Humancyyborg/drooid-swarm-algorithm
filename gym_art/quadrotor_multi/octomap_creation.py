@@ -4,10 +4,11 @@ import math
 import octomap
 
 class OctTree:
-    def __init__(self, obstacle_size=1.0):
-        self.resolution = 0.02
+    def __init__(self, obstacle_size=1.0, room_dims=[10, 10, 10], resolution=0.05, inf_height=True):
+        self.resolution = resolution
+        self.inf_height = inf_height 
         self.octree = octomap.OcTree(self.resolution)
-        self.room_dims = (10, 10, 10)
+        self.room_dims = room_dims
         self.half_room_length = self.room_dims[0] / 2
         self.half_room_width = self.room_dims[1] / 2
         self.grid_size = obstacle_size
@@ -17,6 +18,9 @@ class OctTree:
         self.cell_centers = [
             (i + (self.grid_size / 2) - self.half_room_length, j + (self.grid_size / 2) - self.half_room_width) for i in
             np.arange(0, self.room_dims[0], self.grid_size) for j in np.arange(0, self.room_dims[1], self.grid_size)]
+    
+    def reset(self):
+        self.octree.clear()
     
     def check_pos(self, pos_xy, goal_range):
         min_pos = goal_range[0] - np.array([0.5 * self.size, 0.5 * self.size])
@@ -103,64 +107,73 @@ class OctTree:
 
         return pos_item, overlap_flag
 
-    def generate_obstacles(self, num_obstacles=0):
+    def generate_obstacles(self, num_obstacles=0, start_point=np.array([-3.0, -2.0, 2.0]), end_point=np.array([3.0, 2.0, 2.0])):
+        self.reset()
+
         self.pos_arr = np.array([])
-        pos_z = 0.5 * self.room_dims[1]
+        pos_z = 0.5 * self.room_dims[2]
         for i in range(num_obstacles):
             for regen_id in range(20):
                 y_gaussian_scale = self.y_gaussian_generation(regen_id=regen_id)
-                pos_xy, collide_flag = self.gaussian_pos(obst_id=i, y_gaussian_scale=y_gaussian_scale)
-                pos_item = np.array([pos_xy[0], pos_xy[1]])#, pos_xy[2]])
+                pos_xy, collide_flag = self.gaussian_pos(obst_id=i, y_gaussian_scale=y_gaussian_scale, goal_start_point=start_point, goal_end_point=end_point)
+                pos_item = np.array([pos_xy[0], pos_xy[1]])
                 final_pos_item, overlap_flag = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=self.pos_arr, obst_id=i)
                 if collide_flag is False and overlap_flag is False:
                     self.pos_arr = np.append(self.pos_arr, np.append(np.asarray(final_pos_item), pos_z))
                     break
         self.pos_arr = self.pos_arr.reshape((len(self.pos_arr)//3, 3))
 
+        self.mark_octree()
+        self.generateSDF()
+
         return self.pos_arr
     
     def mark_octree(self):
         range_shape = 0.5 * self.size
-        print(self.pos_arr)
+        #print(self.pos_arr)
         #print(np.arange(self.pos_arr[0][0]-range_shape, self.pos_arr[0][0]+range_shape+self.resolution, self.resolution))
-        self.size
+        #self.size
         for item in self.pos_arr:
             for x in np.arange(item[0]-range_shape, item[0]+range_shape+self.resolution, self.resolution):
                 for y in np.arange(item[1]-range_shape, item[1]+range_shape+self.resolution, self.resolution):
-                    for z in np.arange(item[2]-range_shape, item[2]+range_shape+self.resolution, self.resolution):
-                        if x < self.room_dims[0] and y < self.room_dims[1] and z < self.room_dims[2]:
-                            if np.linalg.norm(np.asarray([x, y])-item[:2]) <= self.size/2:
-                                key = self.octree.coordToKey(np.asarray([x, y, z]))
-                                node = self.octree.search(key)
-                                self.octree.updateNode([x, y, z], True)
+                    if self.inf_height:
+                        for z in np.arange(-1*self.room_dims[2]//2, self.room_dims[2]//2+0.001, self.resolution):
+                            if x < self.room_dims[0] and y < self.room_dims[1] and z < self.room_dims[2]:
+                                if np.linalg.norm(np.asarray([x, y])-item[:2]) <= self.size/2:
+                                    key = self.octree.coordToKey(np.asarray([x, y, z]))
+                                    node = self.octree.search(key)
+                                    self.octree.updateNode([x, y, z], True)
+                    else:
+                        for z in np.arange(item[2]-range_shape, item[2]+range_shape+self.resolution, self.resolution):
+                            if x < self.room_dims[0] and y < self.room_dims[1] and z < self.room_dims[2]:
+                                if np.linalg.norm(np.asarray([x, y])-item[:2]) <= self.size/2:
+                                    key = self.octree.coordToKey(np.asarray([x, y, z]))
+                                    node = self.octree.search(key)
+                                    self.octree.updateNode([x, y, z], True)
 
-        return self.octree.extractPointCloud()
+        #return self.octree.extractPointCloud()
 
     def generateSDF(self):
         self.octree.dynamicEDT_generate(5.0, np.array([-5.0, -5.0, -5.0]), np.array([5.0, 5.0, 5.0]))
         self.octree.dynamicEDT_update(True)
-        print(self.octree.dynamicEDT_checkConsistency())
+        #print(self.octree.dynamicEDT_checkConsistency())
 
     def SDFDist(self, p):
         return self.octree.dynamicEDT_getDistance(p)
 
-        '''double coor_x = std::min(x, x_max);
-                    double coor_y = std::min(y, y_max);
-                    double coor_z = std::min(z, tree_height);
-                    if (z == 0) {
-                        octomap::OcTreeKey key =
-                            octree.coordToKey(coor_x, coor_y, coor_z);
-                        octomap::OcTreeNode* node = octree.search(key);
-                        if (node == nullptr || !octree.isNodeOccupied(*node)) {
-                            area_to_cover -=
-                                octree_resolution * octree_resolution;
-                        }
-                    }
-                    octree.updateNode(coor_x, coor_y, coor_z, true);'''
+    def getSurround(self, p):
+        state = []
+        for i in np.arange(p[0]-self.resolution, p[0]+self.resolution+0.0001, self.resolution):
+            for j in np.arange(p[1]-self.resolution, p[1]+self.resolution+0.0001, self.resolution):
+                for k in np.arange(p[2]-self.resolution, p[2]+self.resolution+0.0001, self.resolution):
+                    state.append(self.SDFDist(np.array([i, j, k])))
+
+        state = np.array(state)
+        #print(state)
             
 
-oct = OctTree()
-p = oct.generate_obstacles(3)
+'''oct = OctTree()
+p = oct.generate_obstacles(4)
 data = oct.mark_octree()[0]
 
 from mpl_toolkits import mplot3d
@@ -169,9 +182,9 @@ fig = plt.figure()
 ax = plt.axes(projection='3d')
 ax.scatter3D(data[:,0], data[:,1], data[:,2])
 
-oct.generateSDF()
 print(oct.SDFDist([0.0, 0.0, 0.0]))
+oct.getSurround([0.0, 0.0, 0.0])
 print(oct.SDFDist(p[0]))
 
 
-plt.show()
+plt.show()'''

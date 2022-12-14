@@ -269,6 +269,14 @@ def calculate_drone_proximity_penalties(distance_matrix, arm, dt, penalty_fall_o
 
     return dt * penalties  # actual penalties per tick to be added to the overall reward
 
+def calculate_obst_drone_proximity_penalties(distances, arm, dt, penalty_fall_off, max_penalty, num_agents, obstacles_radius):
+    if not penalty_fall_off:
+        # smooth penalties is disabled, so noop
+        return np.zeros(num_agents)
+    penalties = (-max_penalty / (penalty_fall_off * arm + obstacles_radius)) * distances + max_penalty
+
+    return dt * penalties  # actual penalties per tick to be added to the overall reward
+
 
 def compute_col_norm_and_new_velocities(dyn1, dyn2):
     # Ge the collision normal, i.e difference in position
@@ -315,6 +323,35 @@ def perform_collision_between_drones(dyn1, dyn2):
     dyn1.omega += new_omega
     dyn2.omega -= new_omega
 
+def perform_collision_with_obstacle(drone_dyn):
+    coll_norm_mag = np.linalg.norm(drone_dyn.vel)
+    collision_norm = drone_dyn.vel / (coll_norm_mag + 0.00001 if coll_norm_mag == 0.0 else coll_norm_mag)
+
+    # Get the components of the velocity vectors which are parallel to the collision.
+    # The perpendicular component remains the same.
+    v1new = np.dot(drone_dyn.vel, collision_norm)
+
+    drone_dyn.vel += (v1new) * collision_norm
+
+    # Now adding two different random components,
+    # One that preserves momentum in opposite directions
+    # Second that does not preserve momentum
+    cons_rand_val = np.random.normal(0, 0.8, 3)
+    drone_dyn.vel += cons_rand_val + np.random.normal(0, 0.15, 3)
+
+    # Random forces for omega
+    omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
+    eps = 1e-5
+    new_omega = np.random.uniform(low=-1, high=1, size=(3,)) + eps  # random direction in 3D space
+
+    new_omega /= np.linalg.norm(new_omega) + eps  # normalize
+
+    new_omega_magn = np.random.uniform(low=omega_max / 2, high=omega_max)  # random magnitude of the force
+    new_omega *= new_omega_magn
+
+    # add the disturbance to drone's angular velocities while preserving angular momentum
+    # Currently, our obstacle doesn't support omega / angle velocity, we only change omega of drone
+    drone_dyn.omega += new_omega
 
 class OUNoise:
     """Ornstein–Uhlenbeck process"""
