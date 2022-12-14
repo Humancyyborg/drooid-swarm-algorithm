@@ -1,4 +1,4 @@
-from sample_factory.runner.run_description import RunDescription, Experiment, ParamGrid
+from sample_factory.launcher.run_description import RunDescription, Experiment, ParamGrid
 
 _params = ParamGrid([
     ('quads_collision_reward', [5.0]),
@@ -13,9 +13,8 @@ QUAD_BASELINE_CLI = (
     '--quads_use_numba=True --quads_mode=mix --quads_episode_duration=15.0 --quads_formation_size=0.0 '
     '--with_pbt=False --quads_collision_reward=5.0 '
     '--quads_neighbor_hidden_size=256 --neighbor_obs_type=pos_vel '
-    '--quads_settle_reward=0.0 --quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
-    '--quads_local_obs=6 --quads_local_metric=dist '
-    '--quads_local_coeff=1.0 --quads_num_agents=8 '
+    '--quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
+    '--quads_local_obs=6 --quads_num_agents=8 '
     '--quads_collision_reward=5.0 '
     '--quads_collision_smooth_max_penalty=10.0 '
     '--quads_neighbor_encoder_type=attention '
@@ -32,11 +31,11 @@ QUAD_BASELINE_CLI_8 = (
     '--quads_use_numba=True --quads_mode=mix --quads_episode_duration=15.0 --quads_formation_size=0.0 '
     '--with_pbt=False --quads_collision_reward=5.0 '
     '--quads_neighbor_hidden_size=256 --neighbor_obs_type=pos_vel '
-    '--quads_settle_reward=0.0 --quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
-    '--quads_local_obs=6 --quads_local_metric=dist '
-    '--quads_local_coeff=1.0 --quads_num_agents=8 '
-    '--quads_collision_reward=5.0 '
-    '--quads_collision_smooth_max_penalty=10.0 '
+    '--normalize_input=False --normalize_returns=False --reward-clip=10'
+    '--quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
+    '--quads_local_obs=6 --quads_num_agents=8 '
+    '--quads_collision_reward=5.0 --with_wandb=True --wandb_project=Quad-Swarm-RL --wandb_group=test_updated_code'
+    '--wandb_user=multi-drones --quads_collision_smooth_max_penalty=10.0 '
     '--quads_neighbor_encoder_type=attention '
     '--replay_buffer_sample_prob=0.75 --save_milestones_sec=900 '
     '--anneal_collision_steps=300000000'
@@ -53,9 +52,8 @@ QUAD_BASELINE_SCALE_CLI_16 = (
     '--quads_use_numba=True --quads_mode=mix --quads_episode_duration=15.0 --quads_formation_size=0.0 '
     '--with_pbt=False --quads_collision_reward=5.0 '
     '--quads_neighbor_hidden_size=256 --neighbor_obs_type=pos_vel '
-    '--quads_settle_reward=0.0 --quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
-    '--quads_local_obs=6 --quads_local_metric=dist '
-    '--quads_local_coeff=1.0 --quads_num_agents=16 '
+    '--quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
+    '--quads_local_obs=6 --quads_num_agents=16'
     '--quads_collision_reward=5.0 '
     '--quads_collision_smooth_max_penalty=10.0 '
     '--quads_neighbor_encoder_type=attention '
@@ -74,9 +72,8 @@ QUAD_BASELINE_SCALE_CLI_32 = (
     '--quads_use_numba=True --quads_mode=mix --quads_episode_duration=15.0 --quads_formation_size=0.0 '
     '--with_pbt=False --quads_collision_reward=5.0 '
     '--quads_neighbor_hidden_size=256 --neighbor_obs_type=pos_vel '
-    '--quads_settle_reward=0.0 --quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
-    '--quads_local_obs=6 --quads_local_metric=dist '
-    '--quads_local_coeff=1.0 --quads_num_agents=32 '
+    '--quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
+    '--quads_local_obs=6 --quads_num_agents=32 '
     '--quads_collision_reward=5.0 '
     '--quads_collision_smooth_max_penalty=10.0 '
     '--quads_neighbor_encoder_type=attention '
@@ -95,9 +92,8 @@ QUAD_BASELINE_SCALE_CLI_48 = (
     '--quads_use_numba=True --quads_mode=mix --quads_episode_duration=15.0 --quads_formation_size=0.0 '
     '--with_pbt=False --quads_collision_reward=5.0 '
     '--quads_neighbor_hidden_size=256 --neighbor_obs_type=pos_vel '
-    '--quads_settle_reward=0.0 --quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
-    '--quads_local_obs=6 --quads_local_metric=dist '
-    '--quads_local_coeff=1.0 --quads_num_agents=48 '
+    '--quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
+    '--quads_local_obs=6 --quads_num_agents=48 '
     '--quads_collision_reward=5.0 '
     '--quads_collision_smooth_max_penalty=10.0 '
     '--quads_neighbor_encoder_type=attention '
@@ -116,9 +112,8 @@ QUAD_BASELINE_SCALE_CLI_64 = (
     '--quads_use_numba=True --quads_mode=mix --quads_episode_duration=15.0 --quads_formation_size=0.0 '
     '--with_pbt=False --quads_collision_reward=5.0 '
     '--quads_neighbor_hidden_size=256 --neighbor_obs_type=pos_vel '
-    '--quads_settle_reward=0.0 --quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
-    '--quads_local_obs=6 --quads_local_metric=dist '
-    '--quads_local_coeff=1.0 --quads_num_agents=64 '
+    '--quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
+    '--quads_local_obs=6 --quads_num_agents=64 '
     '--quads_collision_reward=5.0 '
     '--quads_collision_smooth_max_penalty=10.0 '
     '--quads_neighbor_encoder_type=attention '
@@ -137,9 +132,8 @@ QUAD_BASELINE_SCALE_CLI_128 = (
     '--quads_use_numba=True --quads_mode=mix --quads_episode_duration=15.0 --quads_formation_size=0.0 '
     '--with_pbt=False --quads_collision_reward=5.0 '
     '--quads_neighbor_hidden_size=256 --neighbor_obs_type=pos_vel '
-    '--quads_settle_reward=0.0 --quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
-    '--quads_local_obs=6 --quads_local_metric=dist '
-    '--quads_local_coeff=1.0 --quads_num_agents=128 '
+    '--quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
+    '--quads_local_obs=6 --quads_num_agents=128 '
     '--quads_collision_reward=5.0 '
     '--quads_collision_smooth_max_penalty=10.0 '
     '--quads_neighbor_encoder_type=attention '
@@ -158,9 +152,8 @@ QUAD_BASELINE_SCALE_CLI_256 = (
     '--quads_use_numba=True --quads_mode=mix --quads_episode_duration=15.0 --quads_formation_size=0.0 '
     '--with_pbt=False --quads_collision_reward=5.0 '
     '--quads_neighbor_hidden_size=256 --neighbor_obs_type=pos_vel '
-    '--quads_settle_reward=0.0 --quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
-    '--quads_local_obs=6 --quads_local_metric=dist '
-    '--quads_local_coeff=1.0 --quads_num_agents=256 '
+    '--quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
+    '--quads_local_obs=6 --quads_num_agents=256 '
     '--quads_collision_reward=5.0 '
     '--quads_collision_smooth_max_penalty=10.0 '
     '--quads_neighbor_encoder_type=attention '
@@ -184,7 +177,7 @@ RUN_DESCRIPTION = RunDescription('quads_multi_mix_baseline_8a_local_v116', exper
 # export USE_SIMPLE_THREADED_LEVEL3=1
 
 # Command to use this script on server:
-# xvfb-run python -m runner.run --run=quad_multi_mix_baseline --runner=processes --max_parallel=3 --pause_between=1 --experiments_per_gpu=1 --num_gpus=3
+# xvfb-run python -m launcher.run --run=quad_multi_mix_baseline --runner=processes --max_parallel=3 --pause_between=1 --experiments_per_gpu=1 --num_gpus=3
 # Command to use this script on local machine:
 # Please change num_workers to the physical cores of your local machine
-# python -m runner.run --run=quad_multi_mix_baseline --runner=processes --max_parallel=3 --pause_between=1 --experiments_per_gpu=1 --num_gpus=3
+# python -m launcher.run --run=quad_multi_mix_baseline --runner=processes --max_parallel=3 --pause_between=1 --experiments_per_gpu=1 --num_gpus=3

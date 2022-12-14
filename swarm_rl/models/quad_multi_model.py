@@ -130,10 +130,9 @@ class QuadMultiEncoder(Encoder):
             raise NotImplementedError(f'Layer {cfg.quads_obs_repr} not supported!')
 
         self.neighbor_hidden_size = cfg.quads_neighbor_hidden_size
-
+        self.obstacle_mode = cfg.quads_obstacle_mode
         self.neighbor_obs_type = cfg.neighbor_obs_type
         self.use_spectral_norm = cfg.use_spectral_norm
-        self.obstacle_mode = cfg.quads_obstacle_mode
         if cfg.quads_local_obs == -1:
             self.num_use_neighbor_obs = cfg.quads_num_agents - 1
         else:
@@ -191,8 +190,8 @@ class QuadMultiEncoder(Encoder):
         # encode the obstacle observations
         obstacle_encoder_out_size = 0
         if self.obstacle_mode != 'no_obstacles':
-            self.obstacle_obs_dim = 10  # internal param, pos_vel_size_type, 3 * 3 + 1, note: for size, we should consider it's length in xyz direction
-            self.obstacle_hidden_size = cfg.quads_obstacle_hidden_size  # internal param
+            self.obstacle_obs_dim = 27  # internal param, pos_vel_size_type, 3 * 3 * 3, note: for size, we should consider it's length in xyz direction
+            self.obstacle_hidden_size = cfg.quads_obst_hidden_size  # internal param
             self.obstacle_encoder = nn.Sequential(
                 fc_layer(self.obstacle_obs_dim, self.obstacle_hidden_size, spec_norm=self.use_spectral_norm),
                 nonlinearity(cfg),
@@ -223,7 +222,7 @@ class QuadMultiEncoder(Encoder):
         if self.num_use_neighbor_obs > 0 and self.neighbor_encoder:
             neighborhood_embedding = self.neighbor_encoder(obs_self, obs, all_neighbor_obs_size, batch_size)
             embeddings = torch.cat((embeddings, neighborhood_embedding), dim=1)
-
+        
         if self.obstacle_mode != 'no_obstacles':
             obs_obstacles = obs[:, self.self_obs_dim + all_neighbor_obs_size:]
             obs_obstacles = obs_obstacles.reshape(-1, self.obstacle_obs_dim)

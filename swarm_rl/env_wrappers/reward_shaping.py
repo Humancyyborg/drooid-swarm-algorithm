@@ -14,14 +14,14 @@ DEFAULT_QUAD_REWARD_SHAPING_SINGLE = dict(
 
 DEFAULT_QUAD_REWARD_SHAPING = copy.deepcopy(DEFAULT_QUAD_REWARD_SHAPING_SINGLE)
 DEFAULT_QUAD_REWARD_SHAPING['quad_rewards'].update(dict(
-    quadcol_bin=0.0, quadcol_bin_obst=0.0, quadsettle=0.0,
+    quadcol_bin=0.0, quadsettle=0.0,
 ))
 
 
 class QuadsRewardShapingWrapper(gym.Wrapper, RewardShapingInterface, TrainingInfoInterface):
     def __init__(self, env, reward_shaping_scheme=None, annealing=None):
         gym.Wrapper.__init__(self, env)
-        RewardShapingInterface.__init__(self)
+        #RewardShapingInterface.__init__(self)
         TrainingInfoInterface.__init__(self)
 
         self.reward_shaping_scheme = reward_shaping_scheme

@@ -184,7 +184,7 @@ def quadrotor_simple_3dmodel(diam):
 # this class deals both with map and mapless cases.
 class Quadrotor3DScene:
     def __init__(self, w, h,
-                 quad_arm=None, model=None, obstacles=True, resizable=True, goal_diameter=None,
+                 quad_arm=None, model=None, resizable=True, goal_diameter=None,
                  viewpoint='chase', obs_hw=(64, 64)):
 
         gym_art_module = __import__('gym_art.quadrotor_multi.rendering3d')
@@ -198,7 +198,6 @@ class Quadrotor3DScene:
 
         # self.world_box = 40.0
         self.quad_arm = quad_arm
-        self.obstacles = obstacles
         self.model = model
 
         if goal_diameter:
@@ -259,9 +258,6 @@ class Quadrotor3DScene:
         
         bodies = [r3d.BackToFront([floor, self.shadow_transform]),
             self.goal_transform, self.quad_transform] + self.goal_arrows
-        
-        if self.obstacles:
-            bodies += self.obstacles.bodies
 
         world = r3d.World(bodies)
         batch = r3d.Batch()
