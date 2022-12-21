@@ -32,6 +32,9 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_collision_obst_falloff_radius', default=0.0, type=float, help='The falloff radius for the smooth penalty. 0: radius is 0 arm_length, which means we would not add extra penalty except drones collide')
     p.add_argument('--quads_collision_obst_smooth_max_penalty', default=10.0, type=float, help='The upper bound of the collision function given distance among drones')
     p.add_argument('--use_obstacles', default=False, type=str2bool, help='Use Obstacles or not')
+    p.add_argument('--quads_obstacle_mode', default='no_obstacles', type=str, choices=['no_obstacles', 'static'], help='Choose which obstacle mode to run')
+    p.add_argument('--quads_obstacle_num', default=0, type=int, help='Set obstacle number')
+
 
     p.add_argument('--neighbor_obs_type', default='none', type=str, choices=['none', 'pos_vel', 'pos_vel_goals', 'pos_vel_goals_ndist_gdist'], help='Choose what kind of obs to send to encoder.')
     p.add_argument('--quads_use_numba', default=False, type=str2bool, help='Whether to use numba for jit or not')

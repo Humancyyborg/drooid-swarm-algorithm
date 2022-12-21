@@ -20,7 +20,8 @@ class OctTree:
             np.arange(0, self.room_dims[0], self.grid_size) for j in np.arange(0, self.room_dims[1], self.grid_size)]
     
     def reset(self):
-        self.octree.clear()
+        return
+        #self.octree.clear()
     
     def check_pos(self, pos_xy, goal_range):
         min_pos = goal_range[0] - np.array([0.5 * self.size, 0.5 * self.size])
@@ -130,9 +131,11 @@ class OctTree:
     
     def mark_octree(self):
         range_shape = 0.5 * self.size
-        #print(self.pos_arr)
-        #print(np.arange(self.pos_arr[0][0]-range_shape, self.pos_arr[0][0]+range_shape+self.resolution, self.resolution))
-        #self.size
+        for x in np.arange(-1*self.room_dims[0]//2, self.room_dims[0]//2+0.001, self.resolution):
+            for y in np.arange(-1*self.room_dims[1]//2, self.room_dims[1]//2+0.001, self.resolution):
+                for z in np.arange(-1*self.room_dims[2]//2, self.room_dims[2]//2+0.001, self.resolution):
+                    self.octree.updateNode([x, y, z], False)
+
         for item in self.pos_arr:
             for x in np.arange(item[0]-range_shape, item[0]+range_shape+self.resolution, self.resolution):
                 for y in np.arange(item[1]-range_shape, item[1]+range_shape+self.resolution, self.resolution):
@@ -140,15 +143,11 @@ class OctTree:
                         for z in np.arange(-1*self.room_dims[2]//2, self.room_dims[2]//2+0.001, self.resolution):
                             if x < self.room_dims[0] and y < self.room_dims[1] and z < self.room_dims[2]:
                                 if np.linalg.norm(np.asarray([x, y])-item[:2]) <= self.size/2:
-                                    key = self.octree.coordToKey(np.asarray([x, y, z]))
-                                    node = self.octree.search(key)
                                     self.octree.updateNode([x, y, z], True)
                     else:
                         for z in np.arange(item[2]-range_shape, item[2]+range_shape+self.resolution, self.resolution):
                             if x < self.room_dims[0] and y < self.room_dims[1] and z < self.room_dims[2]:
                                 if np.linalg.norm(np.asarray([x, y])-item[:2]) <= self.size/2:
-                                    key = self.octree.coordToKey(np.asarray([x, y, z]))
-                                    node = self.octree.search(key)
                                     self.octree.updateNode([x, y, z], True)
 
         #return self.octree.extractPointCloud()
@@ -169,9 +168,8 @@ class OctTree:
                     state.append(self.SDFDist(np.array([i, j, k])))
 
         state = np.array(state)
-        #print(state)
+        return state
             
-
 '''oct = OctTree()
 p = oct.generate_obstacles(4)
 data = oct.mark_octree()[0]
@@ -183,8 +181,9 @@ ax = plt.axes(projection='3d')
 ax.scatter3D(data[:,0], data[:,1], data[:,2])
 
 print(oct.SDFDist([0.0, 0.0, 0.0]))
-oct.getSurround([0.0, 0.0, 0.0])
+print(oct.getSurround([0.0, 0.0, 0.0]))
 print(oct.SDFDist(p[0]))
+print(oct.getSurround([-2.3, -2.3, -2.3]))
 
 
 plt.show()'''

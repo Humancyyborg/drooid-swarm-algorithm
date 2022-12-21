@@ -22,6 +22,8 @@ import logging
 import sys
 import time
 
+import numpy as np
+
 import gym_art.quadrotor_multi.get_state as get_state
 
 # MY LIBS
@@ -601,7 +603,9 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed, time_remain, re
 
     ##################################################
     ## loss velocity
-    cost_vel_raw = np.linalg.norm(dynamics.vel)
+    # TODO: Hack
+    tmp_dynamics_vel = np.clip(dynamics.vel, -100, 100)
+    cost_vel_raw = np.linalg.norm(tmp_dynamics_vel)
     cost_vel = vel_coeff * cost_vel_raw
 
     ##################################################
@@ -964,6 +968,7 @@ class QuadrotorSingle:
             "nbr_dist": [np.zeros(1), room_max_dist],
             "nbr_goal_dist": [np.zeros(1), room_max_dist],
             "wall": [np.zeros(6), 5.0 * np.ones(6)],
+            "octmap": [-10 * np.ones(27), 10 * np.ones(27)],
         }
         self.obs_comp_names = list(self.obs_space_low_high.keys())
         self.obs_comp_sizes = [self.obs_space_low_high[name][1].size for name in self.obs_comp_names]
@@ -975,6 +980,10 @@ class QuadrotorSingle:
             obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['goal']) * self.num_use_neighbor_obs
         elif self.swarm_obs == 'pos_vel_goals_ndist_gdist' and self.num_agents > 1:
             obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['goal'] + ['nbr_dist'] + ['nbr_goal_dist']) * self.num_use_neighbor_obs
+
+        if self.use_obstacles:
+            obs_comps = obs_comps + ["octmap"]
+
 
         print("Observation components:", obs_comps)
         obs_low, obs_high = [], []

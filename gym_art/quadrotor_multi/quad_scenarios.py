@@ -162,7 +162,7 @@ class QuadrotorScenario:
         self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.formation_center, layer_dist=self.layer_dist)
         np.random.shuffle(self.goals)
 
-    def standard_reset(self):
+    def standard_reset(self, formation_center=None):
         # Reset formation and related parameters
         self.update_formation_and_relate_param()
 
@@ -797,7 +797,13 @@ class Scenario_mix(QuadrotorScenario):
             self.quads_mode_list = QUADS_MODE_LIST
         elif envs[0].use_obstacles:
             self.quads_mode_list = QUADS_MODE_LIST_OBSTACLES
-        
+
+            # Add parameters
+            self.start_point = np.array([-3.0, -3.0, 2.0])
+            self.end_point = np.array([3.0, 3.0, 2.0])
+            self.scenario_mode = 'o_dynamic_same_goal'
+
+
         # actual scenario being used
         self.scenario = None
 
@@ -827,3 +833,7 @@ class Scenario_mix(QuadrotorScenario):
         self.scenario.reset()
         self.goals = self.scenario.goals
         self.formation_size = self.scenario.formation_size
+
+        if self.envs[0].use_obstacles:
+            self.start_point = self.scenario.start_point
+            self.end_point = self.scenario.end_point
