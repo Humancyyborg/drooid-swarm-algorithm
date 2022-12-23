@@ -130,6 +130,7 @@ class QuadMultiEncoder(Encoder):
             raise NotImplementedError(f'Layer {cfg.quads_obs_repr} not supported!')
 
         self.neighbor_hidden_size = cfg.quads_neighbor_hidden_size
+        self.use_obstacles = cfg.use_obstacles
         self.obstacle_mode = cfg.quads_obstacle_mode
         self.neighbor_obs_type = cfg.neighbor_obs_type
         self.use_spectral_norm = cfg.use_spectral_norm
@@ -189,7 +190,8 @@ class QuadMultiEncoder(Encoder):
 
         # encode the obstacle observations
         obstacle_encoder_out_size = 0
-        if self.obstacle_mode != 'no_obstacles':
+        #if self.obstacle_mode != 'no_obstacles':
+        if self.use_obstacles:
             self.obstacle_obs_dim = 27  # internal param, pos_vel_size_type, 3 * 3 * 3, note: for size, we should consider it's length in xyz direction
             self.obstacle_hidden_size = cfg.quads_obst_hidden_size  # internal param
             self.obstacle_encoder = nn.Sequential(
@@ -223,13 +225,14 @@ class QuadMultiEncoder(Encoder):
             neighborhood_embedding = self.neighbor_encoder(obs_self, obs, all_neighbor_obs_size, batch_size)
             embeddings = torch.cat((embeddings, neighborhood_embedding), dim=1)
         
-        if self.obstacle_mode != 'no_obstacles':
+        #if self.obstacle_mode != 'no_obstacles':
+        if self.use_obstacles:
             obs_obstacles = obs[:, self.self_obs_dim + all_neighbor_obs_size:]
-            obs_obstacles = obs_obstacles.reshape(-1, self.obstacle_obs_dim)
+            #obs_obstacles = obs_obstacles.reshape(-1, self.obstacle_obs_dim)
             obstacle_embeds = self.obstacle_encoder(obs_obstacles)
-            obstacle_embeds = obstacle_embeds.reshape(batch_size, -1, self.obstacle_hidden_size)
-            obstacle_mean_embed = torch.mean(obstacle_embeds, dim=1)
-            embeddings = torch.cat((embeddings, obstacle_mean_embed), dim=1)
+            #obstacle_embeds = obstacle_embeds.reshape(batch_size, -1, self.obstacle_hidden_size)
+            #obstacle_mean_embed = torch.mean(obstacle_embeds, dim=1)
+            embeddings = torch.cat((embeddings, obstacle_embeds), dim=1)
 
         out = self.feed_forward(embeddings)
         return out

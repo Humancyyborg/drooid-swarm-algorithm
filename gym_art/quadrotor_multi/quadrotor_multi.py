@@ -404,6 +404,8 @@ class QuadrotorEnvMulti(gym.Env):
         else:
             obst_quad_col_matrix = np.zeros(self.num_agents)
             rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
+            rew_collisions_obst_quad = np.zeros(self.num_agents)
+            rew_obst_quad_proximity = np.zeros(self.num_agents)
 
         if self.use_replay_buffer and not self.activate_replay_buffer:
             self.crashes_last_episode += infos[0]["rewards"]["rew_crash"]
@@ -439,7 +441,7 @@ class QuadrotorEnvMulti(gym.Env):
         # Collisions with ground
         ground_collisions = [1.0 if pos[2] < 0.25 else 0.0 for pos in self.pos]
 
-        self.all_collisions = {'drone': np.sum(drone_col_matrix, axis=1), 'ground': ground_collisions}
+        self.all_collisions = {'drone': np.sum(drone_col_matrix, axis=1), 'ground': ground_collisions, 'obstacles': obst_quad_col_matrix}
 
         # Applying random forces between drones
         if self.apply_collision_force:
