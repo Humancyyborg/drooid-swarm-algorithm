@@ -37,6 +37,8 @@ QUAD_BASELINE_CLI_8 = (
     '--quads_collision_reward=5.0 --with_wandb=True --wandb_project=Quad-Swarm-RL --wandb_group=test_updated_code '
     '--wandb_user=multi-drones --quads_collision_smooth_max_penalty=10.0 '
     '--quads_neighbor_encoder_type=attention '
+    '--use_obstacles=True --quads_obstacle_num=3 --quads_obst_collision_reward=5.0 '
+    '--quads_obst_collision_smooth_max_penalty=10.0 '
     '--replay_buffer_sample_prob=0.75 --save_milestones_sec=900 '
     '--anneal_collision_steps=300000000'
 )
