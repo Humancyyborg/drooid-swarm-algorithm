@@ -73,7 +73,7 @@ class QuadrotorEnvMulti(gym.Env):
         # reward shaping
         self.rew_coeff = dict(
             pos=1., effort=0.05, action_change=0., crash=1., orient=1., yaw=0., rot=0., attitude=0., spin=0.1, vel=0.,
-            quadcol_bin=0., quadcol_bin_smooth_max=0.,
+            quadcol_bin=0., quadcol_bin_smooth_max=0., quadcol_bin_obst=0., quadcol_bin_obst_smooth_max=0.,
             quadsettle=0.
         )
         rew_coeff_orig = copy.deepcopy(self.rew_coeff)
@@ -127,7 +127,6 @@ class QuadrotorEnvMulti(gym.Env):
         self.obstacle_size = obstacle_size
         self.octree_resolution = octree_resolution
         self.obstacle_inf_height = obstacle_inf_height
-        #num_obstacles=0, room_dims = [10, 10, 10], quad_size=0.046, size=0.0, resolution=0.05, inf_height=True
         self.obstacles = MultiObstacles(num_obstacles=self.num_obstacles, size=self.obstacle_size,
                                         room_dims=self.room_dims, resolution=self.octree_resolution, inf_height=self.obstacle_inf_height)
 
@@ -372,7 +371,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         obs = self.add_neighborhood_obs(obs)
 
-        ### TO DO Obstacle Collision ###
+        ### Obstacle Collision ###
         if self.use_obstacles:
             obs = self.obstacles.step(obs=obs, quads_pos=self.pos)
 
@@ -386,7 +385,7 @@ class QuadrotorEnvMulti(gym.Env):
                 rew_obst_quad_collisions_raw[obst_quad_col_matrix] = -1.0
 
             # TODO CHANGE quadcol_bin -> quadcol_bin_obst
-            rew_collisions_obst_quad = self.rew_coeff["quadcol_bin"] * rew_obst_quad_collisions_raw
+            rew_collisions_obst_quad = self.rew_coeff["quadcol_bin_obst"] * rew_obst_quad_collisions_raw
 
             # penalties for low distance between obstacles and drones
             drone_obst_dists = np.array([self.obstacles.octree.SDFDist(i.dynamics.pos) for i in self.envs])
@@ -396,7 +395,7 @@ class QuadrotorEnvMulti(gym.Env):
             rew_obst_quad_proximity = -1.0 * calculate_obst_drone_proximity_penalties(
                 distances=drone_obst_dists, arm=self.quad_arm, dt=self.control_dt,
                 penalty_fall_off=10.0,
-                max_penalty=self.rew_coeff["quadcol_bin_smooth_max"],
+                max_penalty=self.rew_coeff["quadcol_bin_obst_smooth_max"],
                 num_agents=self.num_agents,
                 obstacles_radius=self.obstacle_size/2
             )
@@ -449,7 +448,7 @@ class QuadrotorEnvMulti(gym.Env):
                 perform_collision_between_drones(self.envs[val[0]].dynamics, self.envs[val[1]].dynamics)
             for i, val in enumerate(obst_quad_col_matrix):
                 if val == 1:
-                    perform_collision_with_obstacle(drone_dyn=self.envs[i].dynamics)
+                    perform_collision_with_obstacle(drone_dyn=self.envs[i].dynamics, obstacle_pos=self.obstacles.closest_obstacle(self.envs[i].dynamics.pos))
 
         for i in range(self.num_agents):
             rewards[i] += rew_collisions[i]

@@ -323,15 +323,18 @@ def perform_collision_between_drones(dyn1, dyn2):
     dyn1.omega += new_omega
     dyn2.omega -= new_omega
 
-def perform_collision_with_obstacle(drone_dyn):
-    coll_norm_mag = np.linalg.norm(drone_dyn.vel)
-    collision_norm = drone_dyn.vel / (coll_norm_mag + 0.00001 if coll_norm_mag == 0.0 else coll_norm_mag)
+
+def perform_collision_with_obstacle(drone_dyn, obstacle_pos):
+    collision_norm = obstacle_pos - drone_dyn.pos
+    coll_norm_mag = np.linalg.norm(collision_norm)
+    collision_norm = collision_norm / (coll_norm_mag + 0.00001 if coll_norm_mag == 0.0 else coll_norm_mag)
 
     # Get the components of the velocity vectors which are parallel to the collision.
     # The perpendicular component remains the same.
-    v1new = np.dot(drone_dyn.vel, collision_norm)
+    v2new = np.dot(drone_dyn.vel, collision_norm)
+    v1new = np.dot(np.zeros(drone_dyn.vel.shape), collision_norm)
 
-    drone_dyn.vel += (v1new) * collision_norm
+    drone_dyn.vel += (v1new - v2new) * collision_norm
 
     # Now adding two different random components,
     # One that preserves momentum in opposite directions

@@ -3,6 +3,7 @@ import math
 
 import octomap
 
+#TODO Clean this code
 class OctTree:
     def __init__(self, obstacle_size=1.0, room_dims=[10, 10, 10], resolution=0.05, inf_height=True):
         self.resolution = resolution
@@ -131,10 +132,27 @@ class OctTree:
     
     def mark_octree(self):
         range_shape = 0.5 * self.size
-        for x in np.arange(-1*self.room_dims[0]//2, self.room_dims[0]//2+0.001, self.resolution):
+        #[self.room_dims[0]//2, self.room_dims[1]//2, self.room_dims[2]//2]
+        #[[-1, -1, -1], [-1, -1, 1], [-1, 1, -1], [-1, 1, 1], [1, -1, -1], [1, -1, 1], [1, 1, -1], [1, 1, 1]]
+        self.octree.updateNode([-1*self.room_dims[0]//2, -1*self.room_dims[1]//2, -1*self.room_dims[2]//2], False)
+        self.octree.updateNode([-1 * self.room_dims[0] // 2, -1 * self.room_dims[1] // 2, self.room_dims[2] // 2],
+                               False)
+        self.octree.updateNode([-1 * self.room_dims[0] // 2, self.room_dims[1] // 2, -1 * self.room_dims[2] // 2],
+                               False)
+        self.octree.updateNode([-1 * self.room_dims[0] // 2, self.room_dims[1] // 2, self.room_dims[2] // 2],
+                               False)
+        self.octree.updateNode([self.room_dims[0] // 2, -1 * self.room_dims[1] // 2, -1 * self.room_dims[2] // 2],
+                               False)
+        self.octree.updateNode([self.room_dims[0] // 2, -1 * self.room_dims[1] // 2, self.room_dims[2] // 2],
+                               False)
+        self.octree.updateNode([self.room_dims[0] // 2, self.room_dims[1] // 2, -1 * self.room_dims[2] // 2],
+                               False)
+        self.octree.updateNode([self.room_dims[0] // 2, self.room_dims[1] // 2, self.room_dims[2] // 2],
+                               False)
+        '''for x in np.arange(-1*self.room_dims[0]//2, self.room_dims[0]//2+0.001, self.resolution):
             for y in np.arange(-1*self.room_dims[1]//2, self.room_dims[1]//2+0.001, self.resolution):
                 for z in np.arange(-1*self.room_dims[2]//2, self.room_dims[2]//2+0.001, self.resolution):
-                    self.octree.updateNode([x, y, z], False)
+                    self.octree.updateNode([x, y, z], False)'''
 
         for item in self.pos_arr:
             for x in np.arange(item[0]-range_shape, item[0]+range_shape+self.resolution, self.resolution):
@@ -171,8 +189,11 @@ class OctTree:
         return state
             
 '''oct = OctTree()
-p = oct.generate_obstacles(4)
+#p = oct.generate_obstacles(3)
+oct.pos_arr = np.array([[-1.5, -0.5, 5.0], [-3.5, -2.5, 5.0], [-2.5, -1.5, 5.0]])
+#print(p)
 data = oct.mark_octree()[0]
+oct.generateSDF()
 
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
@@ -182,8 +203,7 @@ ax.scatter3D(data[:,0], data[:,1], data[:,2])
 
 print(oct.SDFDist([0.0, 0.0, 0.0]))
 print(oct.getSurround([0.0, 0.0, 0.0]))
-print(oct.SDFDist(p[0]))
-print(oct.getSurround([-2.3, -2.3, -2.3]))
+print(oct.getSurround([0, 4.9, 4.9]))
 
 
 plt.show()'''
