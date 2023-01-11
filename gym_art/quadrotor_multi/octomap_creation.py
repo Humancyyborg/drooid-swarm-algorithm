@@ -49,33 +49,21 @@ class OctTree:
             y_gaussian_scale = np.random.uniform(low=0.2, high=0.5)
 
         pos_y = np.random.normal(loc=middle_point[1], scale=y_gaussian_scale)
-        #pos_z = np.random.normal(loc=middle_point[0], scale=goal_distance / 4.0)
 
         rot_pos_x = middle_point[0] + math.cos(alpha) * (pos_x - middle_point[0]) - math.sin(alpha) * (pos_y - middle_point[1])
         rot_pos_y = middle_point[1] + math.sin(alpha) * (pos_x - middle_point[0]) + math.cos(alpha) * (pos_y - middle_point[1])
-
-        #rot_pos_y = middle_point[1] + math.sin(alpha) * (pos_x - middle_point[0]) + math.cos(alpha) * (pos_y - middle_point[1])
 
         dist = lambda p1, p2: (p1[0] - p2[0])**2 + (p1[1] - p2[1])**2
         rot_pos_x, rot_pos_y = min(self.cell_centers, key=lambda coord: dist(coord, (rot_pos_x, rot_pos_y)))
 
         rot_pos_x = np.clip(rot_pos_x, a_min=-self.half_room_length + self.grid_size, a_max=self.half_room_length - self.grid_size)
         rot_pos_y = np.clip(rot_pos_y, a_min=-self.half_room_width + self.grid_size, a_max=self.half_room_width - self.grid_size)
-        #pos_z = np.clip(pos_z, a_min=-self.half_room_width + self.grid_size, a_max=self.half_room_width - self.grid_size)
 
-        pos_xy = np.array([rot_pos_x, rot_pos_y, ])#pos_z])
+        pos_xy = np.array([rot_pos_x, rot_pos_y, ])
 
-        #if self.scenario_mode not in QUADS_MODE_GOAL_CENTERS:
         collide_start = self.check_pos(pos_xy, self.start_range)
         collide_end = self.check_pos(pos_xy, self.end_range)
         collide_flag = collide_start or collide_end
-        '''else:
-            collide_flag = False
-            for start_range in self.start_range_list:
-                collide_start = self.check_pos(pos_xy, start_range)
-                if collide_start:
-                    collide_flag = True
-                    break'''
 
         return pos_xy, collide_flag
     
@@ -149,10 +137,6 @@ class OctTree:
                                False)
         self.octree.updateNode([self.room_dims[0] // 2, self.room_dims[1] // 2, self.room_dims[2] // 2],
                                False)
-        '''for x in np.arange(-1*self.room_dims[0]//2, self.room_dims[0]//2+0.001, self.resolution):
-            for y in np.arange(-1*self.room_dims[1]//2, self.room_dims[1]//2+0.001, self.resolution):
-                for z in np.arange(-1*self.room_dims[2]//2, self.room_dims[2]//2+0.001, self.resolution):
-                    self.octree.updateNode([x, y, z], False)'''
 
         for item in self.pos_arr:
             for x in np.arange(item[0]-range_shape, item[0]+range_shape+self.resolution, self.resolution):
@@ -173,7 +157,6 @@ class OctTree:
     def generateSDF(self):
         self.octree.dynamicEDT_generate(5.0, np.array([-5.0, -5.0, -5.0]), np.array([5.0, 5.0, 5.0]))
         self.octree.dynamicEDT_update(True)
-        #print(self.octree.dynamicEDT_checkConsistency())
 
     def SDFDist(self, p):
         return self.octree.dynamicEDT_getDistance(p)
@@ -187,23 +170,3 @@ class OctTree:
 
         state = np.array(state)
         return state
-            
-'''oct = OctTree()
-#p = oct.generate_obstacles(3)
-oct.pos_arr = np.array([[-1.5, -0.5, 5.0], [-3.5, -2.5, 5.0], [-2.5, -1.5, 5.0]])
-#print(p)
-data = oct.mark_octree()[0]
-oct.generateSDF()
-
-from mpl_toolkits import mplot3d
-import matplotlib.pyplot as plt
-fig = plt.figure()
-ax = plt.axes(projection='3d')
-ax.scatter3D(data[:,0], data[:,1], data[:,2])
-
-print(oct.SDFDist([0.0, 0.0, 0.0]))
-print(oct.getSurround([0.0, 0.0, 0.0]))
-print(oct.getSurround([0, 4.9, 4.9]))
-
-
-plt.show()'''
