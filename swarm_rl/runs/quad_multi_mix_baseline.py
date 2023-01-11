@@ -34,13 +34,13 @@ QUAD_BASELINE_CLI_8 = (
     '--normalize_input=False --normalize_returns=False --reward-clip=10 '
     '--quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
     '--quads_local_obs=6 --quads_num_agents=8 '
-    '--quads_collision_reward=5.0 --with_wandb=True --wandb_project=Quad-Swarm-RL --wandb_group=test_updated_code '
+    '--quads_collision_reward=5.0 --with_wandb=True --wandb_project=Quad-Swarm-RL --wandb_group=test_room_height '
     '--wandb_user=multi-drones --quads_collision_smooth_max_penalty=10.0 '
     '--quads_neighbor_encoder_type=attention '
-    '--use_obstacles=True --quads_obstacle_num=3 --quads_obst_collision_reward=5.0 '
+    '--use_obstacles=True --quads_obstacle_num=8 --quads_obst_collision_reward=5.0 '
     '--quads_obst_collision_smooth_max_penalty=10.0 '
     '--replay_buffer_sample_prob=0.75 --save_milestones_sec=900 '
-    '--anneal_collision_steps=300000000'
+    '--anneal_collision_steps=300000000 --room-dims 10 10 6 '
 )
 
 # For scale, need to change
