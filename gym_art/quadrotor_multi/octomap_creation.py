@@ -22,7 +22,6 @@ class OctTree:
     
     def reset(self):
         return
-        #self.octree.clear()
     
     def check_pos(self, pos_xy, goal_range):
         min_pos = goal_range[0] - np.array([0.5 * self.size, 0.5 * self.size])
@@ -152,10 +151,10 @@ class OctTree:
                                 if np.linalg.norm(np.asarray([x, y])-item[:2]) <= self.size/2:
                                     self.octree.updateNode([x, y, z], True)
 
-        #return self.octree.extractPointCloud()
-
     def generateSDF(self):
-        self.octree.dynamicEDT_generate(5.0, np.array([-5.0, -5.0, -5.0]), np.array([5.0, 5.0, 5.0]))
+        self.octree.dynamicEDT_generate((3**0.5)*max(self.room_dims),
+                                        np.array([-1*self.room_dims[0]/2, -1*self.room_dims[1]/2, -1*self.room_dims[2]/2]), 
+                                        np.array([self.room_dims[0]/2, self.room_dims[1]/2, self.room_dims[2]/2]))
         self.octree.dynamicEDT_update(True)
 
     def SDFDist(self, p):

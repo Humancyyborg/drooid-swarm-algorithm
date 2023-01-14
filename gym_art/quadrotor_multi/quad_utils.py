@@ -329,17 +329,19 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_pos):
 
     drone_pos = drone_dyn.pos
     shift_pos = drone_pos - obstacle_pos
+
+    pos_mag = np.linalg.norm(shift_pos)
+    shift_pos = shift_pos / (pos_mag + 0.0001 if pos_mag == 0.0 else pos_mag)
+
     new_shift_pos = deepcopy(shift_pos)
 
     for regen in range(3):
         new_shift_pos[0] += np.random.uniform(low=shift_pos[0] * -0.4, high=shift_pos[0] * 0.4)
         new_shift_pos[1] += np.random.uniform(low=shift_pos[1] * -0.4, high=shift_pos[1] * 0.4)
-        new_shift_pos[2] = np.random.uniform(low=-1.0, high=-0.5) * drone_vel_mag
+        new_shift_pos[2] = np.random.uniform(low=-1.3, high=-0.7)
         if np.dot(shift_pos[:2], new_shift_pos[:2]) > 0:
             shift_pos = new_shift_pos
             break
-
-    drone_dyn.vel = shift_pos
 
     direction_mag = np.linalg.norm(shift_pos)
     direction_norm = shift_pos / (direction_mag + 0.00001 if direction_mag == 0.0 else direction_mag)

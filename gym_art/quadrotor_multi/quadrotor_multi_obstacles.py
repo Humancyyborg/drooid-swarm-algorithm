@@ -5,7 +5,7 @@ from gym_art.quadrotor_multi.octomap_creation import OctTree
 
 
 class MultiObstacles:
-    def __init__(self, num_obstacles=0, room_dims = [10, 10, 10],
+    def __init__(self, num_obstacles=0, room_dims=[10, 10, 10],
                  quad_size=0.046, size=0.0, resolution=0.05, inf_height=True):
         self.num_obstacles = num_obstacles
         self.obstacles = []
