@@ -23,7 +23,7 @@ QUAD_BASELINE_CLI = (
 )
 
 QUAD_BASELINE_CLI_8 = (
-    'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=2000000000 --algo=APPO --use_rnn=False '
+    'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=100000000 --algo=APPO --use_rnn=False '
     '--num_workers=36 --num_envs_per_worker=4 --learning_rate=0.0001 --ppo_clip_value=5.0 --recurrence=1 '
     '--nonlinearity=tanh --actor_critic_share_weights=False --policy_initialization=xavier_uniform '
     '--adaptive_stddev=False --with_vtrace=False --max_policy_lag=100000000 --rnn_size=256 '
@@ -36,6 +36,10 @@ QUAD_BASELINE_CLI_8 = (
     '--quads_collision_reward=5.0 --quads_collision_smooth_max_penalty=10.0 '
     '--quads_neighbor_encoder_type=attention --replay_buffer_sample_prob=0.75 --save_milestones_sec=900 '
     '--normalize_input=False --normalize_returns=False --reward_clip=10 '
+    '--use_obstacles=True --quads_obstacle_num=8 --quads_obst_collision_reward=5.0 '
+    '--quads_obst_collision_smooth_max_penalty=10.0 '
+    ' --with_wandb=True --wandb_project=Quad-Swarm-RL --wandb_group=test_room_height --wandb_user=multi-drones '
+    '--anneal_collision_steps=300000000 --room_dims 10 10 6'
 )
 
 # For scale, need to change
