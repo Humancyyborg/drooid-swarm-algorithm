@@ -21,6 +21,8 @@ class OctTree:
             np.arange(0, self.room_dims[0], self.grid_size) for j in np.arange(0, self.room_dims[1], self.grid_size)]
     
     def reset(self):
+        del self.octree
+        self.octree = octomap.OcTree(self.resolution)
         return
     
     def check_pos(self, pos_xy, goal_range):
@@ -98,7 +100,6 @@ class OctTree:
 
     def generate_obstacles(self, num_obstacles=0, start_point=np.array([-3.0, -2.0, 2.0]), end_point=np.array([3.0, 2.0, 2.0])):
         self.reset()
-
         self.pos_arr = np.array([])
         pos_z = 0.5 * self.room_dims[2]
         for i in range(num_obstacles):
