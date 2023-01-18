@@ -15,6 +15,7 @@ class OctTree:
         self.size = obstacle_size
         self.start_range = np.zeros((2, 2))
         self.end_range = np.zeros((2, 2))
+        self.init_box = np.array([[-2.0, -2.0, -0.5 * 2.0], [2.0, 2.0, 1.5 * 2.0]])
         self.cell_centers = [
             (i + (self.grid_size / 2) - self.half_room_length, j + (self.grid_size / 2) - self.half_room_width) for i in
             np.arange(0, self.room_dims[0], self.grid_size) for j in np.arange(0, self.room_dims[1], self.grid_size)]
@@ -100,6 +101,9 @@ class OctTree:
     def generate_obstacles(self, num_obstacles=0, start_point=np.array([-3.0, -2.0, 2.0]), end_point=np.array([3.0, 2.0, 2.0])):
         self.reset()
         self.pos_arr = np.array([])
+        #TODO Check Scenario Mode
+        self.start_range = np.array([start_point[:2] + self.init_box[0][:2],  start_point[:2] + self.init_box[1][:2]])
+        self.end_range = np.array([end_point[:2] + self.init_box[0][:2],  end_point[:2] + self.init_box[1][:2]])
         pos_z = 0.5 * self.room_dims[2]
         for i in range(num_obstacles):
             for regen_id in range(20):

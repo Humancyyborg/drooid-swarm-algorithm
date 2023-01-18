@@ -127,12 +127,13 @@ class QuadrotorEnvMulti(gym.Env):
         # Write Obstacle creation code here
         self.use_downwash = use_downwash
         self.use_obstacles = use_obstacles
-        self.num_obstacles = num_obstacles
-        self.obstacle_size = obstacle_size
-        self.octree_resolution = octree_resolution
-        self.obstacle_inf_height = obstacle_inf_height
-        self.obstacles = MultiObstacles(num_obstacles=self.num_obstacles, size=self.obstacle_size,
-                                        room_dims=self.room_dims, resolution=self.octree_resolution, inf_height=self.obstacle_inf_height)
+        if self.use_obstacles:
+            self.num_obstacles = num_obstacles
+            self.obstacle_size = obstacle_size
+            self.octree_resolution = octree_resolution
+            self.obstacle_inf_height = obstacle_inf_height
+            self.obstacles = MultiObstacles(num_obstacles=self.num_obstacles, size=self.obstacle_size,
+                                            room_dims=self.room_dims, resolution=self.octree_resolution, inf_height=self.obstacle_inf_height)
 
 
         # Aux variables for scenarios
@@ -345,7 +346,7 @@ class QuadrotorEnvMulti(gym.Env):
         if self.use_obstacles:
             quads_pos = np.array([e.dynamics.pos for e in self.envs])
 
-            obs = self.obstacles.reset(obs=obs, quads_pos=quads_pos, start_point=self.scenario.start_point, end_point=self.scenario.end_point)
+            obs = self.obstacles.reset(obs=obs, quads_pos=quads_pos, start_point=self.scenario.start_point, end_point=self.scenario.end_point)#, scenario_mode=self.scenario.scenario_mode)
             self.obst_quad_collisions_per_episode = 0
             self.prev_obst_quad_collisions = []
 

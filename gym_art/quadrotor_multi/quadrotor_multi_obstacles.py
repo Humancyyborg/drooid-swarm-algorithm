@@ -12,9 +12,9 @@ class MultiObstacles:
         self.room_dims = room_dims
         self.octree = OctTree(obstacle_size=1.0, room_dims=room_dims, resolution=resolution, inf_height=inf_height)
 
-    def reset(self, obs=None, quads_pos=None, start_point=np.array([0., 0., 2.]), end_point=np.array([0., 0., 2.])):
+    def reset(self, obs=None, quads_pos=None, start_point=np.array([0., 0., 2.]), end_point=np.array([0., 0., 2.])):#, scenario_mode=None):
         self.octree.reset()
-        self.octree.generate_obstacles(num_obstacles=self.num_obstacles, start_point=start_point, end_point=end_point)
+        self.octree.generate_obstacles(num_obstacles=self.num_obstacles, start_point=start_point, end_point=end_point)#, scenario_mode=scenario_mode)
 
         obstobs = []
         
