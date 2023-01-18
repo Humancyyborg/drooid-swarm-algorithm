@@ -3,7 +3,6 @@ import math
 
 import octomap
 
-#TODO Clean this code
 class OctTree:
     def __init__(self, obstacle_size=1.0, room_dims=[10, 10, 10], resolution=0.05, inf_height=True):
         self.resolution = resolution

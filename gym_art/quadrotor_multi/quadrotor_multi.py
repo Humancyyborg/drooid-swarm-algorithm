@@ -8,7 +8,8 @@ import gym
 from copy import deepcopy
 
 from gym_art.quadrotor_multi.quad_utils import perform_collision_between_drones, calculate_obst_drone_proximity_penalties, \
-    calculate_collision_matrix, calculate_drone_proximity_penalties, perform_collision_with_obstacle, perform_downwash
+    calculate_collision_matrix, calculate_drone_proximity_penalties, perform_collision_with_obstacle, perform_downwash, \
+    perform_collision_with_wall, perform_collision_with_ceiling
 
 from gym_art.quadrotor_multi.quadrotor_single import GRAV, QuadrotorSingle
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
@@ -32,7 +33,8 @@ class QuadrotorEnvMulti(gym.Env):
                  collision_force=True, local_obs=-1, collision_hitbox_radius=2.0,
                  collision_falloff_radius=2.0, collision_smooth_max_penalty=10.0, use_replay_buffer=False,
                  vis_acc_arrows=False, viz_traces=25, viz_trace_nth_step=1,
-                 use_obstacles=False, num_obstacles=0, obstacle_size=0.0, octree_resolution=0.05, obstacle_inf_height=True):
+                 use_obstacles=False, num_obstacles=0, obstacle_size=0.0, octree_resolution=0.05,
+                 obstacle_inf_height=True, use_downwash=True):
 
         super().__init__()
 
@@ -43,6 +45,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.num_use_neighbor_obs = self.num_agents - 1
         else:
             self.num_use_neighbor_obs = local_obs
+
         # Set to True means that sample_factory will treat it as a multi-agent vectorized environment even with
         # num_agents=1. More info, please look at sample-factory: envs/quadrotors/wrappers/reward_shaping.py
         self.is_multiagent = True
@@ -122,7 +125,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         self.goal_central = np.array([0., 0., 2.])
         # Write Obstacle creation code here
-        self.apply_downwash = True
+        self.use_downwash = use_downwash
         self.use_obstacles = use_obstacles
         self.num_obstacles = num_obstacles
         self.obstacle_size = obstacle_size
@@ -370,11 +373,10 @@ class QuadrotorEnvMulti(gym.Env):
 
             self.pos[i, :] = self.envs[i].dynamics.pos
 
-        obs = self.add_neighborhood_obs(obs)
+        #obs = self.add_neighborhood_obs(obs)
 
         ### Obstacle Collision ###
         if self.use_obstacles:
-            obs = self.obstacles.step(obs=obs, quads_pos=self.pos)
 
             obst_quad_col_matrix = self.obstacles.collision_detection(pos_quads=self.pos)
             self.obst_quad_collisions_per_episode += np.sum(obst_quad_col_matrix, axis=0)
@@ -443,9 +445,11 @@ class QuadrotorEnvMulti(gym.Env):
 
         self.all_collisions = {'drone': np.sum(drone_col_matrix, axis=1), 'ground': ground_collisions, 'obstacles': obst_quad_col_matrix}
 
-        if self.apply_downwash:
+        if self.use_downwash:
             envs_dynamics = [env.dynamics for env in self.envs]
-            applied_downwash_flag = perform_downwash(drones_dyn=envs_dynamics, dt=self.control_dt)
+            perform_downwash(drones_dyn=envs_dynamics, dt=self.control_dt)
+
+        apply_room_collision = self.simulate_collision_with_room()
 
         # Applying random forces between drones
         if self.apply_collision_force:
@@ -474,6 +478,16 @@ class QuadrotorEnvMulti(gym.Env):
         # run the scenario passed to self.quads_mode
         infos, rewards = self.scenario.step(infos=infos, rewards=rewards, pos=self.pos)
 
+        if apply_room_collision:
+            obs = [e.state_vector(e) for e in self.envs]
+
+        # Concatenate observations of neighbor drones
+        obs = self.add_neighborhood_obs(obs)
+
+        # Concatenate obstacle observations
+        if self.use_obstacles:
+            obs = self.obstacles.step(obs=obs, quads_pos=self.pos)
+
         # DONES
         if any(dones):
             for i in range(len(infos)):
@@ -492,6 +506,25 @@ class QuadrotorEnvMulti(gym.Env):
             dones = [True] * len(dones)  # terminate the episode for all "sub-envs"
 
         return obs, rewards, dones, infos
+
+    def simulate_collision_with_room(self):
+        apply_room_collision_flag = False
+        wall_collisions = np.array([env.dynamics.crashed_wall for env in self.envs])
+        ceiling_collisions = np.array([env.dynamics.crashed_ceiling for env in self.envs])
+
+        wall_crash_list = np.where(wall_collisions >= 1)[0]
+        if len(wall_crash_list) > 0:
+            apply_room_collision_flag = True
+            for val in wall_crash_list:
+                perform_collision_with_wall(drone_dyn=self.envs[val].dynamics, room_box=self.envs[0].room_box)
+
+        ceiling_crash_list = np.where(ceiling_collisions >= 1)[0]
+        if len(ceiling_crash_list) > 0:
+            apply_room_collision_flag = True
+            for val in ceiling_crash_list:
+                perform_collision_with_ceiling(drone_dyn=self.envs[val].dynamics)
+
+        return apply_room_collision_flag
 
     def render(self, mode='human', verbose=False):
         models = tuple(e.dynamics.model for e in self.envs)
