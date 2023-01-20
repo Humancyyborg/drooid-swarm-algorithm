@@ -128,6 +128,8 @@ class QuadrotorEnvMulti(gym.Env):
         self.use_downwash = use_downwash
         self.use_obstacles = use_obstacles
         if self.use_obstacles:
+            self.prev_obst_quad_collisions = []
+            self.obst_quad_collisions_per_episode = 0
             self.num_obstacles = num_obstacles
             self.obstacle_size = obstacle_size
             self.octree_resolution = octree_resolution
@@ -345,7 +347,6 @@ class QuadrotorEnvMulti(gym.Env):
 
         if self.use_obstacles:
             quads_pos = np.array([e.dynamics.pos for e in self.envs])
-
             obs = self.obstacles.reset(obs=obs, quads_pos=quads_pos, start_point=self.scenario.start_point, end_point=self.scenario.end_point)#, scenario_mode=self.scenario.scenario_mode)
             self.obst_quad_collisions_per_episode = 0
             self.prev_obst_quad_collisions = []
@@ -380,13 +381,17 @@ class QuadrotorEnvMulti(gym.Env):
         if self.use_obstacles:
 
             obst_quad_col_matrix = self.obstacles.collision_detection(pos_quads=self.pos)
-            self.obst_quad_collisions_per_episode += np.sum(obst_quad_col_matrix, axis=0)
+            self.obst_quad_collisions_per_episode += len(np.setdiff1d(obst_quad_col_matrix, self.prev_obst_quad_collisions))
+
+            self.prev_obst_quad_collisions = copy.deepcopy(obst_quad_col_matrix)
 
             rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
             if np.array(obst_quad_col_matrix).any():
                 # We assign penalties to the drones which collide with the obstacles
                 # And obst_quad_last_step_unique_collisions only include drones' id
-                rew_obst_quad_collisions_raw[obst_quad_col_matrix] = -1.0
+                #for coll in obst_quad_col_matrix:
+                #   if coll == 1:
+                rew_obst_quad_collisions_raw[np.where(np.array(obst_quad_col_matrix)==1)] = -1.0
 
             # TODO CHANGE quadcol_bin -> quadcol_bin_obst
             rew_collisions_obst_quad = self.rew_coeff["quadcol_bin_obst"] * rew_obst_quad_collisions_raw
@@ -502,6 +507,11 @@ class QuadrotorEnvMulti(gym.Env):
                         'num_collisions_after_settle': self.collisions_after_settle,
                         f'num_collisions_{self.scenario.name()}': self.collisions_after_settle,
                     }
+                    if self.use_obstacles:
+                        infos[i]['episode_extra_stats']['num_collisions_obst_quad'] = \
+                            self.obst_quad_collisions_per_episode
+                        infos[i]['episode_extra_stats'][f'num_collisions_obst_{self.scenario.name()}'] = \
+                            self.obst_quad_collisions_per_episode
 
             obs = self.reset()
             dones = [True] * len(dones)  # terminate the episode for all "sub-envs"
