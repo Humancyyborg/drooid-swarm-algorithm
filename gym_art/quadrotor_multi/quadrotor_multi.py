@@ -349,7 +349,7 @@ class QuadrotorEnvMulti(gym.Env):
             quads_pos = np.array([e.dynamics.pos for e in self.envs])
             obs = self.obstacles.reset(obs=obs, quads_pos=quads_pos, start_point=self.scenario.start_point, end_point=self.scenario.end_point)#, scenario_mode=self.scenario.scenario_mode)
             self.obst_quad_collisions_per_episode = 0
-            self.prev_obst_quad_collisions = []
+            self.prev_obst_quad_collisions = [0] * self.num_agents
 
         self.all_collisions = {val: [0.0 for _ in range(len(self.envs))] for val in ['drone', 'ground', 'obstacle']}
 
