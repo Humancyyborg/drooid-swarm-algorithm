@@ -48,6 +48,17 @@ class MultiObstacles:
         
         return collision_matrix
 
+    def collision_detection_1(self, pos_quads=None):
+        drone_collision = []
+
+        for i, quad in enumerate(pos_quads):
+            curr = self.octree.SDFDist(quad)
+            # TODO
+            if curr < 0.05:
+                drone_collision.append(i)
+
+        return drone_collision
+
     def closest_obstacle(self, pos):
         minimum = self.room_dims[0]+1
         closest = [0, 0, 0]
