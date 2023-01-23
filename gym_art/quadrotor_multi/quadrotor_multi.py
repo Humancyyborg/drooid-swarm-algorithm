@@ -380,13 +380,13 @@ class QuadrotorEnvMulti(gym.Env):
         ### Obstacle Collision ###
         if self.use_obstacles:
 
-            obst_quad_col_matrix = self.obstacles.collision_detection(pos_quads=self.pos)
-            for i in range(self.num_agents):
-                if obst_quad_col_matrix[i] == 1:
-                    self.obst_quad_collisions_per_episode += obst_quad_col_matrix[i] #- self.prev_obst_quad_collisions[i]
-            #self.obst_quad_collisions_per_episode += np.sum(obst_quad_col_matrix)len(np.setdiff1d(obst_quad_col_matrix, self.prev_obst_quad_collisions))
+            # obst_quad_col_matrix = self.obstacles.collision_detection(pos_quads=self.pos)
+            obst_quad_col_matrix = self.obstacles.collision_detection_1(pos_quads=self.pos)
+            # self.curr_obst_quad_collisions = obst_quad_col_matrix
+            curr_quad_col = np.setdiff1d(obst_quad_col_matrix, self.prev_obst_quad_collisions)
+            self.obst_quad_collisions_per_episode += len(curr_quad_col)
 
-            self.prev_obst_quad_collisions = copy.deepcopy(obst_quad_col_matrix)
+            self.prev_obst_quad_collisions = obst_quad_col_matrix
 
             rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
             if np.array(obst_quad_col_matrix).any():
