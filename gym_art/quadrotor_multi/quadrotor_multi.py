@@ -392,9 +392,9 @@ class QuadrotorEnvMulti(gym.Env):
             if np.array(obst_quad_col_matrix).any():
                 # We assign penalties to the drones which collide with the obstacles
                 # And obst_quad_last_step_unique_collisions only include drones' id
-                #for coll in obst_quad_col_matrix:
-                #   if coll == 1:
-                rew_obst_quad_collisions_raw[np.where(np.array(obst_quad_col_matrix)==1)] = -1.0
+                for i in curr_quad_col:
+                    rew_obst_quad_collisions_raw[i] = -1.0
+                #rew_obst_quad_collisions_raw[np.where(np.array(obst_quad_col_matrix)==1)] = -1.0
 
             # TODO CHANGE quadcol_bin -> quadcol_bin_obst
             rew_collisions_obst_quad = self.rew_coeff["quadcol_bin_obst"] * rew_obst_quad_collisions_raw
