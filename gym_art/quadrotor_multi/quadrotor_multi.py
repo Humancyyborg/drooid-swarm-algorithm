@@ -396,11 +396,10 @@ class QuadrotorEnvMulti(gym.Env):
             #     #for coll in obst_quad_col_matrix:
             #     #   if coll == 1:
             #     rew_obst_quad_collisions_raw[np.where(np.array(obst_quad_col_matrix) == 1)] = -1.0
-            for i in curr_quad_col:
-                rew_obst_quad_collisions_raw[i] = -1.0
-
-            # if len(curr_quad_col) != 0:
-            #     print(1)
+            # for i in curr_quad_col:
+            #     rew_obst_quad_collisions_raw[i] = -1.0
+            if len(curr_quad_col) >= 1:
+                rew_obst_quad_collisions_raw[curr_quad_col] = -1.0
 
             # TODO CHANGE quadcol_bin -> quadcol_bin_obst
             rew_collisions_obst_quad = self.rew_coeff["quadcol_bin_obst"] * rew_obst_quad_collisions_raw
