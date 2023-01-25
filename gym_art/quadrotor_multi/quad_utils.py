@@ -274,7 +274,7 @@ def calculate_obst_drone_proximity_penalties(distances, arm, dt, penalty_fall_of
         # smooth penalties is disabled, so noop
         return np.zeros(num_agents)
     penalties = (-max_penalty / (penalty_fall_off * arm + obstacles_radius)) * distances + max_penalty
-
+    penalties = np.maximum(penalties, 0.0)
     return dt * penalties  # actual penalties per tick to be added to the overall reward
 
 

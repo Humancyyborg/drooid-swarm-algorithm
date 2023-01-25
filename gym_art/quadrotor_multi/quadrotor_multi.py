@@ -407,7 +407,6 @@ class QuadrotorEnvMulti(gym.Env):
             # penalties for low distance between obstacles and drones
             drone_obst_dists = np.array([self.obstacles.octree.SDFDist(i.dynamics.pos) for i in self.envs])
 
-
             # TODO CHANGE quadcol_bin_smooth_max -> quadcol_bin_obst_smooth_max, penalty_fall_off
             rew_obst_quad_proximity = -1.0 * calculate_obst_drone_proximity_penalties(
                 distances=drone_obst_dists, arm=self.quad_arm, dt=self.control_dt,
