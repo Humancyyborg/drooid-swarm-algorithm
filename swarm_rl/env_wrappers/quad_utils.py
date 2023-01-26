@@ -66,6 +66,8 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
             AnnealSchedule('quadcol_bin_smooth_max', cfg.quads_collision_smooth_max_penalty, cfg.anneal_collision_steps),
             AnnealSchedule('quadcol_bin_obst', cfg.quads_obst_collision_reward, cfg.anneal_collision_steps),
             AnnealSchedule('quadcol_bin_obst_smooth_max', cfg.quads_obst_collision_smooth_max_penalty, cfg.anneal_collision_steps),
+            AnnealSchedule('quadcol_coeff', cfg.quads_collision_coeff, cfg.anneal_collision_steps),
+            AnnealSchedule('quadcol_obsts_coeff', cfg.quads_collision_coeff, cfg.anneal_collision_steps),
         ]
     else:
         annealing = None

@@ -77,7 +77,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.rew_coeff = dict(
             pos=1., effort=0.05, action_change=0., crash=1., orient=1., yaw=0., rot=0., attitude=0., spin=0.1, vel=0.,
             quadcol_bin=0., quadcol_bin_smooth_max=0., quadcol_bin_obst=0., quadcol_bin_obst_smooth_max=0.,
-            quadsettle=0.
+            quadsettle=0., quadcol_coeff=0., quadcol_obst_coeff=0.
         )
         rew_coeff_orig = copy.deepcopy(self.rew_coeff)
 
@@ -467,10 +467,12 @@ class QuadrotorEnvMulti(gym.Env):
         # Applying random forces between drones
         if self.apply_collision_force:
             for val in self.curr_drone_collisions:
-                perform_collision_between_drones(self.envs[val[0]].dynamics, self.envs[val[1]].dynamics)
+                perform_collision_between_drones(self.envs[val[0]].dynamics, self.envs[val[1]].dynamics,
+                                                 col_coeff=self.rew_coeff["quadcol_coeff"])
             for i, val in enumerate(obst_quad_col_matrix):
                 if val == 1:
-                    perform_collision_with_obstacle(drone_dyn=self.envs[i].dynamics, obstacle_pos=self.obstacles.closest_obstacle(self.envs[i].dynamics.pos))
+                    perform_collision_with_obstacle(drone_dyn=self.envs[i].dynamics, obstacle_pos=self.obstacles.closest_obstacle(self.envs[i].dynamics.pos),
+                                                    col_coeff=self.rew_coeff["quadcol_obst_coeff"])
 
         for i in range(self.num_agents):
             rewards[i] += rew_collisions[i]

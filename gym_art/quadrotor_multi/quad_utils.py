@@ -293,12 +293,12 @@ def compute_col_norm_and_new_velocities(dyn1, dyn2):
 
 
 # This function is to change the velocities after a collision happens between two bodies
-def perform_collision_between_drones(dyn1, dyn2):
+def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
     v1new, v2new, collision_norm = compute_col_norm_and_new_velocities(dyn1, dyn2)
 
     # Solve for the new velocities using the elastic collision equations. It's really simple when the
-    dyn1.vel += (v2new - v1new) * collision_norm
-    dyn2.vel += (v1new - v2new) * collision_norm
+    dyn1.vel += (v2new - v1new) * collision_norm * col_coeff
+    dyn2.vel += (v1new - v2new) * collision_norm * col_coeff
 
     # Now adding two different random components,
     # One that preserves momentum in opposite directions
@@ -320,11 +320,11 @@ def perform_collision_between_drones(dyn1, dyn2):
     new_omega *= new_omega_magn
 
     # add the disturbance to drone's angular velocities while preserving angular momentum
-    dyn1.omega += new_omega
-    dyn2.omega -= new_omega
+    dyn1.omega += new_omega * col_coeff
+    dyn2.omega -= new_omega * col_coeff
 
 
-def perform_collision_with_obstacle(drone_dyn, obstacle_pos):
+def perform_collision_with_obstacle(drone_dyn, obstacle_pos, col_coeff=1.0):
     drone_vel_mag = np.linalg.norm(drone_dyn.vel) * np.random.uniform(low=0.5, high=0.7)
 
     drone_pos = drone_dyn.pos
