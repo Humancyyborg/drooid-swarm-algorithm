@@ -80,27 +80,19 @@ class OctTree:
     def get_pos_no_overlap(self, pos_item, pos_arr, obst_id):
         # In this function, we assume the shape of all obstacles is cube
         # But even if we have this assumption, we can still roughly use it for shapes like cylinder
-        if len(pos_arr) == 0:
+        if pos_arr.shape[1] == 0:
             return pos_item, False
-
-        range_shape = 0.5 * self.size
-
-        min_pos = pos_item - range_shape
-        max_pos = pos_item + range_shape
-        min_pos_arr = pos_arr - range_shape
-        max_pos_arr = pos_arr + range_shape
 
         overlap_flag = False
         for j in range(len(pos_arr)):
-            if all(min_pos < max_pos_arr[j]) and all(max_pos > min_pos_arr[j]):
+            if np.linalg.norm(pos_item - pos_arr[j][:2]) < 1.5*self.size:
                 overlap_flag = True
                 break
-
         return pos_item, overlap_flag
 
     def generate_obstacles(self, num_obstacles=0, start_point=np.array([-3.0, -2.0, 2.0]), end_point=np.array([3.0, 2.0, 2.0])):
         self.reset()
-        self.pos_arr = np.array([])
+        self.pos_arr = np.array([[]])
         #TODO Check Scenario Mode
         self.start_range = np.array([start_point[:2] + self.init_box[0][:2],  start_point[:2] + self.init_box[1][:2]])
         self.end_range = np.array([end_point[:2] + self.init_box[0][:2],  end_point[:2] + self.init_box[1][:2]])
@@ -112,9 +104,10 @@ class OctTree:
                 pos_item = np.array([pos_xy[0], pos_xy[1]])
                 final_pos_item, overlap_flag = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=self.pos_arr, obst_id=i)
                 if collide_flag is False and overlap_flag is False:
-                    self.pos_arr = np.append(self.pos_arr, np.append(np.asarray(final_pos_item), pos_z))
+                    if self.pos_arr.shape[1] == 0:
+                        self.pos_arr = np.array([np.append(np.asarray(final_pos_item), pos_z)])
+                    self.pos_arr = np.append(self.pos_arr, np.array([np.append(np.asarray(final_pos_item), pos_z)]), axis=0)
                     break
-        self.pos_arr = self.pos_arr.reshape((len(self.pos_arr)//3, 3))
 
         self.mark_octree()
         self.generateSDF()
@@ -173,3 +166,7 @@ class OctTree:
 
         state = np.array(state)
         return state
+
+oct = OctTree(resolution=0.05)
+oct.generate_obstacles(num_obstacles=8)
+print(oct.pos_arr)
