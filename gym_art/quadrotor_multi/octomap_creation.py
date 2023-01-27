@@ -55,7 +55,7 @@ class OctTree:
         rot_pos_y = middle_point[1] + math.sin(alpha) * (pos_x - middle_point[0]) + math.cos(alpha) * (pos_y - middle_point[1])
 
         dist = lambda p1, p2: (p1[0] - p2[0])**2 + (p1[1] - p2[1])**2
-        rot_pos_x, rot_pos_y = min(self.cell_centers, key=lambda coord: dist(coord, (rot_pos_x, rot_pos_y)))
+        #rot_pos_x, rot_pos_y = min(self.cell_centers, key=lambda coord: dist(coord, (rot_pos_x, rot_pos_y)))
 
         rot_pos_x = np.clip(rot_pos_x, a_min=-self.half_room_length + self.grid_size, a_max=self.half_room_length - self.grid_size)
         rot_pos_y = np.clip(rot_pos_y, a_min=-self.half_room_width + self.grid_size, a_max=self.half_room_width - self.grid_size)
@@ -102,7 +102,8 @@ class OctTree:
                 y_gaussian_scale = self.y_gaussian_generation(regen_id=regen_id)
                 pos_xy, collide_flag = self.gaussian_pos(obst_id=i, y_gaussian_scale=y_gaussian_scale, goal_start_point=start_point, goal_end_point=end_point)
                 pos_item = np.array([pos_xy[0], pos_xy[1]])
-                final_pos_item, overlap_flag = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=self.pos_arr, obst_id=i)
+                final_pos_item, overlap_flag = pos_item, False
+                #self.get_pos_no_overlap(pos_item=pos_item, pos_arr=self.pos_arr, obst_id=i)
                 if collide_flag is False and overlap_flag is False:
                     if self.pos_arr.shape[1] == 0:
                         self.pos_arr = np.array([np.append(np.asarray(final_pos_item), pos_z)])
@@ -116,8 +117,6 @@ class OctTree:
     
     def mark_octree(self):
         range_shape = 0.5 * self.size
-        #[self.room_dims[0]//2, self.room_dims[1]//2, self.room_dims[2]//2]
-        #[[-1, -1, -1], [-1, -1, 1], [-1, 1, -1], [-1, 1, 1], [1, -1, -1], [1, -1, 1], [1, 1, -1], [1, 1, 1]]
         self.octree.updateNode([-1*self.room_dims[0]//2, -1*self.room_dims[1]//2, -1*self.room_dims[2]//2], False)
         self.octree.updateNode([-1 * self.room_dims[0] // 2, -1 * self.room_dims[1] // 2, self.room_dims[2] // 2],
                                False)
@@ -149,7 +148,7 @@ class OctTree:
                                     self.octree.updateNode([x, y, z], True)
 
     def generateSDF(self):
-        self.octree.dynamicEDT_generate((3**0.5)*max(self.room_dims),
+        self.octree.dynamicEDT_generate(2,
                                         np.array([-1*self.room_dims[0]/2, -1*self.room_dims[1]/2, -1*self.room_dims[2]/2]), 
                                         np.array([self.room_dims[0]/2, self.room_dims[1]/2, self.room_dims[2]/2]))
         self.octree.dynamicEDT_update(True)
@@ -166,7 +165,3 @@ class OctTree:
 
         state = np.array(state)
         return state
-
-oct = OctTree(resolution=0.05)
-oct.generate_obstacles(num_obstacles=8)
-print(oct.pos_arr)
