@@ -53,4 +53,5 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--replay_buffer_sample_prob', default=0.0, type=float, help='Probability at which we sample from it rather than resetting the env. Set to 0.0 (default) to disable the replay. Set to value in (0.0, 1.0] to use replay buffer')
 
     p.add_argument('--anneal_collision_steps', default=0.0, type=float, help='Anneal collision penalties over this many steps. Default (0.0) is no annealing')
+    p.add_argument('--anneal_collision_sim_steps', default=0.0, type=float, help='Anneal simulation of collision over this many steps. Default (0.0) is no annealing')
     p.add_argument('--use_spectral_norm', default=False, type=str2bool, help="Use spectral normalization to smoothen the gradients and stabilize training. Only supports fully connected layers")
