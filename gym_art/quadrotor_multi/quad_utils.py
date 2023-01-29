@@ -292,6 +292,18 @@ def compute_col_norm_and_new_velocities(dyn1, dyn2):
     return v1new, v2new, collision_norm
 
 
+def compute_col_norm_and_new_vel_obst(dyn, obstacle_pos):
+    collision_norm = dyn.pos - obstacle_pos
+    coll_norm_mag = np.linalg.norm(collision_norm)
+    collision_norm = collision_norm / (coll_norm_mag + 0.00001 if coll_norm_mag == 0.0 else coll_norm_mag)
+
+    # Get the components of the velocity vectors which are parallel to the collision.
+    # The perpendicular component remains the same.
+    vnew = np.dot(dyn.vel, collision_norm)
+
+    return vnew, collision_norm
+
+
 # This function is to change the velocities after a collision happens between two bodies
 def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
     v1new, v2new, collision_norm = compute_col_norm_and_new_velocities(dyn1, dyn2)
@@ -325,28 +337,34 @@ def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
 
 
 def perform_collision_with_obstacle(drone_dyn, obstacle_pos, col_coeff=1.0):
-    drone_vel_mag = np.linalg.norm(drone_dyn.vel) * np.random.uniform(low=0.5, high=0.7)
+    # drone_vel_mag = np.linalg.norm(drone_dyn.vel) * np.random.uniform(low=0.5, high=0.7)
+    #
+    # drone_pos = drone_dyn.pos
+    # shift_pos = drone_pos - obstacle_pos
+    #
+    # pos_mag = np.linalg.norm(shift_pos)
+    # shift_pos = shift_pos / (pos_mag + 0.0001 if pos_mag == 0.0 else pos_mag)
+    #
+    # new_shift_pos = deepcopy(shift_pos)
+    #
+    # for regen in range(3):
+    #     new_shift_pos[0] += np.random.uniform(low=shift_pos[0] * -0.4, high=shift_pos[0] * 0.4)
+    #     new_shift_pos[1] += np.random.uniform(low=shift_pos[1] * -0.4, high=shift_pos[1] * 0.4)
+    #     new_shift_pos[2] = np.random.uniform(low=-1.3, high=-0.7)
+    #     if np.dot(shift_pos[:2], new_shift_pos[:2]) > 0:
+    #         shift_pos = new_shift_pos
+    #         break
+    #
+    # direction_mag = np.linalg.norm(shift_pos)
+    # direction_norm = shift_pos / (direction_mag + 0.00001 if direction_mag == 0.0 else direction_mag)
+    #
+    # drone_dyn.vel = direction_norm * drone_vel_mag
 
-    drone_pos = drone_dyn.pos
-    shift_pos = drone_pos - obstacle_pos
+    vnew, collision_norm = compute_col_norm_and_new_vel_obst(drone_dyn, obstacle_pos)
+    drone_dyn.vel -= vnew * collision_norm * col_coeff
 
-    pos_mag = np.linalg.norm(shift_pos)
-    shift_pos = shift_pos / (pos_mag + 0.0001 if pos_mag == 0.0 else pos_mag)
-
-    new_shift_pos = deepcopy(shift_pos)
-
-    for regen in range(3):
-        new_shift_pos[0] += np.random.uniform(low=shift_pos[0] * -0.4, high=shift_pos[0] * 0.4)
-        new_shift_pos[1] += np.random.uniform(low=shift_pos[1] * -0.4, high=shift_pos[1] * 0.4)
-        new_shift_pos[2] = np.random.uniform(low=-1.3, high=-0.7)
-        if np.dot(shift_pos[:2], new_shift_pos[:2]) > 0:
-            shift_pos = new_shift_pos
-            break
-
-    direction_mag = np.linalg.norm(shift_pos)
-    direction_norm = shift_pos / (direction_mag + 0.00001 if direction_mag == 0.0 else direction_mag)
-
-    drone_dyn.vel = direction_norm * drone_vel_mag
+    cons_rand_val = np.random.normal(0, 0.8, 3)
+    drone_dyn.vel += cons_rand_val + np.random.normal(0, 0.15, 3)
 
     # Random forces for omega
     omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
@@ -360,7 +378,7 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_pos, col_coeff=1.0):
 
     # add the disturbance to drone's angular velocities while preserving angular momentum
     # Currently, our obstacle doesn't support omega / angle velocity, we only change omega of drone
-    drone_dyn.omega += new_omega
+    drone_dyn.omega += new_omega * col_coeff
 
 def perform_collision_with_wall(drone_dyn, room_box, damp_low_speed_ratio=0.2, damp_high_speed_ratio=0.8,
                                 lowest_speed=0.1, highest_speed=6.0, eps=1e-5):
