@@ -316,14 +316,8 @@ class QuadrotorDynamics:
                 self.reset()
                 self.on_floor = True
 
-            # if not self.hit_floor:
-            #     self.hit_floor = True
-            # else:
-            #     self.pos[2] = self.arm
-
         thrust_cmds = np.clip(thrust_cmds, a_min=0., a_max=1.)
-        # if self.hit_floor:
-        #     thrust_cmds = npa(1, 1, 1, 1)
+
         ###################################
         ## Filtering the thruster and adding noise
         # I use the multiplier 4, since 4*T ~ time for a step response to finish, where
@@ -466,10 +460,6 @@ class QuadrotorDynamics:
 
         # Clipping if met the obstacle and nullify velocities (not sure what to do about accelerations)
         self.pos_before_clip = self.pos.copy()
-
-        # self.crashed_wall = not np.array_equal(
-        #     self.pos[:2], np.clip(self.pos[:2], a_min=self.room_box[0][:2], a_max=self.room_box[1][:2]))
-
         self.pos = np.clip(self.pos, a_min=self.room_box[0], a_max=self.room_box[1])
 
         self.crashed_wall = not np.array_equal(self.pos_before_clip[:2], self.pos[:2])
@@ -703,13 +693,9 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
     ##################################################
     ## Loss orientation
     if on_floor:
-        cost_orient_raw = 0.
-        # cost_orient = -1.
+        cost_orient_raw = -1.0
     else:
         cost_orient_raw = -dynamics.rot[2, 2]
-
-    # if flipped:
-    #     cost_flipped = 10
 
     cost_orient = rew_coeff["orient"] * cost_orient_raw
 
@@ -1078,7 +1064,7 @@ class QuadrotorSingle:
             "nbr_dist": [np.zeros(1), room_max_dist],
             "nbr_goal_dist": [np.zeros(1), room_max_dist],
             "wall": [np.zeros(6), 5.0 * np.ones(6)],
-            "octmap": [-10 * np.ones(27), 10 * np.ones(27)],
+            "octmap": [-10 * np.ones(9), 10 * np.ones(9)],
         }
         self.obs_comp_names = list(self.obs_space_low_high.keys())
         self.obs_comp_sizes = [self.obs_space_low_high[name][1].size for name in self.obs_comp_names]
