@@ -36,7 +36,7 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obstacle_num', default=0, type=int, help='Set obstacle number')
     p.add_argument('--quads_obst_collision_reward', default=0.0, type=float, help='Override default value for quadcol_bin_obst reward, which means collisions between quadrotors')
     p.add_argument('--quads_obst_collision_smooth_max_penalty', default=10.0, type=float, help='The upper bound of the collision function given distance among drones')
-    p.add_argument('--use_downwash', default=True, type=bool, help='Apply downwash or not')
+    p.add_argument('--use_downwash', default=False, type=bool, help='Apply downwash or not')
 
     p.add_argument('--neighbor_obs_type', default='none', type=str, choices=['none', 'pos_vel', 'pos_vel_goals', 'pos_vel_goals_ndist_gdist'], help='Choose what kind of obs to send to encoder.')
     p.add_argument('--quads_use_numba', default=False, type=str2bool, help='Whether to use numba for jit or not')
