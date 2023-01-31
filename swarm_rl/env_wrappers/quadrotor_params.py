@@ -34,10 +34,11 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--use_obstacles', default=False, type=str2bool, help='Use Obstacles or not')
     p.add_argument('--quads_obstacle_mode', default='no_obstacles', type=str, choices=['no_obstacles', 'static'], help='Choose which obstacle mode to run')
     p.add_argument('--quads_obstacle_num', default=0, type=int, help='Set obstacle number')
+
     p.add_argument('--quads_obst_collision_reward', default=0.0, type=float, help='Override default value for quadcol_bin_obst reward, which means collisions between quadrotor and obstacles')
     p.add_argument('--quads_obst_collision_smooth_max_penalty', default=10.0, type=float, help='The upper bound of the collision function given distance between drones and obstacles')
     p.add_argument('--quads_collision_coeff', default=1.0, type=float, help='The coefficient for collision simulation between drones')
-    p.add_argument('--use_downwash', default=True, type=bool, help='Apply downwash or not')
+    p.add_argument('--use_downwash', default=False, type=bool, help='Apply downwash or not')
 
     p.add_argument('--neighbor_obs_type', default='none', type=str, choices=['none', 'pos_vel', 'pos_vel_goals', 'pos_vel_goals_ndist_gdist'], help='Choose what kind of obs to send to encoder.')
     p.add_argument('--quads_use_numba', default=False, type=str2bool, help='Whether to use numba for jit or not')
