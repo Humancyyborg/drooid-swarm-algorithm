@@ -346,8 +346,8 @@ def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
     # One that preserves momentum in opposite directions
     # Second that does not preserve momentum
     cons_rand_val = np.random.normal(0, 0.8, 3)
-    dyn1.vel += cons_rand_val + np.random.normal(0, 0.15, 3)
-    dyn2.vel += -cons_rand_val + np.random.normal(0, 0.15, 3)
+    dyn1.vel += (cons_rand_val + np.random.normal(0, 0.15, 3)) * col_coeff
+    dyn2.vel += (-cons_rand_val + np.random.normal(0, 0.15, 3)) * col_coeff
 
     # Random forces for omega
     omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
@@ -394,7 +394,7 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_pos, col_coeff=1.0):
     drone_dyn.vel -= vnew * collision_norm * col_coeff
 
     cons_rand_val = np.random.normal(0, 0.8, 3)
-    drone_dyn.vel += cons_rand_val + np.random.normal(0, 0.15, 3)
+    drone_dyn.vel += (cons_rand_val + np.random.normal(0, 0.15, 3)) * col_coeff
 
     # Random forces for omega
     omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
