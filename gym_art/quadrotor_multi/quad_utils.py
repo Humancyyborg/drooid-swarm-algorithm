@@ -390,6 +390,12 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_pos, col_coeff=1.0):
     #
     # drone_dyn.vel = direction_norm * drone_vel_mag
 
+    vnew, collision_norm = compute_col_norm_and_new_vel_obst(drone_dyn, obstacle_pos)
+    drone_dyn.vel -= vnew * collision_norm * col_coeff
+
+    cons_rand_val = np.random.normal(0, 0.8, 3)
+    drone_dyn.vel += cons_rand_val + np.random.normal(0, 0.15, 3)
+
     # Random forces for omega
     omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
     new_omega = np.random.uniform(low=-1, high=1, size=(3,)) + EPS  # random direction in 3D space
