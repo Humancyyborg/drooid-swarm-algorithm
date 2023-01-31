@@ -333,80 +333,89 @@ def compute_col_norm_and_new_vel_obst(dyn, obstacle_pos):
 
     return vnew, collision_norm
 
+def compute_new_vel(max_vel_magn, vel, vel_shift, coeff):
+    vel_decay_ratio = np.random.uniform(low=0.2, high=0.8)
+    vel_new = vel + vel_shift
+    vel_new_mag = np.linalg.norm(vel_new)
+    vel_new_dir = vel_new / (vel_new_mag + EPS if vel_new_mag == 0.0 else vel_new_mag)
+    vel_new_mag = min(vel_new_mag * vel_decay_ratio, max_vel_magn)
+    vel_new = vel_new_dir * vel_new_mag
+
+    vel_shift = vel_new - vel
+    vel += vel_shift * coeff
+    return vel
+
+def compute_new_omega():
+    # Random forces for omega
+    # This will amount to max 3.5 revolutions per second
+    omega_max = 20 * np.pi
+    omega = np.random.uniform(low=-1, high=1, size=(3,))
+    omega_mag = np.linalg.norm(omega)
+
+    omega_dir = omega / (omega_mag + EPS if omega_mag == 0.0 else omega_mag)
+    omega_mag = np.random.uniform(low=omega_max / 2, high=omega_max)
+    omega = omega_dir * omega_mag
+
+    return omega
 
 # This function is to change the velocities after a collision happens between two bodies
 def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
-    v1new, v2new, collision_norm = compute_col_norm_and_new_velocities(dyn1, dyn2)
-
-    # Solve for the new velocities using the elastic collision equations. It's really simple when the
-    dyn1.vel += (v2new - v1new) * collision_norm * col_coeff
-    dyn2.vel += (v1new - v2new) * collision_norm * col_coeff
-
-    # Now adding two different random components,
+    # Solve for the new velocities using the elastic collision equations.
+    # vel noise has two different random components,
     # One that preserves momentum in opposite directions
     # Second that does not preserve momentum
-    cons_rand_val = np.random.normal(0, 0.8, 3)
-    dyn1.vel += (cons_rand_val + np.random.normal(0, 0.15, 3)) * col_coeff
-    dyn2.vel += (-cons_rand_val + np.random.normal(0, 0.15, 3)) * col_coeff
+    v1new, v2new, collision_norm = compute_col_norm_and_new_velocities(dyn1, dyn2)
+    vel_change = (v2new - v1new) * collision_norm
+    dyn1_vel_shift = vel_change
+    dyn2_vel_shift = -vel_change
 
-    # Random forces for omega
-    omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
-    eps = 1e-5
-    new_omega = np.random.uniform(low=-1, high=1, size=(3,))  # random direction in 3D space
-    while all(np.abs(new_omega) < eps):
-        new_omega = np.random.uniform(low=-1, high=1, size=(3,))  # just to make sure we don't get a 0-vector
+    # Make sure new vel direction would be opposite to the original vel direction
+    for _ in range(3):
+        cons_rand_val = np.random.normal(loc=0, scale=0.8, size=3)
+        vel1_noise = cons_rand_val + np.random.normal(loc=0, scale=0.15, size=3)
+        vel2_noise = -cons_rand_val + np.random.normal(loc=0, scale=0.15, size=3)
 
-    new_omega /= np.linalg.norm(new_omega) + eps  # normalize
+        dyn1_vel_shift = vel_change + vel1_noise
+        dyn2_vel_shift = -vel_change + vel2_noise
 
-    new_omega_magn = np.random.uniform(low=omega_max / 2, high=omega_max)  # random magnitude of the force
-    new_omega *= new_omega_magn
+        dyn1_new_vel_dir = np.dot(dyn1.vel + dyn1_vel_shift, collision_norm)
+        dyn2_new_vel_dir = np.dot(dyn2.vel + dyn2_vel_shift, collision_norm)
 
-    # add the disturbance to drone's angular velocities while preserving angular momentum
+        if dyn1_new_vel_dir > 0 > dyn2_new_vel_dir:
+            break
+
+    # Get new vel
+    max_vel_magn = max(np.linalg.norm(dyn1.vel), np.linalg.norm(dyn2.vel))
+    dyn1.vel=compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn1.vel, vel_shift=dyn1_vel_shift, coeff=col_coeff)
+    dyn2.vel=compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn2.vel, vel_shift=dyn2_vel_shift, coeff=col_coeff)
+
+
+    # Get new omega
+    new_omega = compute_new_omega()
     dyn1.omega += new_omega * col_coeff
     dyn2.omega -= new_omega * col_coeff
 
 
 def perform_collision_with_obstacle(drone_dyn, obstacle_pos, col_coeff=1.0):
-    # drone_vel_mag = np.linalg.norm(drone_dyn.vel) * np.random.uniform(low=0.5, high=0.7)
-    #
-    # drone_pos = drone_dyn.pos
-    # shift_pos = drone_pos - obstacle_pos
-    #
-    # pos_mag = np.linalg.norm(shift_pos)
-    # shift_pos = shift_pos / (pos_mag + 0.0001 if pos_mag == 0.0 else pos_mag)
-    #
-    # new_shift_pos = deepcopy(shift_pos)
-    #
-    # for regen in range(3):
-    #     new_shift_pos[0] += np.random.uniform(low=shift_pos[0] * -0.4, high=shift_pos[0] * 0.4)
-    #     new_shift_pos[1] += np.random.uniform(low=shift_pos[1] * -0.4, high=shift_pos[1] * 0.4)
-    #     new_shift_pos[2] = np.random.uniform(low=-1.3, high=-0.7)
-    #     if np.dot(shift_pos[:2], new_shift_pos[:2]) > 0:
-    #         shift_pos = new_shift_pos
-    #         break
-    #
-    # direction_mag = np.linalg.norm(shift_pos)
-    # direction_norm = shift_pos / (direction_mag + 0.00001 if direction_mag == 0.0 else direction_mag)
-    #
-    # drone_dyn.vel = direction_norm * drone_vel_mag
-
+    # Vel noise has two different random components,
+    # One that preserves momentum in opposite directions
+    # Second that does not preserve momentum
     vnew, collision_norm = compute_col_norm_and_new_vel_obst(drone_dyn, obstacle_pos)
-    drone_dyn.vel -= vnew * collision_norm * col_coeff
+    vel_change = -vnew * collision_norm
 
-    cons_rand_val = np.random.normal(0, 0.8, 3)
-    drone_dyn.vel += (cons_rand_val + np.random.normal(0, 0.15, 3)) * col_coeff
+    dyn_vel_shift = vel_change
+    for _ in range(3):
+        cons_rand_val = np.random.normal(loc=0, scale=0.8, size=3)
+        vel_noise = cons_rand_val + np.random.normal(loc=0, scale=0.15, size=3)
+        dyn_vel_shift = vel_change + vel_noise
+        if np.dot(drone_dyn.vel + dyn_vel_shift, collision_norm) > 0:
+            break
+
+    max_vel_magn = np.linalg.norm(drone_dyn.vel)
+    drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel, vel_shift=dyn_vel_shift, coeff=col_coeff)
 
     # Random forces for omega
-    omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
-    new_omega = np.random.uniform(low=-1, high=1, size=(3,)) + EPS  # random direction in 3D space
-
-    new_omega /= np.linalg.norm(new_omega) + EPS  # normalize
-
-    new_omega_magn = np.random.uniform(low=omega_max / 2, high=omega_max)  # random magnitude of the force
-    new_omega *= new_omega_magn
-
-    # add the disturbance to drone's angular velocities while preserving angular momentum
-    # Currently, our obstacle doesn't support omega / angle velocity, we only change omega of drone
+    new_omega = compute_new_omega()
     drone_dyn.omega += new_omega * col_coeff
 
 
