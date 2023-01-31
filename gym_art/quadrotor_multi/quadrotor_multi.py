@@ -166,7 +166,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.collision_falloff_radius = collision_falloff_radius
         self.collision_smooth_max_penalty = collision_smooth_max_penalty
 
-        self.prev_drone_collisions, self.curr_drone_collisions = [], []
+        self.prev_drone_collisions = []
         self.all_collisions = {}
         self.apply_collision_force = collision_force
 
@@ -339,7 +339,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.all_collisions = {val: [0.0 for _ in range(len(self.envs))] for val in ['drone', 'ground', 'obstacle']}
 
         self.collisions_per_episode = self.collisions_after_settle = 0
-        self.prev_drone_collisions, self.curr_drone_collisions = [], []
+        self.prev_drone_collisions = []
 
         self.reset_scene = True
         self.crashes_last_episode = 0
@@ -402,10 +402,10 @@ class QuadrotorEnvMulti(gym.Env):
             self.crashes_last_episode += infos[0]["rewards"]["rew_crash"]
 
         # Calculating collisions between drones
-        drone_col_matrix, self.curr_drone_collisions, distance_matrix = \
+        drone_col_matrix, curr_drone_collisions, distance_matrix = \
             calculate_collision_matrix(self.pos, self.quad_arm, self.collision_hitbox_radius)
 
-        self.last_step_unique_collisions = np.setdiff1d(self.curr_drone_collisions, self.prev_drone_collisions)
+        self.last_step_unique_collisions = np.setdiff1d(curr_drone_collisions, self.prev_drone_collisions)
 
         # collision between 2 drones counts as a single collision
         collisions_curr_tick = len(self.last_step_unique_collisions) // 2
@@ -415,7 +415,7 @@ class QuadrotorEnvMulti(gym.Env):
             if self.envs[0].tick >= self.collisions_grace_period_seconds * self.control_freq:
                 self.collisions_after_settle += collisions_curr_tick
 
-        self.prev_drone_collisions = self.curr_drone_collisions
+        self.prev_drone_collisions = curr_drone_collisions
 
         rew_collisions_raw = np.zeros(self.num_agents)
         if self.last_step_unique_collisions.any():
@@ -445,7 +445,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Applying random forces between drones
         if self.apply_collision_force:
-            for val in self.curr_drone_collisions:
+            for val in curr_drone_collisions:
                 perform_collision_between_drones(self.envs[val[0]].dynamics, self.envs[val[1]].dynamics)
             if self.use_obstacles:
                 for val in obst_quad_col_matrix:
