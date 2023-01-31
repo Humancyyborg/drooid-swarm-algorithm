@@ -30,13 +30,13 @@ QUADS_PARAMS_DICT = {
                 'dynamic_same_goal': [['circle_horizontal'], [0.0, 0.0], duration],
                 'ep_lissajous3D': [['circle_horizontal'], [0.0, 0.0], duration],
                 'ep_rand_bezier': [['circle_horizontal'], [0.0, 0.0], duration],
-                'static_diff_goal': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], duration],  # [36, 72] centimeters
-                'dynamic_diff_goal': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], duration],  # [36, 72] centimeters
+                'static_diff_goal': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], duration],
+                'dynamic_diff_goal': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], duration],
                 'swarm_vs_swarm': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], duration],
                 'swap_goals': [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], duration],
                 'dynamic_formations': [QUADS_FORMATION_LIST, [0.0, 20 * quad_arm_size], duration],
                 'circular_config': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], duration],
-                'run_away': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], duration],  # [36, 72] centimeters
+                'run_away': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], duration],
 
                 # For obstacles
                 'o_uniform_same_goal_spawn': [['circle_horizontal'], [0.0, 0.0], obstacle_duration],
