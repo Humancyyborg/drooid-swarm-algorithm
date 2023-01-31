@@ -1,5 +1,5 @@
 from sample_factory.launcher.run_description import Experiment, ParamGrid, RunDescription
-from swarm_rl.runs.quad_multi_mix_baseline import QUAD_BASELINE_CLI
+from swarm_rl.runs.quad_multi_mix_baseline import QUAD_BASELINE_CLI_8
 
 _params = ParamGrid(
     [
@@ -7,15 +7,16 @@ _params = ParamGrid(
     ]
 )
 
-SMALL_MODEL_CLI = QUAD_BASELINE_CLI + (
-    " --train_for_env_steps=10000000000 --num_workers=36 --num_envs_per_worker=4 "
-    "--quads_num_agents=8 --save_milestones_sec=10000 --async_rl=True --num_batches_to_accumulate=8 "
-    "--serial_mode=False --batched_sampling=True --normalize_input=False --normalize_returns=False "
+OBSTACLE_MODEL_CLI = QUAD_BASELINE_CLI_8 + (
+    '--train_for_env_steps=50000000 --num_workers=4 --use_obstacles=True --quads_obstacle_num=8 '
+    '--quads_obst_collision_smooth_max_penalty=10.0 --quads_obst_collision_reward=5.0 '
+    '--with_wandb=True --wandb_project=Quad-Swarm-RL --wandb_group=num-collisions-without-subtract --wandb_user=multi-drones '
+    '--anneal_collision_steps=300000000'#--room_dims 10 10 6'
 )
 
 _experiment = Experiment(
     "baseline_multi_drone",
-    SMALL_MODEL_CLI,
+    OBSTACLE_MODEL_CLI,
     _params.generate_params(randomize=False),
 )
 

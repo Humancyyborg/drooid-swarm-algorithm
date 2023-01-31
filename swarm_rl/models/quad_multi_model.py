@@ -18,7 +18,8 @@ class QuadNeighborhoodEncoder(nn.Module):
 
 
 class QuadNeighborhoodEncoderDeepsets(QuadNeighborhoodEncoder):
-    def __init__(self, cfg, neighbor_obs_dim, neighbor_hidden_size, use_spectral_norm, self_obs_dim, num_use_neighbor_obs):
+    def __init__(self, cfg, neighbor_obs_dim, neighbor_hidden_size, use_spectral_norm, self_obs_dim,
+                 num_use_neighbor_obs):
         super().__init__(cfg, self_obs_dim, neighbor_obs_dim, neighbor_hidden_size, num_use_neighbor_obs)
 
         self.embedding_mlp = nn.Sequential(
@@ -38,7 +39,8 @@ class QuadNeighborhoodEncoderDeepsets(QuadNeighborhoodEncoder):
 
 
 class QuadNeighborhoodEncoderAttention(QuadNeighborhoodEncoder):
-    def __init__(self, cfg, neighbor_obs_dim, neighbor_hidden_size, use_spectral_norm, self_obs_dim, num_use_neighbor_obs):
+    def __init__(self, cfg, neighbor_obs_dim, neighbor_hidden_size, use_spectral_norm, self_obs_dim,
+                 num_use_neighbor_obs):
         super().__init__(cfg, self_obs_dim, neighbor_obs_dim, neighbor_hidden_size, num_use_neighbor_obs)
 
         self.self_obs_dim = self_obs_dim
@@ -61,7 +63,8 @@ class QuadNeighborhoodEncoderAttention(QuadNeighborhoodEncoder):
 
         # outputs scalar score alpha_i for each neighbor i
         self.attention_mlp = nn.Sequential(
-            fc_layer(neighbor_hidden_size * 2, neighbor_hidden_size, spec_norm=use_spectral_norm),  # neighbor_hidden_size * 2 because we concat e_i and e_m
+            fc_layer(neighbor_hidden_size * 2, neighbor_hidden_size, spec_norm=use_spectral_norm),
+            # neighbor_hidden_size * 2 because we concat e_i and e_m
             nonlinearity(cfg),
             fc_layer(neighbor_hidden_size, neighbor_hidden_size, spec_norm=use_spectral_norm),
             nonlinearity(cfg),
@@ -97,7 +100,8 @@ class QuadNeighborhoodEncoderAttention(QuadNeighborhoodEncoder):
 
 
 class QuadNeighborhoodEncoderMlp(QuadNeighborhoodEncoder):
-    def __init__(self, cfg, neighbor_obs_dim, neighbor_hidden_size, use_spectral_norm, self_obs_dim, num_use_neighbor_obs):
+    def __init__(self, cfg, neighbor_obs_dim, neighbor_hidden_size, use_spectral_norm, self_obs_dim,
+                 num_use_neighbor_obs):
         super().__init__(cfg, self_obs_dim, neighbor_obs_dim, neighbor_hidden_size, num_use_neighbor_obs)
 
         self.self_obs_dim = self_obs_dim
@@ -130,7 +134,8 @@ class QuadMultiEncoder(Encoder):
             raise NotImplementedError(f'Layer {cfg.quads_obs_repr} not supported!')
 
         self.neighbor_hidden_size = cfg.quads_neighbor_hidden_size
-
+        self.use_obstacles = cfg.use_obstacles
+        self.obstacle_mode = cfg.quads_obstacle_mode
         self.neighbor_obs_type = cfg.neighbor_obs_type
         self.use_spectral_norm = cfg.use_spectral_norm
         if cfg.quads_local_obs == -1:
@@ -159,11 +164,13 @@ class QuadMultiEncoder(Encoder):
             neighbor_encoder_type = cfg.quads_neighbor_encoder_type
             if neighbor_encoder_type == 'mean_embed':
                 self.neighbor_encoder = QuadNeighborhoodEncoderDeepsets(cfg, self.neighbor_obs_dim,
-                                                                        self.neighbor_hidden_size, self.use_spectral_norm,
+                                                                        self.neighbor_hidden_size,
+                                                                        self.use_spectral_norm,
                                                                         self.self_obs_dim, self.num_use_neighbor_obs)
             elif neighbor_encoder_type == 'attention':
                 self.neighbor_encoder = QuadNeighborhoodEncoderAttention(cfg, self.neighbor_obs_dim,
-                                                                         self.neighbor_hidden_size, self.use_spectral_norm,
+                                                                         self.neighbor_hidden_size,
+                                                                         self.use_spectral_norm,
                                                                          self.self_obs_dim, self.num_use_neighbor_obs)
             elif neighbor_encoder_type == 'mlp':
                 self.neighbor_encoder = QuadNeighborhoodEncoderMlp(cfg, self.neighbor_obs_dim,
@@ -187,7 +194,21 @@ class QuadMultiEncoder(Encoder):
         )
         self_encoder_out_size = calc_num_elements(self.self_encoder, (self.self_obs_dim,))
 
-        total_encoder_out_size = self_encoder_out_size + neighbor_encoder_out_size
+        # encode the obstacle observations
+        obstacle_encoder_out_size = 0
+        if self.use_obstacles:
+            # Currently, obstacle height = room_height. Therefore, we only need SDFs in 2D plane
+            self.obstacle_obs_dim = 9
+            self.obstacle_hidden_size = cfg.quads_obst_hidden_size  # internal param
+            self.obstacle_encoder = nn.Sequential(
+                fc_layer(self.obstacle_obs_dim, self.obstacle_hidden_size, spec_norm=self.use_spectral_norm),
+                nonlinearity(cfg),
+                fc_layer(self.obstacle_hidden_size, self.obstacle_hidden_size, spec_norm=self.use_spectral_norm),
+                nonlinearity(cfg),
+            )
+            obstacle_encoder_out_size = calc_num_elements(self.obstacle_encoder, (self.obstacle_obs_dim,))
+
+        total_encoder_out_size = self_encoder_out_size + neighbor_encoder_out_size + obstacle_encoder_out_size
 
         # this is followed by another fully connected layer in the action parameterization, so we add a nonlinearity here
         self.feed_forward = nn.Sequential(
@@ -210,11 +231,18 @@ class QuadMultiEncoder(Encoder):
             neighborhood_embedding = self.neighbor_encoder(obs_self, obs, all_neighbor_obs_size, batch_size)
             embeddings = torch.cat((embeddings, neighborhood_embedding), dim=1)
 
+        # if self.obstacle_mode != 'no_obstacles':
+        if self.use_obstacles:
+            obs_obstacles = obs[:, self.self_obs_dim + all_neighbor_obs_size:]
+            obstacle_embeds = self.obstacle_encoder(obs_obstacles)
+            embeddings = torch.cat((embeddings, obstacle_embeds), dim=1)
+
         out = self.feed_forward(embeddings)
         return out
-    
+
     def get_out_size(self) -> int:
         return self.encoder_out_size
+
 
 def make_quadmulti_encoder(cfg, obs_space) -> Encoder:
     return QuadMultiEncoder(cfg, obs_space)

@@ -26,6 +26,18 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_collision_falloff_radius', default=0.0, type=float, help='The falloff radius for the smooth penalty. 0: radius is 0 arm_length, which means we would not add extra penalty except drones collide')
     p.add_argument('--quads_collision_smooth_max_penalty', default=10.0, type=float, help='The upper bound of the collision function given distance among drones')
 
+    p.add_argument('--quads_obst_hidden_size', default=256, type=int, help='The hidden size for the neighbor encoder')
+    p.add_argument('--quads_obst_encoder_type', default='attention', type=str, choices=['attention', 'mean_embed', 'mlp', 'no_encoder'], help='The type of the neighborhood encoder')
+    p.add_argument('--quads_collision_reward_obst', default=0.0, type=float, help='Override default value for quadcol_bin reward, which means collisions between quadrotors')
+    p.add_argument('--quads_collision_obst_falloff_radius', default=0.0, type=float, help='The falloff radius for the smooth penalty. 0: radius is 0 arm_length, which means we would not add extra penalty except drones collide')
+    p.add_argument('--quads_collision_obst_smooth_max_penalty', default=10.0, type=float, help='The upper bound of the collision function given distance among drones')
+    p.add_argument('--use_obstacles', default=False, type=str2bool, help='Use Obstacles or not')
+    p.add_argument('--quads_obstacle_mode', default='no_obstacles', type=str, choices=['no_obstacles', 'static'], help='Choose which obstacle mode to run')
+    p.add_argument('--quads_obstacle_num', default=0, type=int, help='Set obstacle number')
+    p.add_argument('--quads_obst_collision_reward', default=0.0, type=float, help='Override default value for quadcol_bin_obst reward, which means collisions between quadrotors')
+    p.add_argument('--quads_obst_collision_smooth_max_penalty', default=10.0, type=float, help='The upper bound of the collision function given distance among drones')
+    p.add_argument('--use_downwash', default=False, type=bool, help='Apply downwash or not')
+
     p.add_argument('--neighbor_obs_type', default='none', type=str, choices=['none', 'pos_vel', 'pos_vel_goals', 'pos_vel_goals_ndist_gdist'], help='Choose what kind of obs to send to encoder.')
     p.add_argument('--quads_use_numba', default=False, type=str2bool, help='Whether to use numba for jit or not')
     p.add_argument('--quads_local_obs', default=-1, type=int, help='Number of neighbors to consider. -1=all neighbors. 0=blind agents, 0<n<num_agents-1 = nonzero number of agents')
