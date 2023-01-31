@@ -34,7 +34,8 @@ class QuadrotorEnvMulti(gym.Env):
                  collision_force=True, local_obs=-1, collision_hitbox_radius=2.0,
                  collision_falloff_radius=2.0, collision_smooth_max_penalty=10.0, use_replay_buffer=False,
                  vis_acc_arrows=False, viz_traces=25, viz_trace_nth_step=1,
-                 use_obstacles=False, num_obstacles=0, obstacle_size=0.0, octree_resolution=0.05, use_downwash=False):
+                 use_obstacles=False, num_obstacles=0, obstacle_size=0.0, octree_resolution=0.05, use_downwash=False,
+                 env_seed=None):
 
         super().__init__()
 
@@ -61,7 +62,7 @@ class QuadrotorEnvMulti(gym.Env):
                 obs_repr, ep_time, room_length, room_width, room_height, init_random_state,
                 rew_coeff, sense_noise, verbose, gravity, t2w_std, t2t_std, excite, dynamics_simplification,
                 quads_use_numba, self.swarm_obs, self.num_agents, quads_view_mode,
-                self.num_use_neighbor_obs, use_obstacles=use_obstacles
+                self.num_use_neighbor_obs, use_obstacles=use_obstacles, env_seed=env_seed
             )
             self.envs.append(e)
 
@@ -77,7 +78,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.rew_coeff = dict(
             pos=1., effort=0.05, action_change=0., crash=1., orient=1., yaw=0., rot=0., attitude=0., spin=0.1, vel=0.,
             quadcol_bin=0., quadcol_bin_smooth_max=0., quadcol_bin_obst=0., quadcol_bin_obst_smooth_max=0.,
-            quadsettle=0.
+            quadsettle=0., quadcol_coeff=1., quadcol_obst_coeff=1.
         )
         rew_coeff_orig = copy.deepcopy(self.rew_coeff)
 
@@ -370,6 +371,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.prev_obst_quad_collisions = obst_quad_col_matrix
 
             rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
+
             if np.array(obst_quad_col_matrix).any():
                 # We assign penalties to the drones which collide with the obstacles
                 # And obst_quad_last_step_unique_collisions only include drones' id
@@ -445,12 +447,11 @@ class QuadrotorEnvMulti(gym.Env):
         if self.apply_collision_force:
             for val in self.curr_drone_collisions:
                 perform_collision_between_drones(self.envs[val[0]].dynamics, self.envs[val[1]].dynamics)
-            for val in obst_quad_col_matrix:
-                if self.use_obstacles:
-                    for val in obst_quad_col_matrix:
-                        perform_collision_with_obstacle(drone_dyn=self.envs[int(val)].dynamics,
-                                                        obstacle_pos=self.obstacles.closest_obstacle(
-                                                            self.envs[val].dynamics.pos))
+            if self.use_obstacles:
+                for val in obst_quad_col_matrix:
+                    perform_collision_with_obstacle(drone_dyn=self.envs[int(val)].dynamics,
+                                                        obstacle_pos=self.obstacles.closest_obstacle(self.envs[val].dynamics.pos),
+                                                        col_coeff=self.rew_coeff["quadcol_obst_coeff"])
 
         for i in range(self.num_agents):
             rewards[i] += rew_collisions[i]

@@ -49,7 +49,7 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         quads_view_mode=cfg.quads_view_mode, local_obs=cfg.quads_local_obs, obs_repr=cfg.quads_obs_repr,
         collision_hitbox_radius=cfg.quads_collision_hitbox_radius, collision_falloff_radius=cfg.quads_collision_falloff_radius,
         use_replay_buffer=use_replay_buffer, use_obstacles=cfg.use_obstacles, num_obstacles=cfg.quads_obstacle_num, obstacle_size=1.0,
-        octree_resolution=0.1, use_downwash=cfg.use_downwash
+        octree_resolution=0.1, use_downwash=cfg.use_downwash, env_seed=cfg.seed
     )
 
     if use_replay_buffer:
@@ -66,6 +66,8 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
             AnnealSchedule('quadcol_bin_smooth_max', cfg.quads_collision_smooth_max_penalty, cfg.anneal_collision_steps),
             AnnealSchedule('quadcol_bin_obst', cfg.quads_obst_collision_reward, cfg.anneal_collision_steps),
             AnnealSchedule('quadcol_bin_obst_smooth_max', cfg.quads_obst_collision_smooth_max_penalty, cfg.anneal_collision_steps),
+            AnnealSchedule('quadcol_coeff', cfg.quads_collision_coeff, cfg.anneal_collision_sim_steps),
+            AnnealSchedule('quadcol_obsts_coeff', cfg.quads_collision_coeff, cfg.anneal_collision_sim_steps),
         ]
     else:
         annealing = None
