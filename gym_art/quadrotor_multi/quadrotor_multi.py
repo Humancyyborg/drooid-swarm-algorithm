@@ -446,9 +446,11 @@ class QuadrotorEnvMulti(gym.Env):
             for val in self.curr_drone_collisions:
                 perform_collision_between_drones(self.envs[val[0]].dynamics, self.envs[val[1]].dynamics)
             for val in obst_quad_col_matrix:
-                perform_collision_with_obstacle(drone_dyn=self.envs[val].dynamics,
-                                                obstacle_pos=self.obstacles.closest_obstacle(
-                                                    self.envs[val].dynamics.pos))
+                if self.use_obstacles:
+                    for val in obst_quad_col_matrix:
+                        perform_collision_with_obstacle(drone_dyn=self.envs[int(val)].dynamics,
+                                                        obstacle_pos=self.obstacles.closest_obstacle(
+                                                            self.envs[val].dynamics.pos))
 
         for i in range(self.num_agents):
             rewards[i] += rew_collisions[i]
