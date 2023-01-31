@@ -693,7 +693,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
     ##################################################
     ## Loss orientation
     if on_floor:
-        cost_orient_raw = -1.0
+        cost_orient_raw = 1.0
     else:
         cost_orient_raw = -dynamics.rot[2, 2]
 

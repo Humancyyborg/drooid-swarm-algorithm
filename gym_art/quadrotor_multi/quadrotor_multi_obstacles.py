@@ -39,7 +39,7 @@ class MultiObstacles:
 
         for i, quad in enumerate(pos_quads):
             curr = self.octree.sdf_dist(quad)
-            if curr < 0.05:
+            if curr < 0.1 + 1e-5:
                 drone_collision.append(i)
 
         return drone_collision

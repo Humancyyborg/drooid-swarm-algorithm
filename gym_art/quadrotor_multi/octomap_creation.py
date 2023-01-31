@@ -93,7 +93,6 @@ class OctTree:
     def generate_obstacles(self, num_obstacles=0, start_point=np.array([-3.0, -2.0, 2.0]),
                            end_point=np.array([3.0, 2.0, 2.0])):
         self.pos_arr = np.array([[]])
-        # TODO Check Scenario Mode
         self.start_range = np.array([start_point[:2] + self.init_box[0][:2], start_point[:2] + self.init_box[1][:2]])
         self.end_range = np.array([end_point[:2] + self.init_box[0][:2], end_point[:2] + self.init_box[1][:2]])
         pos_z = 0.5 * self.room_dims[2]
@@ -124,11 +123,11 @@ class OctTree:
             xy_min = np.maximum(item[:2] - range_shape, -0.5 * self.room_dims[:2] - self.resolution)
             xy_max = np.minimum(item[:2] + range_shape, 0.5 * self.room_dims[:2] + self.resolution)
 
-            for x in np.arange(xy_min[0], xy_max[0], self.resolution):
-                for y in np.arange(xy_min[1], xy_max[1], self.resolution):
+            for x in np.arange(xy_min[0], xy_max[0] + EPS, self.resolution):
+                for y in np.arange(xy_min[1], xy_max[1] + EPS, self.resolution):
                     # self.resolution: reason same as above, the difference is this time if for floor and ceiling
                     for z in np.arange(-self.resolution, self.room_dims[2] + self.resolution, self.resolution):
-                        if x < self.room_dims[0] and y < self.room_dims[1]:
+                        if np.linalg.norm(np.asarray([x, y]) - item[:2]) <= self.size / 2:
                             self.octree.updateNode([x, y, z], True)
 
     def generate_sdf(self):
