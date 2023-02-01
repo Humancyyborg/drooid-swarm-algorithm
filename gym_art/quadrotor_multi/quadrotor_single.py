@@ -134,7 +134,7 @@ class QuadrotorDynamics:
         self.on_floor = False
         # self.hit_floor = False
         # self.flipped = False
-        self.mu = 0.5
+        self.mu = 0
 
         ## Collision with room
         self.crashed_wall = False
@@ -477,7 +477,10 @@ class QuadrotorDynamics:
                 if np.abs(f[i]) > np.abs(force[i]):
                     f[i] = force[i]
             force -= f
+
         acc = [0, 0, -GRAV] + (1.0 / self.mass) * force
+        if self.on_floor:
+            acc[2] = np.maximum(acc[2], 0)
         # acc[mask] = 0. #If we leave the room - stop accelerating
         self.acc = acc
 
