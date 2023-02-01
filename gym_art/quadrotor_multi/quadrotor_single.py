@@ -134,7 +134,7 @@ class QuadrotorDynamics:
         self.on_floor = False
         # self.hit_floor = False
         # self.flipped = False
-        self.mu = 0
+        self.mu = 0.6
 
         ## Collision with room
         self.crashed_wall = False
