@@ -480,6 +480,8 @@ class QuadrotorDynamics:
 
         acc = [0, 0, -GRAV] + (1.0 / self.mass) * force
         # acc[mask] = 0. #If we leave the room - stop accelerating
+        if self.on_floor:
+            acc[2] = np.maximum(acc[2], 0)
         self.acc = acc
 
         ## Computing velocities
@@ -500,7 +502,6 @@ class QuadrotorDynamics:
                 pos = npa(self.pos[0], self.pos[1], self.arm)
                 self.rot = rot
                 self.pos = pos
-                self.vel[2] = 0.
 
     def step1_numba(self, thrust_cmds, dt, thrust_noise):
         self.motor_tau_up, self.motor_tau_down, self.thrust_rot_damp, self.thrust_cmds_damp, self.torques, \
@@ -546,7 +547,6 @@ class QuadrotorDynamics:
                 pos = np.array((self.pos[0], self.pos[1], self.arm))
                 self.rot = rot
                 self.pos = pos
-                self.vel[2] = 0.
 
     def reset(self):
         self.thrust_cmds_damp = np.zeros([4])
@@ -1814,6 +1814,8 @@ def compute_velocity_and_acceleration(vel, grav_cnst_arr, mass, rot, sum_thr_dra
                 f[i] = force[i]
         force -= f
     acc = grav_cnst_arr + ((1.0 / mass) * force)
+    if on_floor:
+        acc[2] = np.maximum(acc[2], 0)
 
     # Computing velocities
     vel = (1.0 - vel_damp) * vel + dt * acc
