@@ -1,19 +1,15 @@
 import numpy as np
 from gym_art.quadrotor_multi.quad_utils import get_circle_radius, get_sphere_radius, get_grid_dim_number
 
-QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal', 'circular_config',
-                   'ep_lissajous3D', 'ep_rand_bezier', 'swarm_vs_swarm', 'dynamic_formations', 'swap_goals']
+QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal', # static formations
+                   'ep_lissajous3D', 'ep_rand_bezier', # evader pursuit
+                   'dynamic_same_goal', 'dynamic_diff_goal', 'dynamic_formations', 'swap_goals' # dynamic formations
+                   'swarm_vs_swarm'] # only support >=2 drones
 
-QUADS_MODE_LIST_HARD = ['swarm_vs_swarm', 'swap_goals']
-
-QUADS_MODE_LIST_SIMPLE = ['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal',
-                          'circular_config', 'ep_lissajous3D', 'ep_rand_bezier', 'dynamic_formations']
-
-QUADS_MODE_DICT = {
-            'fix_size': ['static_same_goal', 'dynamic_same_goal', 'ep_lissajous3D', 'ep_rand_bezier'],
-            'dynamic_size': ['static_diff_goal', 'dynamic_diff_goal'],
-            'swap_goals': ['swarm_vs_swarm', 'swap_goals', 'dynamic_formations', 'circular_config']
-}
+QUADS_MODE_LIST_SINGLE = ['static_same_goal', 'static_diff_goal', # static formations
+                          'ep_lissajous3D', 'ep_rand_bezier', # evader pursuit
+                          'dynamic_same_goal', # dynamic formations
+                          ]
 
 QUADS_MODE_LIST_OBSTACLES = ['o_uniform_same_goal_spawn', 'o_uniform_diff_goal_spawn', 'o_uniform_swarm_vs_swarm']
 
@@ -35,7 +31,6 @@ QUADS_PARAMS_DICT = {
                 'swarm_vs_swarm': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], duration],
                 'swap_goals': [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size], duration],
                 'dynamic_formations': [QUADS_FORMATION_LIST, [0.0, 20 * quad_arm_size], duration],
-                'circular_config': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], duration],
                 'run_away': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size], duration],
 
                 # For obstacles

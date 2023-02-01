@@ -1,6 +1,5 @@
 import copy
 
-from gym_art.quadrotor_multi.params import quad_color
 from gym_art.quadrotor_multi.quad_utils import *
 from gym_art.quadrotor_multi.quadrotor_visualization import ChaseCamera, SideCamera, quadrotor_simple_3dmodel, \
     quadrotor_3dmodel
@@ -154,7 +153,7 @@ class Quadrotor3DSceneMulti:
                 )
 
             if self.viz_traces:
-                color = quad_color[i % len(quad_color)] + (1.0,)
+                color = QUAD_COLOR[i % len(QUAD_COLOR)] + (1.0,)
                 for j in range(self.viz_traces):
                     self.path_transforms[i].append(r3d.transform_and_color(np.eye(4), color, path_sphere))
 
@@ -201,7 +200,7 @@ class Quadrotor3DSceneMulti:
     def create_obstacles(self):
         import gym_art.quadrotor_multi.rendering3d as r3d
         for item in self.obstacles.octree.pos_arr:
-            color = quad_color[14]
+            color = QUAD_COLOR[14]
             obst_height = self.room_dims[2]
             obstacle_transform = r3d.transform_and_color(np.eye(4), color, r3d.cylinder(
                 radius=self.obstacles.octree.size / 2.0, height=obst_height, sections=64))
@@ -222,7 +221,7 @@ class Quadrotor3DSceneMulti:
 
         goal_sphere = r3d.sphere(self.goal_diameter / 2, 18)
         for i in range(len(self.models)):
-            color = quad_color[i % len(quad_color)]
+            color = QUAD_COLOR[i % len(QUAD_COLOR)]
             goal_transform = r3d.transform_and_color(np.eye(4), color, goal_sphere)
             self.goal_transforms.append(goal_transform)
 
@@ -292,7 +291,7 @@ class Quadrotor3DSceneMulti:
                         self.path_store[i].pop(0)
 
                     self.path_store[i].append(translation)
-                    color_rgba = quad_color[i % len(quad_color)] + (1.0,)
+                    color_rgba = QUAD_COLOR[i % len(QUAD_COLOR)] + (1.0,)
                     path_storage_length = len(self.path_store[i])
                     for k in range(path_storage_length):
                         scale = k/path_storage_length + 0.01

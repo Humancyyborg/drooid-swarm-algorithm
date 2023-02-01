@@ -4,7 +4,7 @@ import copy
 
 from gym_art.quadrotor_multi.quad_scenarios_utils import QUADS_PARAMS_DICT, update_formation_and_max_agent_per_layer, \
     update_layer_dist, get_formation_range, get_goal_by_formation, get_z_value, QUADS_MODE_LIST, \
-    QUADS_MODE_LIST_SIMPLE, QUADS_MODE_LIST_OBSTACLES
+    QUADS_MODE_LIST_SINGLE, QUADS_MODE_LIST_OBSTACLES
 from gym_art.quadrotor_multi.quad_utils import generate_points, get_grid_dim_number
 
 
@@ -392,41 +392,6 @@ class Scenario_swap_goals(QuadrotorScenario):
 
         # Reset formation, and parameters related to the formation; formation center; goals
         self.standard_reset()
-
-
-class Scenario_circular_config(QuadrotorScenario):
-    def update_goals(self):
-        np.random.shuffle(self.goals)
-        for env, goal in zip(self.envs, self.goals):
-            env.goal = goal
-
-    def step(self, infos, rewards, pos):
-        for i, e in enumerate(self.envs):
-            dist = np.linalg.norm(pos[i] - e.goal)
-            if abs(dist) < self.metric_of_settle:
-                self.settle_count[i] += 1
-            else:
-                self.settle_count = np.zeros(self.num_agents)
-                break
-
-        # drones settled at the goal for 1 sec
-        control_step_for_one_sec = int(self.envs[0].control_freq)
-        tmp_count = self.settle_count >= control_step_for_one_sec
-        if all(tmp_count):
-            self.update_goals()
-            rews_settle_raw = control_step_for_one_sec
-            rews_settle = self.rew_coeff["quadsettle"] * rews_settle_raw
-            for i, env in enumerate(self.envs):
-                env.goal = self.goals[i]
-                # Add settle rewards
-                rewards[i] += rews_settle
-                infos[i]["rewards"]["rew_quadsettle"] = rews_settle
-                infos[i]["rewards"]["rewraw_quadsettle"] = rews_settle_raw
-
-            self.settle_count = np.zeros(self.num_agents)
-
-        return infos, rewards
-
 
 class Scenario_dynamic_formations(QuadrotorScenario):
     def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
@@ -830,7 +795,7 @@ class Scenario_mix(QuadrotorScenario):
         # single scenario key: quads_mode value: 0. formation, 1: [formation_low_size, formation_high_size],
         # 2: episode_time
         if num_agents == 1:
-            self.quads_mode_list = QUADS_MODE_LIST_SIMPLE
+            self.quads_mode_list = QUADS_MODE_LIST_SINGLE
         elif num_agents > 1 and not envs[0].use_obstacles:
             self.quads_mode_list = QUADS_MODE_LIST
         elif envs[0].use_obstacles:

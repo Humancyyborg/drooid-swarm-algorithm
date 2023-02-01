@@ -1,5 +1,4 @@
 import numpy as np
-from scipy import spatial
 
 from gym_art.quadrotor_multi.octomap_creation import OctTree
 

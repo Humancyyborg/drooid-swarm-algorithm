@@ -2,7 +2,7 @@ import numpy as np
 import math
 import octomap
 
-EPS = 1e-5
+from quad_utils import EPS
 
 
 class OctTree:

@@ -2,12 +2,29 @@ import numpy as np
 import numpy.random as nr
 from numba import njit
 from numpy.linalg import norm
-from copy import deepcopy
 from numpy import cos, sin
 from scipy import spatial
 from copy import deepcopy
 
 EPS = 1e-5
+
+QUAD_COLOR = (
+    (1.0, 0.0, 0.0),  # red
+    (0.4, 0.4, 0.4),  # darkgrey
+    (0.0, 1.0, 0.0),  # green
+    (0.0, 0.0, 1.0),  # blue
+    (1.0, 1.0, 0.0),  # yellow
+    (0.0, 1.0, 1.0),  # cyan
+    (1.0, 0.0, 1.0),  # magenta
+    (0.5, 0.0, 0.0),  # darkred
+    (0.0, 0.5, 0.0),  # darkgreen
+    (0.0, 0.0, 0.5),  # darkblue
+    (0.0, 0.5, 0.5),  # darkcyan
+    (0.5, 0.0, 0.5),  # darkmagenta
+    (0.5, 0.5, 0.0),  # darkyellow
+    (0.8, 0.8, 0.8),  # lightgrey
+    (1.0, 0.0, 1.0),  # Violet
+)
 
 # dict pretty printing
 def print_dic(dic, indent=""):

@@ -20,13 +20,8 @@ References:
 import argparse
 import logging
 import sys
-import time
-
-import numpy as np
 
 import gym_art.quadrotor_multi.get_state as get_state
-
-# MY LIBS
 import gym_art.quadrotor_multi.quadrotor_randomization as quad_rand
 
 # MATH

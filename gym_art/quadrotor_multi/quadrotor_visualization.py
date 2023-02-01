@@ -1,8 +1,6 @@
 import copy
-
 from numpy.linalg import norm
 
-from gym_art.quadrotor_multi.params import quad_color
 from gym_art.quadrotor_multi.quad_utils import *
 
 
@@ -120,7 +118,7 @@ def quadrotor_3dmodel(model, quad_id=0):
         # print("LINK: ", link.name, "R:", rot, end=" ")
         if link.name[:4] == "prop":
             prop_r = link.r
-            color = np.array(quad_color[quad_id % len(quad_color)])
+            color = np.array(QUAD_COLOR[quad_id % len(QUAD_COLOR)])
         if link.type == "box":
             # print("Type: Box")
             link_transf = r3d.transform_and_color(
