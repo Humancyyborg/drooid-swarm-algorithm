@@ -16,15 +16,8 @@ from gym_art.quadrotor_multi.scenarios.obstacles.o_uniform_same_goal_spawn impor
 from gym_art.quadrotor_multi.scenarios.obstacles.o_uniform_swarm_vs_swarm import Scenario_o_uniform_swarm_vs_swarm
 
 from gym_art.quadrotor_multi.scenarios.base import QuadrotorScenario
-from gym_art.quadrotor_multi.scenarios.utils import QUADS_MODE_LIST_SINGLE, QUADS_MODE_LIST, QUADS_MODE_LIST_OBSTACLES
-
-
-def create_scenario(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
-                    quads_formation_size):
-    cls = eval('Scenario_' + quads_mode)
-    scenario = cls(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
-                   quads_formation_size)
-    return scenario
+from gym_art.quadrotor_multi.scenarios.utils import QUADS_MODE_LIST_SINGLE, QUADS_MODE_LIST, QUADS_MODE_LIST_OBSTACLES, \
+    create_scenario
 
 
 class Scenario_mix(QuadrotorScenario):

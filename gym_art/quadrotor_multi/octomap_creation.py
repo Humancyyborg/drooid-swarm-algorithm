@@ -97,7 +97,7 @@ class OctTree:
         self.end_range = np.array([end_point[:2] + self.init_box[0][:2], end_point[:2] + self.init_box[1][:2]])
         pos_z = 0.5 * self.room_dims[2]
         for i in range(num_obstacles):
-            for regen_id in range(30):
+            for regen_id in range(20):
                 y_gaussian_scale = self.y_gaussian_generation(regen_id=regen_id)
                 pos_xy, collide_flag = self.gaussian_pos(y_gaussian_scale=y_gaussian_scale,
                                                          goal_start_point=start_point, goal_end_point=end_point)
