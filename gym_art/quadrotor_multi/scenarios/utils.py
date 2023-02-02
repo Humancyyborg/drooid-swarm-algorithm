@@ -1,14 +1,14 @@
 import numpy as np
 from gym_art.quadrotor_multi.quad_utils import get_circle_radius, get_sphere_radius, get_grid_dim_number
 
-QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal', # static formations
-                   'ep_lissajous3D', 'ep_rand_bezier', # evader pursuit
-                   'dynamic_same_goal', 'dynamic_diff_goal', 'dynamic_formations', 'swap_goals' # dynamic formations
-                   'swarm_vs_swarm'] # only support >=2 drones
+QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal',  # static formations
+                   'ep_lissajous3D', 'ep_rand_bezier',  # evader pursuit
+                   'dynamic_same_goal', 'dynamic_diff_goal', 'dynamic_formations', 'swap_goals'  # dynamic formations
+                                                                                   'swarm_vs_swarm']  # only support >=2 drones
 
-QUADS_MODE_LIST_SINGLE = ['static_same_goal', 'static_diff_goal', # static formations
-                          'ep_lissajous3D', 'ep_rand_bezier', # evader pursuit
-                          'dynamic_same_goal', # dynamic formations
+QUADS_MODE_LIST_SINGLE = ['static_same_goal', 'static_diff_goal',  # static formations
+                          'ep_lissajous3D', 'ep_rand_bezier',  # evader pursuit
+                          'dynamic_same_goal',  # dynamic formations
                           ]
 
 QUADS_MODE_LIST_OBSTACLES = ['o_uniform_same_goal_spawn', 'o_uniform_diff_goal_spawn', 'o_uniform_swarm_vs_swarm']
@@ -20,21 +20,21 @@ QUADS_FORMATION_LIST = ['circle_horizontal', 'circle_vertical_xz', 'circle_verti
 # value: 0. formation, 1: [formation_low_size, formation_high_size], 2: episode_time
 quad_arm_size = 0.05
 QUADS_PARAMS_DICT = {
-                'static_same_goal': [['circle_horizontal'], [0.0, 0.0]],
-                'dynamic_same_goal': [['circle_horizontal'], [0.0, 0.0]],
-                'ep_lissajous3D': [['circle_horizontal'], [0.0, 0.0]],
-                'ep_rand_bezier': [['circle_horizontal'], [0.0, 0.0]],
-                'static_diff_goal': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size]],
-                'dynamic_diff_goal': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size]],
-                'swarm_vs_swarm': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size]],
-                'swap_goals': [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size]],
-                'dynamic_formations': [QUADS_FORMATION_LIST, [0.0, 20 * quad_arm_size]],
-                'run_away': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size]],
+    'static_same_goal': [['circle_horizontal'], [0.0, 0.0]],
+    'dynamic_same_goal': [['circle_horizontal'], [0.0, 0.0]],
+    'ep_lissajous3D': [['circle_horizontal'], [0.0, 0.0]],
+    'ep_rand_bezier': [['circle_horizontal'], [0.0, 0.0]],
+    'static_diff_goal': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size]],
+    'dynamic_diff_goal': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size]],
+    'swarm_vs_swarm': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size]],
+    'swap_goals': [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size]],
+    'dynamic_formations': [QUADS_FORMATION_LIST, [0.0, 20 * quad_arm_size]],
+    'run_away': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size]],
 
-                # For obstacles
-                'o_uniform_same_goal_spawn': [['circle_horizontal'], [0.0, 0.0]],
-                'o_uniform_diff_goal_spawn': [QUADS_FORMATION_LIST, [0.4, 0.8]],
-                'o_uniform_swarm_vs_swarm': [QUADS_FORMATION_LIST, [0.4, 0.8]],
+    # For obstacles
+    'o_uniform_same_goal_spawn': [['circle_horizontal'], [0.0, 0.0]],
+    'o_uniform_diff_goal_spawn': [QUADS_FORMATION_LIST, [0.4, 0.8]],
+    'o_uniform_swarm_vs_swarm': [QUADS_FORMATION_LIST, [0.4, 0.8]],
 }
 
 
