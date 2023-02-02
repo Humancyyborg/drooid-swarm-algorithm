@@ -960,7 +960,7 @@ class QuadrotorSingle:
 
         #########################################
         self.env_seed = env_seed
-        self._seed(self.env_seed)
+        self._seed()
 
     def reset_ep_len(self, ep_time):
         self.ep_time = ep_time
