@@ -38,15 +38,6 @@ class QuadrotorScenario:
         self.layer_dist = self.lowest_formation_size
         self.formation_center = np.array([0.0, 0.0, 2.0])
 
-        # Reset episode time
-        if self.quads_mode != 'mix':
-            ep_time = QUADS_PARAMS_DICT[quads_mode][2]
-        else:
-            ep_time = QUADS_PARAMS_DICT['swap_goals'][2]
-
-        for env in self.envs:
-            env.reset_ep_len(ep_time=ep_time)
-
         # Aux variables for scenario: circular configuration
         self.settle_count = np.zeros(self.num_agents)
         self.metric_of_settle = 2.0 * quad_arm

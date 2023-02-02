@@ -20,6 +20,7 @@ References:
 import argparse
 import logging
 import sys
+import time
 
 import gym_art.quadrotor_multi.get_state as get_state
 import gym_art.quadrotor_multi.quadrotor_randomization as quad_rand
@@ -956,10 +957,6 @@ class QuadrotorSingle:
         #########################################
         self.env_seed = env_seed
         self._seed(self.env_seed)
-
-    def reset_ep_len(self, ep_time):
-        self.ep_time = ep_time
-        self.ep_len = int(self.ep_time / (self.dt * self.sim_steps))
 
     def save_dyn_params(self, filename):
         import yaml
