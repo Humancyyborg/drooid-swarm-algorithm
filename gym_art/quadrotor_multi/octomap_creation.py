@@ -68,7 +68,8 @@ class OctTree:
 
         return pos_xy, collide_flag
 
-    def y_gaussian_generation(self, regen_id=0):
+    @staticmethod
+    def y_gaussian_generation(regen_id=0):
         if regen_id < 3:
             return None
 
@@ -77,7 +78,7 @@ class OctTree:
         y_gaussian_scale = np.random.uniform(low=y_low, high=y_high)
         return y_gaussian_scale
 
-    def get_pos_no_overlap(self, pos_item, pos_arr, obst_id):
+    def get_pos_no_overlap(self, pos_item, pos_arr):
         # In this function, we assume the shape of all obstacles is cube
         # But even if we have this assumption, we can still roughly use it for shapes like cylinder
         if pos_arr.shape[1] == 0:

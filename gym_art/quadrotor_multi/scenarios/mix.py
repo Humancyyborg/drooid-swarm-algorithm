@@ -1,23 +1,8 @@
 import numpy as np
 
-from gym_art.quadrotor_multi.scenarios.dynamic_diff_goal import Scenario_dynamic_diff_goal
-from gym_art.quadrotor_multi.scenarios.dynamic_formations import Scenario_dynamic_formations
-from gym_art.quadrotor_multi.scenarios.dynamic_same_goal import Scenario_dynamic_same_goal
-from gym_art.quadrotor_multi.scenarios.ep_lissajous3D import Scenario_ep_lissajous3D
-from gym_art.quadrotor_multi.scenarios.ep_rand_bezier import Scenario_ep_rand_bezier
-from gym_art.quadrotor_multi.scenarios.run_away import Scenario_run_away
-from gym_art.quadrotor_multi.scenarios.static_diff_goal import Scenario_static_diff_goal
-from gym_art.quadrotor_multi.scenarios.static_same_goal import Scenario_static_same_goal
-from gym_art.quadrotor_multi.scenarios.swap_goals import Scenario_swap_goals
-from gym_art.quadrotor_multi.scenarios.swarm_vs_swarm import Scenario_swarm_vs_swarm
-from gym_art.quadrotor_multi.scenarios.tunnel import Scenario_tunnel
-from gym_art.quadrotor_multi.scenarios.obstacles.o_uniform_diff_goal_spawn import Scenario_o_uniform_diff_goal_spawn
-from gym_art.quadrotor_multi.scenarios.obstacles.o_uniform_same_goal_spawn import Scenario_o_uniform_same_goal_spawn
-from gym_art.quadrotor_multi.scenarios.obstacles.o_uniform_swarm_vs_swarm import Scenario_o_uniform_swarm_vs_swarm
-
 from gym_art.quadrotor_multi.scenarios.base import QuadrotorScenario
-from gym_art.quadrotor_multi.scenarios.utils import QUADS_MODE_LIST_SINGLE, QUADS_MODE_LIST, QUADS_MODE_LIST_OBSTACLES, \
-    create_scenario
+from gym_art.quadrotor_multi.scenarios.utils import QUADS_MODE_LIST_SINGLE, QUADS_MODE_LIST, \
+    QUADS_MODE_LIST_OBSTACLES, create_scenario
 
 
 class Scenario_mix(QuadrotorScenario):

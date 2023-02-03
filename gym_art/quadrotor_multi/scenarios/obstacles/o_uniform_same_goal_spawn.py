@@ -34,7 +34,6 @@ class Scenario_o_uniform_same_goal_spawn(QuadrotorScenario):
         if tick <= int(self.duration_time * self.envs[0].control_freq):
             return infos, rewards
 
-        self.cur_start_tick = int(self.duration_time * self.envs[0].control_freq)
         self.duration_time += self.envs[0].ep_time + 1
         self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.end_point, layer_dist=0.0)
 
@@ -44,7 +43,6 @@ class Scenario_o_uniform_same_goal_spawn(QuadrotorScenario):
         return infos, rewards
 
     def reset(self):
-        self.cur_start_tick = 0
         self.start_point = self.generate_pos()
         self.end_point = self.generate_pos()
         self.duration_time = np.random.uniform(low=2.0, high=4.0)

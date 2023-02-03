@@ -3,8 +3,8 @@ from gym_art.quadrotor_multi.quad_utils import get_circle_radius, get_sphere_rad
 
 QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal',  # static formations
                    'ep_lissajous3D', 'ep_rand_bezier',  # evader pursuit
-                   'dynamic_same_goal', 'dynamic_diff_goal', 'dynamic_formations', 'swap_goals'  # dynamic formations
-                                                                                   'swarm_vs_swarm']  # only support >=2 drones
+                   'dynamic_same_goal', 'dynamic_diff_goal', 'dynamic_formations', 'swap_goals',  # dynamic formations
+                   'swarm_vs_swarm']  # only support >=2 drones
 
 QUADS_MODE_LIST_SINGLE = ['static_same_goal', 'static_diff_goal',  # static formations
                           'ep_lissajous3D', 'ep_rand_bezier',  # evader pursuit
@@ -37,12 +37,14 @@ QUADS_PARAMS_DICT = {
     'o_uniform_swarm_vs_swarm': [QUADS_FORMATION_LIST, [0.4, 0.8]],
 }
 
+
 def create_scenario(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
                     quads_formation_size):
     cls = eval('Scenario_' + quads_mode)
     scenario = cls(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
                    quads_formation_size)
     return scenario
+
 
 def update_formation_and_max_agent_per_layer(mode):
     formation_index = np.random.randint(low=0, high=len(QUADS_PARAMS_DICT[mode][0]))

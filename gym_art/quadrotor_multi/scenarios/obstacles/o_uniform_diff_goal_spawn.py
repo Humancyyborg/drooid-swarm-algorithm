@@ -36,7 +36,6 @@ class Scenario_o_uniform_diff_goal_spawn(Scenario_o_uniform_same_goal_spawn):
         if tick <= int(self.duration_time * self.envs[0].control_freq):
             return infos, rewards
 
-        self.cur_start_tick = int(self.duration_time * self.envs[0].control_freq)
         self.duration_time += self.envs[0].ep_time + 1
         self.update_goals()
         for i, env in enumerate(self.envs):
