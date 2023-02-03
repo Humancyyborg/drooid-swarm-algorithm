@@ -2,12 +2,29 @@ import numpy as np
 import numpy.random as nr
 from numba import njit
 from numpy.linalg import norm
-from copy import deepcopy
 from numpy import cos, sin
 from scipy import spatial
 from copy import deepcopy
 
 EPS = 1e-5
+
+QUAD_COLOR = (
+    (1.0, 0.0, 0.0),  # red
+    (0.4, 0.4, 0.4),  # darkgrey
+    (0.0, 1.0, 0.0),  # green
+    (0.0, 0.0, 1.0),  # blue
+    (1.0, 1.0, 0.0),  # yellow
+    (0.0, 1.0, 1.0),  # cyan
+    (1.0, 0.0, 1.0),  # magenta
+    (0.5, 0.0, 0.0),  # darkred
+    (0.0, 0.5, 0.0),  # darkgreen
+    (0.0, 0.0, 0.5),  # darkblue
+    (0.0, 0.5, 0.5),  # darkcyan
+    (0.5, 0.0, 0.5),  # darkmagenta
+    (0.5, 0.5, 0.0),  # darkyellow
+    (0.8, 0.8, 0.8),  # lightgrey
+    (1.0, 0.0, 1.0),  # Violet
+)
 
 # dict pretty printing
 def print_dic(dic, indent=""):
@@ -324,8 +341,10 @@ def compute_col_norm_and_new_velocities(dyn1, dyn2):
 
 def compute_col_norm_and_new_vel_obst(dyn, obstacle_pos):
     collision_norm = dyn.pos - obstacle_pos
+    # difference in z position is 0, given obstacle height is same as room height
+    collision_norm[2] = 0.0
     coll_norm_mag = np.linalg.norm(collision_norm)
-    collision_norm = collision_norm / (coll_norm_mag + 0.00001 if coll_norm_mag == 0.0 else coll_norm_mag)
+    collision_norm = collision_norm / (coll_norm_mag + EPS if coll_norm_mag == 0.0 else coll_norm_mag)
 
     # Get the components of the velocity vectors which are parallel to the collision.
     # The perpendicular component remains the same.

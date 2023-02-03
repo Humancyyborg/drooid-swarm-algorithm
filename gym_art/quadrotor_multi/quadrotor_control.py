@@ -1,6 +1,4 @@
-import numpy as np
 from numpy.linalg import norm
-import gym
 from gym import spaces
 from gym_art.quadrotor_multi.quad_utils import *
 

@@ -14,7 +14,7 @@ from gym_art.quadrotor_multi.quad_utils import perform_collision_between_drones,
 
 from gym_art.quadrotor_multi.quadrotor_single import GRAV, QuadrotorSingle
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
-from gym_art.quadrotor_multi.quad_scenarios import create_scenario
+from gym_art.quadrotor_multi.scenarios.mix import create_scenario
 from gym_art.quadrotor_multi.quadrotor_multi_obstacles import MultiObstacles
 
 EPS = 1E-6
@@ -34,8 +34,7 @@ class QuadrotorEnvMulti(gym.Env):
                  collision_force=True, local_obs=-1, collision_hitbox_radius=2.0,
                  collision_falloff_radius=2.0, collision_smooth_max_penalty=10.0, use_replay_buffer=False,
                  vis_acc_arrows=False, viz_traces=25, viz_trace_nth_step=1,
-                 use_obstacles=False, num_obstacles=0, obstacle_size=0.0, octree_resolution=0.05, use_downwash=False,
-                 env_seed=None):
+                 use_obstacles=False, num_obstacles=0, obstacle_size=0.0, octree_resolution=0.05, use_downwash=False):
 
         super().__init__()
 
@@ -62,7 +61,7 @@ class QuadrotorEnvMulti(gym.Env):
                 obs_repr, ep_time, room_length, room_width, room_height, init_random_state,
                 rew_coeff, sense_noise, verbose, gravity, t2w_std, t2t_std, excite, dynamics_simplification,
                 quads_use_numba, self.swarm_obs, self.num_agents, quads_view_mode,
-                self.num_use_neighbor_obs, use_obstacles=use_obstacles, env_seed=env_seed
+                self.num_use_neighbor_obs, use_obstacles=use_obstacles
             )
             self.envs.append(e)
 
@@ -136,8 +135,8 @@ class QuadrotorEnvMulti(gym.Env):
             self.num_obstacles = num_obstacles
             self.obstacle_size = obstacle_size
             self.octree_resolution = octree_resolution
-            self.obstacles = MultiObstacles(num_obstacles=self.num_obstacles, size=self.obstacle_size,
-                                            room_dims=self.room_dims, resolution=self.octree_resolution)
+            self.obstacles = MultiObstacles(num_obstacles=self.num_obstacles, room_dims=self.room_dims,
+                                            resolution=self.octree_resolution)
 
         # Aux variables for scenarios
         self.scenario = create_scenario(quads_mode=quads_mode, envs=self.envs, num_agents=self.num_agents,

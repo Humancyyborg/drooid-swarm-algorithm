@@ -2,7 +2,7 @@ import numpy as np
 import math
 import octomap
 
-EPS = 1e-5
+from gym_art.quadrotor_multi.quad_utils import EPS
 
 
 class OctTree:
@@ -68,7 +68,8 @@ class OctTree:
 
         return pos_xy, collide_flag
 
-    def y_gaussian_generation(self, regen_id=0):
+    @staticmethod
+    def y_gaussian_generation(regen_id=0):
         if regen_id < 3:
             return None
 
@@ -77,7 +78,7 @@ class OctTree:
         y_gaussian_scale = np.random.uniform(low=y_low, high=y_high)
         return y_gaussian_scale
 
-    def get_pos_no_overlap(self, pos_item, pos_arr, obst_id):
+    def get_pos_no_overlap(self, pos_item, pos_arr):
         # In this function, we assume the shape of all obstacles is cube
         # But even if we have this assumption, we can still roughly use it for shapes like cylinder
         if pos_arr.shape[1] == 0:
@@ -106,8 +107,9 @@ class OctTree:
                 # self.get_pos_no_overlap(pos_item=pos_item, pos_arr=self.pos_arr, obst_id=i)
                 if collide_flag is False and overlap_flag is False:
                     if self.pos_arr.shape[1] == 0:
-                        self.pos_arr = np.array([np.append(np.asarray(final_pos_item), pos_z)])
-                    self.pos_arr = np.append(self.pos_arr, np.array([np.append(np.asarray(final_pos_item), pos_z)]),
+                        self.pos_arr = np.array([np.append(np.array(final_pos_item), pos_z)])
+                        break
+                    self.pos_arr = np.append(self.pos_arr, np.array([np.append(np.array(final_pos_item), pos_z)]),
                                              axis=0)
                     break
 

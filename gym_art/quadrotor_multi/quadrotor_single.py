@@ -20,13 +20,8 @@ References:
 import argparse
 import logging
 import sys
-import time
-
-import numpy as np
 
 import gym_art.quadrotor_multi.get_state as get_state
-
-# MY LIBS
 import gym_art.quadrotor_multi.quadrotor_randomization as quad_rand
 
 # MATH
@@ -805,7 +800,7 @@ class QuadrotorSingle:
                  obs_repr="xyz_vxyz_R_omega", ep_time=7, room_length=10, room_width=10, room_height=10, init_random_state=False,
                  rew_coeff=None, sense_noise=None, verbose=False, gravity=GRAV,
                  t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False, swarm_obs='none', num_agents=1,
-                 view_mode='local', num_use_neighbor_obs=0, use_obstacles=False, env_seed=None):
+                 view_mode='local', num_use_neighbor_obs=0, use_obstacles=False):
         np.seterr(under='ignore')
         """
         Args:
@@ -962,12 +957,7 @@ class QuadrotorSingle:
         self.rew_coeff = None  # provided by the parent multi_env
 
         #########################################
-        self.env_seed = env_seed
         self._seed()
-
-    def reset_ep_len(self, ep_time):
-        self.ep_time = ep_time
-        self.ep_len = int(self.ep_time / (self.dt * self.sim_steps))
 
     def save_dyn_params(self, filename):
         import yaml
