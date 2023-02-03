@@ -14,7 +14,7 @@ from gym_art.quadrotor_multi.quad_utils import perform_collision_between_drones,
 
 from gym_art.quadrotor_multi.quadrotor_single import GRAV, QuadrotorSingle
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
-from gym_art.quadrotor_multi.quad_scenarios import create_scenario
+from gym_art.quadrotor_multi.scenarios.mix import create_scenario
 from gym_art.quadrotor_multi.quadrotor_multi_obstacles import MultiObstacles
 
 EPS = 1E-6

@@ -956,10 +956,6 @@ class QuadrotorSingle:
         #########################################
         self._seed()
 
-    def reset_ep_len(self, ep_time):
-        self.ep_time = ep_time
-        self.ep_len = int(self.ep_time / (self.dt * self.sim_steps))
-
     def save_dyn_params(self, filename):
         import yaml
         with open(filename, 'w') as yaml_file:

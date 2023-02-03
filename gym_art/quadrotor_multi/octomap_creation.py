@@ -2,7 +2,7 @@ import numpy as np
 import math
 import octomap
 
-from quad_utils import EPS
+from gym_art.quadrotor_multi.quad_utils import EPS
 
 
 class OctTree:
@@ -106,8 +106,9 @@ class OctTree:
                 # self.get_pos_no_overlap(pos_item=pos_item, pos_arr=self.pos_arr, obst_id=i)
                 if collide_flag is False and overlap_flag is False:
                     if self.pos_arr.shape[1] == 0:
-                        self.pos_arr = np.array([np.append(np.asarray(final_pos_item), pos_z)])
-                    self.pos_arr = np.append(self.pos_arr, np.array([np.append(np.asarray(final_pos_item), pos_z)]),
+                        self.pos_arr = np.array([np.append(np.array(final_pos_item), pos_z)])
+                        break
+                    self.pos_arr = np.append(self.pos_arr, np.array([np.append(np.array(final_pos_item), pos_z)]),
                                              axis=0)
                     break
 
