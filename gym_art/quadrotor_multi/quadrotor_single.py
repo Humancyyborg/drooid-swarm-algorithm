@@ -20,6 +20,7 @@ References:
 import argparse
 import logging
 import sys
+import time
 
 import gym_art.quadrotor_multi.get_state as get_state
 import gym_art.quadrotor_multi.quadrotor_randomization as quad_rand
@@ -129,7 +130,7 @@ class QuadrotorDynamics:
         self.on_floor = False
         # self.hit_floor = False
         # self.flipped = False
-        self.mu = 0.5
+        self.mu = 0.6
 
         ## Collision with room
         self.crashed_wall = False
@@ -472,8 +473,11 @@ class QuadrotorDynamics:
                 if np.abs(f[i]) > np.abs(force[i]):
                     f[i] = force[i]
             force -= f
+
         acc = [0, 0, -GRAV] + (1.0 / self.mass) * force
         # acc[mask] = 0. #If we leave the room - stop accelerating
+        if self.on_floor:
+            acc[2] = np.maximum(acc[2], 0)
         self.acc = acc
 
         ## Computing velocities
@@ -1801,6 +1805,8 @@ def compute_velocity_and_acceleration(vel, grav_cnst_arr, mass, rot, sum_thr_dra
                 f[i] = force[i]
         force -= f
     acc = grav_cnst_arr + ((1.0 / mass) * force)
+    if on_floor:
+        acc[2] = np.maximum(acc[2], 0)
 
     # Computing velocities
     vel = (1.0 - vel_damp) * vel + dt * acc

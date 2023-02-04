@@ -57,23 +57,37 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
 
     reward_shaping = copy.deepcopy(DEFAULT_QUAD_REWARD_SHAPING)
 
+    reward_shaping['quad_rewards']['quadcol_bin_obst'] = cfg.quads_obst_collision_reward
+    reward_shaping['quad_rewards']['quadcol_bin_obst_smooth_max'] = cfg.quads_obst_collision_smooth_max_penalty
+    reward_shaping['quad_rewards']['quadcol_bin'] = cfg.quads_collision_reward
+    reward_shaping['quad_rewards']['quadcol_bin_smooth_max'] = cfg.quads_collision_smooth_max_penalty
+
     # this is annealed by the reward shaping wrapper
     if cfg.anneal_collision_steps > 0:
         reward_shaping['quad_rewards']['quadcol_bin'] = 0.0
         reward_shaping['quad_rewards']['quadcol_bin_smooth_max'] = 0.0
+        reward_shaping['quad_rewards']['quadcol_bin_obst'] = 0.0
+        reward_shaping['quad_rewards']['quadcol_bin_obst_smooth_max'] = 0.0
         annealing = [
             AnnealSchedule('quadcol_bin', cfg.quads_collision_reward, cfg.anneal_collision_steps),
             AnnealSchedule('quadcol_bin_smooth_max', cfg.quads_collision_smooth_max_penalty, cfg.anneal_collision_steps),
             AnnealSchedule('quadcol_bin_obst', cfg.quads_obst_collision_reward, cfg.anneal_collision_steps),
             AnnealSchedule('quadcol_bin_obst_smooth_max', cfg.quads_obst_collision_smooth_max_penalty, cfg.anneal_collision_steps),
         ]
-        if cfg.anneal_collision_sim_steps > 0:
-            annealing += [
-                AnnealSchedule('quadcol_coeff', cfg.quads_collision_coeff, cfg.anneal_collision_sim_steps),
-                AnnealSchedule('quadcol_obsts_coeff', cfg.quads_collision_coeff, cfg.anneal_collision_sim_steps),
-            ]
     else:
         annealing = None
+
+    if cfg.anneal_collision_sim_steps > 0:
+        if annealing:
+            annealing += [
+                AnnealSchedule('quadcol_coeff', cfg.quads_collision_coeff, cfg.anneal_collision_sim_steps),
+                AnnealSchedule('quadcol_obst_coeff', cfg.quads_collision_coeff, cfg.anneal_collision_sim_steps),
+            ]
+        else:
+            annealing = [
+                AnnealSchedule('quadcol_coeff', cfg.quads_collision_coeff, cfg.anneal_collision_sim_steps),
+                AnnealSchedule('quadcol_obst_coeff', cfg.quads_collision_coeff, cfg.anneal_collision_sim_steps),
+            ]
 
     env = QuadsRewardShapingWrapper(env, reward_shaping_scheme=reward_shaping, annealing=annealing)
     env = QuadEnvCompatibility(env, render_mode=render_mode)
