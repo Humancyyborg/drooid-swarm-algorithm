@@ -10,6 +10,6 @@ QUAD_BASELINE_CLI_8 = (
     '--quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 '
     '--quads_local_obs=6 --quads_num_agents=8 '
     '--quads_collision_reward=5.0 --quads_collision_smooth_max_penalty=10.0 '
-    '--quads_neighbor_encoder_type=attention --replay_buffer_sample_prob=0.75 --save_milestones_sec=900 '
+    '--quads_neighbor_encoder_type=attention --replay_buffer_sample_prob=0 --save_milestones_sec=1800 '
     '--normalize_input=False --normalize_returns=False --reward_clip=10 '
 )
