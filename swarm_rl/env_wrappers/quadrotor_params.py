@@ -34,6 +34,7 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--use_obstacles', default=False, type=str2bool, help='Use Obstacles or not')
     p.add_argument('--quads_obstacle_mode', default='no_obstacles', type=str, choices=['no_obstacles', 'static'], help='Choose which obstacle mode to run')
     p.add_argument('--quads_obstacle_num', default=0, type=int, help='Set obstacle number')
+    p.add_argument('--quads_obstacle_size', default=1.0, type=float, help='The radius of obstacles')
 
     p.add_argument('--quads_obst_collision_reward', default=0.0, type=float, help='Override default value for quadcol_bin_obst reward, which means collisions between quadrotor and obstacles')
     p.add_argument('--quads_obst_collision_smooth_max_penalty', default=10.0, type=float, help='The upper bound of the collision function given distance between drones and obstacles')

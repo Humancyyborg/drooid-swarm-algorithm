@@ -136,7 +136,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.obstacle_size = obstacle_size
             self.octree_resolution = octree_resolution
             self.obstacles = MultiObstacles(num_obstacles=self.num_obstacles, room_dims=self.room_dims,
-                                            resolution=self.octree_resolution)
+                                            resolution=self.octree_resolution, obstacle_size=self.obstacle_size)
 
         # Aux variables for scenarios
         self.scenario = create_scenario(quads_mode=quads_mode, envs=self.envs, num_agents=self.num_agents,
