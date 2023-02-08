@@ -2,7 +2,7 @@ import numpy as np
 
 from gym_art.quadrotor_multi.scenarios.base import QuadrotorScenario
 from gym_art.quadrotor_multi.scenarios.utils import QUADS_MODE_LIST_SINGLE, QUADS_MODE_LIST, \
-    QUADS_MODE_LIST_OBSTACLES
+    QUADS_MODE_LIST_OBSTACLES, QUADS_MODE_LIST_OBSTACLES_SINGLE
 
 from gym_art.quadrotor_multi.scenarios.static_same_goal import Scenario_static_same_goal
 from gym_art.quadrotor_multi.scenarios.dynamic_diff_goal import Scenario_dynamic_diff_goal
@@ -41,7 +41,10 @@ class Scenario_mix(QuadrotorScenario):
         # single scenario key: quads_mode value: 0. formation, 1: [formation_low_size, formation_high_size],
         # 2: episode_time
         if num_agents == 1:
-            self.quads_mode_list = QUADS_MODE_LIST_SINGLE
+            if envs[0].use_obstacles:
+                self.quads_mode_list = QUADS_MODE_LIST_OBSTACLES_SINGLE
+            else:
+                self.quads_mode_list = QUADS_MODE_LIST_SINGLE
         elif num_agents > 1 and not envs[0].use_obstacles:
             self.quads_mode_list = QUADS_MODE_LIST
         elif envs[0].use_obstacles:

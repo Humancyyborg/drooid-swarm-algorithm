@@ -62,11 +62,11 @@ class OctTree:
 
         pos_xy = np.array([rot_pos_x, rot_pos_y])
 
-        collide_start = self.check_pos(pos_xy, self.start_range)
-        collide_end = self.check_pos(pos_xy, self.end_range)
-        collide_flag = collide_start or collide_end
+        # collide_start = self.check_pos(pos_xy, self.start_range)
+        # collide_end = self.check_pos(pos_xy, self.end_range)
+        # collide_flag = collide_start or collide_end
 
-        return pos_xy, collide_flag
+        return pos_xy, False
 
     @staticmethod
     def y_gaussian_generation(regen_id=0):
@@ -104,7 +104,7 @@ class OctTree:
                                                          goal_start_point=start_point, goal_end_point=end_point)
                 pos_item = np.array([pos_xy[0], pos_xy[1]])
                 final_pos_item, overlap_flag = pos_item, False
-                # self.get_pos_no_overlap(pos_item=pos_item, pos_arr=self.pos_arr, obst_id=i)
+                _, overlap_flag = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=self.pos_arr)
                 if collide_flag is False and overlap_flag is False:
                     if self.pos_arr.shape[1] == 0:
                         self.pos_arr = np.array([np.append(np.array(final_pos_item), pos_z)])

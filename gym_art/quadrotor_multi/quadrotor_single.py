@@ -135,6 +135,7 @@ class QuadrotorDynamics:
         ## Collision with room
         self.crashed_wall = False
         self.crashed_ceiling = False
+        self.crashed_floor = False
 
     @staticmethod
     def angvel2thrust(w, linearity=0.424):
@@ -294,13 +295,13 @@ class QuadrotorDynamics:
         # assert np.all(thrust_cmds <= 1)
 
         # When quadrotor hits the ground, set normal to (0, 0, 1), linear velocity and angular velocity to 0
+        self.crashed_floor = False
         if self.pos[2] <= self.arm:
             if not self.on_floor:
                 vel, omega = npa(0, 0, 0), npa(0, 0, 0)
                 theta = np.arctan2(self.rot[1][0], self.rot[0][0] + EPS)
                 c, s = np.cos(theta), np.sin(theta)
                 if self.rot[2, 2] < 0:
-                    # self.flipped = True
                     rot = randyaw()
                     while np.dot(rot[:, 0], to_xyhat(-self.pos)) < 0.5:
                         rot = randyaw()
@@ -311,6 +312,7 @@ class QuadrotorDynamics:
                 self.set_state(pos, vel, rot, omega)
                 self.reset()
                 self.on_floor = True
+                self.crashed_floor = True
 
         thrust_cmds = np.clip(thrust_cmds, a_min=0., a_max=1.)
 
@@ -502,7 +504,7 @@ class QuadrotorDynamics:
     def step1_numba(self, thrust_cmds, dt, thrust_noise):
         self.motor_tau_up, self.motor_tau_down, self.thrust_rot_damp, self.thrust_cmds_damp, self.torques, \
         self.torque, self.rot, self.since_last_svd, self.omega_dot, self.omega, self.pos, thrust, rotor_drag_force, \
-        self.vel, self.on_floor = \
+        self.vel, self.on_floor, self.crashed_floor = \
             calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, EPS, self.motor_damp_time_up,
                                                                   self.motor_damp_time_down,
                                                                   self.thrust_cmds_damp, self.thrust_rot_damp,
@@ -666,7 +668,7 @@ class QuadrotorDynamics:
 # reasonable reward function for hovering at a goal and not flying too high
 def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_wall, crashed_ceiling,
                             time_remain, rew_coeff, action_prev,
-                            on_floor=False, flipped=False):
+                            on_floor=False, ground_collision=False):
     ##################################################
     ## log to create a sharp peak at the goal
     dist = np.linalg.norm(goal - dynamics.pos)
@@ -717,12 +719,19 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
     cost_spin = rew_coeff["spin"] * cost_spin_raw
 
     ##################################################
-    # loss crash
-    cost_crash_raw = float(crashed_floor or crashed_wall or crashed_ceiling)
+    # Loss crash for staying on the floor
+    cost_crash_raw = float(crashed_floor)
     cost_crash = rew_coeff["crash"] * cost_crash_raw
+
+    # Loss for hitting the room
     cost_crash_floor_raw = float(crashed_floor)
+    cost_crash_floor = rew_coeff["crash_room"] * cost_crash_floor_raw
+
     cost_crash_wall_raw = float(crashed_wall)
+    cost_crash_wall = rew_coeff["crash_room"] * cost_crash_wall_raw
+
     cost_crash_ceiling_raw = float(crashed_ceiling)
+    cost_crash_ceiling = rew_coeff["crash_room"] * cost_crash_ceiling_raw
 
     reward = -dt * np.sum([
         cost_pos,
@@ -735,6 +744,9 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
         cost_spin,
         cost_act_change,
         cost_vel,
+        cost_crash_floor,
+        cost_crash_wall,
+        cost_crash_ceiling
         # cost_flipped
         # cost_on_floor
     ])
@@ -751,8 +763,10 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
         "rew_spin": -cost_spin,
         "rew_act_change": -cost_act_change,
         "rew_vel": -cost_vel,
+        'rew_crash_floor': -cost_crash_floor,
+        'rew_crash_wall': -cost_crash_wall,
+        'rew_crash_ceiling': -cost_crash_ceiling,
         # "rew_flipped": -cost_flipped,
-
 
         "rewraw_main": -cost_pos_raw,
         'rewraw_pos': -cost_pos_raw,
@@ -870,7 +884,8 @@ class QuadrotorSingle:
         # self.yaw_max = np.pi   #rad
 
         self.room_box = np.array(
-            [[-self.room_length/2, -self.room_width/2, 0], [self.room_length/2, self.room_width/2, self.room_height]]) # diagonal coordinates of box (?)
+            [[-self.room_length / 2, -self.room_width / 2, 0],
+             [self.room_length / 2, self.room_width / 2, self.room_height]])  # diagonal coordinates of box (?)
         self.state_vector = self.state_vector = getattr(get_state, "state_" + self.obs_repr)
 
         ## WARN: If you
@@ -973,7 +988,8 @@ class QuadrotorSingle:
     def update_env(self, room_length, room_width, room_height):
         self.room_length, self.room_width, self.room_height = room_length, room_width, room_height
         self.room_box = np.array(
-            [[-self.room_length/2, -self.room_width/2, 0], [self.room_length/2, self.room_width/2, self.room_height]])  # diagonal coordinates of box (?)
+            [[-self.room_length / 2, -self.room_width / 2, 0],
+             [self.room_length / 2, self.room_width / 2, self.room_height]])  # diagonal coordinates of box (?)
         self.dynamics.room_box = self.room_box
 
     def update_sense_noise(self, sense_noise):
@@ -1075,7 +1091,6 @@ class QuadrotorSingle:
         if self.use_obstacles:
             obs_comps = obs_comps + ["octmap"]
 
-
         print("Observation components:", obs_comps)
         obs_low, obs_high = [], []
         for comp in obs_comps:
@@ -1115,8 +1130,7 @@ class QuadrotorSingle:
         # self.oracle.step(self.dynamics, self.goal, self.dt)
         # self.scene.update_state(self.dynamics, self.goal)
 
-
-        self.crashed_floor = self.dynamics.pos[2] <= self.dynamics.arm
+        self.crashed_floor = self.dynamics.crashed_floor
         self.crashed_wall = self.dynamics.crashed_wall
         self.crashed_ceiling = self.dynamics.crashed_ceiling
         self.time_remain = self.ep_len - self.tick
@@ -1125,8 +1139,8 @@ class QuadrotorSingle:
                                                    rew_coeff=self.rew_coeff, action_prev=self.actions[1],
                                                    on_floor=self.dynamics.on_floor
                                                    )
-        # if self.dynamics.flipped:
-        #     self.dynamics.flipped = False
+        # if self.dynamics.crashed_floor:
+        #     self.dynamics.crashed_floor = False
 
         self.tick += 1
         done = self.tick > self.ep_len  # or self.crashed
@@ -1261,6 +1275,7 @@ class QuadrotorSingle:
         self.dynamics.set_state(pos, vel, rotation, omega)
         self.dynamics.reset()
         self.dynamics.on_floor = False
+        self.dynamics.crashed_floor = self.dynamics.crashed_wall = self.dynamics.crashed_ceiling = False
 
         # Reseting some internal state (counters, etc)
         self.crashed = False
@@ -1708,6 +1723,7 @@ def calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, eps, 
                                                           damp_omega_quadratic, omega_max, pos, vel, arm, on_floor):
     # ToDo: add friction here
     # Once the drone hit the floor, change the normal to (0, 0, 1), and set linear velocity, angular velocity to 0.
+    crashed_floor = False
     if pos[2] <= arm:
         if not on_floor:
             vel, omega = np.zeros(3), np.zeros(3)
@@ -1723,6 +1739,7 @@ def calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, eps, 
             pos = np.array((pos[0], pos[1], arm))
             thrust_cmds_damp, thrust_rot_damp = np.zeros(4), np.zeros(4)
             on_floor = True
+            crashed_floor = True
 
     # Filtering the thruster and adding noise
     thrust_cmds = np.clip(thrust_cmds, 0., 1.)
@@ -1789,7 +1806,7 @@ def calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, eps, 
     pos = pos + dt * vel
 
     return motor_tau_up, motor_tau_down, thrust_rot_damp, thrust_cmds_damp, torques, \
-           torque, rot, since_last_svd, omega_dot, omega, pos, thrust, rotor_drag_force, vel, on_floor
+           torque, rot, since_last_svd, omega_dot, omega, pos, thrust, rotor_drag_force, vel, on_floor, crashed_floor
 
 
 @njit
