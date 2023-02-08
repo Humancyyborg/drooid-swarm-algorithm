@@ -76,7 +76,7 @@ class QuadrotorEnvMulti(gym.Env):
         # reward shaping
         self.rew_coeff = dict(
             pos=1., effort=0.05, action_change=0., crash=1., orient=1., yaw=0., rot=0., attitude=0., spin=0.1, vel=0.,
-            quadcol_bin=0., quadcol_bin_smooth_max=0., quadcol_bin_obst=0., quadcol_bin_obst_smooth_max=0.,
+            quadcol_bin=5., quadcol_bin_smooth_max=10., quadcol_bin_obst=5., quadcol_bin_obst_smooth_max=10.,
             quadsettle=0., quadcol_coeff=1., quadcol_obst_coeff=1., crash_room=0.
         )
         rew_coeff_orig = copy.deepcopy(self.rew_coeff)
@@ -374,7 +374,7 @@ class QuadrotorEnvMulti(gym.Env):
 
             rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
 
-            if np.array(obst_quad_col_matrix).any():
+            if len(obst_quad_col_matrix) > 0:
                 # We assign penalties to the drones which collide with the obstacles
                 # And obst_quad_last_step_unique_collisions only include drones' id
                 for i in curr_quad_col:
