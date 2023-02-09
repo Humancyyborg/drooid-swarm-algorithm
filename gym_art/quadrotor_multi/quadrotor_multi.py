@@ -34,7 +34,9 @@ class QuadrotorEnvMulti(gym.Env):
                  collision_force=True, local_obs=-1, collision_hitbox_radius=2.0,
                  collision_falloff_radius=2.0, collision_smooth_max_penalty=10.0, use_replay_buffer=False,
                  vis_acc_arrows=False, viz_traces=25, viz_trace_nth_step=1,
-                 use_obstacles=False, num_obstacles=0, obstacle_size=0.0, octree_resolution=0.05, use_downwash=False):
+                 use_obstacles=False, num_obstacles=0, obstacle_size=0.0, octree_resolution=0.05, use_downwash=False,
+                 collision_obst_falloff_radius=3.0
+                 ):
 
         super().__init__()
 
@@ -134,6 +136,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.obst_quad_collisions_per_episode = 0
             self.num_obstacles = num_obstacles
             self.obstacle_size = obstacle_size
+            self.collision_obst_falloff_radius = collision_obst_falloff_radius
             self.octree_resolution = octree_resolution
             self.obstacles = MultiObstacles(num_obstacles=self.num_obstacles, room_dims=self.room_dims,
                                             resolution=self.octree_resolution, obstacle_size=self.obstacle_size)
@@ -389,7 +392,7 @@ class QuadrotorEnvMulti(gym.Env):
 
             rew_obst_quad_proximity = -1.0 * calculate_obst_drone_proximity_penalties(
                 distances=drone_obst_dists, arm=self.quad_arm, dt=self.control_dt,
-                penalty_fall_off=10.0,
+                penalty_fall_off=self.collision_obst_falloff_radius,
                 max_penalty=self.rew_coeff["quadcol_bin_obst_smooth_max"],
                 num_agents=self.num_agents,
             )
