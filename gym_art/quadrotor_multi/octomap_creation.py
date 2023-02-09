@@ -16,7 +16,7 @@ class OctTree:
         self.size = obstacle_size
         self.start_range = np.zeros((2, 2))
         self.end_range = np.zeros((2, 2))
-        self.init_box = np.array([[-2.0, -2.0, -0.5 * 2.0], [2.0, 2.0, 1.5 * 2.0]])
+        self.init_box = np.array([[-0.5, -0.5, -0.5 * 2.0], [0.5, 0.5, 1.5 * 2.0]])
         self.pos_arr = None
 
     def reset(self):
@@ -62,11 +62,11 @@ class OctTree:
 
         pos_xy = np.array([rot_pos_x, rot_pos_y])
 
-        # collide_start = self.check_pos(pos_xy, self.start_range)
-        # collide_end = self.check_pos(pos_xy, self.end_range)
-        # collide_flag = collide_start or collide_end
+        collide_start = self.check_pos(pos_xy, self.start_range)
+        collide_end = self.check_pos(pos_xy, self.end_range)
+        collide_flag = collide_start or collide_end
 
-        return pos_xy, False
+        return pos_xy, collide_flag
 
     @staticmethod
     def y_gaussian_generation(regen_id=0):
@@ -78,7 +78,7 @@ class OctTree:
         y_gaussian_scale = np.random.uniform(low=y_low, high=y_high)
         return y_gaussian_scale
 
-    def get_pos_no_overlap(self, pos_item, pos_arr):
+    def get_pos_no_overlap(self, pos_item, pos_arr, min_gap=0.2):
         # In this function, we assume the shape of all obstacles is cube
         # But even if we have this assumption, we can still roughly use it for shapes like cylinder
         if pos_arr.shape[1] == 0:
@@ -86,7 +86,7 @@ class OctTree:
 
         overlap_flag = False
         for j in range(len(pos_arr)):
-            if np.linalg.norm(pos_item - pos_arr[j][:2]) < 1.5 * self.size:
+            if np.linalg.norm(pos_item - pos_arr[j][:2]) < self.size + min_gap:
                 overlap_flag = True
                 break
         return pos_item, overlap_flag
@@ -112,7 +112,8 @@ class OctTree:
                     self.pos_arr = np.append(self.pos_arr, np.array([np.append(np.array(final_pos_item), pos_z)]),
                                              axis=0)
                     break
-
+        # Test for pos with goal
+        # self.pos_arr = np.array([[-4.5+x, 0, 5] for x in range(0, 8)])
         self.mark_octree()
         self.generate_sdf()
 
