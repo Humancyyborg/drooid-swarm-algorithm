@@ -1,6 +1,26 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+"""
+# How to use:
+1. Go to Sample-Factory, actor_critic.py: ActorCriticSeparateWeights: forward function
+2. Set a debug point at the first line of the forward function.
+    x = self.forward_head(normalized_obs_dict)
+3. In PyCharm, go to Console, copy and past code below
+
+tmp_score={}
+for i in range(-20, 21):
+    normalized_obs_dict['obs'][0][2]=i * 0.1
+    x = self.forward_head(normalized_obs_dict)
+    x, new_rnn_states = self.forward_core(x, rnn_states)
+    result = self.forward_tail(x, values_only, sample_actions=True)
+    tmp_score[i] = result['values'].item()
+
+print(tmp_score)
+
+4. Copy and paste the print info and replace v_value dict below. 
+"""
+
 v_value = {-20: -0.8389064073562622, -19: -0.7826626300811768, -18: -0.7211709022521973, -17: -0.6561537981033325,
            -16: -0.5925958156585693, -15: -0.5331193208694458, -14: -0.472306489944458, -13: -0.39593398571014404,
            -12: -0.29337072372436523, -11: -0.19148313999176025, -10: -0.12815141677856445, -9: -0.10008419305086136,
