@@ -675,6 +675,11 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
     cost_pos_raw = dist
     cost_pos = rew_coeff["pos"] * cost_pos_raw
 
+    # reward for being near the goal
+    cost_near_goal = 0.
+    if dist < 0.2:
+        cost_near_goal = -10.
+
     # sphere of equal reward if drones are close to the goal position
     vel_coeff = rew_coeff["vel"]
     ##################################################
@@ -746,7 +751,8 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
         cost_vel,
         cost_crash_floor,
         cost_crash_wall,
-        cost_crash_ceiling
+        cost_crash_ceiling,
+        cost_near_goal,
         # cost_flipped
         # cost_on_floor
     ])
@@ -766,6 +772,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
         'rew_crash_floor': -cost_crash_floor,
         'rew_crash_wall': -cost_crash_wall,
         'rew_crash_ceiling': -cost_crash_ceiling,
+        "rew_near_goal": -cost_near_goal,
         # "rew_flipped": -cost_flipped,
 
         "rewraw_main": -cost_pos_raw,
