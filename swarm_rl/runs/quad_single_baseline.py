@@ -4,7 +4,7 @@ _params = ParamGrid([
     ('seed', [0000, 1111, 2222, 3333]),
 ])
 
-QUAD_BASELINE_CLI = (
+QUAD_SINGLE_BASELINE_CLI = (
     'python -m swarm_rl.train --env=quadrotor_multi --train_for_env_steps=1000000000 --algo=APPO --use_rnn=False '
     '--num_workers=36 --num_envs_per_worker==16 --learning_rate=0.0001 --ppo_clip_value=5.0 --recurrence=1 '
     '--nonlinearity=tanh --actor_critic_share_weights=False --policy_initialization=xavier_uniform '
@@ -17,13 +17,18 @@ QUAD_BASELINE_CLI = (
     '--quads_local_obs=-1 --quads_num_agents=1 '
     '--quads_collision_reward=5.0 --quads_collision_smooth_max_penalty=10.0 '
     '--replay_buffer_sample_prob=0.75 '
-    '--anneal_collision_steps=300000000'
+    '--anneal_collision_steps=300000000 '
+)
+
+
+CLI = QUAD_SINGLE_BASELINE_CLI + (
+    '--with_wandb=True --wandb_project=Quad-Swarm-RL --wandb_group=single_agent_baseline --wandb_user=multi-drones'
 )
 
 _experiment = Experiment(
-    'single_agent_no_obstacles',
-    QUAD_BASELINE_CLI,
+    'single_agent_baseline',
+    CLI,
     _params.generate_params(randomize=False),
 )
 
-RUN_DESCRIPTION = RunDescription('quad_single_drone_no_obstacles', experiments=[_experiment])
+RUN_DESCRIPTION = RunDescription('single_agent_baseline', experiments=[_experiment])
