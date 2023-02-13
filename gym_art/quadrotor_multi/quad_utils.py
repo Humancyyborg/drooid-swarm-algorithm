@@ -352,8 +352,8 @@ def compute_col_norm_and_new_vel_obst(dyn, obstacle_pos):
 
     return vnew, collision_norm
 
-def compute_new_vel(max_vel_magn, vel, vel_shift, coeff):
-    vel_decay_ratio = np.random.uniform(low=0.2, high=0.8)
+def compute_new_vel(max_vel_magn, vel, vel_shift, coeff, low=0.2, high=0.8):
+    vel_decay_ratio = np.random.uniform(low=low, high=high)
     vel_new = vel + vel_shift
     vel_new_mag = np.linalg.norm(vel_new)
     vel_new_dir = vel_new / (vel_new_mag + EPS if vel_new_mag == 0.0 else vel_new_mag)
@@ -415,7 +415,7 @@ def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
     dyn2.omega -= new_omega * col_coeff
 
 
-def perform_collision_with_obstacle(drone_dyn, obstacle_pos, col_coeff=1.0):
+def perform_collision_with_obstacle(drone_dyn, obstacle_pos, obstacle_size, col_coeff=1.0):
     # Vel noise has two different random components,
     # One that preserves momentum in opposite directions
     # Second that does not preserve momentum
@@ -431,7 +431,11 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_pos, col_coeff=1.0):
             break
 
     max_vel_magn = np.linalg.norm(drone_dyn.vel)
-    drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel, vel_shift=dyn_vel_shift, coeff=col_coeff)
+    if np.linalg.norm(drone_dyn.pos - obstacle_pos) <= obstacle_size:
+        drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel, vel_shift=dyn_vel_shift,
+                                        coeff=col_coeff, low=1.0, high=1.0)
+    else:
+        drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel, vel_shift=dyn_vel_shift, coeff=col_coeff)
 
     # Random forces for omega
     new_omega = compute_new_omega()

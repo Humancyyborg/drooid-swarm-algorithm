@@ -2,7 +2,7 @@ import numpy as np
 
 from gym_art.quadrotor_multi.scenarios.base import QuadrotorScenario
 from gym_art.quadrotor_multi.scenarios.utils import QUADS_MODE_LIST_SINGLE, QUADS_MODE_LIST, \
-    QUADS_MODE_LIST_OBSTACLES, QUADS_MODE_LIST_OBSTACLES_SINGLE
+    QUADS_MODE_LIST_OBSTACLES
 
 from gym_art.quadrotor_multi.scenarios.static_same_goal import Scenario_static_same_goal
 from gym_art.quadrotor_multi.scenarios.dynamic_diff_goal import Scenario_dynamic_diff_goal
@@ -18,7 +18,6 @@ from gym_art.quadrotor_multi.scenarios.swarm_vs_swarm import Scenario_swarm_vs_s
 from gym_art.quadrotor_multi.scenarios.obstacles.o_uniform_diff_goal_spawn import Scenario_o_uniform_diff_goal_spawn
 from gym_art.quadrotor_multi.scenarios.obstacles.o_uniform_same_goal_spawn import Scenario_o_uniform_same_goal_spawn
 from gym_art.quadrotor_multi.scenarios.obstacles.o_uniform_swarm_vs_swarm import Scenario_o_uniform_swarm_vs_swarm
-from gym_art.quadrotor_multi.scenarios.test.test_mix import Scenario_mix_test
 
 
 def create_scenario(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
@@ -29,7 +28,7 @@ def create_scenario(quads_mode, envs, num_agents, room_dims, room_dims_callback,
     return scenario
 
 
-class Scenario_mix(QuadrotorScenario):
+class Scenario_mix_test(QuadrotorScenario):
     def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
                  quads_formation_size):
         super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
@@ -41,12 +40,10 @@ class Scenario_mix(QuadrotorScenario):
         # single scenario key: quads_mode value: 0. formation, 1: [formation_low_size, formation_high_size],
         # 2: episode_time
         if num_agents == 1:
-            if envs[0].use_obstacles:
-                self.quads_mode_list = QUADS_MODE_LIST_OBSTACLES_SINGLE
-            else:
-                self.quads_mode_list = QUADS_MODE_LIST_SINGLE
+            self.quads_mode_list = QUADS_MODE_LIST_SINGLE
         elif num_agents > 1 and not envs[0].use_obstacles:
-            self.quads_mode_list = QUADS_MODE_LIST
+            quads_mode_list = np.array(QUADS_MODE_LIST)
+            self.quads_mode_list = quads_mode_list[[0, 3, 6, 7, 8]]
         elif envs[0].use_obstacles:
             self.quads_mode_list = QUADS_MODE_LIST_OBSTACLES
 
@@ -57,6 +54,7 @@ class Scenario_mix(QuadrotorScenario):
 
         # actual scenario being used
         self.scenario = None
+        self.counter = 0
 
     def name(self):
         """
@@ -72,8 +70,8 @@ class Scenario_mix(QuadrotorScenario):
         return infos, rewards
 
     def reset(self):
-        mode_index = np.random.randint(low=0, high=len(self.quads_mode_list))
-        mode = self.quads_mode_list[mode_index]
+        mode = self.quads_mode_list[self.counter]
+        self.counter = (self.counter + 1) % len(self.quads_mode_list)
 
         # Init the scenario
         self.scenario = create_scenario(quads_mode=mode, envs=self.envs, num_agents=self.num_agents,

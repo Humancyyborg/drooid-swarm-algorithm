@@ -16,7 +16,7 @@ class OctTree:
         self.size = obstacle_size
         self.start_range = np.zeros((2, 2))
         self.end_range = np.zeros((2, 2))
-        self.init_box = np.array([[-2.0, -2.0, -0.5 * 2.0], [2.0, 2.0, 1.5 * 2.0]])
+        self.init_box = np.array([[-0.5, -0.5, -0.5 * 2.0], [0.5, 0.5, 1.5 * 2.0]])
         self.pos_arr = None
 
     def reset(self):
@@ -78,7 +78,7 @@ class OctTree:
         y_gaussian_scale = np.random.uniform(low=y_low, high=y_high)
         return y_gaussian_scale
 
-    def get_pos_no_overlap(self, pos_item, pos_arr):
+    def get_pos_no_overlap(self, pos_item, pos_arr, min_gap=0.2):
         # In this function, we assume the shape of all obstacles is cube
         # But even if we have this assumption, we can still roughly use it for shapes like cylinder
         if pos_arr.shape[1] == 0:
@@ -86,7 +86,7 @@ class OctTree:
 
         overlap_flag = False
         for j in range(len(pos_arr)):
-            if np.linalg.norm(pos_item - pos_arr[j][:2]) < 1.5 * self.size:
+            if np.linalg.norm(pos_item - pos_arr[j][:2]) < self.size + min_gap:
                 overlap_flag = True
                 break
         return pos_item, overlap_flag
@@ -104,7 +104,7 @@ class OctTree:
                                                          goal_start_point=start_point, goal_end_point=end_point)
                 pos_item = np.array([pos_xy[0], pos_xy[1]])
                 final_pos_item, overlap_flag = pos_item, False
-                # self.get_pos_no_overlap(pos_item=pos_item, pos_arr=self.pos_arr, obst_id=i)
+                _, overlap_flag = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=self.pos_arr)
                 if collide_flag is False and overlap_flag is False:
                     if self.pos_arr.shape[1] == 0:
                         self.pos_arr = np.array([np.append(np.array(final_pos_item), pos_z)])

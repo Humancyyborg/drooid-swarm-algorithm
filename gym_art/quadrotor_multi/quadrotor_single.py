@@ -128,13 +128,12 @@ class QuadrotorDynamics:
             raise ValueError('QuadEnv: Unknown dimensionality mode %s' % self.dim_mode)
 
         self.on_floor = False
-        # self.hit_floor = False
-        # self.flipped = False
         self.mu = 0.6
 
         ## Collision with room
         self.crashed_wall = False
         self.crashed_ceiling = False
+        self.crashed_floor = False
 
     @staticmethod
     def angvel2thrust(w, linearity=0.424):
@@ -300,7 +299,6 @@ class QuadrotorDynamics:
                 theta = np.arctan2(self.rot[1][0], self.rot[0][0] + EPS)
                 c, s = np.cos(theta), np.sin(theta)
                 if self.rot[2, 2] < 0:
-                    # self.flipped = True
                     rot = randyaw()
                     while np.dot(rot[:, 0], to_xyhat(-self.pos)) < 0.5:
                         rot = randyaw()
@@ -664,9 +662,8 @@ class QuadrotorDynamics:
 
 
 # reasonable reward function for hovering at a goal and not flying too high
-def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_wall, crashed_ceiling,
-                            time_remain, rew_coeff, action_prev,
-                            on_floor=False, flipped=False):
+def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_wall, crashed_ceiling, time_remain,
+                            rew_coeff, action_prev, on_floor=False):
     ##################################################
     ## log to create a sharp peak at the goal
     dist = np.linalg.norm(goal - dynamics.pos)
@@ -717,12 +714,19 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
     cost_spin = rew_coeff["spin"] * cost_spin_raw
 
     ##################################################
-    # loss crash
-    cost_crash_raw = float(crashed_floor or crashed_wall or crashed_ceiling)
+    # Loss crash for staying on the floor
+    cost_crash_raw = float(crashed_floor)
     cost_crash = rew_coeff["crash"] * cost_crash_raw
+
+    # Loss for hitting the room
     cost_crash_floor_raw = float(crashed_floor)
+    cost_crash_floor = rew_coeff["crash_room"] * cost_crash_floor_raw
+
     cost_crash_wall_raw = float(crashed_wall)
+    cost_crash_wall = rew_coeff["crash_room"] * cost_crash_wall_raw
+
     cost_crash_ceiling_raw = float(crashed_ceiling)
+    cost_crash_ceiling = rew_coeff["crash_room"] * cost_crash_ceiling_raw
 
     reward = -dt * np.sum([
         cost_pos,
@@ -735,8 +739,9 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
         cost_spin,
         cost_act_change,
         cost_vel,
-        # cost_flipped
-        # cost_on_floor
+        cost_crash_floor,
+        cost_crash_wall,
+        cost_crash_ceiling,
     ])
 
     rew_info = {
@@ -751,8 +756,9 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
         "rew_spin": -cost_spin,
         "rew_act_change": -cost_act_change,
         "rew_vel": -cost_vel,
-        # "rew_flipped": -cost_flipped,
-
+        'rew_crash_floor': -cost_crash_floor,
+        'rew_crash_wall': -cost_crash_wall,
+        'rew_crash_ceiling': -cost_crash_ceiling,
 
         "rewraw_main": -cost_pos_raw,
         'rewraw_pos': -cost_pos_raw,
@@ -870,7 +876,8 @@ class QuadrotorSingle:
         # self.yaw_max = np.pi   #rad
 
         self.room_box = np.array(
-            [[-self.room_length/2, -self.room_width/2, 0], [self.room_length/2, self.room_width/2, self.room_height]]) # diagonal coordinates of box (?)
+            [[-self.room_length / 2, -self.room_width / 2, 0],
+             [self.room_length / 2, self.room_width / 2, self.room_height]])  # diagonal coordinates of box (?)
         self.state_vector = self.state_vector = getattr(get_state, "state_" + self.obs_repr)
 
         ## WARN: If you
@@ -973,7 +980,8 @@ class QuadrotorSingle:
     def update_env(self, room_length, room_width, room_height):
         self.room_length, self.room_width, self.room_height = room_length, room_width, room_height
         self.room_box = np.array(
-            [[-self.room_length/2, -self.room_width/2, 0], [self.room_length/2, self.room_width/2, self.room_height]])  # diagonal coordinates of box (?)
+            [[-self.room_length / 2, -self.room_width / 2, 0],
+             [self.room_length / 2, self.room_width / 2, self.room_height]])  # diagonal coordinates of box (?)
         self.dynamics.room_box = self.room_box
 
     def update_sense_noise(self, sense_noise):
@@ -1115,8 +1123,7 @@ class QuadrotorSingle:
         # self.oracle.step(self.dynamics, self.goal, self.dt)
         # self.scene.update_state(self.dynamics, self.goal)
 
-
-        self.crashed_floor = self.dynamics.pos[2] <= self.dynamics.arm
+        self.crashed_floor = self.dynamics.crashed_floor
         self.crashed_wall = self.dynamics.crashed_wall
         self.crashed_ceiling = self.dynamics.crashed_ceiling
         self.time_remain = self.ep_len - self.tick
@@ -1125,8 +1132,6 @@ class QuadrotorSingle:
                                                    rew_coeff=self.rew_coeff, action_prev=self.actions[1],
                                                    on_floor=self.dynamics.on_floor
                                                    )
-        # if self.dynamics.flipped:
-        #     self.dynamics.flipped = False
 
         self.tick += 1
         done = self.tick > self.ep_len  # or self.crashed
@@ -1261,6 +1266,7 @@ class QuadrotorSingle:
         self.dynamics.set_state(pos, vel, rotation, omega)
         self.dynamics.reset()
         self.dynamics.on_floor = False
+        self.dynamics.crashed_floor = self.dynamics.crashed_wall = self.dynamics.crashed_ceiling = False
 
         # Reseting some internal state (counters, etc)
         self.crashed = False

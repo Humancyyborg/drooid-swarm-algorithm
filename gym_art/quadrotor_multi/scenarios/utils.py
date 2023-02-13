@@ -13,6 +13,9 @@ QUADS_MODE_LIST_SINGLE = ['static_same_goal', 'static_diff_goal',  # static form
 
 QUADS_MODE_LIST_OBSTACLES = ['o_uniform_same_goal_spawn', 'o_uniform_diff_goal_spawn', 'o_uniform_swarm_vs_swarm']
 
+QUADS_MODE_LIST_OBSTACLES_SINGLE = ['o_uniform_same_goal_spawn']
+
+
 QUADS_FORMATION_LIST = ['circle_horizontal', 'circle_vertical_xz', 'circle_vertical_yz', 'sphere', 'grid_horizontal',
                         'grid_vertical_xz', 'grid_vertical_yz', 'cube']
 
