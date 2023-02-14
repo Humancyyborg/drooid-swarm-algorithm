@@ -127,7 +127,10 @@ class QuadrotorDynamics:
         else:
             raise ValueError('QuadEnv: Unknown dimensionality mode %s' % self.dim_mode)
 
+        # Identify if drone is on the floor
         self.on_floor = False
+        # If pos_z smaller than this threshold, we assume that drone collide with the floor
+        self.floor_threshold = 0.05
         self.mu = 0.6
 
         ## Collision with room
@@ -291,25 +294,6 @@ class QuadrotorDynamics:
         # uncomment for debugging. they are slow
         # assert np.all(thrust_cmds >= 0)
         # assert np.all(thrust_cmds <= 1)
-
-        # When quadrotor hits the ground, set normal to (0, 0, 1), linear velocity and angular velocity to 0
-        if self.pos[2] <= self.arm:
-            if not self.on_floor:
-                vel, omega = npa(0, 0, 0), npa(0, 0, 0)
-                theta = np.arctan2(self.rot[1][0], self.rot[0][0] + EPS)
-                c, s = np.cos(theta), np.sin(theta)
-                if self.rot[2, 2] < 0:
-                    rot = randyaw()
-                    while np.dot(rot[:, 0], to_xyhat(-self.pos)) < 0.5:
-                        rot = randyaw()
-                else:
-                    rot = np.array(((c, -s, 0), (s, c, 0), (0, 0, 1)))
-
-                pos = npa(self.pos[0], self.pos[1], self.arm)
-                self.set_state(pos, vel, rot, omega)
-                self.reset()
-                self.on_floor = True
-
         thrust_cmds = np.clip(thrust_cmds, a_min=0., a_max=1.)
 
         ###################################
@@ -366,8 +350,7 @@ class QuadrotorDynamics:
             rotor_drag_ti = cross_mx4(rotor_drag_fi, self.model.prop_pos)  # [4,3] x [4,3]
             rotor_drag_torque = np.sum(rotor_drag_ti, axis=0)
 
-            rotor_roll_torque = - self.C_rot_roll * self.prop_ccw[:, None] * np.sqrt(self.thrust_cmds_damp)[:,
-                                                                             None] * v_rotors  # [4,3]
+            rotor_roll_torque = - self.C_rot_roll * self.prop_ccw[:, None] * np.sqrt(self.thrust_cmds_damp)[:, None] * v_rotors  # [4,3]
             rotor_roll_torque = np.sum(rotor_roll_torque, axis=0)
             rotor_visc_torque = rotor_drag_torque + rotor_roll_torque
 
@@ -459,43 +442,15 @@ class QuadrotorDynamics:
         self.crashed_wall = not np.array_equal(self.pos_before_clip[:2], self.pos[:2])
         self.crashed_ceiling = self.pos_before_clip[2] > self.pos[2]
 
-        # self.vel[np.equal(self.pos, self.pos_before_clip)] = 0.
-
-        ## Computing accelerations
-        # Add friction if drone is on the floor
-        force = np.matmul(self.rot, (thrust + rotor_drag_force))
-        if self.on_floor:
-            f = self.mu * GRAV * npa(np.sign(force[0]), np.sign(force[1]), 0) * self.mass
-            # Since fiction cannot be greater than force, we need to clip it
-            for i in range(2):
-                if np.abs(f[i]) > np.abs(force[i]):
-                    f[i] = force[i]
-            force -= f
-
-        acc = [0, 0, -GRAV] + (1.0 / self.mass) * force
-        # acc[mask] = 0. #If we leave the room - stop accelerating
-        if self.on_floor:
-            acc[2] = np.maximum(acc[2], 0)
-        self.acc = acc
+        sum_thr_drag = thrust + rotor_drag_force
+        self.floor_interaction(sum_thr_drag=sum_thr_drag)
 
         ## Computing velocities
-        self.vel = (1.0 - self.vel_damp) * self.vel + dt * acc
-        # self.vel[mask] = 0. #If we leave the room - stop flying
+        self.vel = (1.0 - self.vel_damp) * self.vel + dt * self.acc
 
         ## Accelerometer measures so called "proper acceleration"
         # that includes gravity with the opposite sign
-        self.accelerometer = np.matmul(self.rot.T, acc + [0, 0, self.gravity])
-
-        if self.on_floor:
-            if self.pos[2] > self.arm + EPS:
-                self.on_floor = False
-            else:
-                theta = np.arctan2(self.rot[1][0], self.rot[0][0] + EPS)
-                c, s = np.cos(theta), np.sin(theta)
-                rot = np.array(((c, -s, 0), (s, c, 0), (0, 0, 1)))
-                pos = npa(self.pos[0], self.pos[1], self.arm)
-                self.rot = rot
-                self.pos = pos
+        self.accelerometer = np.matmul(self.rot.T, self.acc + [0, 0, self.gravity])
 
     def step1_numba(self, thrust_cmds, dt, thrust_noise):
         self.motor_tau_up, self.motor_tau_down, self.thrust_rot_damp, self.thrust_cmds_damp, self.torques, \
@@ -522,29 +477,70 @@ class QuadrotorDynamics:
         self.crashed_ceiling = self.pos_before_clip[2] > self.pos[2]
 
         # Set constant variables up for numba
-        grav_cnst_arr = np.float64([0, 0, -GRAV])
         sum_thr_drag = thrust + rotor_drag_force
         grav_arr = np.float64([0, 0, self.gravity])
-        self.vel, self.acc, self.accelerometer = compute_velocity_and_acceleration(self.vel, grav_cnst_arr, self.mass,
-                                                                                   self.rot, sum_thr_drag,
-                                                                                   self.vel_damp, dt,
-                                                                                   self.rot.T, grav_arr,
-                                                                                   self.on_floor, self.mu)
 
-        if self.on_floor:
-            if self.pos[2] > self.arm + EPS:
-                self.on_floor = False
-            else:
-                theta = np.arctan2(self.rot[1][0], self.rot[0][0] + EPS)
-                c, s = np.cos(theta), np.sin(theta)
-                rot = np.array(((c, -s, 0), (s, c, 0), (0, 0, 1)))
-                pos = np.array((self.pos[0], self.pos[1], self.arm))
-                self.rot = rot
-                self.pos = pos
+        self.floor_interaction(sum_thr_drag=sum_thr_drag)
+
+        # compute_velocity_and_acceleration(vel, vel_damp, dt, rot_tpose, grav_arr, acc):
+        self.vel, self.accelerometer = compute_velocity_and_acceleration(vel=self.vel, vel_damp=self.vel_damp, dt=dt,
+                                                                         rot_tpose=self.rot.T, grav_arr=grav_arr,
+                                                                         acc=self.acc)
 
     def reset(self):
         self.thrust_cmds_damp = np.zeros([4])
         self.thrust_rot_damp = np.zeros([4])
+
+    def floor_interaction(self, sum_thr_drag):
+        # Change pos, omega, rot, acc
+        if self.pos[2] <= self.floor_threshold:
+            self.pos = npa(self.pos[0], self.pos[1], self.floor_threshold)
+            self.omega = npa(0, 0, 0)
+            if self.on_floor:
+                # Drone is on the floor, and on_floor flag still True
+                theta = np.arctan2(self.rot[1][0], self.rot[0][0] + EPS)
+                c, s = np.cos(theta), np.sin(theta)
+                self.rot = np.array(((c, -s, 0), (s, c, 0), (0, 0, 1)))
+
+                # Add friction if drone is on the floor
+                force = np.matmul(self.rot, sum_thr_drag)
+                f = self.mu * GRAV * npa(np.sign(force[0]), np.sign(force[1]), 0) * self.mass
+                # Since fiction cannot be greater than force, we need to clip it
+                for i in range(2):
+                    if np.abs(f[i]) > np.abs(force[i]):
+                        f[i] = force[i]
+                force -= f
+                self.acc = [0, 0, -GRAV] + (1.0 / self.mass) * force
+                self.acc[2] = max(0, self.acc[2])
+            else:
+                # Previous step, drone still in the air, but in this step, it hits the floor
+                # In previous step, self.on_floor = False
+                self.on_floor = True
+                # Set vel to [0, 0, 0]
+                self.vel, self.acc = npa(0, 0, 0), npa(0, 0, 0)
+                # Set rot
+                theta = np.arctan2(self.rot[1][0], self.rot[0][0] + EPS)
+                c, s = np.cos(theta), np.sin(theta)
+                if self.rot[2, 2] < 0:
+                    self.rot = randyaw()
+                    while np.dot(self.rot[:, 0], to_xyhat(-self.pos)) < 0.5:
+                        self.rot = randyaw()
+                else:
+                    self.rot = np.array(((c, -s, 0), (s, c, 0), (0, 0, 1)))
+
+                # reset momentum / accumulation of thrust
+                self.thrust_cmds_damp = np.zeros([4])
+                self.thrust_rot_damp = np.zeros([4])
+        else:
+            # self.pos[2] > self.floor_threshold
+            if self.on_floor:
+                # Drone is in the air, while on_floor flag still True
+                self.on_floor = False
+
+            # Computing accelerations
+            force = np.matmul(self.rot, sum_thr_drag)
+            self.acc = [0, 0, -GRAV] + (1.0 / self.mass) * force
+
 
     def rotors_drag_roll_glob_frame(self):
         # omega [3,] x prop_pos [4,3] = v_rot_body [4, 3]
@@ -1712,24 +1708,6 @@ def calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, eps, 
                                                           prop_crossproducts, prop_ccw, torque_max, rot, omega,
                                                           eye, since_last_svd, since_last_svd_limit, inertia,
                                                           damp_omega_quadratic, omega_max, pos, vel, arm, on_floor):
-    # ToDo: add friction here
-    # Once the drone hit the floor, change the normal to (0, 0, 1), and set linear velocity, angular velocity to 0.
-    if pos[2] <= arm:
-        if not on_floor:
-            vel, omega = np.zeros(3), np.zeros(3)
-            if rot[2, 2] < 0:
-                theta = np.random.uniform(-np.pi, np.pi)
-                c, s = np.cos(theta), np.sin(theta)
-                rot = np.array(((c, -s, 0), (s, c, 0), (0, 0, 1)))
-                # flipped = True
-            else:
-                theta = np.arctan2(rot[1][0], rot[0][0])
-                c, s = np.cos(theta), np.sin(theta)
-                rot = np.array(((c, -s, 0), (s, c, 0), (0, 0, 1)))
-            pos = np.array((pos[0], pos[1], arm))
-            thrust_cmds_damp, thrust_rot_damp = np.zeros(4), np.zeros(4)
-            on_floor = True
-
     # Filtering the thruster and adding noise
     thrust_cmds = np.clip(thrust_cmds, 0., 1.)
     motor_tau_up = 4 * dt / (motor_damp_time_up + eps)
@@ -1799,27 +1777,13 @@ def calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, eps, 
 
 
 @njit
-def compute_velocity_and_acceleration(vel, grav_cnst_arr, mass, rot, sum_thr_drag, vel_damp, dt, rot_tpose,
-                                      grav_arr, on_floor, mu=0.3):
-    # Computing accelerations
-    force = rot @ sum_thr_drag
-    if on_floor:
-        f = mu * GRAV * np.array((np.sign(force[0]), np.sign(force[1]), 0)) * mass
-        # Since fiction cannot be greater than force, we need to clip it
-        for i in range(2):
-            if np.abs(f[i]) > np.abs(force[i]):
-                f[i] = force[i]
-        force -= f
-    acc = grav_cnst_arr + ((1.0 / mass) * force)
-    if on_floor:
-        acc[2] = np.maximum(acc[2], 0)
-
+def compute_velocity_and_acceleration(vel, vel_damp, dt, rot_tpose, grav_arr, acc):
     # Computing velocities
     vel = (1.0 - vel_damp) * vel + dt * acc
 
     # Accelerometer measures so called "proper acceleration" that includes gravity with the opposite sign
     accm = rot_tpose @ (acc + grav_arr)
-    return vel, acc, accm
+    return vel, accm
 
 
 if __name__ == '__main__':
