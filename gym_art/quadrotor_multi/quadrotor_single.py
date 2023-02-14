@@ -207,7 +207,7 @@ class QuadrotorDynamics:
 
         ## the ratio between max torque and inertia around each axis
         ## the 0-1 matrix on the right is the way to sum-up
-        self.torque_to_inertia = self.G_omega @ np.array([[0, 0, 0], [0, 1, 1], [1, 1, 0], [1, 0, 1]])
+        self.torque_to_inertia = self.G_omega @ np.array([[0., 0., 0.], [0., 1., 1.], [1., 1., 0.], [1., 0., 1.]])
         self.torque_to_inertia = np.sum(self.torque_to_inertia, axis=1)
         # self.torque_to_inertia = self.torque_to_inertia / np.linalg.norm(self.torque_to_inertia)
 
@@ -231,7 +231,7 @@ class QuadrotorDynamics:
         self.pos = deepcopy(position)
         self.vel = deepcopy(velocity)
         self.acc = np.zeros(3)
-        self.accelerometer = np.array([0, 0, GRAV])
+        self.accelerometer = np.array([0., 0., GRAV])
         self.rot = deepcopy(rotation)
         self.omega = deepcopy(omega.astype(np.float32))
         self.thrusts = deepcopy(thrusts)
@@ -378,7 +378,7 @@ class QuadrotorDynamics:
         ## (Square) Damping using torques (in case we would like to add damping using torques)
         # damping_torque = - 0.3 * self.omega * np.fabs(self.omega)
         self.torque = thrust_torque + rotor_visc_torque
-        thrust = npa(0, 0, np.sum(thrusts))
+        thrust = npa(0., 0., np.sum(thrusts))
 
         #########################################################
         ## ROTATIONAL DYNAMICS
@@ -390,7 +390,7 @@ class QuadrotorDynamics:
         omega_norm = np.linalg.norm(omega_vec)
         if omega_norm != 0:
             # See [7]
-            K = np.array([[0, -wz, wy], [wz, 0, -wx], [-wy, wx, 0]]) / omega_norm
+            K = np.array([[0., -wz, wy], [wz, 0., -wx], [-wy, wx, 0.]]) / omega_norm
             rot_angle = omega_norm * dt
             dRdt = self.eye + np.sin(rot_angle) * K + (1. - np.cos(rot_angle)) * (K @ K)
             self.rot = dRdt @ self.rot
@@ -494,17 +494,17 @@ class QuadrotorDynamics:
     def floor_interaction(self, sum_thr_drag):
         # Change pos, omega, rot, acc
         if self.pos[2] <= self.floor_threshold:
-            self.pos = npa(self.pos[0], self.pos[1], self.floor_threshold)
-            self.omega = npa(0, 0, 0)
+            self.pos = np.array([self.pos[0], self.pos[1], self.floor_threshold])
+            self.omega = np.array([0., 0., 0.])
             if self.on_floor:
                 # Drone is on the floor, and on_floor flag still True
                 theta = np.arctan2(self.rot[1][0], self.rot[0][0] + EPS)
                 c, s = np.cos(theta), np.sin(theta)
-                self.rot = np.array(((c, -s, 0), (s, c, 0), (0, 0, 1)))
+                self.rot = np.array(((c, -s, 0.), (s, c, 0.), (0., 0., 1.)))
 
                 # Add friction if drone is on the floor
                 force = np.matmul(self.rot, sum_thr_drag)
-                f = self.mu * GRAV * npa(np.sign(force[0]), np.sign(force[1]), 0) * self.mass
+                f = self.mu * GRAV * npa(np.sign(force[0]), np.sign(force[1]), 0.0) * self.mass
                 # Since fiction cannot be greater than force, we need to clip it
                 for i in range(2):
                     if np.abs(f[i]) > np.abs(force[i]):
@@ -517,7 +517,7 @@ class QuadrotorDynamics:
                 # In previous step, self.on_floor = False
                 self.on_floor = True
                 # Set vel to [0, 0, 0]
-                self.vel, self.acc = npa(0, 0, 0), npa(0, 0, 0)
+                self.vel, self.acc = np.zeros(3, dtype=np.float64), np.zeros(3, dtype=np.float64)
                 # Set rot
                 theta = np.arctan2(self.rot[1][0], self.rot[0][0] + EPS)
                 c, s = np.cos(theta), np.sin(theta)
@@ -526,7 +526,7 @@ class QuadrotorDynamics:
                     while np.dot(self.rot[:, 0], to_xyhat(-self.pos)) < 0.5:
                         self.rot = randyaw()
                 else:
-                    self.rot = np.array(((c, -s, 0), (s, c, 0), (0, 0, 1)))
+                    self.rot = np.array(((c, -s, 0.), (s, c, 0.), (0., 0., 1.)))
 
                 # reset momentum / accumulation of thrust
                 self.thrust_cmds_damp = np.zeros([4])
@@ -573,13 +573,13 @@ class QuadrotorDynamics:
 
         ###############################
         ## Linear velocity change
-        dV = ((1.0 - self.vel_damp) * Vxyz - Vxyz) / dt + np.array([0, 0, -GRAV])
+        dV = ((1.0 - self.vel_damp) * Vxyz - Vxyz) / dt + np.array([0., 0., -GRAV])
 
         ###############################
         ## Angular orientation change
         omega_vec = np.matmul(rot, omega)  # Change from body2world frame
         wx, wy, wz = omega_vec
-        omega_mat_deriv = np.array([[0, -wz, wy], [wz, 0, -wx], [-wy, wx, 0]])
+        omega_mat_deriv = np.array([[0., -wz, wy], [wz, 0., -wx], [-wy, wx, 0.]])
 
         # ROtation matrix derivative
         dR = np.matmul(omega_mat_deriv, rot).flatten()
@@ -877,8 +877,8 @@ class QuadrotorSingle:
         # self.yaw_max = np.pi   #rad
 
         self.room_box = np.array(
-            [[-self.room_length / 2, -self.room_width / 2, 0],
-             [self.room_length / 2, self.room_width / 2, self.room_height]])  # diagonal coordinates of box (?)
+            [[-self.room_length / 2., -self.room_width / 2, 0.],
+             [self.room_length / 2., self.room_width / 2., self.room_height]])  # diagonal coordinates of box (?)
         self.state_vector = self.state_vector = getattr(get_state, "state_" + self.obs_repr)
 
         ## WARN: If you
@@ -981,8 +981,8 @@ class QuadrotorSingle:
     def update_env(self, room_length, room_width, room_height):
         self.room_length, self.room_width, self.room_height = room_length, room_width, room_height
         self.room_box = np.array(
-            [[-self.room_length / 2, -self.room_width / 2, 0],
-             [self.room_length / 2, self.room_width / 2, self.room_height]])  # diagonal coordinates of box (?)
+            [[-self.room_length / 2., -self.room_width / 2., 0.],
+             [self.room_length / 2., self.room_width / 2., self.room_height]])  # diagonal coordinates of box (?)
         self.dynamics.room_box = self.room_box
 
     def update_sense_noise(self, sense_noise):
@@ -1235,10 +1235,10 @@ class QuadrotorSingle:
         ## Initializing rotation and velocities
         if self.init_random_state:
             if self.dim_mode == '1D':
-                omega, rotation = npa(0, 0, 0), np.eye(3)
+                omega, rotation = np.zeros(3, dtype=np.float64), np.eye(3)
                 vel = np.array([0., 0., self.max_init_vel * np.random.rand()])
             elif self.dim_mode == '2D':
-                omega = npa(0, self.max_init_omega * np.random.rand(), 0)
+                omega = npa(0., self.max_init_omega * np.random.rand(), 0.)
                 vel = self.max_init_vel * np.random.rand(3)
                 vel[1] = 0.
                 theta = np.pi * np.random.rand()
@@ -1252,7 +1252,7 @@ class QuadrotorSingle:
                 )
         else:
             ## INIT HORIZONTALLY WITH 0 VEL and OMEGA
-            vel, omega = npa(0, 0, 0), npa(0, 0, 0)
+            vel, omega = np.zeros(3, dtype=np.float64), np.zeros(3, dtype=np.float64)
 
             if self.dim_mode == '1D' or self.dim_mode == '2D':
                 rotation = np.eye(3)
@@ -1746,7 +1746,7 @@ def calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, eps, 
 
     # (Square) Damping using torques (in case we would like to add damping using torques)
     torque = thrust_torque + rotor_visc_torque
-    thrust = np.array([0, 0, np.sum(thrusts)])
+    thrust = np.array([0., 0., np.sum(thrusts)])
 
     # ROTATIONAL DYNAMICS
     # Integrating rotations (based on current values)
@@ -1754,7 +1754,7 @@ def calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, eps, 
     wx, wy, wz = omega_vec
     omega_norm = np.linalg.norm(omega_vec)
     if omega_norm != 0:
-        K = np.array([[0, -wz, wy], [wz, 0, -wx], [-wy, wx, 0]]) / omega_norm
+        K = np.array([[0., -wz, wy], [wz, 0., -wx], [-wy, wx, 0.]]) / omega_norm
         rot_angle = omega_norm * dt
         dRdt = eye + np.sin(rot_angle) * K + (1. - np.cos(rot_angle)) * (K @ K)
         rot = dRdt @ rot
