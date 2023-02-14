@@ -716,7 +716,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
 
     ##################################################
     # Loss crash for staying on the floor
-    cost_crash_raw = float(crashed_floor)
+    cost_crash_raw = float(on_floor)
     cost_crash = rew_coeff["crash"] * cost_crash_raw
 
     # Loss for hitting the room
