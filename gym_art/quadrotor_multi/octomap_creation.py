@@ -114,7 +114,8 @@ class OctTree:
                     break
         # Test for pos with goal
         # self.pos_arr = np.array([[-4.5+x, 0, 5] for x in range(0, 8)])
-        self.mark_octree()
+        if num_obstacles > 0:
+            self.mark_octree()
         self.generate_sdf()
 
         return self.pos_arr
