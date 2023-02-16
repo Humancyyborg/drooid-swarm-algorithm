@@ -500,17 +500,15 @@ class QuadrotorDynamics:
                 # Drone is on the floor, and on_floor flag still True
                 theta = np.arctan2(self.rot[1][0], self.rot[0][0] + EPS)
                 c, s = np.cos(theta), np.sin(theta)
-                self.rot = np.array(((c, -s, 0), (s, c, 0), (0, 0, 1)))
+                self.rot = np.array(((c, -s, 0.0), (s, c, 0.0), (0.0, 0.0, 1.0)))
 
                 # Add friction if drone is on the floor
-                f = self.mu * GRAV * npa(np.sign(force[0]), np.sign(force[1]), 0) * self.mass
+                f = self.mu * GRAV * npa(np.sign(force[0]), np.sign(force[1]), 0.0) * self.mass
                 # Since fiction cannot be greater than force, we need to clip it
                 for i in range(2):
                     if np.abs(f[i]) > np.abs(force[i]):
                         f[i] = force[i]
                 force -= f
-                # self.acc = [0, 0, -GRAV] + (1.0 / self.mass) * force
-                # self.acc[2] = max(0, self.acc[2])
             else:
                 # Previous step, drone still in the air, but in this step, it hits the floor
                 # In previous step, self.on_floor = False
@@ -523,21 +521,17 @@ class QuadrotorDynamics:
                 c, s = np.cos(theta), np.sin(theta)
                 if self.rot[2, 2] < 0:
                     self.rot = randyaw()
-                    while np.dot(self.rot[:, 0], to_xyhat(-self.pos)) < 0.5:
+                    while np.dot(self.rot[:, 0.0], to_xyhat(-self.pos)) < 0.5:
                         self.rot = randyaw()
                 else:
-                    self.rot = np.array(((c, -s, 0), (s, c, 0), (0, 0, 1)))
+                    self.rot = np.array(((c, -s, 0.0), (s, c, 0.0), (0.0, 0.0, 1.0)))
 
                 self.set_state(self.pos, self.vel, self.rot, self.omega)
-
-                # self.acc = [0, 0, -GRAV] + (1.0 / self.mass) * force
-                # self.acc[2] = max(0, self.acc[2])
-                # reset momentum / accumulation of thrust
                 self.thrust_cmds_damp = np.zeros([4])
                 self.thrust_rot_damp = np.zeros([4])
 
-            self.acc = [0, 0, -GRAV] + (1.0 / self.mass) * force
-            self.acc[2] = np.maximum(0, self.acc[2])
+            self.acc = [0.0, 0.0, -GRAV] + (1.0 / self.mass) * force
+            self.acc[2] = np.maximum(0.0, self.acc[2])
         else:
             # self.pos[2] > self.floor_threshold
             if self.on_floor:
@@ -546,7 +540,7 @@ class QuadrotorDynamics:
 
             # Computing accelerations
             force = np.matmul(self.rot, sum_thr_drag)
-            self.acc = [0, 0, -GRAV] + (1.0 / self.mass) * force
+            self.acc = [0.0, 0.0, -GRAV] + (1.0 / self.mass) * force
 
 
     def rotors_drag_roll_glob_frame(self):
@@ -672,11 +666,6 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
     dist = np.linalg.norm(goal - dynamics.pos)
     cost_pos_raw = dist
     cost_pos = rew_coeff["pos"] * cost_pos_raw
-
-    # # reward for being near the goal
-    # cost_near_goal = 0.
-    # if dist < 0.2:
-    #     cost_near_goal = -10.
 
     # sphere of equal reward if drones are close to the goal position
     vel_coeff = rew_coeff["vel"]
@@ -1250,7 +1239,7 @@ class QuadrotorSingle:
                 vel[1] = 0.
                 theta = np.pi * np.random.rand()
                 c, s = np.cos(theta), np.sin(theta)
-                rotation = np.array(((c, 0, -s), (0, 1, 0), (s, 0, c)))
+                rotation = np.array(((c, 0.0, -s), (0.0, 1.0, 0.0), (s, 0.0, c)))
             else:
                 # It already sets the state internally
                 _, vel, rotation, omega = self.dynamics.random_state(
@@ -1400,7 +1389,7 @@ def test_rollout(quad, dyn_randomize_every=None, dyn_randomization_ratio=None,
 
     dyn_param_stats = [[] for i in dyn_param_names]
 
-    action = np.array([0, 0.5, 0, 0.5])
+    action = np.array([0.0, 0.5, 0.0, 0.5])
     rollouts_id = 0
 
     start_time = time.time()
