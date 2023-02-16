@@ -1,7 +1,7 @@
 import numpy as np
 
 from gym_art.quadrotor_multi.octomap_creation import OctTree
-
+from gym_art.quadrotor_multi.quad_utils import EPS
 
 class MultiObstacles:
     def __init__(self, num_obstacles=0, room_dims=np.array([10, 10, 10]), resolution=0.05, obstacle_size=1.0):
@@ -40,7 +40,7 @@ class MultiObstacles:
 
         for i, quad in enumerate(pos_quads):
             curr = self.octree.sdf_dist(quad)
-            if curr < 0.1 + 1e-5:
+            if curr < 0.1 + EPS:
                 drone_collision.append(i)
 
         return drone_collision

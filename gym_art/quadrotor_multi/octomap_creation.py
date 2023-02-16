@@ -60,7 +60,10 @@ class OctTree:
         rot_pos_y = np.clip(rot_pos_y, a_min=-self.half_room_width + self.grid_size,
                             a_max=self.half_room_width - self.grid_size)
 
-        pos_xy = np.array([rot_pos_x, rot_pos_y])
+        if self.resolution >= 0.1:
+            pos_xy = np.around([rot_pos_x, rot_pos_y], decimals=1)
+        else:
+            raise NotImplementedError(f'Current obstacle resolution: {self.resolution} is not supported!')
 
         collide_start = self.check_pos(pos_xy, self.start_range)
         collide_end = self.check_pos(pos_xy, self.end_range)
@@ -81,19 +84,20 @@ class OctTree:
     def get_pos_no_overlap(self, pos_item, pos_arr, min_gap=0.2):
         # In this function, we assume the shape of all obstacles is cube
         # But even if we have this assumption, we can still roughly use it for shapes like cylinder
-        if pos_arr.shape[1] == 0:
-            return pos_item, False
+        if len(pos_arr) == 0:
+            return False
 
         overlap_flag = False
         for j in range(len(pos_arr)):
-            if np.linalg.norm(pos_item - pos_arr[j][:2]) < self.size + min_gap:
+            # TODO: This function only supports for cylinder
+            if np.linalg.norm(pos_item[:2] - pos_arr[j][:2]) < self.size + min_gap:
                 overlap_flag = True
                 break
-        return pos_item, overlap_flag
+        return overlap_flag
 
     def generate_obstacles(self, num_obstacles=0, start_point=np.array([-3.0, -2.0, 2.0]),
                            end_point=np.array([3.0, 2.0, 2.0])):
-        self.pos_arr = np.array([[]])
+        self.pos_arr = []
         self.start_range = np.array([start_point[:2] + self.init_box[0][:2], start_point[:2] + self.init_box[1][:2]])
         self.end_range = np.array([end_point[:2] + self.init_box[0][:2], end_point[:2] + self.init_box[1][:2]])
         pos_z = 0.5 * self.room_dims[2]
@@ -102,17 +106,13 @@ class OctTree:
                 y_gaussian_scale = self.y_gaussian_generation(regen_id=regen_id)
                 pos_xy, collide_flag = self.gaussian_pos(y_gaussian_scale=y_gaussian_scale,
                                                          goal_start_point=start_point, goal_end_point=end_point)
-                pos_item = np.array([pos_xy[0], pos_xy[1]])
-                final_pos_item, overlap_flag = pos_item, False
-                _, overlap_flag = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=self.pos_arr)
+                pos_item = np.array([pos_xy[0], pos_xy[1], pos_z])
+                overlap_flag = self.get_pos_no_overlap(pos_item=pos_item, pos_arr=self.pos_arr)
                 if collide_flag is False and overlap_flag is False:
-                    if self.pos_arr.shape[1] == 0:
-                        self.pos_arr = np.array([np.append(np.array(final_pos_item), pos_z)])
-                        break
-                    self.pos_arr = np.append(self.pos_arr, np.array([np.append(np.array(final_pos_item), pos_z)]),
-                                             axis=0)
+                    self.pos_arr.append(pos_item)
                     break
 
+        self.pos_arr = np.around(self.pos_arr, decimals=1)
         self.mark_octree()
         self.generate_sdf()
 
@@ -125,11 +125,19 @@ class OctTree:
             xy_min = np.maximum(item[:2] - range_shape, -0.5 * self.room_dims[:2] - self.resolution)
             xy_max = np.minimum(item[:2] + range_shape, 0.5 * self.room_dims[:2] + self.resolution)
 
-            for x in np.arange(xy_min[0], xy_max[0] + EPS, self.resolution):
-                for y in np.arange(xy_min[1], xy_max[1] + EPS, self.resolution):
-                    # self.resolution: reason same as above, the difference is this time if for floor and ceiling
-                    for z in np.arange(-self.resolution, self.room_dims[2] + self.resolution, self.resolution):
-                        if np.linalg.norm(np.asarray([x, y]) - item[:2]) <= self.size / 2:
+            range_x = np.arange(xy_min[0], xy_max[0], self.resolution)
+            range_x = np.around(range_x, decimals=1)
+
+            range_y = np.arange(xy_min[1], xy_max[1], self.resolution)
+            range_y = np.around(range_y, decimals=1)
+
+            range_z = np.arange(0, self.room_dims[2] + self.resolution, self.resolution)
+            range_z = np.around(range_z, decimals=1)
+
+            for x in range_x:
+                for y in range_y:
+                    if np.linalg.norm(np.array([x, y]) - item[:2]) <= self.size / 2:
+                        for z in range_z:
                             self.octree.updateNode([x, y, z], True)
 
     def generate_sdf(self):
