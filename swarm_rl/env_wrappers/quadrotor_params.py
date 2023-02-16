@@ -30,7 +30,6 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obst_encoder_type', default='attention', type=str, choices=['attention', 'mean_embed', 'mlp', 'no_encoder'], help='The type of the neighborhood encoder')
     p.add_argument('--quads_collision_reward_obst', default=0.0, type=float, help='Override default value for quadcol_bin reward, which means collisions between quadrotors')
     p.add_argument('--quads_collision_obst_falloff_radius', default=0.0, type=float, help='The falloff radius for the smooth penalty. 0: radius is 0 arm_length, which means we would not add extra penalty except drones collide')
-    p.add_argument('--quads_collision_obst_smooth_max_penalty', default=10.0, type=float, help='The upper bound of the collision function given distance among drones')
     p.add_argument('--use_obstacles', default=False, type=str2bool, help='Use Obstacles or not')
     p.add_argument('--quads_obstacle_mode', default='no_obstacles', type=str, choices=['no_obstacles', 'static'], help='Choose which obstacle mode to run')
     p.add_argument('--quads_obstacle_num', default=0, type=int, help='Set obstacle number')
