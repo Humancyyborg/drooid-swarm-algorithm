@@ -9,6 +9,7 @@ class MultiObstacles:
         self.obstacles = []
         self.room_dims = room_dims
         self.obstacle_size = obstacle_size
+        self.resolution = resolution
         self.octree = OctTree(obstacle_size=self.obstacle_size, room_dims=room_dims,
                               resolution=resolution)
 
@@ -19,7 +20,12 @@ class MultiObstacles:
         obst_obs = []
 
         for quad in quads_pos:
-            obst_obs.append(self.octree.get_surround(quad))
+            surround_obs = self.octree.get_surround(quad)
+            approx_part = np.random.uniform(low=-0.5 * self.resolution, high=0.0, size=surround_obs.shape)
+            noise_part = np.random.normal(loc=0, scale=0.01, size=surround_obs.shape)
+
+            surround_obs += approx_part + noise_part
+            obst_obs.append(surround_obs)
 
         obs = np.concatenate((obs, obst_obs), axis=1)
 
