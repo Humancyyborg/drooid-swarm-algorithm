@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 """
-Check plot_v_value_2d.py for more details. But code you should use below
+Check plot_v_value.py for more details. But code you should use below
 
 tmp_score=[]
 idx=[]
