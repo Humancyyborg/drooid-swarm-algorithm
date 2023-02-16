@@ -1130,8 +1130,6 @@ class QuadrotorSingle:
                                                    rew_coeff=self.rew_coeff, action_prev=self.actions[1],
                                                    on_floor=self.dynamics.on_floor
                                                    )
-        # if self.dynamics.crashed_floor:
-        #     self.dynamics.crashed_floor = False
 
         self.tick += 1
         done = self.tick > self.ep_len  # or self.crashed
