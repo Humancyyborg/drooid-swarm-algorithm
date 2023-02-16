@@ -8,6 +8,19 @@ from copy import deepcopy
 
 EPS = 1e-5
 
+SELF_OBS_REPR = {
+    'xyz_vxyz_R_omega': 18,
+    'xyz_vxyz_R_omega_wall': 24,
+    'xyz_vxyz_R_omega_floor_ceiling': 20,
+}
+
+NEIGHBOR_OBS = {
+    'none': 0,
+    'pos_vel': 6,
+    'pos_vel_goals': 9,
+    'pos_vel_goals_ndist_gdist': 11,
+}
+
 QUAD_COLOR = (
     (1.0, 0.0, 0.0),  # red
     (0.4, 0.4, 0.4),  # darkgrey

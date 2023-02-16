@@ -10,7 +10,7 @@ from copy import deepcopy
 from gym_art.quadrotor_multi.quad_utils import perform_collision_between_drones, \
     calculate_obst_drone_proximity_penalties, \
     calculate_collision_matrix, calculate_drone_proximity_penalties, perform_collision_with_obstacle, perform_downwash, \
-    perform_collision_with_wall, perform_collision_with_ceiling
+    perform_collision_with_wall, perform_collision_with_ceiling, SELF_OBS_REPR, NEIGHBOR_OBS
 
 from gym_art.quadrotor_multi.quadrotor_single import GRAV, QuadrotorSingle
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
@@ -100,23 +100,9 @@ class QuadrotorEnvMulti(gym.Env):
         self.control_dt = 1.0 / self.control_freq
         self.pos = np.zeros([self.num_agents, 3])  # Matrix containing all positions
         self.quads_mode = quads_mode
-        if obs_repr == 'xyz_vxyz_R_omega':
-            obs_self_size = 18
-        elif obs_repr == 'xyz_vxyz_R_omega_wall':
-            obs_self_size = 24
-        else:
-            raise NotImplementedError(f'{obs_repr} not supported!')
 
-        if self.swarm_obs == 'pos_vel':
-            self.neighbor_obs_size = 6
-        elif self.swarm_obs == 'pos_vel_goals_ndist_gdist':
-            self.neighbor_obs_size = 11
-        elif self.swarm_obs == 'pos_vel_goals':
-            self.neighbor_obs_size = 9
-        elif self.swarm_obs == 'none':
-            self.neighbor_obs_size = 0
-        else:
-            raise NotImplementedError(f'Unknown value {self.swarm_obs} passed to --neighbor_obs_type')
+        obs_self_size = SELF_OBS_REPR[obs_repr]
+        self.neighbor_obs_size = NEIGHBOR_OBS[self.swarm_obs]
         self.clip_neighbor_space_length = self.num_use_neighbor_obs * self.neighbor_obs_size
         self.clip_neighbor_space_min_box = self.observation_space.low[
                                            obs_self_size:obs_self_size + self.clip_neighbor_space_length]

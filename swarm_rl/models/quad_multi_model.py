@@ -6,6 +6,8 @@ from sample_factory.algo.utils.torch_utils import calc_num_elements
 from sample_factory.model.encoder import Encoder
 from sample_factory.model.model_utils import fc_layer, nonlinearity
 
+from gym_art.quadrotor_multi.quad_utils import SELF_OBS_REPR, NEIGHBOR_OBS
+
 
 class QuadNeighborhoodEncoder(nn.Module):
     def __init__(self, cfg, self_obs_dim, neighbor_obs_dim, neighbor_hidden_size, num_use_neighbor_obs):
@@ -126,12 +128,7 @@ class QuadMultiEncoder(Encoder):
     def __init__(self, cfg, obs_space):
         super().__init__(cfg)
         # internal params -- cannot change from cmd line
-        if cfg.quads_obs_repr == 'xyz_vxyz_R_omega':
-            self.self_obs_dim = 18
-        elif cfg.quads_obs_repr == 'xyz_vxyz_R_omega_wall':
-            self.self_obs_dim = 24
-        else:
-            raise NotImplementedError(f'Layer {cfg.quads_obs_repr} not supported!')
+        self.self_obs_dim = SELF_OBS_REPR[cfg.quads_obs_repr]
 
         self.neighbor_hidden_size = cfg.quads_neighbor_hidden_size
         self.use_obstacles = cfg.use_obstacles
@@ -143,18 +140,11 @@ class QuadMultiEncoder(Encoder):
         else:
             self.num_use_neighbor_obs = cfg.quads_local_obs
 
-        if self.neighbor_obs_type == 'pos_vel_goals':
-            self.neighbor_obs_dim = 9  # include goal pos info
-        elif self.neighbor_obs_type == 'pos_vel':
-            self.neighbor_obs_dim = 6
-        elif self.neighbor_obs_type == 'pos_vel_goals_ndist_gdist':
-            self.neighbor_obs_dim = 11
-        elif self.neighbor_obs_type == 'none':
+        if self.neighbor_obs_type == 'none':
             # override these params so that neighbor encoder is a no-op during inference
-            self.neighbor_obs_dim = 0
             self.num_use_neighbor_obs = 0
-        else:
-            raise NotImplementedError(f'Unknown value {cfg.neighbor_obs_type} passed to --neighbor_obs_type')
+
+        self.neighbor_obs_dim = NEIGHBOR_OBS[self.neighbor_obs_type]
 
         # encode the neighboring drone's observations
         neighbor_encoder_out_size = 0

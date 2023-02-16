@@ -521,7 +521,7 @@ class QuadrotorDynamics:
                 c, s = np.cos(theta), np.sin(theta)
                 if self.rot[2, 2] < 0:
                     self.rot = randyaw()
-                    while np.dot(self.rot[:, 0.0], to_xyhat(-self.pos)) < 0.5:
+                    while np.dot(self.rot[:, 0], to_xyhat(-self.pos)) < 0.5:
                         self.rot = randyaw()
                 else:
                     self.rot = np.array(((c, -s, 0.0), (s, c, 0.0), (0.0, 0.0, 1.0)))
