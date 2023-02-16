@@ -494,8 +494,8 @@ class QuadrotorDynamics:
     def floor_interaction(self, sum_thr_drag):
         # Change pos, omega, rot, acc
         if self.pos[2] <= self.floor_threshold:
-            self.pos = npa(self.pos[0], self.pos[1], self.floor_threshold)
-            self.omega = npa(0, 0, 0)
+            self.pos = np.array((self.pos[0], self.pos[1], self.floor_threshold))
+            force = np.matmul(self.rot, sum_thr_drag)
             if self.on_floor:
                 # Drone is on the floor, and on_floor flag still True
                 theta = np.arctan2(self.rot[1][0], self.rot[0][0] + EPS)
@@ -503,21 +503,21 @@ class QuadrotorDynamics:
                 self.rot = np.array(((c, -s, 0), (s, c, 0), (0, 0, 1)))
 
                 # Add friction if drone is on the floor
-                force = np.matmul(self.rot, sum_thr_drag)
                 f = self.mu * GRAV * npa(np.sign(force[0]), np.sign(force[1]), 0) * self.mass
                 # Since fiction cannot be greater than force, we need to clip it
                 for i in range(2):
                     if np.abs(f[i]) > np.abs(force[i]):
                         f[i] = force[i]
                 force -= f
-                self.acc = [0, 0, -GRAV] + (1.0 / self.mass) * force
-                self.acc[2] = max(0, self.acc[2])
+                # self.acc = [0, 0, -GRAV] + (1.0 / self.mass) * force
+                # self.acc[2] = max(0, self.acc[2])
             else:
                 # Previous step, drone still in the air, but in this step, it hits the floor
                 # In previous step, self.on_floor = False
                 self.on_floor = True
                 # Set vel to [0, 0, 0]
-                self.vel, self.acc = npa(0, 0, 0), npa(0, 0, 0)
+                self.vel, self.acc = np.zeros(3, dtype=np.float64), np.zeros(3, dtype=np.float64)
+                self.omega = np.zeros(3, dtype=np.float32)
                 # Set rot
                 theta = np.arctan2(self.rot[1][0], self.rot[0][0] + EPS)
                 c, s = np.cos(theta), np.sin(theta)
@@ -528,9 +528,16 @@ class QuadrotorDynamics:
                 else:
                     self.rot = np.array(((c, -s, 0), (s, c, 0), (0, 0, 1)))
 
+                self.set_state(self.pos, self.vel, self.rot, self.omega)
+
+                # self.acc = [0, 0, -GRAV] + (1.0 / self.mass) * force
+                # self.acc[2] = max(0, self.acc[2])
                 # reset momentum / accumulation of thrust
                 self.thrust_cmds_damp = np.zeros([4])
                 self.thrust_rot_damp = np.zeros([4])
+
+            self.acc = [0, 0, -GRAV] + (1.0 / self.mass) * force
+            self.acc[2] = np.maximum(0, self.acc[2])
         else:
             # self.pos[2] > self.floor_threshold
             if self.on_floor:
@@ -573,7 +580,7 @@ class QuadrotorDynamics:
 
         ###############################
         ## Linear velocity change
-        dV = ((1.0 - self.vel_damp) * Vxyz - Vxyz) / dt + np.array([0, 0, -GRAV])
+        dV = ((1.0 - self.vel_damp) * Vxyz - Vxyz) / dt + np.array([0., 0., -GRAV])
 
         ###############################
         ## Angular orientation change
@@ -666,6 +673,11 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
     cost_pos_raw = dist
     cost_pos = rew_coeff["pos"] * cost_pos_raw
 
+    # # reward for being near the goal
+    # cost_near_goal = 0.
+    # if dist < 0.2:
+    #     cost_near_goal = -10.
+
     # sphere of equal reward if drones are close to the goal position
     vel_coeff = rew_coeff["vel"]
     ##################################################
@@ -711,7 +723,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
 
     ##################################################
     # Loss crash for staying on the floor
-    cost_crash_raw = float(crashed_floor)
+    cost_crash_raw = float(on_floor)
     cost_crash = rew_coeff["crash"] * cost_crash_raw
 
     # Loss for hitting the room
@@ -872,8 +884,8 @@ class QuadrotorSingle:
         # self.yaw_max = np.pi   #rad
 
         self.room_box = np.array(
-            [[-self.room_length / 2, -self.room_width / 2, 0],
-             [self.room_length / 2, self.room_width / 2, self.room_height]])  # diagonal coordinates of box (?)
+            [[-self.room_length / 2., -self.room_width / 2, 0.],
+             [self.room_length / 2., self.room_width / 2., self.room_height]])  # diagonal coordinates of box (?)
         self.state_vector = self.state_vector = getattr(get_state, "state_" + self.obs_repr)
 
         ## WARN: If you
@@ -976,8 +988,8 @@ class QuadrotorSingle:
     def update_env(self, room_length, room_width, room_height):
         self.room_length, self.room_width, self.room_height = room_length, room_width, room_height
         self.room_box = np.array(
-            [[-self.room_length / 2, -self.room_width / 2, 0],
-             [self.room_length / 2, self.room_width / 2, self.room_height]])  # diagonal coordinates of box (?)
+            [[-self.room_length / 2., -self.room_width / 2., 0.],
+             [self.room_length / 2., self.room_width / 2., self.room_height]])  # diagonal coordinates of box (?)
         self.dynamics.room_box = self.room_box
 
     def update_sense_noise(self, sense_noise):
@@ -1079,7 +1091,6 @@ class QuadrotorSingle:
         if self.use_obstacles:
             obs_comps = obs_comps + ["octmap"]
 
-
         print("Observation components:", obs_comps)
         obs_low, obs_high = [], []
         for comp in obs_comps:
@@ -1128,6 +1139,8 @@ class QuadrotorSingle:
                                                    rew_coeff=self.rew_coeff, action_prev=self.actions[1],
                                                    on_floor=self.dynamics.on_floor
                                                    )
+        if self.dynamics.crashed_floor:
+            self.dynamics.crashed_floor = False
 
         self.tick += 1
         done = self.tick > self.ep_len  # or self.crashed
@@ -1229,15 +1242,15 @@ class QuadrotorSingle:
         ## Initializing rotation and velocities
         if self.init_random_state:
             if self.dim_mode == '1D':
-                omega, rotation = npa(0, 0, 0), np.eye(3)
-                vel = np.array([0., 0., self.max_init_vel * np.random.rand()])
+                omega, rotation = np.zeros(3, dtype=np.float64), np.eye(3)
+                vel = np.array([0, 0, self.max_init_vel * np.random.rand()])
             elif self.dim_mode == '2D':
                 omega = npa(0, self.max_init_omega * np.random.rand(), 0)
                 vel = self.max_init_vel * np.random.rand(3)
                 vel[1] = 0.
                 theta = np.pi * np.random.rand()
                 c, s = np.cos(theta), np.sin(theta)
-                rotation = np.array(((c, 0., -s), (0., 1., 0.), (s, 0., c)))
+                rotation = np.array(((c, 0, -s), (0, 1, 0), (s, 0, c)))
             else:
                 # It already sets the state internally
                 _, vel, rotation, omega = self.dynamics.random_state(
@@ -1246,7 +1259,7 @@ class QuadrotorSingle:
                 )
         else:
             ## INIT HORIZONTALLY WITH 0 VEL and OMEGA
-            vel, omega = npa(0, 0, 0), npa(0, 0, 0)
+            vel, omega = np.zeros(3, dtype=np.float64), np.zeros(3, dtype=np.float64)
 
             if self.dim_mode == '1D' or self.dim_mode == '2D':
                 rotation = np.eye(3)
@@ -1387,7 +1400,7 @@ def test_rollout(quad, dyn_randomize_every=None, dyn_randomization_ratio=None,
 
     dyn_param_stats = [[] for i in dyn_param_names]
 
-    action = np.array([0.0, 0.5, 0.0, 0.5])
+    action = np.array([0, 0.5, 0, 0.5])
     rollouts_id = 0
 
     start_time = time.time()
