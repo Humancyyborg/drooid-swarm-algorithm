@@ -12,5 +12,5 @@ python -m swarm_rl.train \
 --quads_collision_reward=5.0 --quads_collision_smooth_max_penalty=10.0 \
 --replay_buffer_sample_prob=0.75 --anneal_collision_steps=300000000 --save_milestones_sec=1800 \
 --normalize_input=False --normalize_returns=False --reward_clip=10 \
---with_wandb=True --wandb_project=Quad-Swarm-RL --wandb_group=anneal_simulation --wandb_user=multi-drones \
+--with_wandb=False --wandb_project=Quad-Swarm-RL --wandb_group=anneal_simulation --wandb_user=multi-drones \
 --experiment=anneal_simulation
