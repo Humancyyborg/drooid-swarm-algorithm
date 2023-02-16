@@ -493,6 +493,7 @@ class QuadrotorDynamics:
 
     def floor_interaction(self, sum_thr_drag):
         # Change pos, omega, rot, acc
+        self.crashed_floor = False
         if self.pos[2] <= self.floor_threshold:
             self.pos = np.array((self.pos[0], self.pos[1], self.floor_threshold))
             force = np.matmul(self.rot, sum_thr_drag)
@@ -511,8 +512,9 @@ class QuadrotorDynamics:
                 force -= f
             else:
                 # Previous step, drone still in the air, but in this step, it hits the floor
-                # In previous step, self.on_floor = False
+                # In previous step, self.on_floor = False, self.crashed_floor = False
                 self.on_floor = True
+                self.crashed_floor = True
                 # Set vel to [0, 0, 0]
                 self.vel, self.acc = np.zeros(3, dtype=np.float64), np.zeros(3, dtype=np.float64)
                 self.omega = np.zeros(3, dtype=np.float32)
@@ -1128,8 +1130,8 @@ class QuadrotorSingle:
                                                    rew_coeff=self.rew_coeff, action_prev=self.actions[1],
                                                    on_floor=self.dynamics.on_floor
                                                    )
-        if self.dynamics.crashed_floor:
-            self.dynamics.crashed_floor = False
+        # if self.dynamics.crashed_floor:
+        #     self.dynamics.crashed_floor = False
 
         self.tick += 1
         done = self.tick > self.ep_len  # or self.crashed
