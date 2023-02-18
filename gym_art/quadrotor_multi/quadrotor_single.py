@@ -661,8 +661,7 @@ class QuadrotorDynamics:
 
 
 # reasonable reward function for hovering at a goal and not flying too high
-def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_wall, crashed_ceiling, time_remain,
-                            rew_coeff, action_prev, on_floor=False):
+def compute_reward_weighted(dynamics, goal, action, dt, time_remain, rew_coeff, action_prev, on_floor=False):
     ##################################################
     ## log to create a sharp peak at the goal
     dist = np.linalg.norm(goal - dynamics.pos)
@@ -717,16 +716,6 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
     cost_crash_raw = float(on_floor)
     cost_crash = rew_coeff["crash"] * cost_crash_raw
 
-    # Loss for hitting the room
-    cost_crash_floor_raw = float(crashed_floor)
-    cost_crash_floor = rew_coeff["crash_room"] * cost_crash_floor_raw
-
-    cost_crash_wall_raw = float(crashed_wall)
-    cost_crash_wall = rew_coeff["crash_room"] * cost_crash_wall_raw
-
-    cost_crash_ceiling_raw = float(crashed_ceiling)
-    cost_crash_ceiling = rew_coeff["crash_room"] * cost_crash_ceiling_raw
-
     reward = -dt * np.sum([
         cost_pos,
         cost_effort,
@@ -738,9 +727,6 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
         cost_spin,
         cost_act_change,
         cost_vel,
-        cost_crash_floor,
-        cost_crash_wall,
-        cost_crash_ceiling,
     ])
 
     rew_info = {
@@ -755,9 +741,6 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
         "rew_spin": -cost_spin,
         "rew_act_change": -cost_act_change,
         "rew_vel": -cost_vel,
-        'rew_crash_floor': -cost_crash_floor,
-        'rew_crash_wall': -cost_crash_wall,
-        'rew_crash_ceiling': -cost_crash_ceiling,
 
         "rewraw_main": -cost_pos_raw,
         'rewraw_pos': -cost_pos_raw,
@@ -770,9 +753,6 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
         "rewraw_spin": -cost_spin_raw,
         "rewraw_act_change": -cost_act_change_raw,
         "rewraw_vel": -cost_vel_raw,
-        "rewraw_crash_floor_raw": -cost_crash_floor_raw,
-        "rewraw_crash_wall_raw": -cost_crash_wall_raw,
-        "rewraw_crash_ceiling_raw": -cost_crash_ceiling_raw,
     }
 
     # report rewards in the same format as they are added to the actual agent's reward (easier to debug this way)
@@ -1118,18 +1098,11 @@ class QuadrotorSingle:
                                   dt=self.dt,
                                   # observation=np.expand_dims(self.state_vector(self), axis=0))
                                   observation=None)  # assuming we aren't using observations in step function
-        # self.oracle.step(self.dynamics, self.goal, self.dt)
-        # self.scene.update_state(self.dynamics, self.goal)
 
-        self.crashed_floor = self.dynamics.crashed_floor
-        self.crashed_wall = self.dynamics.crashed_wall
-        self.crashed_ceiling = self.dynamics.crashed_ceiling
         self.time_remain = self.ep_len - self.tick
-        reward, rew_info = compute_reward_weighted(self.dynamics, self.goal, action, self.dt, self.crashed_floor,
-                                                   self.crashed_wall, self.crashed_ceiling, self.time_remain,
-                                                   rew_coeff=self.rew_coeff, action_prev=self.actions[1],
-                                                   on_floor=self.dynamics.on_floor
-                                                   )
+        reward, rew_info = compute_reward_weighted(dynamics=self.dynamics, goal=self.goal, action=action, dt=self.dt,
+                                                   time_remain=self.time_remain, rew_coeff=self.rew_coeff,
+                                                   action_prev=self.actions[1], on_floor=self.dynamics.on_floor)
 
         self.tick += 1
         done = self.tick > self.ep_len  # or self.crashed

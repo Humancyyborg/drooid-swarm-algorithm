@@ -1,6 +1,6 @@
 from numpy.linalg import norm
 from gym import spaces
-from gym_art.quadrotor_multi.quad_utils import *
+from gym_art.quadrotor_multi.utils.quad_utils import *
 
 GRAV = 9.81
 #import line_profiler

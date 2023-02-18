@@ -6,7 +6,7 @@ from sample_factory.algo.utils.torch_utils import calc_num_elements
 from sample_factory.model.encoder import Encoder
 from sample_factory.model.model_utils import fc_layer, nonlinearity
 
-from gym_art.quadrotor_multi.quad_utils import SELF_OBS_REPR, NEIGHBOR_OBS
+from gym_art.quadrotor_multi.utils.quad_utils import SELF_OBS_REPR, NEIGHBOR_OBS
 
 
 class QuadNeighborhoodEncoder(nn.Module):

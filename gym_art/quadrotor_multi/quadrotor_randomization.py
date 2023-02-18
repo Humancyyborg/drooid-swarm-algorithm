@@ -1,9 +1,6 @@
 import copy
-import numpy as np
-from numpy.linalg import norm
-from copy import deepcopy
 
-from gym_art.quadrotor_multi.quad_utils import *
+from gym_art.quadrotor_multi.utils.quad_utils import *
 from gym_art.quadrotor_multi.quad_models import *
 
 

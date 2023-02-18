@@ -73,12 +73,12 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
 
-    def step(self, infos, rewards, pos):
+    def step(self, infos, pos):
         tick = self.envs[0].tick
         # Switch every [4, 6] seconds
         if tick % self.control_step_for_sec == 0 and tick > 0:
             self.update_goals()
-        return infos, rewards
+        return infos
 
     def reset(self):
         # Update duration time

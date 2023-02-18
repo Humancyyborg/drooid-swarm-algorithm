@@ -63,16 +63,16 @@ class Scenario_o_uniform_swarm_vs_swarm(QuadrotorScenario):
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
 
-    def step(self, infos, rewards, pos):
+    def step(self, infos, pos):
         tick = self.envs[0].tick
 
         if tick <= int(self.duration_time * self.envs[0].control_freq):
-            return infos, rewards
+            return infos
 
         self.cur_start_tick = int(self.duration_time * self.envs[0].control_freq)
         self.update_goals()
         self.duration_time += self.envs[0].ep_time + 1
-        return infos, rewards
+        return infos
 
     def reset(self):
         self.cur_start_tick = 0

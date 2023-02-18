@@ -22,7 +22,7 @@ class Scenario_dynamic_diff_goal(QuadrotorScenario):
                                          layer_dist=self.layer_dist)
         np.random.shuffle(self.goals)
 
-    def step(self, infos, rewards, pos):
+    def step(self, infos, pos):
         tick = self.envs[0].tick
         if tick % self.control_step_for_sec == 0 and tick > 0:
             box_size = self.envs[0].box
@@ -39,7 +39,7 @@ class Scenario_dynamic_diff_goal(QuadrotorScenario):
             for i, env in enumerate(self.envs):
                 env.goal = self.goals[i]
 
-        return infos, rewards
+        return infos
 
     def reset(self):
         # Update duration time

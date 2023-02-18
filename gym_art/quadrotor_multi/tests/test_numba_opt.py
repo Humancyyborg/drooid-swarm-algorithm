@@ -6,7 +6,7 @@ import numpy
 
 from gym_art.quadrotor_multi.tests.test_multi_env import create_env
 from gym_art.quadrotor_multi.numba_utils import OUNoiseNumba
-from gym_art.quadrotor_multi.quad_utils import OUNoise
+from gym_art.quadrotor_multi.utils.quad_utils import OUNoise
 from gym_art.quadrotor_multi.sensor_noise import SensorNoise
 
 

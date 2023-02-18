@@ -17,13 +17,13 @@ class Scenario_swap_goals(QuadrotorScenario):
         for env, goal in zip(self.envs, self.goals):
             env.goal = goal
 
-    def step(self, infos, rewards, pos):
+    def step(self, infos, pos):
         tick = self.envs[0].tick
         # Switch every [4, 6] seconds
         if tick % self.control_step_for_sec == 0 and tick > 0:
             self.update_goals()
 
-        return infos, rewards
+        return infos
 
     def reset(self):
         # Update duration time

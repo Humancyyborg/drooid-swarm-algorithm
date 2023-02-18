@@ -14,7 +14,7 @@ class Scenario_run_away(QuadrotorScenario):
         for env, goal in zip(self.envs, self.goals):
             env.goal = goal
 
-    def step(self, infos, rewards, pos):
+    def step(self, infos, pos):
         tick = self.envs[0].tick
         control_step_for_sec = int(1.0 * self.envs[0].control_freq)
 
@@ -25,7 +25,7 @@ class Scenario_run_away(QuadrotorScenario):
             self.envs[0].goal = self.goals[0]
             self.envs[1].goal = self.goals[1]
 
-        return infos, rewards
+        return infos
 
     def reset(self):
         # Reset formation and related parameters

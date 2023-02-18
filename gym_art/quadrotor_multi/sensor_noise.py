@@ -5,7 +5,7 @@ from numpy.random import uniform
 from math import exp
 from numba import njit
 
-from gym_art.quadrotor_multi.quad_utils import quatXquat, quat2R, quat2R_numba, quatXquat_numba
+from gym_art.quadrotor_multi.utils.quad_utils import quatXquat, quat2R, quat2R_numba, quatXquat_numba
 
 
 def quat_from_small_angle(theta):

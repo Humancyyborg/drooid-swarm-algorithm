@@ -2,7 +2,7 @@ import numpy as np
 
 from gym_art.quadrotor_multi.scenarios.utils import QUADS_PARAMS_DICT, update_formation_and_max_agent_per_layer, \
     update_layer_dist, get_formation_range, get_goal_by_formation
-from gym_art.quadrotor_multi.quad_utils import generate_points, get_grid_dim_number
+from gym_art.quadrotor_multi.utils.quad_utils import generate_points, get_grid_dim_number
 
 
 class QuadrotorScenario:
@@ -135,7 +135,7 @@ class QuadrotorScenario:
         self.formation_size = np.random.uniform(low=self.lowest_formation_size, high=self.highest_formation_size)
         self.layer_dist = update_layer_dist(low=self.lowest_formation_size, high=self.highest_formation_size)
 
-    def step(self, infos, rewards, pos):
+    def step(self, infos, pos):
         raise NotImplementedError("Implemented in a specific scenario")
 
     def reset(self):

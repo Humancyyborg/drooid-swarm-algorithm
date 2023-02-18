@@ -3,10 +3,10 @@ import numpy.random as nr
 from numba import njit
 from numpy.linalg import norm
 from numpy import cos, sin
-from scipy import spatial
 from copy import deepcopy
 
 EPS = 1e-5
+QUAD_RADIUS = 0.05
 
 SELF_OBS_REPR = {
     'xyz_vxyz_R_omega': 18,
@@ -299,32 +299,6 @@ def get_grid_dim_number(num):
     dim_2 = num // dim_1
     return dim_1, dim_2
 
-
-def calculate_collision_matrix(positions, arm, hitbox_radius):
-    dist = spatial.distance_matrix(x=positions, y=positions)
-    collision_matrix = (dist < hitbox_radius * arm).astype(np.float32)
-    np.fill_diagonal(collision_matrix, 0.0)
-
-    # get upper triangular matrix and check if they have collisions and append to all collisions
-    upt = np.triu(collision_matrix)
-    up_w1 = np.where(upt >= 1)
-    all_collisions = []
-    for i, val in enumerate(up_w1[0]):
-        all_collisions.append((up_w1[0][i], up_w1[1][i]))
-
-    return collision_matrix, all_collisions, dist
-
-
-def calculate_drone_proximity_penalties(distance_matrix, arm, dt, penalty_fall_off, max_penalty, num_agents):
-    if not penalty_fall_off:
-        # smooth penalties is disabled, so noop
-        return np.zeros(num_agents)
-    penalties = (-max_penalty / (penalty_fall_off * arm)) * distance_matrix + max_penalty
-    np.fill_diagonal(penalties, 0.0)
-    penalties = np.maximum(penalties, 0.0)
-    penalties = np.sum(penalties, axis=0)
-
-    return dt * penalties  # actual penalties per tick to be added to the overall reward
 
 def calculate_obst_drone_proximity_penalties(distances, arm, dt, penalty_fall_off, max_penalty, num_agents):
     if not penalty_fall_off:

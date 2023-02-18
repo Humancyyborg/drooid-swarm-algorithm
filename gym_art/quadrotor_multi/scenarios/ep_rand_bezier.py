@@ -5,7 +5,7 @@ from gym_art.quadrotor_multi.scenarios.base import QuadrotorScenario
 
 
 class Scenario_ep_rand_bezier(QuadrotorScenario):
-    def step(self, infos, rewards, pos):
+    def step(self, infos, pos):
         # randomly sample new goal pos in free space and have the goal move there following a bezier curve
         tick = self.envs[0].tick
         control_freq = self.envs[0].control_freq
@@ -45,7 +45,7 @@ class Scenario_ep_rand_bezier(QuadrotorScenario):
             for i, env in enumerate(self.envs):
                 env.goal = self.goals[i]
 
-        return infos, rewards
+        return infos
 
     def update_formation_size(self, new_formation_size):
         pass
