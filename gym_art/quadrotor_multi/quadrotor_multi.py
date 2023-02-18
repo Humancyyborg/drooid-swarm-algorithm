@@ -353,7 +353,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Obstacle Collision
         if self.use_obstacles:
-            obst_quad_col_matrix = self.obstacles.collision_detection(pos_quads=self.pos)
+            obst_quad_col_matrix = self.obstacles.collision_detection()
             # We assume drone can only collide with one obstacle at the same time.
             # Given this setting, in theory, the gap between obstacles should >= 0.1 (drone diameter: 0.46*2 = 0.92)
             curr_quad_col = np.setdiff1d(obst_quad_col_matrix, self.prev_obst_quad_collisions)
