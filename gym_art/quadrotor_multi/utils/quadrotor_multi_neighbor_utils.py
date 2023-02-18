@@ -65,4 +65,4 @@ def set_neighbor_interaction(num_agents, pos, hit_box_size, prox_box_size, cur_t
     )
 
     return prev_collisions, collisions_per_episode, collisions_after_settle, rew_collisions, rew_collision_proximity, \
-        collision_matrix, collisions_pair_list
+        collision_matrix, collisions_pair_list, emergent_collisions

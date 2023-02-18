@@ -142,6 +142,9 @@ class QuadrotorEnvMulti(gym.Env):
         self.render_every_nth_frame = 1
         self.render_speed = 1.0  # set to below 1 slowmo, higher than 1 for fast forward (if simulator can keep up)
 
+        # Used for replay_buffer
+        self.neighbor_emergent_collisions = []
+
         # measuring the total number of pairwise collisions per episode
         self.collisions_per_episode = 0
 
@@ -152,7 +155,6 @@ class QuadrotorEnvMulti(gym.Env):
         # if we wait a couple of seconds, then we can eliminate all the collisions that happen due to initialization
         # this is the actual metric that we want to minimize
         self.collisions_after_settle = 0
-        self.collisions_grace_period_seconds = 1.5
 
         # collision proximity penalties
         self.collision_hitbox_radius = collision_hitbox_radius
@@ -408,7 +410,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         self.prev_drone_collisions, self.collisions_per_episode, self.collisions_after_settle, \
             neighbor_rew_collisions, neighbor_rew_collision_proximity, neighbor_collision_matrix, \
-            neighbor_collisions_pair_list = set_neighbor_interaction(
+            neighbor_collisions_pair_list, self.neighbor_emergent_collisions = set_neighbor_interaction(
                 num_agents=self.num_agents, pos=self.pos, hit_box_size=self.collision_hitbox_radius,
                 prox_box_size=self.collision_falloff_radius, cur_tick=self.envs[0].tick,
                 control_freq=self.control_freq, prev_collisions=self.prev_drone_collisions,

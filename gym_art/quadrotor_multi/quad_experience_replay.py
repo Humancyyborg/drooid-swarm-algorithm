@@ -5,6 +5,8 @@ from copy import deepcopy
 import gym
 import numpy as np
 
+from gym_art.quadrotor_multi.utils.quadrotor_multi_neighbor_utils import COL_GRACE_PERIOD
+
 
 class ReplayBufferEvent:
     def __init__(self, env, obs):
@@ -112,8 +114,8 @@ class ExperienceReplayWrapper(gym.Wrapper):
                     and self.env.envs[0].tick % self.replay_buffer.cp_step_size_freq == 0:
                 self.save_checkpoint(obs)
 
-            if self.env.last_step_unique_collisions.any() and self.env.use_replay_buffer and self.env.activate_replay_buffer \
-                    and self.env.envs[0].tick > self.env.collisions_grace_period_seconds * self.env.envs[0].control_freq and not self.saved_in_replay_buffer:
+            if self.env.neighbor_emergent_collisions.any() and self.env.use_replay_buffer and self.env.activate_replay_buffer \
+                    and self.env.envs[0].tick > COL_GRACE_PERIOD * self.env.envs[0].control_freq and not self.saved_in_replay_buffer:
 
                 if self.env.envs[0].tick - self.last_tick_added_to_buffer > 5 * self.env.envs[0].control_freq:
                     # added this check to avoid adding a lot of collisions from the same episode to the buffer
