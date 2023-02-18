@@ -31,7 +31,7 @@ def calculate_proximity_rewards(dist_matrix, dt, prox_box_size, max_penalty, num
     penalties = np.maximum(penalties, 0.0)
     penalties = np.sum(penalties, axis=0)
 
-    # actual penalties per tick to be added to the overall reward
+    # Actual penalties per tick to be added to the overall reward
     return dt * penalties
 
 
