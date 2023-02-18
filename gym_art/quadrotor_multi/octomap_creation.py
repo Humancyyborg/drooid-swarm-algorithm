@@ -119,7 +119,12 @@ class OctTree:
         return self.pos_arr
 
     def mark_octree(self):
+        self.mark_obstacles()
+        self.mark_walls()
+
+    def mark_obstacles(self):
         range_shape = 0.5 * self.size
+        # Mark obstacles
         for item in self.pos_arr:
             # Add self.resolution: when drones hit the wall, they can still get proper surrounding value
             xy_min = np.maximum(item[:2] - range_shape, -0.5 * self.room_dims[:2] - self.resolution)
@@ -140,12 +145,34 @@ class OctTree:
                         for z in range_z:
                             self.octree.updateNode([x, y, z], True)
 
+    def mark_walls(self):
+        bottom_left = np.array([-0.5 * self.room_dims[0] - self.resolution, -0.5 * self.room_dims[1] - self.resolution, 0.0])
+        upper_right = np.array([0.5 * self.room_dims[0], 0.5 * self.room_dims[1], self.room_dims[2]])
+
+        range_x = np.arange(bottom_left[0] + self.resolution, upper_right[0], self.resolution)
+        range_x = np.around(range_x, decimals=1)
+
+        range_y = np.arange(bottom_left[1], upper_right[1] + self.resolution, self.resolution)
+        range_y = np.around(range_y, decimals=1)
+
+        range_z = np.arange(0, self.room_dims[2] + self.resolution, self.resolution)
+        range_z = np.around(range_z, decimals=1)
+
+        for x in [bottom_left[0], upper_right[0]]:
+            for y in range_y:
+                for z in range_z:
+                    self.octree.updateNode([x, y, z], True)
+
+        for y in [bottom_left[1], upper_right[1]]:
+            for x in range_x:
+                for z in range_z:
+                    self.octree.updateNode([x, y, z], True)
+
     def generate_sdf(self):
         # max_dist: clamps distances at maxdist
         max_dist = 1.0
-        bottom_left = np.array([-0.5 * self.room_dims[0], -0.5 * self.room_dims[1], 0])
+        bottom_left = np.array([-0.5 * self.room_dims[0] - self.resolution, -0.5 * self.room_dims[1] - self.resolution, 0.0])
         upper_right = np.array([0.5 * self.room_dims[0], 0.5 * self.room_dims[1], self.room_dims[2]])
-
         self.octree.dynamicEDT_generate(maxdist=max_dist,
                                         bbx_min=bottom_left,
                                         bbx_max=upper_right,
