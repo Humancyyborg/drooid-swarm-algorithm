@@ -320,23 +320,23 @@ def calculate_obst_drone_proximity_penalties(distances, arm, dt, penalty_fall_of
 
 
 @njit
-def compute_col_norm_and_new_velocities(dyn1, dyn2):
+def compute_col_norm_and_new_velocities(dyn1_pos, dyn2_pos, dyn1_vel, dyn2_vel):
     # Ge the collision normal, i.e difference in position
-    collision_norm = dyn1.pos - dyn2.pos
+    collision_norm = dyn1_pos - dyn2_pos
     coll_norm_mag = np.linalg.norm(collision_norm)
-    collision_norm = collision_norm / (coll_norm_mag + 0.00001 if coll_norm_mag == 0.0 else coll_norm_mag)
+    collision_norm = collision_norm / (coll_norm_mag + EPS if coll_norm_mag == 0.0 else coll_norm_mag)
 
     # Get the components of the velocity vectors which are parallel to the collision.
     # The perpendicular component remains the same.
-    v1new = np.dot(dyn1.vel, collision_norm)
-    v2new = np.dot(dyn2.vel, collision_norm)
+    v1new = np.dot(dyn1_vel, collision_norm)
+    v2new = np.dot(dyn2_vel, collision_norm)
 
     return v1new, v2new, collision_norm
 
 
 @njit
-def compute_col_norm_and_new_vel_obst(dyn, obstacle_pos):
-    collision_norm = dyn.pos - obstacle_pos
+def compute_col_norm_and_new_vel_obst(quad_pos, quad_vel, obstacle_pos):
+    collision_norm = quad_pos - obstacle_pos
     # difference in z position is 0, given obstacle height is same as room height
     collision_norm[2] = 0.0
     coll_norm_mag = np.linalg.norm(collision_norm)
@@ -344,14 +344,13 @@ def compute_col_norm_and_new_vel_obst(dyn, obstacle_pos):
 
     # Get the components of the velocity vectors which are parallel to the collision.
     # The perpendicular component remains the same.
-    vnew = np.dot(dyn.vel, collision_norm)
+    vnew = np.dot(quad_vel, collision_norm)
 
     return vnew, collision_norm
 
 
 @njit
-def compute_new_vel(max_vel_magn, vel, vel_shift, coeff, low=0.2, high=0.8):
-    vel_decay_ratio = np.random.uniform(low=low, high=high)
+def compute_new_vel(max_vel_magn, vel, vel_shift, coeff, vel_decay_ratio):
     vel_new = vel + vel_shift
     vel_new_mag = np.linalg.norm(vel_new)
     vel_new_dir = vel_new / (vel_new_mag + EPS if vel_new_mag == 0.0 else vel_new_mag)
@@ -363,7 +362,6 @@ def compute_new_vel(max_vel_magn, vel, vel_shift, coeff, low=0.2, high=0.8):
     return vel
 
 
-@njit
 def compute_new_omega():
     # Random forces for omega
     # This will amount to max 3.5 revolutions per second
@@ -379,13 +377,13 @@ def compute_new_omega():
 
 
 # This function is to change the velocities after a collision happens between two bodies
-@njit
 def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
     # Solve for the new velocities using the elastic collision equations.
     # vel noise has two different random components,
     # One that preserves momentum in opposite directions
     # Second that does not preserve momentum
-    v1new, v2new, collision_norm = compute_col_norm_and_new_velocities(dyn1, dyn2)
+    v1new, v2new, collision_norm = compute_col_norm_and_new_velocities(
+        dyn1_pos=dyn1.pos, dyn2_pos=dyn2.pos, dyn1_vel=dyn1.vel, dyn2_vel=dyn2.vel)
     vel_change = (v2new - v1new) * collision_norm
     dyn1_vel_shift = vel_change
     dyn2_vel_shift = -vel_change
@@ -407,8 +405,12 @@ def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
 
     # Get new vel
     max_vel_magn = max(np.linalg.norm(dyn1.vel), np.linalg.norm(dyn2.vel))
-    dyn1.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn1.vel, vel_shift=dyn1_vel_shift, coeff=col_coeff)
-    dyn2.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn2.vel, vel_shift=dyn2_vel_shift, coeff=col_coeff)
+
+    vel_decay_ratio = np.random.uniform(low=0.2, high=0.8, size=2)
+    dyn1.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn1.vel, vel_shift=dyn1_vel_shift, coeff=col_coeff,
+                               vel_decay_ratio=vel_decay_ratio[0])
+    dyn2.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn2.vel, vel_shift=dyn2_vel_shift, coeff=col_coeff,
+                               vel_decay_ratio=vel_decay_ratio[1])
 
     # Get new omega
     new_omega = compute_new_omega()
@@ -416,12 +418,12 @@ def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
     dyn2.omega -= new_omega * col_coeff
 
 
-@njit
 def perform_collision_with_obstacle(drone_dyn, obstacle_pos, obstacle_size, col_coeff=1.0):
     # Vel noise has two different random components,
     # One that preserves momentum in opposite directions
     # Second that does not preserve momentum
-    vnew, collision_norm = compute_col_norm_and_new_vel_obst(drone_dyn, obstacle_pos)
+    vnew, collision_norm = compute_col_norm_and_new_vel_obst(quad_pos=drone_dyn.pos, quad_vel=drone_dyn.vel,
+                                                             obstacle_pos=obstacle_pos)
     vel_change = -vnew * collision_norm
 
     dyn_vel_shift = vel_change
@@ -435,17 +437,17 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_pos, obstacle_size, col_
     max_vel_magn = np.linalg.norm(drone_dyn.vel)
     if np.linalg.norm(drone_dyn.pos - obstacle_pos) <= obstacle_size:
         drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel, vel_shift=dyn_vel_shift,
-                                        coeff=col_coeff, low=1.0, high=1.0)
+                                        coeff=col_coeff, vel_decay_ratio=1.0)
     else:
+        vel_decay_ratio = np.random.uniform(low=0.2, high=0.8)
         drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel, vel_shift=dyn_vel_shift,
-                                        coeff=col_coeff)
+                                        coeff=col_coeff, vel_decay_ratio=vel_decay_ratio)
 
     # Random forces for omega
     new_omega = compute_new_omega()
     drone_dyn.omega += new_omega * col_coeff
 
 
-@njit
 def perform_collision_with_wall(drone_dyn, room_box, damp_low_speed_ratio=0.2, damp_high_speed_ratio=0.8,
                                 lowest_speed=0.1, highest_speed=6.0, eps=1e-5):
     # Decrease drone's speed after collision with wall
@@ -512,7 +514,6 @@ def perform_collision_with_ceiling(drone_dyn, damp_low_speed_ratio=0.2, damp_hig
     drone_dyn.omega += new_omega
 
 
-@njit
 def get_vel_omega_norm(z_axis):
     # vel_norm
     noise_z_axis = z_axis + np.random.uniform(low=-0.1, high=0.1, size=3)
@@ -528,7 +529,6 @@ def get_vel_omega_norm(z_axis):
     return down_z_axis_norm, dir_omega_norm
 
 
-@njit
 def perform_downwash(drones_dyn, dt):
     # based on some data from Neural-Swarm: https://arxiv.org/pdf/2003.02992.pdf, Fig. 3
     # quadrotor weights: 34 grams
@@ -611,33 +611,67 @@ if __name__ == "__main__":
     """
         measure time (s)
 
-        generate_points; n=8
-        numba: mean: 0.254, std: 0.00295
-        plain: mean: 8.486., std: 0.0499
+        1) generate_points; n=8
+            numba: mean: 0.254, std: 0.00295
+            plain: mean: 8.486., std: 0.0499
         
-        get_sphere_radius: num=8; dist=0.5
-        numba: mean: 0.037, std: 0.000586
-        plain: mean: 0.045., std: 0.00075
+        2) get_sphere_radius: num=8; dist=0.5
+            numba: mean: 0.037, std: 0.000586
+            plain: mean: 0.045., std: 0.00075
         
-        get_grid_dim_number: num=8
+        3) get_circle_radius
+            stmt = 'get_circle_radius(num, dist)'
+            setup = 'from __main__ import get_circle_radius; import numpy as np; ' \
+            'num=8; dist=0.65'
+            
+            numba: mean: 0.031, std: 0.000186
+            plain: mean: 0.191, std: 0.005676
+        
+        
+        4) get_grid_dim_number: num=8
         numba: mean: 0.0292, std: 0.00041
         plain: mean: 0.3788, std: 0.00556
         
-        calculate_obst_drone_proximity_penalties stmt = 'calculate_obst_drone_proximity_penalties(distances, arm, dt, 
+        5) calculate_obst_drone_proximity_penalties 
+        stmt = 'calculate_obst_drone_proximity_penalties(distances, arm, dt, 
         penalty_fall_off, max_penalty, num_agents)' setup = 'from __main__ import 
         calculate_obst_drone_proximity_penalties; import numpy as np; distances=np.random.uniform(low=0.01, 
         high=10.0, size=(8,8)); arm=0.05; dt=0.01; penalty_fall_off=0.2; max_penalty=10.0; num_agents=8'
         
         numba: mean: 0.171, std: 0.0009
         plain: mean: 1.0845, std: 0.013
+        
+        6) compute_col_norm_and_new_velocities(dyn1_pos, dyn2_pos, dyn1_vel, dyn2_vel)
+            stmt = 'compute_col_norm_and_new_velocities(dyn1_pos, dyn2_pos, dyn1_vel, dyn2_vel)'
+            setup = 'from __main__ import compute_col_norm_and_new_velocities; import numpy as np; ' \
+            'dyn1_pos=np.zeros(3); dyn2_pos=np.ones(3); dyn1_vel=np.ones(3) * 0.11; dyn2_vel=np.array([1.0, 0.8, 0.655])'
+        
+            numba: mean: 0.1952, std: 0.00077
+            plain: mean: 1.2963, std: 0.00633
+        
+        7) compute_col_norm_and_new_vel_obst(quad_pos, quad_vel, obstacle_pos)
+            stmt = 'compute_col_norm_and_new_vel_obst(quad_pos, quad_vel, obstacle_pos)'
+            setup = 'from __main__ import compute_col_norm_and_new_vel_obst; import numpy as np; ' \
+            'quad_pos=np.zeros(3); quad_vel=np.ones(3); obstacle_pos=np.ones(3) * 0.11'
+            
+            numba: mean: 0.1848, std: 0.0021
+            plain: mean: 1.1344, std: 0.0117
+        
+        8) compute_new_vel
+        stmt = 'compute_new_vel(max_vel_magn, vel, vel_shift, coeff, low=0.2, high=0.8)'
+        setup = 'from __main__ import compute_new_vel; import numpy as np; ' \
+            'max_vel_magn=5; vel=np.array([1., 2., 0.5]); vel_shift=np.array([0.2, 0.5, 0.1]); coeff=1.0'
+        
+        numba: mean: 0.1844, std: 0.0032
+        plain: mean: 1.7305, std: 0.0068
+        
     """
     """
-        import timeit
+    import timeit
 
-    stmt = 'calculate_obst_drone_proximity_penalties(distances, arm, dt, penalty_fall_off, max_penalty, num_agents)'
-    setup = 'from __main__ import calculate_obst_drone_proximity_penalties; import numpy as np; ' \
-            'distances=np.random.uniform(low=0.01, high=10.0, size=(8,)); arm=0.05; dt=0.01; penalty_fall_off=0.2; ' \
-            'max_penalty=10.0; num_agents=8'
+    stmt = 'compute_col_norm_and_new_vel_obst(quad_pos, quad_vel, obstacle_pos)'
+    setup = 'from __main__ import compute_col_norm_and_new_vel_obst; import numpy as np; ' \
+            'quad_pos=np.zeros(3); quad_vel=np.ones(3); obstacle_pos=np.ones(3) * 0.11'
     use_numba = True
     # Pass the argument 'n=100' to my_function() and time it
     if use_numba:
