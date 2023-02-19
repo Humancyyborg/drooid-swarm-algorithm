@@ -1,4 +1,5 @@
 import numpy as np
+from numba import njit
 from scipy import spatial
 
 from gym_art.quadrotor_multi.utils.quad_utils import QUAD_RADIUS
@@ -22,6 +23,7 @@ def calculate_neighbor_collision_matrix(positions, hit_box_size):
     return collision_matrix, collisions_pair_list, dist_matrix
 
 
+@njit
 def calculate_proximity_rewards(dist_matrix, dt, prox_box_size, max_penalty, num_agents):
     if not prox_box_size:
         # smooth penalties is disabled
@@ -66,3 +68,41 @@ def set_neighbor_interaction(num_agents, pos, hit_box_size, prox_box_size, cur_t
 
     return prev_collisions, collisions_per_episode, collisions_after_settle, rew_collisions, rew_collision_proximity, \
         collision_matrix, collisions_pair_list, emergent_collisions
+
+
+if __name__ == "__main__":
+    """
+        measure time (s)
+
+        set_neighbor_interaction;
+        numba: mean: 0.1368, std: 0.00201
+        plain: mean: 0.1565, std: 0.00276
+    """
+
+    import timeit
+
+    stmt = 'set_neighbor_interaction(num_agents, pos, hit_box_size, prox_box_size, cur_tick, control_freq, ' \
+           'prev_collisions, collisions_per_episode, collisions_after_settle, rew_coeff_neighbor, ' \
+           'rew_coeff_neighbor_prox)'
+    setup = 'from __main__ import set_neighbor_interaction; import numpy as np; ' \
+            'num_agents=8; pos=np.random.uniform(low=-5.0, high=5.0, size=(8,3)); hit_box_size=2.; prox_box_size=4.; cur_tick=500; ' \
+            'control_freq=100; prev_collisions=[0]; collisions_per_episode=0; collisions_after_settle=0; ' \
+            'rew_coeff_neighbor=1.0; rew_coeff_neighbor_prox=2.0'
+
+    use_numba = True
+    # Pass the argument 'n=100' to my_function() and time it
+    if use_numba:
+        repeat = 6
+    else:
+        repeat = 5
+
+    t = timeit.Timer(stmt=stmt, setup=setup)
+    time_taken = t.repeat(repeat=repeat, number=int(2e3))
+    if use_numba:
+        time_taken = np.array(time_taken[1:])
+    else:
+        time_taken = np.array(time_taken)
+
+    print('Time taken:', time_taken)
+    print('Time Mean:', time_taken.mean())
+    print('Time Std:', time_taken.std())

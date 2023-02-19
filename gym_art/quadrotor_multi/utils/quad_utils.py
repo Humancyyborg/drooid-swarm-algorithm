@@ -246,11 +246,19 @@ def dict_update_existing(dic, dic_upd):
             dic[key] = dic_upd[key]
 
 
+@njit
 def spherical_coordinate(x, y):
     return [cos(x) * cos(y), sin(x) * cos(y), sin(y)]
 
 
-def points_in_sphere(n, x):
+@njit
+def generate_points(n=3):
+    if n < 3:
+        # print("The number of goals can not smaller than 3, The system has cast it to 3")
+        n = 3
+
+    x = 0.1 + 1.2 * n
+
     pts = []
     start = (-1. + 1. / (n - 1.))
     increment = (2. - 2. / (n - 1.)) / (n - 1.)
@@ -260,16 +268,11 @@ def points_in_sphere(n, x):
         pts.append(spherical_coordinate(
             s * x, pi / 2. * np.sign(s) * (1. - np.sqrt(1. - abs(s)))
         ))
+
     return pts
 
 
-def generate_points(n=3):
-    if n < 3:
-        # print("The number of goals can not smaller than 3, The system has cast it to 3")
-        n = 3
-    return points_in_sphere(n, 0.1 + 1.2 * n)
-
-
+@njit
 def get_sphere_radius(num, dist):
     A = 1.75388487222762
     B = 0.860487305801679
@@ -280,12 +283,14 @@ def get_sphere_radius(num, dist):
     return radius
 
 
+@njit
 def get_circle_radius(num, dist):
     theta = 2 * np.pi / num
     radius = (0.5 * dist) / np.sin(theta / 2)
     return radius
 
 
+@njit
 def get_grid_dim_number(num):
     assert num > 0
     sqrt_goal_num = np.sqrt(num)
@@ -301,6 +306,7 @@ def get_grid_dim_number(num):
     return dim_1, dim_2
 
 
+@njit
 def calculate_obst_drone_proximity_penalties(distances, arm, dt, penalty_fall_off, max_penalty, num_agents):
     if not penalty_fall_off:
         # smooth penalties is disabled
@@ -313,6 +319,7 @@ def calculate_obst_drone_proximity_penalties(distances, arm, dt, penalty_fall_of
     return dt * penalties
 
 
+@njit
 def compute_col_norm_and_new_velocities(dyn1, dyn2):
     # Ge the collision normal, i.e difference in position
     collision_norm = dyn1.pos - dyn2.pos
@@ -327,6 +334,7 @@ def compute_col_norm_and_new_velocities(dyn1, dyn2):
     return v1new, v2new, collision_norm
 
 
+@njit
 def compute_col_norm_and_new_vel_obst(dyn, obstacle_pos):
     collision_norm = dyn.pos - obstacle_pos
     # difference in z position is 0, given obstacle height is same as room height
@@ -341,6 +349,7 @@ def compute_col_norm_and_new_vel_obst(dyn, obstacle_pos):
     return vnew, collision_norm
 
 
+@njit
 def compute_new_vel(max_vel_magn, vel, vel_shift, coeff, low=0.2, high=0.8):
     vel_decay_ratio = np.random.uniform(low=low, high=high)
     vel_new = vel + vel_shift
@@ -354,6 +363,7 @@ def compute_new_vel(max_vel_magn, vel, vel_shift, coeff, low=0.2, high=0.8):
     return vel
 
 
+@njit
 def compute_new_omega():
     # Random forces for omega
     # This will amount to max 3.5 revolutions per second
@@ -369,6 +379,7 @@ def compute_new_omega():
 
 
 # This function is to change the velocities after a collision happens between two bodies
+@njit
 def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
     # Solve for the new velocities using the elastic collision equations.
     # vel noise has two different random components,
@@ -405,6 +416,7 @@ def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
     dyn2.omega -= new_omega * col_coeff
 
 
+@njit
 def perform_collision_with_obstacle(drone_dyn, obstacle_pos, obstacle_size, col_coeff=1.0):
     # Vel noise has two different random components,
     # One that preserves momentum in opposite directions
@@ -433,6 +445,7 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_pos, obstacle_size, col_
     drone_dyn.omega += new_omega * col_coeff
 
 
+@njit
 def perform_collision_with_wall(drone_dyn, room_box, damp_low_speed_ratio=0.2, damp_high_speed_ratio=0.8,
                                 lowest_speed=0.1, highest_speed=6.0, eps=1e-5):
     # Decrease drone's speed after collision with wall
@@ -499,6 +512,7 @@ def perform_collision_with_ceiling(drone_dyn, damp_low_speed_ratio=0.2, damp_hig
     drone_dyn.omega += new_omega
 
 
+@njit
 def get_vel_omega_norm(z_axis):
     # vel_norm
     noise_z_axis = z_axis + np.random.uniform(low=-0.1, high=0.1, size=3)
@@ -514,6 +528,7 @@ def get_vel_omega_norm(z_axis):
     return down_z_axis_norm, dir_omega_norm
 
 
+@njit
 def perform_downwash(drones_dyn, dt):
     # based on some data from Neural-Swarm: https://arxiv.org/pdf/2003.02992.pdf, Fig. 3
     # quadrotor weights: 34 grams
@@ -593,7 +608,56 @@ class OUNoise:
 
 
 if __name__ == "__main__":
-    ## Cross product test
+    """
+        measure time (s)
+
+        generate_points; n=8
+        numba: mean: 0.254, std: 0.00295
+        plain: mean: 8.486., std: 0.0499
+        
+        get_sphere_radius: num=8; dist=0.5
+        numba: mean: 0.037, std: 0.000586
+        plain: mean: 0.045., std: 0.00075
+        
+        get_grid_dim_number: num=8
+        numba: mean: 0.0292, std: 0.00041
+        plain: mean: 0.3788, std: 0.00556
+        
+        calculate_obst_drone_proximity_penalties stmt = 'calculate_obst_drone_proximity_penalties(distances, arm, dt, 
+        penalty_fall_off, max_penalty, num_agents)' setup = 'from __main__ import 
+        calculate_obst_drone_proximity_penalties; import numpy as np; distances=np.random.uniform(low=0.01, 
+        high=10.0, size=(8,8)); arm=0.05; dt=0.01; penalty_fall_off=0.2; max_penalty=10.0; num_agents=8'
+        
+        numba: mean: 0.171, std: 0.0009
+        plain: mean: 1.0845, std: 0.013
+    """
+    """
+        import timeit
+
+    stmt = 'calculate_obst_drone_proximity_penalties(distances, arm, dt, penalty_fall_off, max_penalty, num_agents)'
+    setup = 'from __main__ import calculate_obst_drone_proximity_penalties; import numpy as np; ' \
+            'distances=np.random.uniform(low=0.01, high=10.0, size=(8,)); arm=0.05; dt=0.01; penalty_fall_off=0.2; ' \
+            'max_penalty=10.0; num_agents=8'
+    use_numba = True
+    # Pass the argument 'n=100' to my_function() and time it
+    if use_numba:
+        repeat = 6
+    else:
+        repeat = 5
+
+    t = timeit.Timer(stmt=stmt, setup=setup)
+    time_taken = t.repeat(repeat=repeat, number=int(2e5))
+    if use_numba:
+        time_taken = np.array(time_taken[1:])
+    else:
+        time_taken = np.array(time_taken)
+
+    print('Time taken:', time_taken)
+    print('Time Mean:', time_taken.mean())
+    print('Time Std:', time_taken.std())
+    """
+
+    # Cross product test
     import time
 
     rot_z = np.array([[3], [4], [5]])
