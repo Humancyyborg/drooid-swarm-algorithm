@@ -479,14 +479,7 @@ def perform_collision_with_wall(drone_dyn, room_box, damp_low_speed_ratio=0.2, d
     drone_dyn.vel = real_speed * direction_norm
 
     # Random forces for omega
-    omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
-    new_omega = np.random.uniform(low=-1, high=1, size=(3,))  # random direction in 3D space
-    new_omega /= np.linalg.norm(new_omega) + eps  # normalize
-
-    new_omega_mag = np.random.uniform(low=omega_max / 2, high=omega_max)  # random magnitude of the force
-    new_omega *= new_omega_mag
-
-    # add the disturbance to drone's angular velocities while preserving angular momentum
+    new_omega = compute_new_omega()
     drone_dyn.omega += new_omega
 
 
@@ -504,14 +497,7 @@ def perform_collision_with_ceiling(drone_dyn, damp_low_speed_ratio=0.2, damp_hig
     drone_dyn.vel = real_speed * direction_norm
 
     # Random forces for omega
-    omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
-    new_omega = np.random.uniform(low=-1, high=1, size=(3,))  # random direction in 3D space
-    new_omega /= np.linalg.norm(new_omega) + eps  # normalize
-
-    new_omega_mag = np.random.uniform(low=omega_max / 2, high=omega_max)  # random magnitude of the force
-    new_omega *= new_omega_mag
-
-    # add the disturbance to drone's angular velocities while preserving angular momentum
+    new_omega = compute_new_omega()
     drone_dyn.omega += new_omega
 
 
