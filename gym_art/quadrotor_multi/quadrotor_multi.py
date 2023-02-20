@@ -188,6 +188,8 @@ class QuadrotorEnvMulti(gym.Env):
         self.crashes_in_recent_episodes = deque([], maxlen=100)
         self.crashes_last_episode = 0
 
+        self.distance_to_goal_3s = [[] for _ in range(len(self.envs))]
+
     def set_room_dims(self, dims):
         # dims is a (x, y, z) tuple
         self.room_dims = dims
@@ -310,6 +312,7 @@ class QuadrotorEnvMulti(gym.Env):
             room_dims=self.room_dims, num_agents=self.num_agents,
             render_speed=self.render_speed, formation_size=self.quads_formation_size, obstacles=self.obstacles,
             vis_acc_arrows=self.vis_acc_arrows, viz_traces=self.viz_traces, viz_trace_nth_step=self.viz_trace_nth_step,
+            num_obstacles=self.num_obstacles
         )
 
     def reset(self):
@@ -348,6 +351,8 @@ class QuadrotorEnvMulti(gym.Env):
 
         self.reset_scene = True
         self.crashes_last_episode = 0
+
+        self.distance_to_goal_3s = [[] for _ in range(len(self.envs))]
         return obs
 
     # noinspection PyTypeChecker
@@ -364,6 +369,9 @@ class QuadrotorEnvMulti(gym.Env):
             infos.append(info)
 
             self.pos[i, :] = self.envs[i].dynamics.pos
+
+            if self.envs[i].time_remain < 300:
+                self.distance_to_goal_3s[i].append(-info["rewards"]["rewraw_pos"])
 
         # Obstacle Collision
         if self.use_obstacles:
@@ -491,7 +499,11 @@ class QuadrotorEnvMulti(gym.Env):
         # Concatenate obstacle observations
         if self.use_obstacles:
             obs = self.obstacles.step(obs=obs, quads_pos=self.pos)
-
+            if self.num_obstacles == 0:
+                obs_len = obs.shape[1]
+                if (obs[:, -9:] < 1.1).any():
+                    print(obs)
+                assert (obs[..., -9:] >= 1.1).all()
         # DONES
         if any(dones):
             for i in range(len(infos)):
@@ -505,6 +517,7 @@ class QuadrotorEnvMulti(gym.Env):
                         'num_collisions_with_room': self.collisions_room_per_episode,
                         'num_collisions_after_settle': self.collisions_after_settle,
                         f'num_collisions_{self.scenario.name()}': self.collisions_after_settle,
+                        'distance_to_goal_3s': np.mean(self.distance_to_goal_3s[i]),
                     }
                     if self.use_obstacles:
                         infos[i]['episode_extra_stats']['num_collisions_obst_quad'] = \

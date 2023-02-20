@@ -21,8 +21,8 @@ class Scenario_o_uniform_same_goal_spawn(QuadrotorScenario):
         half_room_length = self.room_dims[0] / 2
         half_room_width = self.room_dims[1] / 2
 
-        x = np.random.uniform(low=-1.0 * half_room_length + 1.1, high=half_room_length - 1.1)
-        y = np.random.uniform(low=-1.0 * half_room_width + 1.1, high=half_room_width - 1.1)
+        x = np.random.uniform(low=-1.0 * half_room_length + 2.0, high=half_room_length - 2.0)
+        y = np.random.uniform(low=-1.0 * half_room_width + 2.0, high=half_room_width - 2.0)
 
         z = np.random.uniform(low=1.0, high=4.0)
 

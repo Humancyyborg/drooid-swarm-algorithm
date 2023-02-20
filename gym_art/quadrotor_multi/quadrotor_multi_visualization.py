@@ -31,7 +31,8 @@ class Quadrotor3DSceneMulti:
             self, w, h,
             quad_arm=None, models=None, walls_visible=True, resizable=True, goal_diameter=None,
             viewpoint='chase', obs_hw=None, room_dims=(10, 10, 10), num_agents=8, obstacles=None,
-            render_speed=1.0, formation_size=-1.0, vis_acc_arrows=None, viz_traces=False, viz_trace_nth_step=1
+            render_speed=1.0, formation_size=-1.0, vis_acc_arrows=None, viz_traces=False, viz_trace_nth_step=1,
+            num_obstacles=0,
     ):
         self.pygl_window = __import__('pyglet.window', fromlist=['key'])
         self.keys = None  # keypress handler, initialized later
@@ -75,7 +76,7 @@ class Quadrotor3DSceneMulti:
         self.video_target = None
 
         self.obstacles = None
-        if obstacles:
+        if obstacles and num_obstacles > 0:
             self.obstacles = obstacles
 
         # Save parameters to help transfer from global camera to local camera
@@ -209,6 +210,9 @@ class Quadrotor3DSceneMulti:
 
     def update_obstacles(self, obstacles):
         import gym_art.quadrotor_multi.rendering3d as r3d
+
+        if len(obstacles.octree.pos_arr) == 1:
+            return
 
         for i, g in enumerate(obstacles.octree.pos_arr):
             # self.obstacle_transforms[i].set_transform(r3d.translate(g.pos))
