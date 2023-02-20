@@ -362,15 +362,16 @@ def compute_new_vel(max_vel_magn, vel, vel_shift, coeff, vel_decay_ratio):
     return vel
 
 
+@njit
 def compute_new_omega():
     # Random forces for omega
     # This will amount to max 3.5 revolutions per second
     omega_max = 20 * np.pi
-    omega = np.random.uniform(low=-1, high=1, size=(3,))
+    omega = np.random.uniform(-1.0, 1.0, size=3)
     omega_mag = np.linalg.norm(omega)
 
     omega_dir = omega / (omega_mag + EPS if omega_mag == 0.0 else omega_mag)
-    omega_mag = np.random.uniform(low=omega_max / 2, high=omega_max)
+    omega_mag = np.random.uniform(omega_max / 2, omega_max)
     omega = omega_dir * omega_mag
 
     return omega
@@ -664,6 +665,13 @@ if __name__ == "__main__":
         
         numba: mean: 0.1844, std: 0.0032
         plain: mean: 1.7305, std: 0.0068
+        
+        9) compute_new_omega: 1e5: ~ 14 faster
+            stmt = 'compute_new_omega()'
+            setup = 'from __main__ import compute_new_omega; import numpy as np'
+            
+            numba: mean: 0.06838, std: 0.0014
+            plain: mean: 0.95835, std: 0.0107
         
     """
     """
