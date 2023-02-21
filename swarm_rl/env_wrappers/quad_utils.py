@@ -47,7 +47,8 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         quads_mode=cfg.quads_mode, quads_formation=cfg.quads_formation, quads_formation_size=cfg.quads_formation_size,
         swarm_obs=extended_obs, quads_use_numba=cfg.quads_use_numba,
         quads_view_mode=cfg.quads_view_mode, local_obs=cfg.quads_local_obs, obs_repr=cfg.quads_obs_repr,
-        collision_hitbox_radius=cfg.quads_collision_hitbox_radius, collision_falloff_radius=cfg.quads_collision_falloff_radius,
+        collision_hitbox_radius=cfg.quads_collision_hitbox_radius,
+        collision_falloff_radius=cfg.quads_collision_falloff_radius,
         use_replay_buffer=use_replay_buffer, use_obstacles=cfg.use_obstacles, num_obstacles=cfg.quads_obstacle_num,
         obstacle_size=cfg.quads_obstacle_size, octree_resolution=0.1, use_downwash=cfg.use_downwash,
         collision_obst_falloff_radius=cfg.quads_collision_obst_falloff_radius

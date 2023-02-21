@@ -1,15 +1,15 @@
 import numpy as np
 
-from gym_art.quadrotor_multi.utils.quad_utils import compute_new_vel, compute_new_omega, EPS
+from gym_art.quadrotor_multi.utils.quad_utils import compute_new_vel, compute_new_omega, EPS, QUAD_RADIUS
 
 
 # Reward: dt * penalties
-def calculate_obst_drone_proximity_penalties(distances, arm, dt, penalty_fall_off, max_penalty, num_agents):
+def calculate_obst_drone_proximity_penalties(distances, dt, penalty_fall_off, max_penalty, num_agents):
     if not penalty_fall_off:
         # smooth penalties is disabled
         return np.zeros(num_agents)
 
-    dist_ratio = 1 - distances / (penalty_fall_off * arm)
+    dist_ratio = 1 - distances / (penalty_fall_off * QUAD_RADIUS)
     dist_ratio = np.maximum(dist_ratio, 0)
     penalties = dist_ratio * max_penalty
 

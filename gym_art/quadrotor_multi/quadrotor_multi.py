@@ -29,7 +29,7 @@ class QuadrotorEnvMulti(gym.Env):
                  raw_control=True, raw_control_zero_middle=True, dim_mode='3D', tf_control=False, sim_freq=200.,
                  sim_steps=2, obs_repr='xyz_vxyz_R_omega', ep_time=7, room_length=10, room_width=10,
                  room_height=10, init_random_state=False, rew_coeff=None, sense_noise=None, verbose=False, gravity=GRAV,
-                 resample_goals=False, t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False,
+                 t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False,
                  quads_mode='static_same_goal', quads_formation='circle_horizontal', quads_formation_size=-1.0,
                  swarm_obs='none', quads_use_numba=False, quads_view_mode='local',
                  collision_force=True, local_obs=-1, collision_hitbox_radius=2.0,
@@ -40,22 +40,21 @@ class QuadrotorEnvMulti(gym.Env):
                  ):
 
         super().__init__()
-
+        # Prerequisite
         self.num_agents = num_agents
         self.swarm_obs = swarm_obs
-        assert local_obs <= self.num_agents - 1 or local_obs == -1, f'Invalid value ({local_obs}) passed to ' \
-                                                                    f'--local_obs. Should be 0 < n < num_agents - 1, ' \
-                                                                    f'or -1'
-        if local_obs == -1:
-            self.num_use_neighbor_obs = self.num_agents - 1
-        else:
-            self.num_use_neighbor_obs = local_obs
 
         # Set to True means that sample_factory will treat it as a multi-agent vectorized environment even with
         # num_agents=1. More info, please look at sample-factory: envs/quadrotors/wrappers/reward_shaping.py
         self.is_multiagent = True
         self.room_dims = (room_length, room_width, room_height)
 
+        if local_obs == -1:
+            self.num_use_neighbor_obs = self.num_agents - 1
+        else:
+            self.num_use_neighbor_obs = local_obs
+
+        # Envs info
         self.envs = []
         self.quads_view_mode = quads_view_mode
 
@@ -70,15 +69,14 @@ class QuadrotorEnvMulti(gym.Env):
             )
             self.envs.append(e)
 
-        self.resample_goals = resample_goals
-
-        # we don't actually create a scene object unless we want to render stuff
-        self.scene = None
-
         self.action_space = self.envs[0].action_space
         self.observation_space = self.envs[0].observation_space
+        self.control_freq = self.envs[0].control_freq
+        self.control_dt = 1.0 / self.control_freq
+        self.pos = np.zeros([self.num_agents, 3])
+        self.quads_mode = quads_mode
 
-        # reward shaping
+        # Reward info
         self.rew_coeff = dict(
             pos=1., effort=0.05, action_change=0., crash=1., orient=1., yaw=0., rot=0., attitude=0., spin=0.1, vel=0.,
             quadcol_bin=5., quadcol_bin_smooth_max=10., quadcol_bin_obst=5., quadcol_bin_obst_smooth_max=10.,
@@ -87,24 +85,15 @@ class QuadrotorEnvMulti(gym.Env):
         rew_coeff_orig = copy.deepcopy(self.rew_coeff)
 
         if rew_coeff is not None:
-            assert isinstance(rew_coeff, dict)
-            assert set(rew_coeff.keys()).issubset(set(self.rew_coeff.keys()))
             self.rew_coeff.update(rew_coeff)
         for key in self.rew_coeff.keys():
             self.rew_coeff[key] = float(self.rew_coeff[key])
 
         orig_keys = list(rew_coeff_orig.keys())
-        # Checking to make sure we didn't provide some false rew_coeffs (for example by misspelling one of the params)
-        assert np.all([key in orig_keys for key in self.rew_coeff.keys()])
 
-        # Aux variables for observation space of quads
-        self.quad_arm = self.envs[0].dynamics.arm
-        self.control_freq = self.envs[0].control_freq
-        self.control_dt = 1.0 / self.control_freq
-        self.pos = np.zeros([self.num_agents, 3])  # Matrix containing all positions
-        self.quads_mode = quads_mode
-
+        # Neighbor info
         obs_self_size = SELF_OBS_REPR[obs_repr]
+        self.use_downwash = use_downwash
         self.neighbor_obs_size = NEIGHBOR_OBS[self.swarm_obs]
         self.clip_neighbor_space_length = self.num_use_neighbor_obs * self.neighbor_obs_size
         self.clip_neighbor_space_min_box = self.observation_space.low[
@@ -112,12 +101,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.clip_neighbor_space_max_box = self.observation_space.high[
                                            obs_self_size:obs_self_size + self.clip_neighbor_space_length]
 
-        # Aux variables for rewards
-        self.rews_settle = np.zeros(self.num_agents)
-        self.rews_settle_raw = np.zeros(self.num_agents)
-
-        # Obstacles: Aux variables for scenarios
-        self.use_downwash = use_downwash
+        # Obstacles info
         self.use_obstacles = use_obstacles
         self.obstacles = None
         if self.use_obstacles:
@@ -130,26 +114,25 @@ class QuadrotorEnvMulti(gym.Env):
             self.obstacles = MultiObstacles(num_obstacles=self.num_obstacles, room_dims=self.room_dims,
                                             resolution=self.octree_resolution, obstacle_size=self.obstacle_size)
 
-        # Aux variables for scenarios
+        # Scenarios info
         self.scenario = create_scenario(quads_mode=quads_mode, envs=self.envs, num_agents=self.num_agents,
                                         room_dims=self.room_dims, room_dims_callback=self.set_room_dims,
                                         rew_coeff=self.rew_coeff,
                                         quads_formation=quads_formation, quads_formation_size=quads_formation_size)
         self.quads_formation_size = quads_formation_size
 
-        # set render
+        # Render info
         self.simulation_start_time = 0
         self.frames_since_last_render = self.render_skip_frames = 0
         self.render_every_nth_frame = 1
         # set to below 1 slow motion, higher than 1 for fast-forward (if simulator can keep up)
         self.render_speed = 1.0
 
+        # Collision info
         # measuring the total number of pairwise collisions per episode
         self.collisions_per_episode = 0
-
         # the total number of collisions between drones and room
         self.collisions_room_per_episode = 0
-
         # some collisions may happen because the quadrotors get initialized on the collision course
         # if we wait a couple of seconds, then we can eliminate all the collisions that happen due to initialization
         # this is the actual metric that we want to minimize
@@ -159,23 +142,27 @@ class QuadrotorEnvMulti(gym.Env):
         self.collision_hitbox_radius = collision_hitbox_radius
         self.collision_falloff_radius = collision_falloff_radius
         self.collision_smooth_max_penalty = collision_smooth_max_penalty
+        self.last_step_unique_collisions = False
 
         self.prev_drone_collisions = []
         self.all_collisions = {}
         self.apply_collision_force = collision_force
 
+        # Scene info
         # set to true whenever we need to reset the OpenGL scene in render()
+        # we don't actually create a scene object unless we want to render stuff
+        self.scene = None
         self.reset_scene = False
         self.vis_acc_arrows = vis_acc_arrows
         self.viz_traces = viz_traces
         self.viz_trace_nth_step = viz_trace_nth_step
 
+        # Replay info
         self.use_replay_buffer = use_replay_buffer
         # only start using the buffer after the drones learn how to fly
         self.activate_replay_buffer = False
         # since the same collisions happen during replay, we don't want to keep resaving the same event
         self.saved_in_replay_buffer = False
-        self.last_step_unique_collisions = False
         self.crashes_in_recent_episodes = deque([], maxlen=100)
         self.crashes_last_episode = 0
 
@@ -184,6 +171,20 @@ class QuadrotorEnvMulti(gym.Env):
         self.prev_collisions_floor = []
         self.prev_collisions_walls = []
         self.prev_collisions_ceiling = []
+
+        # Valid check
+        self.check_valid_input(local_obs, rew_coeff, orig_keys)
+
+    def check_valid_input(self, local_obs, rew_coeff, orig_keys):
+        assert local_obs <= self.num_agents - 1 or local_obs == -1, f'Invalid value ({local_obs}) passed to ' \
+                                                                    f'--local_obs. Should be 0 < n < num_agents - 1, ' \
+                                                                    f'or -1'
+        if rew_coeff is not None:
+            assert isinstance(rew_coeff, dict)
+            assert set(rew_coeff.keys()).issubset(set(self.rew_coeff.keys()))
+
+        # Checking to make sure we didn't provide some false rew_coeffs (for example by misspelling one of the params)
+        assert np.all([key in orig_keys for key in self.rew_coeff.keys()])
 
     def set_room_dims(self, dims):
         # dims is a (x, y, z) tuple
@@ -395,7 +396,7 @@ class QuadrotorEnvMulti(gym.Env):
             drone_obst_dists = np.array([self.obstacles.octree.sdf_dist(i.dynamics.pos) for i in self.envs])
 
             rew_obst_quad_proximity = -1.0 * calculate_obst_drone_proximity_penalties(
-                distances=drone_obst_dists, arm=self.quad_arm, dt=self.control_dt,
+                distances=drone_obst_dists, dt=self.control_dt,
                 penalty_fall_off=self.collision_obst_falloff_radius,
                 max_penalty=self.rew_coeff["quadcol_bin_obst_smooth_max"],
                 num_agents=self.num_agents,
