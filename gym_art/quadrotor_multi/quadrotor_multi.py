@@ -188,7 +188,9 @@ class QuadrotorEnvMulti(gym.Env):
         self.crashes_in_recent_episodes = deque([], maxlen=100)
         self.crashes_last_episode = 0
 
-        self.distance_to_goal_3s = [[] for _ in range(len(self.envs))]
+        self.distance_to_goal = [[] for _ in range(len(self.envs))]
+        self.sim_freq = sim_freq
+        self.sim_steps = sim_steps
 
     def set_room_dims(self, dims):
         # dims is a (x, y, z) tuple
@@ -352,7 +354,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.reset_scene = True
         self.crashes_last_episode = 0
 
-        self.distance_to_goal_3s = [[] for _ in range(len(self.envs))]
+        self.distance_to_goal = [[] for _ in range(len(self.envs))]
         return obs
 
     # noinspection PyTypeChecker
@@ -370,8 +372,8 @@ class QuadrotorEnvMulti(gym.Env):
 
             self.pos[i, :] = self.envs[i].dynamics.pos
 
-            if self.envs[i].time_remain < 300:
-                self.distance_to_goal_3s[i].append(-info["rewards"]["rewraw_pos"])
+            if self.envs[i].time_remain < 5 * self.sim_freq / self.sim_steps:
+                self.distance_to_goal[i].append(-info["rewards"]["rewraw_pos"])
 
         # Obstacle Collision
         if self.use_obstacles:
@@ -512,12 +514,15 @@ class QuadrotorEnvMulti(gym.Env):
                         'num_collisions_replay': self.collisions_per_episode,
                     }
                 else:
+                    self.distance_to_goal = np.array(self.distance_to_goal)
                     infos[i]['episode_extra_stats'] = {
                         'num_collisions': self.collisions_per_episode,
                         'num_collisions_with_room': self.collisions_room_per_episode,
                         'num_collisions_after_settle': self.collisions_after_settle,
                         f'num_collisions_{self.scenario.name()}': self.collisions_after_settle,
-                        'distance_to_goal_3s': np.mean(self.distance_to_goal_3s[i]),
+                        'distance_to_goal_1s': np.mean(self.distance_to_goal[i, int(-1 * self.sim_freq / self.sim_steps):]),
+                        'distance_to_goal_3s': np.mean(self.distance_to_goal[i, int(-3 * self.sim_freq / self.sim_steps):]),
+                        'distance_to_goal_5s': np.mean(self.distance_to_goal[i, int(-5 * self.sim_freq / self.sim_steps):])
                     }
                     if self.use_obstacles:
                         infos[i]['episode_extra_stats']['num_collisions_obst_quad'] = \
