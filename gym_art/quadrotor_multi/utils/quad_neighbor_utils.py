@@ -73,27 +73,29 @@ def compute_neighbor_interaction(num_agents, tick, control_freq, positions, rew_
 
 
 # Collision model
-def compute_col_norm_and_new_velocities(dyn1, dyn2):
+def compute_col_norm_and_new_velocities(dyn1_pos, dyn1_vel, dyn2_pos, dyn2_vel):
     # Ge the collision normal, i.e difference in position
-    collision_norm = dyn1.pos - dyn2.pos
+    collision_norm = dyn1_pos - dyn2_pos
     coll_norm_mag = np.linalg.norm(collision_norm)
     collision_norm = collision_norm / (coll_norm_mag + 0.00001 if coll_norm_mag == 0.0 else coll_norm_mag)
 
     # Get the components of the velocity vectors which are parallel to the collision.
     # The perpendicular component remains the same.
-    v1new = np.dot(dyn1.vel, collision_norm)
-    v2new = np.dot(dyn2.vel, collision_norm)
+    v1new = np.dot(dyn1_vel, collision_norm)
+    v2new = np.dot(dyn2_vel, collision_norm)
 
     return v1new, v2new, collision_norm
 
 
 # Collision model
-def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
+def perform_collision_between_drones(dyn1_pos, dyn1_vel, dyn2_pos, dyn2_vel):
     # Solve for the new velocities using the elastic collision equations.
     # vel noise has two different random components,
     # One that preserves momentum in opposite directions
     # Second that does not preserve momentum
-    v1new, v2new, collision_norm = compute_col_norm_and_new_velocities(dyn1, dyn2)
+    v1new, v2new, collision_norm = compute_col_norm_and_new_velocities(
+        dyn1_pos=dyn1_pos, dyn1_vel=dyn1_vel, dyn2_pos=dyn2_pos, dyn2_vel=dyn2_vel)
+
     vel_change = (v2new - v1new) * collision_norm
     dyn1_vel_shift = vel_change
     dyn2_vel_shift = -vel_change
@@ -107,21 +109,50 @@ def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
         dyn1_vel_shift = vel_change + vel1_noise
         dyn2_vel_shift = -vel_change + vel2_noise
 
-        dyn1_new_vel_dir = np.dot(dyn1.vel + dyn1_vel_shift, collision_norm)
-        dyn2_new_vel_dir = np.dot(dyn2.vel + dyn2_vel_shift, collision_norm)
+        dyn1_new_vel_dir = np.dot(dyn1_vel + dyn1_vel_shift, collision_norm)
+        dyn2_new_vel_dir = np.dot(dyn2_vel + dyn2_vel_shift, collision_norm)
 
         if dyn1_new_vel_dir > 0 > dyn2_new_vel_dir:
             break
 
     # Get new vel
-    max_vel_magn = max(np.linalg.norm(dyn1.vel), np.linalg.norm(dyn2.vel))
-    dyn1.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn1.vel, vel_shift=dyn1_vel_shift, coeff=col_coeff)
-    dyn2.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn2.vel, vel_shift=dyn2_vel_shift, coeff=col_coeff)
+    max_vel_magn = max(np.linalg.norm(dyn1_vel), np.linalg.norm(dyn2_vel))
+    dyn1_vel_change = compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn1_vel, vel_change=dyn1_vel_shift)
+    dyn2_vel_change = compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn2_vel, vel_change=dyn2_vel_shift)
 
     # Get new omega
     new_omega = compute_new_omega()
-    dyn1.omega += new_omega * col_coeff
-    dyn2.omega -= new_omega * col_coeff
+    dyn1_omega_change = new_omega
+    dyn2_omega_change = -1.0 * new_omega
+
+    return dyn1_vel_change, dyn1_omega_change, dyn2_vel_change, dyn2_omega_change
+
+
+def get_vel_omega_change_neighbor_collisions(num_agents, curr_drone_collisions, real_positions, real_velocities,
+                                             col_coeff=1.0):
+    velocities_change = np.zeros(num_agents)
+    omegas_change = np.zeros(num_agents)
+
+    for val in curr_drone_collisions:
+        id_1 = val[0]
+        id_2 = val[1]
+
+        dyn1_pos = real_positions[id_1]
+        dyn1_vel = real_velocities[id_1]
+
+        dyn2_pos = real_positions[id_2]
+        dyn2_vel = real_velocities[id_2]
+
+        dyn1_vel_change, dyn1_omega_change, dyn2_vel_change, dyn2_omega_change = \
+            perform_collision_between_drones(dyn1_pos=dyn1_pos, dyn1_vel=dyn1_vel, dyn2_pos=dyn2_pos, dyn2_vel=dyn2_vel)
+
+        velocities_change[id_1] += dyn1_vel_change
+        omegas_change[id_1] += dyn1_omega_change
+
+        velocities_change[id_2] += dyn2_vel_change
+        omegas_change[id_2] += dyn2_omega_change
+
+    return velocities_change * col_coeff, omegas_change * col_coeff
 
 
 # Used in perform_downwash
@@ -141,7 +172,7 @@ def get_vel_omega_norm(z_axis):
 
 
 # Collision Model
-def perform_downwash(drones_dyn, dt):
+def perform_downwash(num_agents, positions, rotations, dt):
     # based on some data from Neural-Swarm: https://arxiv.org/pdf/2003.02992.pdf, Fig. 3
     # quadrotor weights: 34 grams
     # 0.5 m, force = 4 grams ; 0.4 m, force = 6 grams
@@ -152,17 +183,18 @@ def perform_downwash(drones_dyn, dt):
     # The downwash area is a cylinder with radius of 2 arm ~ 10 cm and height of 1.0 m
     xy_downwash = 0.1
     z_downwash = 0.7
-    # get pos
-    dyns_pos = np.array([d.pos for d in drones_dyn])
+
     # get z_axis
-    dyns_z_axis = np.array([d.rot[:, -1] for d in drones_dyn])
+    dyns_z_axis = np.array([rot[:, -1] for rot in rotations])
+
+    velocities_change = np.zeros(num_agents)
+    omegas_change = np.zeros(num_agents)
 
     # drone num
-    dyns_num = len(drones_dyn)
     # check if neighbors drones are within the downwash areas, if yes, apply downwash
-    for i in range(dyns_num):
+    for i in range(num_agents):
         z_axis = dyns_z_axis[i]
-        neighbor_pos = dyns_pos - dyns_pos[i]
+        neighbor_pos = positions - positions[i]
         neighbor_pos_dist = np.linalg.norm(neighbor_pos, axis=1)
         # acceleration func: a(x) = f(x) / 34 = -10 / 17 * x + 7 / 17
         # x in [0, 0.7], a(x) in [0.0, 0.41]
@@ -178,14 +210,16 @@ def perform_downwash(drones_dyn, dt):
         rel_dists_z = np.dot(neighbor_pos, z_axis)
         rel_dists_xy = np.sqrt(neighbor_pos_dist ** 2 - rel_dists_z ** 2)
 
-        for j in range(dyns_num):
+        for j in range(num_agents):
             if i == j:
                 continue
 
             if -z_downwash < rel_dists_z[j] < 0 and rel_dists_xy[j] < xy_downwash:
                 down_z_axis_norm, dir_omega_norm = get_vel_omega_norm(z_axis=z_axis)
-                drones_dyn[j].vel += acc[j] * down_z_axis_norm * dt
-                drones_dyn[j].omega += omega_downwash[j] * dir_omega_norm * dt
+                velocities_change[j] += acc[j] * down_z_axis_norm * dt
+                omegas_change[j] += omega_downwash[j] * dir_omega_norm * dt
+
+    return velocities_change, omegas_change
 
 
 def get_rel_pos_vel_item(num_agents, positions, velocities, env_id, indices=None):
@@ -195,8 +229,8 @@ def get_rel_pos_vel_item(num_agents, positions, velocities, env_id, indices=None
         # if not specified explicitly, consider all neighbors
         indices = [j for j in range(num_agents) if j != i]
 
-    cur_pos = positions
-    cur_vel = velocities
+    cur_pos = positions[i]
+    cur_vel = velocities[i]
     pos_neighbor = np.stack([positions[j] for j in indices])
     vel_neighbor = np.stack([velocities[j] for j in indices])
     pos_rel = pos_neighbor - cur_pos

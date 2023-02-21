@@ -245,17 +245,16 @@ def dict_update_existing(dic, dic_upd):
             dic[key] = dic_upd[key]
 
 
-def compute_new_vel(max_vel_magn, vel, vel_shift, coeff, low=0.2, high=0.8):
+def compute_new_vel(max_vel_magn, vel, vel_change, low=0.2, high=0.8):
     vel_decay_ratio = np.random.uniform(low=low, high=high)
-    vel_new = vel + vel_shift
+    vel_new = vel + vel_change
     vel_new_mag = np.linalg.norm(vel_new)
     vel_new_dir = vel_new / (vel_new_mag + EPS if vel_new_mag == 0.0 else vel_new_mag)
     vel_new_mag = min(vel_new_mag * vel_decay_ratio, max_vel_magn)
     vel_new = vel_new_dir * vel_new_mag
 
-    vel_shift = vel_new - vel
-    vel += vel_shift * coeff
-    return vel
+    vel_change = vel_new - vel
+    return vel_change
 
 
 def compute_new_omega():

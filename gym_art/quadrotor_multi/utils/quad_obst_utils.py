@@ -16,8 +16,8 @@ def calculate_obst_drone_proximity_penalties(distances, dt, penalty_fall_off, ma
     return dt * penalties
 
 
-def compute_col_norm_and_new_vel_obst(dyn, obstacle_pos):
-    collision_norm = dyn.pos - obstacle_pos
+def compute_col_norm_and_new_vel_obst(dyn_pos, dyn_vel, obstacle_pos):
+    collision_norm = dyn_pos - obstacle_pos
     # difference in z position is 0, given obstacle height is same as room height
     collision_norm[2] = 0.0
     coll_norm_mag = np.linalg.norm(collision_norm)
@@ -25,17 +25,18 @@ def compute_col_norm_and_new_vel_obst(dyn, obstacle_pos):
 
     # Get the components of the velocity vectors which are parallel to the collision.
     # The perpendicular component remains the same.
-    vnew = np.dot(dyn.vel, collision_norm)
+    vnew = np.dot(dyn_vel, collision_norm)
 
     return vnew, collision_norm
 
 
 # Collision model
-def perform_collision_with_obstacle(drone_dyn, obstacle_pos, obstacle_size, col_coeff=1.0):
+def perform_collision_with_obstacle(dyn_pos, dyn_vel, obstacle_pos, obstacle_size):
     # Vel noise has two different random components,
     # One that preserves momentum in opposite directions
     # Second that does not preserve momentum
-    vnew, collision_norm = compute_col_norm_and_new_vel_obst(drone_dyn, obstacle_pos)
+    vnew, collision_norm = compute_col_norm_and_new_vel_obst(dyn_pos=dyn_pos, dyn_vel=dyn_vel,
+                                                             obstacle_pos=obstacle_pos)
     vel_change = -vnew * collision_norm
 
     dyn_vel_shift = vel_change
@@ -43,17 +44,34 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_pos, obstacle_size, col_
         cons_rand_val = np.random.normal(loc=0, scale=0.8, size=3)
         vel_noise = cons_rand_val + np.random.normal(loc=0, scale=0.15, size=3)
         dyn_vel_shift = vel_change + vel_noise
-        if np.dot(drone_dyn.vel + dyn_vel_shift, collision_norm) > 0:
+        if np.dot(dyn_vel + dyn_vel_shift, collision_norm) > 0:
             break
 
-    max_vel_magn = np.linalg.norm(drone_dyn.vel)
-    if np.linalg.norm(drone_dyn.pos - obstacle_pos) <= obstacle_size:
-        drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel, vel_shift=dyn_vel_shift,
-                                        coeff=col_coeff, low=1.0, high=1.0)
+    max_vel_magn = np.linalg.norm(dyn_vel)
+    if np.linalg.norm(dyn_pos - obstacle_pos) <= obstacle_size:
+        dyn_vel_change = compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn_vel, vel_change=dyn_vel_shift, low=1.0,
+                                         high=1.0)
     else:
-        drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel, vel_shift=dyn_vel_shift,
-                                        coeff=col_coeff)
+        dyn_vel_change = compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn_vel, vel_change=dyn_vel_shift)
 
     # Random forces for omega
     new_omega = compute_new_omega()
-    drone_dyn.omega += new_omega * col_coeff
+    dyn_omega_change = new_omega
+
+    return dyn_vel_change, dyn_omega_change
+
+
+def get_vel_omega_change_obst_collisions(num_agents, obst_quad_col_matrix, real_positions, real_velocities,
+                                         obstacle_size, obstacle_poses, col_coeff):
+    velocities_change = np.zeros(num_agents)
+    omegas_change = np.zeros(num_agents)
+    for i, val in enumerate(obst_quad_col_matrix):
+        drone_id = int(val)
+        dyn_vel_change, dyn_omega_change = perform_collision_with_obstacle(
+            dyn_pos=real_positions[drone_id], dyn_vel=real_velocities[drone_id], obstacle_pos=obstacle_poses[i],
+            obstacle_size=obstacle_size)
+
+        velocities_change[drone_id] += dyn_vel_change
+        omegas_change[drone_id] += dyn_omega_change
+
+    return velocities_change * col_coeff, omegas_change * col_coeff

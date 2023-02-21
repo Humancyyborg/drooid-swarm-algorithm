@@ -1,18 +1,20 @@
+import copy
+
 import numpy as np
 
 from gym_art.quadrotor_multi.utils.quad_rew_info_utils import get_collision_reward_room
+from gym_art.quadrotor_multi.utils.quad_utils import EPS, compute_new_omega
 
 
-def perform_collision_with_wall(drone_dyn, room_box, damp_low_speed_ratio=0.2, damp_high_speed_ratio=0.8,
-                                lowest_speed=0.1, highest_speed=6.0, eps=1e-5):
+def perform_collision_with_wall(dyn_pos, dyn_vel, room_box, damp_low_speed_ratio=0.2, damp_high_speed_ratio=0.8,
+                                lowest_speed=0.1, highest_speed=6.0):
     # Decrease drone's speed after collision with wall
-    drone_speed = np.linalg.norm(drone_dyn.vel)
+    drone_speed = np.linalg.norm(dyn_vel)
     real_speed = np.random.uniform(low=damp_low_speed_ratio * drone_speed, high=damp_high_speed_ratio * drone_speed)
     real_speed = np.clip(real_speed, a_min=lowest_speed, a_max=highest_speed)
 
-    drone_pos = drone_dyn.pos
-    x_list = [drone_pos[0] == room_box[0][0], drone_pos[0] == room_box[1][0]]
-    y_list = [drone_pos[1] == room_box[0][1], drone_pos[1] == room_box[1][1]]
+    x_list = [dyn_pos[0] == room_box[0][0], dyn_pos[0] == room_box[1][0]]
+    y_list = [dyn_pos[1] == room_box[0][1], dyn_pos[1] == room_box[1][1]]
 
     direction = np.random.uniform(low=-1.0, high=1.0, size=(3,))
     if x_list[0]:
@@ -28,25 +30,18 @@ def perform_collision_with_wall(drone_dyn, room_box, damp_low_speed_ratio=0.2, d
     direction[2] = np.random.uniform(low=-1.0, high=-0.5)
 
     direction_mag = np.linalg.norm(direction)
-    direction_norm = direction / (direction_mag + eps)
+    direction_norm = direction / (direction_mag + EPS)
 
-    drone_dyn.vel = real_speed * direction_norm
+    dyn_vel = real_speed * direction_norm
+    dyn_omega = compute_new_omega()
 
-    # Random forces for omega
-    omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
-    new_omega = np.random.uniform(low=-1, high=1, size=(3,))  # random direction in 3D space
-    new_omega /= np.linalg.norm(new_omega) + eps  # normalize
-
-    new_omega_mag = np.random.uniform(low=omega_max / 2, high=omega_max)  # random magnitude of the force
-    new_omega *= new_omega_mag
-
-    # add the disturbance to drone's angular velocities while preserving angular momentum
-    drone_dyn.omega += new_omega
+    # We directly change velocity and omega
+    return dyn_vel, dyn_omega
 
 
-def perform_collision_with_ceiling(drone_dyn, damp_low_speed_ratio=0.2, damp_high_speed_ratio=0.8,
+def perform_collision_with_ceiling(dyn_vel, damp_low_speed_ratio=0.2, damp_high_speed_ratio=0.8,
                                    lowest_speed=0.1, highest_speed=6.0, eps=1e-5):
-    drone_speed = np.linalg.norm(drone_dyn.vel)
+    drone_speed = np.linalg.norm(dyn_vel)
     real_speed = np.random.uniform(low=damp_low_speed_ratio * drone_speed, high=damp_high_speed_ratio * drone_speed)
     real_speed = np.clip(real_speed, a_min=lowest_speed, a_max=highest_speed)
 
@@ -55,18 +50,10 @@ def perform_collision_with_ceiling(drone_dyn, damp_low_speed_ratio=0.2, damp_hig
     direction_mag = np.linalg.norm(direction)
     direction_norm = direction / (direction_mag + eps)
 
-    drone_dyn.vel = real_speed * direction_norm
+    dyn_vel = real_speed * direction_norm
+    dyn_omega = compute_new_omega()
 
-    # Random forces for omega
-    omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
-    new_omega = np.random.uniform(low=-1, high=1, size=(3,))  # random direction in 3D space
-    new_omega /= np.linalg.norm(new_omega) + eps  # normalize
-
-    new_omega_mag = np.random.uniform(low=omega_max / 2, high=omega_max)  # random magnitude of the force
-    new_omega *= new_omega_mag
-
-    # add the disturbance to drone's angular velocities while preserving angular momentum
-    drone_dyn.omega += new_omega
+    return dyn_vel, dyn_omega
 
 
 def simulate_collision_with_room(envs):
@@ -80,16 +67,35 @@ def simulate_collision_with_room(envs):
     wall_crash_list = np.where(wall_collisions >= 1)[0]
     if len(wall_crash_list) > 0:
         apply_room_collision_flag = True
-        for val in wall_crash_list:
-            perform_collision_with_wall(drone_dyn=envs[val].dynamics, room_box=envs[0].room_box)
 
     ceiling_crash_list = np.where(ceiling_collisions >= 1)[0]
     if len(ceiling_crash_list) > 0:
         apply_room_collision_flag = True
-        for val in ceiling_crash_list:
-            perform_collision_with_ceiling(drone_dyn=envs[val].dynamics)
 
     return apply_room_collision_flag, floor_crash_list, wall_crash_list, ceiling_crash_list
+
+
+def get_vel_omega_change_walls_ceiling_collisions(real_positions, real_velocities, real_omegas, wall_crash_list,
+                                                  ceiling_crash_list, room_box):
+    new_velocities = copy.deepcopy(real_velocities)
+    new_omegas = copy.deepcopy(real_omegas)
+
+    for val in wall_crash_list:
+        drone_id = int(val)
+        dyn_vel, dyn_omega = perform_collision_with_wall(
+            dyn_pos=real_positions[drone_id], dyn_vel=real_velocities[drone_id], room_box=room_box)
+
+        new_velocities[drone_id] = dyn_vel
+        new_omegas[drone_id] = dyn_omega
+
+    for val in ceiling_crash_list:
+        drone_id = int(val)
+        dyn_vel, dyn_omega = perform_collision_with_ceiling(dyn_vel=real_velocities[drone_id])
+
+        new_velocities[drone_id] = dyn_vel
+        new_omegas[drone_id] = dyn_omega
+
+    return new_velocities, new_omegas
 
 
 def compute_room_interaction(num_agents, use_replay_buffer, activate_replay_buffer, crashes_last_episode,
