@@ -62,7 +62,8 @@ class MultiObstacles:
         self.closest_obst_dist = np.array(self.closest_obst_dist)
 
     def collision_detection(self):
-        drone_collision = np.where(self.closest_obst_dist < 0.06 + EPS)[0]
+        drone_collision = np.where(np.logical_and(self.closest_obst_dist < 0.06 + EPS,
+                                                  self.closest_obst_dist > -1.0 * EPS))[0]
         return drone_collision
 
     def closest_obstacle(self, pos):
