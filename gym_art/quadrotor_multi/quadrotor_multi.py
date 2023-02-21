@@ -7,7 +7,7 @@ import gym
 
 from copy import deepcopy
 
-from gym_art.quadrotor_multi.quad_utils import perform_collision_between_drones, \
+from gym_art.quadrotor_multi.utils.quad_utils import perform_collision_between_drones, \
     calculate_obst_drone_proximity_penalties, \
     calculate_collision_matrix, calculate_drone_proximity_penalties, perform_collision_with_obstacle, perform_downwash, \
     perform_collision_with_wall, perform_collision_with_ceiling, SELF_OBS_REPR, NEIGHBOR_OBS

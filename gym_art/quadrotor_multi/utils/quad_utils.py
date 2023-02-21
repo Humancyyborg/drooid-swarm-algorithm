@@ -39,6 +39,7 @@ QUAD_COLOR = (
     (1.0, 0.0, 1.0),  # Violet
 )
 
+
 # dict pretty printing
 def print_dic(dic, indent=""):
     for key, item in dic.items():
@@ -326,6 +327,7 @@ def calculate_drone_proximity_penalties(distance_matrix, arm, dt, penalty_fall_o
 
     return dt * penalties  # actual penalties per tick to be added to the overall reward
 
+
 def calculate_obst_drone_proximity_penalties(distances, arm, dt, penalty_fall_off, max_penalty, num_agents):
     if not penalty_fall_off:
         # smooth penalties is disabled
@@ -365,6 +367,7 @@ def compute_col_norm_and_new_vel_obst(dyn, obstacle_pos):
 
     return vnew, collision_norm
 
+
 def compute_new_vel(max_vel_magn, vel, vel_shift, coeff, low=0.2, high=0.8):
     vel_decay_ratio = np.random.uniform(low=low, high=high)
     vel_new = vel + vel_shift
@@ -376,6 +379,7 @@ def compute_new_vel(max_vel_magn, vel, vel_shift, coeff, low=0.2, high=0.8):
     vel_shift = vel_new - vel
     vel += vel_shift * coeff
     return vel
+
 
 def compute_new_omega():
     # Random forces for omega
@@ -389,6 +393,7 @@ def compute_new_omega():
     omega = omega_dir * omega_mag
 
     return omega
+
 
 # This function is to change the velocities after a collision happens between two bodies
 def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
@@ -418,9 +423,8 @@ def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
 
     # Get new vel
     max_vel_magn = max(np.linalg.norm(dyn1.vel), np.linalg.norm(dyn2.vel))
-    dyn1.vel=compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn1.vel, vel_shift=dyn1_vel_shift, coeff=col_coeff)
-    dyn2.vel=compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn2.vel, vel_shift=dyn2_vel_shift, coeff=col_coeff)
-
+    dyn1.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn1.vel, vel_shift=dyn1_vel_shift, coeff=col_coeff)
+    dyn2.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn2.vel, vel_shift=dyn2_vel_shift, coeff=col_coeff)
 
     # Get new omega
     new_omega = compute_new_omega()
@@ -448,7 +452,8 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_pos, obstacle_size, col_
         drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel, vel_shift=dyn_vel_shift,
                                         coeff=col_coeff, low=1.0, high=1.0)
     else:
-        drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel, vel_shift=dyn_vel_shift, coeff=col_coeff)
+        drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel, vel_shift=dyn_vel_shift,
+                                        coeff=col_coeff)
 
     # Random forces for omega
     new_omega = compute_new_omega()

@@ -2,7 +2,7 @@ import numpy as np
 import math
 import octomap
 
-from gym_art.quadrotor_multi.quad_utils import EPS
+from gym_art.quadrotor_multi.utils.quad_utils import EPS
 
 
 class OctTree:

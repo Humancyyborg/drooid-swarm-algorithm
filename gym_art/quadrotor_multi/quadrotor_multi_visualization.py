@@ -1,6 +1,6 @@
 import copy
 
-from gym_art.quadrotor_multi.quad_utils import *
+from gym_art.quadrotor_multi.utils.quad_utils import *
 from gym_art.quadrotor_multi.quadrotor_visualization import ChaseCamera, SideCamera, quadrotor_simple_3dmodel, \
     quadrotor_3dmodel
 

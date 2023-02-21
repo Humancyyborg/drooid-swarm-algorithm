@@ -1,7 +1,7 @@
 import numpy as np
 
 from gym_art.quadrotor_multi.octomap_creation import OctTree
-from gym_art.quadrotor_multi.quad_utils import EPS
+from gym_art.quadrotor_multi.utils.quad_utils import EPS
 
 
 class MultiObstacles:

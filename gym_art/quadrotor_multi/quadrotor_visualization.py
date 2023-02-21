@@ -1,7 +1,7 @@
 import copy
 from numpy.linalg import norm
 
-from gym_art.quadrotor_multi.quad_utils import *
+from gym_art.quadrotor_multi.utils.quad_utils import *
 
 
 # for visualization.
