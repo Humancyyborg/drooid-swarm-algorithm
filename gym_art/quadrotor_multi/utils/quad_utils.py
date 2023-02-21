@@ -141,7 +141,7 @@ def qwxyz2R(quat):
 
 
 def quatXquat(quat, quat_theta):
-    ## quat * quat_theta
+    # quat * quat_theta
     noisy_quat = np.zeros(4)
     noisy_quat[0] = quat[0] * quat_theta[0] - quat[1] * quat_theta[1] - quat[2] * quat_theta[2] - quat[3] * quat_theta[
         3]
@@ -272,6 +272,19 @@ def compute_new_omega():
     return omega
 
 
+def all_dynamics(envs):
+    return tuple(e.dynamics for e in envs)
+
+
+def can_drones_fly(crashes_in_recent_episodes):
+    """
+    Here we count the average number of collisions with the walls and ground in the last N episodes
+    Returns: True if drones are considered proficient at flying
+    """
+    res = abs(np.mean(crashes_in_recent_episodes)) < 1 and len(crashes_in_recent_episodes) >= 10
+    return res
+
+
 class OUNoise:
     """Ornstein–Uhlenbeck process"""
 
@@ -302,7 +315,7 @@ class OUNoise:
 
 
 if __name__ == "__main__":
-    ## Cross product test
+    # Cross product test
     import time
 
     rot_z = np.array([[3], [4], [5]])

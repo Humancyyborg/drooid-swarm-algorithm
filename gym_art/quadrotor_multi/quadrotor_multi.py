@@ -16,7 +16,7 @@ from gym_art.quadrotor_multi.utils.quad_obst_utils import calculate_obst_drone_p
     perform_collision_with_obstacle
 from gym_art.quadrotor_multi.utils.quad_rew_info_utils import set_collision_rewards_infos
 from gym_art.quadrotor_multi.utils.quad_room_utils import compute_room_interaction
-from gym_art.quadrotor_multi.utils.quad_utils import SELF_OBS_REPR, NEIGHBOR_OBS
+from gym_art.quadrotor_multi.utils.quad_utils import SELF_OBS_REPR, NEIGHBOR_OBS, all_dynamics, can_drones_fly
 
 EPS = 1E-6
 
@@ -194,9 +194,6 @@ class QuadrotorEnvMulti(gym.Env):
         # dims is a (x, y, z) tuple
         self.room_dims = dims
 
-    def all_dynamics(self):
-        return tuple(e.dynamics for e in self.envs)
-
     def get_rel_pos_vel_item(self, env_id, indices=None):
         i = env_id
 
@@ -296,14 +293,6 @@ class QuadrotorEnvMulti(gym.Env):
         else:
             return obs
 
-    def can_drones_fly(self):
-        """
-        Here we count the average number of collisions with the walls and ground in the last N episodes
-        Returns: True if drones are considered proficient at flying
-        """
-        res = abs(np.mean(self.crashes_in_recent_episodes)) < 1 and len(self.crashes_in_recent_episodes) >= 10
-        return res
-
     def init_scene_multi(self):
         models = tuple(e.dynamics.model for e in self.envs)
         self.scene = Quadrotor3DSceneMulti(
@@ -322,7 +311,7 @@ class QuadrotorEnvMulti(gym.Env):
         # try to activate replay buffer if enabled
         if self.use_replay_buffer and not self.activate_replay_buffer:
             self.crashes_in_recent_episodes.append(self.crashes_last_episode)
-            self.activate_replay_buffer = self.can_drones_fly()
+            self.activate_replay_buffer = can_drones_fly(crashes_in_recent_episodes=self.crashes_in_recent_episodes)
 
         for i, e in enumerate(self.envs):
             e.goal = self.scenario.goals[i]
@@ -542,7 +531,8 @@ class QuadrotorEnvMulti(gym.Env):
             self.scene.formation_size = self.quads_formation_size
             self.scene.update_env(self.room_dims)
 
-            self.scene.reset(tuple(e.goal for e in self.envs), self.all_dynamics(), self.obstacles, self.all_collisions)
+            self.scene.reset(tuple(e.goal for e in self.envs), all_dynamics(envs=self.envs), self.obstacles,
+                             self.all_collisions)
 
             self.reset_scene = False
 
@@ -566,8 +556,8 @@ class QuadrotorEnvMulti(gym.Env):
 
         render_start = time.time()
         goals = tuple(e.goal for e in self.envs)
-        frame = self.scene.render_chase(all_dynamics=self.all_dynamics(), goals=goals, collisions=self.all_collisions,
-                                        mode=mode, obstacles=self.obstacles)
+        frame = self.scene.render_chase(all_dynamics=all_dynamics(envs=self.envs), goals=goals,
+                                        collisions=self.all_collisions, mode=mode, obstacles=self.obstacles)
         # Update the formation size of the scenario
         if self.quads_mode == "mix":
             self.scenario.scenario.update_formation_size(self.scene.formation_size)
