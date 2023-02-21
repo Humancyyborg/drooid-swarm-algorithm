@@ -131,8 +131,6 @@ class QuadrotorEnvMulti(gym.Env):
         # Collision info
         # measuring the total number of pairwise collisions per episode
         self.collisions_per_episode = 0
-        # the total number of collisions between drones and room
-        self.collisions_room_per_episode = 0
         # some collisions may happen because the quadrotors get initialized on the collision course
         # if we wait a couple of seconds, then we can eliminate all the collisions that happen due to initialization
         # this is the actual metric that we want to minimize
@@ -147,6 +145,12 @@ class QuadrotorEnvMulti(gym.Env):
         self.prev_drone_collisions = []
         self.all_collisions = {}
         self.apply_collision_force = collision_force
+
+        # # Collision info: Room
+        self.collisions_room_per_episode = 0
+        self.collisions_floor_per_episode = 0
+        self.collisions_walls_per_episode = 0
+        self.collisions_ceiling_per_episode = 0
 
         # Scene info
         # set to true whenever we need to reset the OpenGL scene in render()
@@ -339,13 +343,25 @@ class QuadrotorEnvMulti(gym.Env):
             self.obst_quad_collisions_per_episode = 0
             self.prev_obst_quad_collisions = []
 
+        # Reset scene
+        self.reset_scene = True
+
+        # Reset variables for replay buffer
+        self.crashes_last_episode = 0
+
+        # Reset Collisions
+        # All
         self.all_collisions = {val: [0.0 for _ in range(len(self.envs))] for val in ['drone', 'ground', 'obstacle']}
 
-        self.collisions_per_episode = self.collisions_after_settle = self.collisions_room_per_episode = 0
+        # Neighbor
+        self.collisions_per_episode = self.collisions_after_settle
         self.prev_drone_collisions = []
 
-        self.reset_scene = True
-        self.crashes_last_episode = 0
+        # Room
+        self.collisions_room_per_episode = 0
+        self.collisions_floor_per_episode = 0
+        self.collisions_walls_per_episode = 0
+        self.collisions_ceiling_per_episode = 0
 
         # Reset room info
         self.prev_collisions_room = []
@@ -423,7 +439,9 @@ class QuadrotorEnvMulti(gym.Env):
         # Room interaction
         self.crashes_last_episode, self.all_collisions, self.collisions_room_per_episode, rew_raw_floor, rew_floor, \
             rew_raw_walls, rew_walls, rew_raw_ceiling, rew_ceiling, self.prev_collisions_room, \
-            self.prev_collisions_floor, self.prev_collisions_walls, self.prev_collisions_ceiling, apply_room_collision \
+            self.prev_collisions_floor, self.prev_collisions_walls, self.prev_collisions_ceiling, \
+            apply_room_collision, self.collisions_floor_per_episode, self.collisions_walls_per_episode, \
+            self.collisions_ceiling_per_episode \
             = compute_room_interaction(num_agents=self.num_agents, use_replay_buffer=self.use_replay_buffer,
                                        activate_replay_buffer=self.activate_replay_buffer,
                                        crashes_last_episode=self.crashes_last_episode,
@@ -434,7 +452,10 @@ class QuadrotorEnvMulti(gym.Env):
                                        collisions_room_per_episode=self.collisions_room_per_episode,
                                        prev_collisions_floor=self.prev_collisions_floor,
                                        prev_collisions_walls=self.prev_collisions_walls,
-                                       prev_collisions_ceiling=self.prev_collisions_ceiling)
+                                       prev_collisions_ceiling=self.prev_collisions_ceiling,
+                                       collisions_floor_per_episode=self.collisions_floor_per_episode,
+                                       collisions_walls_per_episode=self.collisions_walls_per_episode,
+                                       collisions_ceiling_per_episode=self.collisions_ceiling_per_episode)
 
         if self.use_downwash:
             envs_dynamics = [env.dynamics for env in self.envs]
@@ -487,10 +508,17 @@ class QuadrotorEnvMulti(gym.Env):
                     }
                 else:
                     infos[i]['episode_extra_stats'] = {
+                        # Collision: add neighbor info
                         'num_collisions': self.collisions_per_episode,
-                        'num_collisions_with_room': self.collisions_room_per_episode,
                         'num_collisions_after_settle': self.collisions_after_settle,
                         f'num_collisions_{self.scenario.name()}': self.collisions_after_settle,
+
+                        # Collision: add room info
+                        'num_collisions_with_room': self.collisions_room_per_episode,
+                        'num_collisions_with_floor': self.collisions_floor_per_episode,
+                        'num_collisions_with_walls': self.collisions_walls_per_episode,
+                        'num_collisions_with_ceiling': self.collisions_ceiling_per_episode,
+
                     }
                     if self.use_obstacles:
                         infos[i]['episode_extra_stats']['num_collisions_obst_quad'] = \

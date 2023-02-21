@@ -93,10 +93,10 @@ def simulate_collision_with_room(envs):
 
 
 def compute_room_interaction(num_agents, use_replay_buffer, activate_replay_buffer, crashes_last_episode,
-                             info_rew_crash,
-                             envs, rew_obst_quad_collisions_raw, drone_col_matrix, prev_collisions_room,
+                             info_rew_crash, envs, rew_obst_quad_collisions_raw, drone_col_matrix, prev_collisions_room,
                              collisions_room_per_episode, prev_collisions_floor, prev_collisions_walls,
-                             prev_collisions_ceiling):
+                             prev_collisions_ceiling, collisions_floor_per_episode, collisions_walls_per_episode,
+                             collisions_ceiling_per_episode):
     if use_replay_buffer and not activate_replay_buffer:
         crashes_last_episode += info_rew_crash
 
@@ -110,13 +110,19 @@ def compute_room_interaction(num_agents, use_replay_buffer, activate_replay_buff
 
     room_crash_list = np.unique(np.concatenate([floor_crash_list, wall_crash_list, ceiling_crash_list]))
 
+    # Get emergent collisions
     emergent_collisions_room = np.setdiff1d(room_crash_list, prev_collisions_room)
-    collisions_room_per_episode += len(emergent_collisions_room)
-
     emergent_collisions_floor = np.setdiff1d(floor_crash_list, prev_collisions_floor)
     emergent_collisions_walls = np.setdiff1d(wall_crash_list, prev_collisions_walls)
     emergent_collisions_ceiling = np.setdiff1d(ceiling_crash_list, prev_collisions_ceiling)
 
+    # Calculate total collisions per episode for room, floor, walls, ceiling
+    collisions_room_per_episode += len(emergent_collisions_room)
+    collisions_floor_per_episode += len(emergent_collisions_floor)
+    collisions_walls_per_episode += len(emergent_collisions_walls)
+    collisions_ceiling_per_episode += len(emergent_collisions_ceiling)
+
+    # Set crash list to as previous crash list
     prev_collisions_room = room_crash_list
     prev_collisions_floor = floor_crash_list
     prev_collisions_walls = wall_crash_list
@@ -130,4 +136,5 @@ def compute_room_interaction(num_agents, use_replay_buffer, activate_replay_buff
 
     return crashes_last_episode, all_collisions, collisions_room_per_episode, rew_raw_floor, rew_floor, rew_raw_walls, \
         rew_walls, rew_raw_ceiling, rew_ceiling, prev_collisions_room, prev_collisions_floor, prev_collisions_walls, \
-        prev_collisions_ceiling, apply_room_collision
+        prev_collisions_ceiling, apply_room_collision, collisions_floor_per_episode, collisions_walls_per_episode, \
+        collisions_ceiling_per_episode
