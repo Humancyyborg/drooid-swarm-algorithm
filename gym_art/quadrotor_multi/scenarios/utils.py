@@ -1,6 +1,7 @@
 import numpy as np
 from numpy import cos, sin
 
+from gym_art.quadrotor_multi.utils.quad_utils import QUAD_RADIUS
 
 QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal',  # static formations
                    'ep_lissajous3D', 'ep_rand_bezier',  # evader pursuit
@@ -22,18 +23,17 @@ QUADS_FORMATION_LIST = ['circle_horizontal', 'circle_vertical_xz', 'circle_verti
 
 # key: quads_mode
 # value: 0. formation, 1: [formation_low_size, formation_high_size], 2: episode_time
-quad_arm_size = 0.05
 QUADS_PARAMS_DICT = {
     'static_same_goal': [['circle_horizontal'], [0.0, 0.0]],
     'dynamic_same_goal': [['circle_horizontal'], [0.0, 0.0]],
     'ep_lissajous3D': [['circle_horizontal'], [0.0, 0.0]],
     'ep_rand_bezier': [['circle_horizontal'], [0.0, 0.0]],
-    'static_diff_goal': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size]],
-    'dynamic_diff_goal': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size]],
-    'swarm_vs_swarm': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size]],
-    'swap_goals': [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size]],
-    'dynamic_formations': [QUADS_FORMATION_LIST, [0.0, 20 * quad_arm_size]],
-    'run_away': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size]],
+    'static_diff_goal': [QUADS_FORMATION_LIST, [5 * QUAD_RADIUS, 10 * QUAD_RADIUS]],
+    'dynamic_diff_goal': [QUADS_FORMATION_LIST, [5 * QUAD_RADIUS, 10 * QUAD_RADIUS]],
+    'swarm_vs_swarm': [QUADS_FORMATION_LIST, [5 * QUAD_RADIUS, 10 * QUAD_RADIUS]],
+    'swap_goals': [QUADS_FORMATION_LIST, [8 * QUAD_RADIUS, 16 * QUAD_RADIUS]],
+    'dynamic_formations': [QUADS_FORMATION_LIST, [0.0, 20 * QUAD_RADIUS]],
+    'run_away': [QUADS_FORMATION_LIST, [5 * QUAD_RADIUS, 10 * QUAD_RADIUS]],
 
     # For obstacles
     'o_uniform_same_goal_spawn': [['circle_horizontal'], [0.0, 0.0]],

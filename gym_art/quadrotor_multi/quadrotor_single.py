@@ -465,7 +465,7 @@ class QuadrotorDynamics:
                                                                   self.eye, self.since_last_svd,
                                                                   self.since_last_svd_limit, self.inertia,
                                                                   self.damp_omega_quadratic, self.omega_max, self.pos,
-                                                                  self.vel, self.arm, self.on_floor)
+                                                                  self.vel, self.on_floor)
 
         self.pos_before_clip = self.pos.copy()
 
@@ -1709,7 +1709,7 @@ def calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, eps, 
                                                           thrust_rot_damp, thr_noise, thrust_max, motor_linearity,
                                                           prop_crossproducts, prop_ccw, torque_max, rot, omega,
                                                           eye, since_last_svd, since_last_svd_limit, inertia,
-                                                          damp_omega_quadratic, omega_max, pos, vel, arm, on_floor):
+                                                          damp_omega_quadratic, omega_max, pos, vel, on_floor):
     # Filtering the thruster and adding noise
     thrust_cmds = np.clip(thrust_cmds, 0., 1.)
     motor_tau_up = 4 * dt / (motor_damp_time_up + eps)

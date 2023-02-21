@@ -26,11 +26,11 @@ def calculate_collision_matrix(positions, hitbox_radius):
 
 
 # Reward: dt * penalties
-def calculate_drone_proximity_penalties(distance_matrix, arm, dt, penalty_fall_off, max_penalty, num_agents):
+def calculate_drone_proximity_penalties(distance_matrix, dt, penalty_fall_off, max_penalty, num_agents):
     if not penalty_fall_off:
         # smooth penalties is disabled, so noop
         return np.zeros(num_agents)
-    penalties = (-max_penalty / (penalty_fall_off * arm)) * distance_matrix + max_penalty
+    penalties = (-max_penalty / (penalty_fall_off * QUAD_RADIUS)) * distance_matrix + max_penalty
     np.fill_diagonal(penalties, 0.0)
     penalties = np.maximum(penalties, 0.0)
     penalties = np.sum(penalties, axis=0)
@@ -65,10 +65,8 @@ def compute_neighbor_interaction(num_agents, tick, control_freq, positions, rew_
 
     # penalties for being too close to other drones
     rew_proximity = -1.0 * calculate_drone_proximity_penalties(
-        distance_matrix=distance_matrix, arm=QUAD_RADIUS, dt=1.0 / control_freq,
-        penalty_fall_off=collision_falloff_radius,
-        max_penalty=rew_coeff_neighbor_prox,
-        num_agents=num_agents,
+        distance_matrix=distance_matrix, dt=1.0 / control_freq, penalty_fall_off=collision_falloff_radius,
+        max_penalty=rew_coeff_neighbor_prox, num_agents=num_agents
     )
 
     return curr_drone_collisions, prev_drone_collisions, rew_collisions, rew_proximity, collisions_per_episode, \
