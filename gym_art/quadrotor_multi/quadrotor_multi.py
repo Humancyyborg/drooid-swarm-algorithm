@@ -370,7 +370,20 @@ class QuadrotorEnvMulti(gym.Env):
 
             self.pos[i, :] = self.envs[i].dynamics.pos
 
-        # Obstacle Collision
+        # Neighbor interaction
+        curr_drone_collisions, self.prev_drone_collisions, rew_collisions, rew_proximity, \
+            self.collisions_per_episode, self.collisions_after_settle, drone_col_matrix, \
+            self.last_step_unique_collisions = \
+            compute_neighbor_interaction(
+                num_agents=self.num_agents, tick=self.envs[0].tick, control_freq=self.control_freq, positions=self.pos,
+                rew_coeff_neighbor=self.rew_coeff["quadcol_bin"],
+                rew_coeff_neighbor_prox=self.rew_coeff["quadcol_bin_smooth_max"],
+                prev_drone_collisions=self.prev_drone_collisions, collisions_per_episode=self.collisions_per_episode,
+                collisions_after_settle=self.collisions_after_settle,
+                collision_hitbox_radius=self.collision_hitbox_radius,
+                collision_falloff_radius=self.collision_falloff_radius)
+
+        # Obstacle Interaction
         if self.use_obstacles:
             obst_quad_col_matrix = self.obstacles.collision_detection()
             # We assume drone can only collide with one obstacle at the same time.
@@ -401,41 +414,31 @@ class QuadrotorEnvMulti(gym.Env):
                 max_penalty=self.rew_coeff["quadcol_bin_obst_smooth_max"],
                 num_agents=self.num_agents,
             )
-
         else:
             obst_quad_col_matrix = np.zeros(self.num_agents)
             rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
             rew_collisions_obst_quad = np.zeros(self.num_agents)
             rew_obst_quad_proximity = np.zeros(self.num_agents)
 
-        curr_drone_collisions, self.prev_drone_collisions, rew_collisions, rew_proximity, \
-            self.collisions_per_episode, self.collisions_after_settle, drone_col_matrix, \
-            self.last_step_unique_collisions = \
-            compute_neighbor_interaction(
-                num_agents=self.num_agents, tick=self.envs[0].tick, control_freq=self.control_freq, positions=self.pos,
-                rew_coeff_neighbor=self.rew_coeff["quadcol_bin"],
-                rew_coeff_neighbor_prox=self.rew_coeff["quadcol_bin_smooth_max"],
-                prev_drone_collisions=self.prev_drone_collisions, collisions_per_episode=self.collisions_per_episode,
-                collisions_after_settle=self.collisions_after_settle,
-                collision_hitbox_radius=self.collision_hitbox_radius,
-                collision_falloff_radius=self.collision_falloff_radius)
+        # Room interaction
+        self.crashes_last_episode, self.all_collisions, self.collisions_room_per_episode, rew_raw_floor, rew_floor, \
+            rew_raw_walls, rew_walls, rew_raw_ceiling, rew_ceiling, self.prev_collisions_room, \
+            self.prev_collisions_floor, self.prev_collisions_walls, self.prev_collisions_ceiling, apply_room_collision \
+            = compute_room_interaction(num_agents=self.num_agents, use_replay_buffer=self.use_replay_buffer,
+                                       activate_replay_buffer=self.activate_replay_buffer,
+                                       crashes_last_episode=self.crashes_last_episode,
+                                       info_rew_crash=infos[0]["rewards"]["rew_crash"],
+                                       envs=self.envs, rew_obst_quad_collisions_raw=rew_obst_quad_collisions_raw,
+                                       drone_col_matrix=drone_col_matrix,
+                                       prev_collisions_room=self.prev_collisions_room,
+                                       collisions_room_per_episode=self.collisions_room_per_episode,
+                                       prev_collisions_floor=self.prev_collisions_floor,
+                                       prev_collisions_walls=self.prev_collisions_walls,
+                                       prev_collisions_ceiling=self.prev_collisions_ceiling)
 
         if self.use_downwash:
             envs_dynamics = [env.dynamics for env in self.envs]
             perform_downwash(drones_dyn=envs_dynamics, dt=self.control_dt)
-
-        self.crashes_last_episode, self.all_collisions, self.collisions_room_per_episode, rew_raw_floor, rew_floor, \
-            rew_raw_walls, rew_walls, rew_raw_ceiling, rew_ceiling, self.prev_collisions_room, \
-            self.prev_collisions_floor, self.prev_collisions_walls, self.prev_collisions_ceiling, \
-            apply_room_collision = compute_room_interaction(
-                num_agents=self.num_agents, use_replay_buffer=self.use_replay_buffer,
-                activate_replay_buffer=self.activate_replay_buffer, crashes_last_episode=self.crashes_last_episode,
-                info_rew_crash=infos[0]["rewards"]["rew_crash"], envs=self.envs,
-                rew_obst_quad_collisions_raw=rew_obst_quad_collisions_raw, drone_col_matrix=drone_col_matrix,
-                prev_collisions_room=self.prev_collisions_room,
-                collisions_room_per_episode=self.collisions_room_per_episode,
-                prev_collisions_floor=self.prev_collisions_floor, prev_collisions_walls=self.prev_collisions_walls,
-                prev_collisions_ceiling=self.prev_collisions_ceiling)
 
         # Applying random forces between drones
         if self.apply_collision_force:
@@ -448,6 +451,7 @@ class QuadrotorEnvMulti(gym.Env):
                         obstacle_pos=self.obstacles.closest_obstacle(self.envs[val].dynamics.pos),
                         obstacle_size=self.obstacle_size, col_coeff=self.rew_coeff["quadcol_obst_coeff"])
 
+        # Reward calculation
         if self.use_obstacles:
             rewards, infos = set_collision_rewards_infos(
                 rewards=rewards, infos=infos, rew_floor=rew_floor, rew_walls=rew_walls, rew_ceiling=rew_ceiling,
