@@ -130,8 +130,8 @@ def perform_collision_between_drones(dyn1_pos, dyn1_vel, dyn2_pos, dyn2_vel):
 
 def get_vel_omega_change_neighbor_collisions(num_agents, curr_drone_collisions, real_positions, real_velocities,
                                              col_coeff=1.0):
-    velocities_change = np.zeros(num_agents)
-    omegas_change = np.zeros(num_agents)
+    velocities_change = np.zeros((num_agents, 3))
+    omegas_change = np.zeros((num_agents, 3))
 
     for val in curr_drone_collisions:
         id_1 = val[0]
@@ -187,8 +187,8 @@ def perform_downwash(num_agents, positions, rotations, dt):
     # get z_axis
     dyns_z_axis = np.array([rot[:, -1] for rot in rotations])
 
-    velocities_change = np.zeros(num_agents)
-    omegas_change = np.zeros(num_agents)
+    velocities_change = np.zeros((num_agents, 3))
+    omegas_change = np.zeros((num_agents, 3))
 
     # drone num
     # check if neighbors drones are within the downwash areas, if yes, apply downwash

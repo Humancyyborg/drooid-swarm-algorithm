@@ -63,8 +63,8 @@ def perform_collision_with_obstacle(dyn_pos, dyn_vel, obstacle_pos, obstacle_siz
 
 def get_vel_omega_change_obst_collisions(num_agents, obst_quad_col_matrix, real_positions, real_velocities,
                                          obstacle_size, obstacle_poses, col_coeff):
-    velocities_change = np.zeros(num_agents)
-    omegas_change = np.zeros(num_agents)
+    velocities_change = np.zeros((num_agents, 3))
+    omegas_change = np.zeros((num_agents, 3))
     for i, val in enumerate(obst_quad_col_matrix):
         drone_id = int(val)
         dyn_vel_change, dyn_omega_change = perform_collision_with_obstacle(
