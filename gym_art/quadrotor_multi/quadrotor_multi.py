@@ -14,8 +14,8 @@ from gym_art.quadrotor_multi.utils.quad_neighbor_utils import perform_collision_
     compute_neighbor_interaction
 from gym_art.quadrotor_multi.utils.quad_obst_utils import calculate_obst_drone_proximity_penalties, \
     perform_collision_with_obstacle
-from gym_art.quadrotor_multi.utils.quad_rew_info_utils import get_collision_reward_room, set_collision_rewards_infos
-from gym_art.quadrotor_multi.utils.quad_room_utils import perform_collision_with_wall, perform_collision_with_ceiling
+from gym_art.quadrotor_multi.utils.quad_rew_info_utils import set_collision_rewards_infos
+from gym_art.quadrotor_multi.utils.quad_room_utils import compute_room_interaction
 from gym_art.quadrotor_multi.utils.quad_utils import SELF_OBS_REPR, NEIGHBOR_OBS
 
 EPS = 1E-6
@@ -407,9 +407,6 @@ class QuadrotorEnvMulti(gym.Env):
             rew_collisions_obst_quad = np.zeros(self.num_agents)
             rew_obst_quad_proximity = np.zeros(self.num_agents)
 
-        if self.use_replay_buffer and not self.activate_replay_buffer:
-            self.crashes_last_episode += infos[0]["rewards"]["rew_crash"]
-
         curr_drone_collisions, self.prev_drone_collisions, rew_collisions, rew_proximity, \
             self.collisions_per_episode, self.collisions_after_settle, drone_col_matrix, \
             self.last_step_unique_collisions = \
@@ -422,34 +419,22 @@ class QuadrotorEnvMulti(gym.Env):
                 collision_hitbox_radius=self.collision_hitbox_radius,
                 collision_falloff_radius=self.collision_falloff_radius)
 
-        # Collisions with ground
-        ground_collisions = [1.0 if env.dynamics.on_floor else 0.0 for env in self.envs]
-        obst_coll = [1.0 if i < 0 else 0.0 for i in rew_obst_quad_collisions_raw]
-
-        self.all_collisions = {'drone': np.sum(drone_col_matrix, axis=1), 'ground': ground_collisions,
-                               'obstacle': obst_coll}
-
         if self.use_downwash:
             envs_dynamics = [env.dynamics for env in self.envs]
             perform_downwash(drones_dyn=envs_dynamics, dt=self.control_dt)
 
-        apply_room_collision, floor_crash_list, wall_crash_list, ceiling_crash_list = \
-            self.simulate_collision_with_room()
-
-        room_crash_list = np.unique(np.concatenate([floor_crash_list, wall_crash_list, ceiling_crash_list]))
-
-        emergent_collisions_room = np.setdiff1d(room_crash_list, self.prev_collisions_room)
-        self.collisions_room_per_episode += len(emergent_collisions_room)
-
-        emergent_collisions_floor = np.setdiff1d(floor_crash_list, self.prev_collisions_floor)
-        emergent_collisions_walls = np.setdiff1d(wall_crash_list, self.prev_collisions_walls)
-        emergent_collisions_ceiling = np.setdiff1d(ceiling_crash_list, self.prev_collisions_ceiling)
-
-        rew_raw_floor, rew_floor, rew_raw_walls, rew_walls, rew_raw_ceiling, rew_ceiling = \
-            get_collision_reward_room(num_agents=self.num_agents, emergent_collisions_floor=emergent_collisions_floor,
-                                      emergent_collisions_walls=emergent_collisions_walls,
-                                      emergent_collisions_ceiling=emergent_collisions_ceiling, rew_coeff_floor=0.0,
-                                      rew_coeff_walls=0.0, rew_coeff_ceiling=0.0)
+        self.crashes_last_episode, self.all_collisions, self.collisions_room_per_episode, rew_raw_floor, rew_floor, \
+            rew_raw_walls, rew_walls, rew_raw_ceiling, rew_ceiling, self.prev_collisions_room, \
+            self.prev_collisions_floor, self.prev_collisions_walls, self.prev_collisions_ceiling, \
+            apply_room_collision = compute_room_interaction(
+                num_agents=self.num_agents, use_replay_buffer=self.use_replay_buffer,
+                activate_replay_buffer=self.activate_replay_buffer, crashes_last_episode=self.crashes_last_episode,
+                info_rew_crash=infos[0]["rewards"]["rew_crash"], envs=self.envs,
+                rew_obst_quad_collisions_raw=rew_obst_quad_collisions_raw, drone_col_matrix=drone_col_matrix,
+                prev_collisions_room=self.prev_collisions_room,
+                collisions_room_per_episode=self.collisions_room_per_episode,
+                prev_collisions_floor=self.prev_collisions_floor, prev_collisions_walls=self.prev_collisions_walls,
+                prev_collisions_ceiling=self.prev_collisions_ceiling)
 
         # Applying random forces between drones
         if self.apply_collision_force:
@@ -512,28 +497,6 @@ class QuadrotorEnvMulti(gym.Env):
             dones = [True] * len(dones)  # terminate the episode for all "sub-envs"
 
         return obs, rewards, dones, infos
-
-    def simulate_collision_with_room(self):
-        apply_room_collision_flag = False
-        floor_collisions = np.array([env.dynamics.crashed_floor for env in self.envs])
-        wall_collisions = np.array([env.dynamics.crashed_wall for env in self.envs])
-        ceiling_collisions = np.array([env.dynamics.crashed_ceiling for env in self.envs])
-
-        floor_crash_list = np.where(floor_collisions >= 1)[0]
-
-        wall_crash_list = np.where(wall_collisions >= 1)[0]
-        if len(wall_crash_list) > 0:
-            apply_room_collision_flag = True
-            for val in wall_crash_list:
-                perform_collision_with_wall(drone_dyn=self.envs[val].dynamics, room_box=self.envs[0].room_box)
-
-        ceiling_crash_list = np.where(ceiling_collisions >= 1)[0]
-        if len(ceiling_crash_list) > 0:
-            apply_room_collision_flag = True
-            for val in ceiling_crash_list:
-                perform_collision_with_ceiling(drone_dyn=self.envs[val].dynamics)
-
-        return apply_room_collision_flag, floor_crash_list, wall_crash_list, ceiling_crash_list
 
     def render(self, mode='human', verbose=False):
         models = tuple(e.dynamics.model for e in self.envs)
