@@ -1,26 +1,21 @@
 import copy
-from collections import deque
-
-import numpy as np
 import time
-import gym
-
+from collections import deque
 from copy import deepcopy
 
-from gym_art.quadrotor_multi.utils.quad_utils import SELF_OBS_REPR, NEIGHBOR_OBS
+import gym
+import numpy as np
 
-from gym_art.quadrotor_multi.utils.quad_neighbor_utils import calculate_collision_matrix, \
-    calculate_drone_proximity_penalties, perform_collision_between_drones, perform_downwash
-
+from gym_art.quadrotor_multi.quadrotor_multi_obstacles import MultiObstacles
+from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
+from gym_art.quadrotor_multi.quadrotor_single import GRAV, QuadrotorSingle
+from gym_art.quadrotor_multi.scenarios.mix import create_scenario
+from gym_art.quadrotor_multi.utils.quad_neighbor_utils import perform_collision_between_drones, perform_downwash, \
+    compute_neighbor_interaction
 from gym_art.quadrotor_multi.utils.quad_obst_utils import calculate_obst_drone_proximity_penalties, \
     perform_collision_with_obstacle
-
 from gym_art.quadrotor_multi.utils.quad_room_utils import perform_collision_with_wall, perform_collision_with_ceiling
-
-from gym_art.quadrotor_multi.quadrotor_single import GRAV, QuadrotorSingle
-from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
-from gym_art.quadrotor_multi.scenarios.mix import create_scenario
-from gym_art.quadrotor_multi.quadrotor_multi_obstacles import MultiObstacles
+from gym_art.quadrotor_multi.utils.quad_utils import SELF_OBS_REPR, NEIGHBOR_OBS
 
 EPS = 1E-6
 
@@ -155,7 +150,6 @@ class QuadrotorEnvMulti(gym.Env):
         # if we wait a couple of seconds, then we can eliminate all the collisions that happen due to initialization
         # this is the actual metric that we want to minimize
         self.collisions_after_settle = 0
-        self.collisions_grace_period_seconds = 1.5
 
         # collision proximity penalties
         self.collision_hitbox_radius = collision_hitbox_radius
@@ -397,34 +391,16 @@ class QuadrotorEnvMulti(gym.Env):
         if self.use_replay_buffer and not self.activate_replay_buffer:
             self.crashes_last_episode += infos[0]["rewards"]["rew_crash"]
 
-        # Calculating collisions between drones
-        drone_col_matrix, curr_drone_collisions, distance_matrix = \
-            calculate_collision_matrix(self.pos, self.quad_arm, self.collision_hitbox_radius)
-
-        self.last_step_unique_collisions = np.setdiff1d(curr_drone_collisions, self.prev_drone_collisions)
-
-        # collision between 2 drones counts as a single collision
-        collisions_curr_tick = len(self.last_step_unique_collisions) // 2
-        self.collisions_per_episode += collisions_curr_tick
-
-        if collisions_curr_tick > 0:
-            if self.envs[0].tick >= self.collisions_grace_period_seconds * self.control_freq:
-                self.collisions_after_settle += collisions_curr_tick
-
-        self.prev_drone_collisions = curr_drone_collisions
-
-        rew_collisions_raw = np.zeros(self.num_agents)
-        if self.last_step_unique_collisions.any():
-            rew_collisions_raw[self.last_step_unique_collisions] = -1.0
-        rew_collisions = self.rew_coeff["quadcol_bin"] * rew_collisions_raw
-
-        # penalties for being too close to other drones
-        rew_proximity = -1.0 * calculate_drone_proximity_penalties(
-            distance_matrix=distance_matrix, arm=self.quad_arm, dt=self.control_dt,
-            penalty_fall_off=self.collision_falloff_radius,
-            max_penalty=self.rew_coeff["quadcol_bin_smooth_max"],
-            num_agents=self.num_agents,
-        )
+        curr_drone_collisions, self.prev_drone_collisions, rew_collisions_raw, rew_collisions, rew_proximity, \
+            self.collisions_per_episode, self.collisions_after_settle, drone_col_matrix = \
+            compute_neighbor_interaction(
+                num_agents=self.num_agents, tick=self.envs[0].tick, control_freq=self.control_freq, positions=self.pos,
+                rew_coeff_neighbor=self.rew_coeff["quadcol_bin"],
+                rew_coeff_neighbor_prox=self.rew_coeff["quadcol_bin_smooth_max"],
+                prev_drone_collisions=self.prev_drone_collisions, collisions_per_episode=self.collisions_per_episode,
+                collisions_after_settle=self.collisions_after_settle,
+                collision_hitbox_radius=self.collision_hitbox_radius,
+                collision_falloff_radius=self.collision_falloff_radius)
 
         # Collisions with ground
         ground_collisions = [1.0 if env.dynamics.on_floor else 0.0 for env in self.envs]

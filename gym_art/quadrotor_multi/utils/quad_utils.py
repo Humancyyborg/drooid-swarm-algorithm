@@ -5,6 +5,7 @@ from numpy.linalg import norm
 from copy import deepcopy
 
 EPS = 1e-5
+QUAD_RADIUS = 0.05
 
 SELF_OBS_REPR = {
     'xyz_vxyz_R_omega': 18,

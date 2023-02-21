@@ -1,15 +1,18 @@
 import numpy as np
 from scipy import spatial
 
-from gym_art.quadrotor_multi.utils.quad_utils import compute_new_vel, compute_new_omega, EPS
+from gym_art.quadrotor_multi.utils.quad_utils import compute_new_vel, compute_new_omega, EPS, QUAD_RADIUS
+
+# 1.5 seconds
+COLLISIONS_GRACE_PERIOD = 1.5
 
 
 # Rendering & Reward
 # Rendering: collision_matrix
 # Reward: 1) all_collisions; 2) dist
-def calculate_collision_matrix(positions, arm, hitbox_radius):
+def calculate_collision_matrix(positions, hitbox_radius):
     dist = spatial.distance_matrix(x=positions, y=positions)
-    collision_matrix = (dist < hitbox_radius * arm).astype(np.float32)
+    collision_matrix = (dist < hitbox_radius * QUAD_RADIUS).astype(np.float32)
     np.fill_diagonal(collision_matrix, 0.0)
 
     # get upper triangular matrix and check if they have collisions and append to all collisions
@@ -33,6 +36,43 @@ def calculate_drone_proximity_penalties(distance_matrix, arm, dt, penalty_fall_o
     penalties = np.sum(penalties, axis=0)
 
     return dt * penalties  # actual penalties per tick to be added to the overall reward
+
+
+def compute_neighbor_interaction(num_agents, tick, control_freq, positions, rew_coeff_neighbor, rew_coeff_neighbor_prox,
+                                 prev_drone_collisions, collisions_per_episode, collisions_after_settle,
+                                 collision_hitbox_radius, collision_falloff_radius):
+
+    # Calculating collisions between drones
+    drone_col_matrix, curr_drone_collisions, distance_matrix = \
+        calculate_collision_matrix(positions=positions, hitbox_radius=collision_hitbox_radius)
+
+    last_step_unique_collisions = np.setdiff1d(curr_drone_collisions, prev_drone_collisions)
+
+    # collision between 2 drones counts as a single collision
+    collisions_curr_tick = len(last_step_unique_collisions) // 2
+    collisions_per_episode += collisions_curr_tick
+
+    if collisions_curr_tick > 0:
+        if tick >= COLLISIONS_GRACE_PERIOD * control_freq:
+            collisions_after_settle += collisions_curr_tick
+
+    prev_drone_collisions = curr_drone_collisions
+
+    rew_collisions_raw = np.zeros(num_agents)
+    if last_step_unique_collisions.any():
+        rew_collisions_raw[last_step_unique_collisions] = -1.0
+    rew_collisions = rew_coeff_neighbor * rew_collisions_raw
+
+    # penalties for being too close to other drones
+    rew_proximity = -1.0 * calculate_drone_proximity_penalties(
+        distance_matrix=distance_matrix, arm=QUAD_RADIUS, dt=1.0 / control_freq,
+        penalty_fall_off=collision_falloff_radius,
+        max_penalty=rew_coeff_neighbor_prox,
+        num_agents=num_agents,
+    )
+
+    return curr_drone_collisions, prev_drone_collisions, rew_collisions_raw, rew_collisions, rew_proximity, \
+        collisions_per_episode, collisions_after_settle, drone_col_matrix
 
 
 # Collision model
@@ -103,6 +143,7 @@ def get_vel_omega_norm(z_axis):
     return down_z_axis_norm, dir_omega_norm
 
 
+# Collision Model
 def perform_downwash(drones_dyn, dt):
     # based on some data from Neural-Swarm: https://arxiv.org/pdf/2003.02992.pdf, Fig. 3
     # quadrotor weights: 34 grams
