@@ -392,7 +392,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.crashes_last_episode += infos[0]["rewards"]["rew_crash"]
 
         curr_drone_collisions, self.prev_drone_collisions, rew_collisions_raw, rew_collisions, rew_proximity, \
-            self.collisions_per_episode, self.collisions_after_settle, drone_col_matrix = \
+            self.collisions_per_episode, self.collisions_after_settle, drone_col_matrix, self.last_step_unique_collisions = \
             compute_neighbor_interaction(
                 num_agents=self.num_agents, tick=self.envs[0].tick, control_freq=self.control_freq, positions=self.pos,
                 rew_coeff_neighbor=self.rew_coeff["quadcol_bin"],
