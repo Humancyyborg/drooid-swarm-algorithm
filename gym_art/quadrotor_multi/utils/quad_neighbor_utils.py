@@ -41,7 +41,6 @@ def calculate_drone_proximity_penalties(distance_matrix, dt, penalty_fall_off, m
 def compute_neighbor_interaction(num_agents, tick, control_freq, positions, rew_coeff_neighbor, rew_coeff_neighbor_prox,
                                  prev_drone_collisions, collisions_per_episode, collisions_after_settle,
                                  collision_hitbox_radius, collision_falloff_radius):
-
     # Calculating collisions between drones
     drone_col_matrix, curr_drone_collisions, distance_matrix = \
         calculate_collision_matrix(positions=positions, hitbox_radius=collision_hitbox_radius)
@@ -187,3 +186,111 @@ def perform_downwash(drones_dyn, dt):
                 down_z_axis_norm, dir_omega_norm = get_vel_omega_norm(z_axis=z_axis)
                 drones_dyn[j].vel += acc[j] * down_z_axis_norm * dt
                 drones_dyn[j].omega += omega_downwash[j] * dir_omega_norm * dt
+
+
+def get_rel_pos_vel_item(num_agents, positions, velocities, env_id, indices=None):
+    i = env_id
+
+    if indices is None:
+        # if not specified explicitly, consider all neighbors
+        indices = [j for j in range(num_agents) if j != i]
+
+    cur_pos = positions
+    cur_vel = velocities
+    pos_neighbor = np.stack([positions[j] for j in indices])
+    vel_neighbor = np.stack([velocities[j] for j in indices])
+    pos_rel = pos_neighbor - cur_pos
+    vel_rel = vel_neighbor - cur_vel
+    return pos_rel, vel_rel
+
+
+def get_obs_neighbor_rel(num_agents, positions, velocities, goals, swarm_obs, env_id, closest_drones):
+    i = env_id
+    pos_neighbors_rel, vel_neighbors_rel = get_rel_pos_vel_item(
+        num_agents=num_agents, positions=positions, velocities=velocities, env_id=i, indices=closest_drones[i])
+
+    if swarm_obs == 'pos_vel':
+        obs_neighbor_rel = np.concatenate((pos_neighbors_rel, vel_neighbors_rel), axis=1)
+    else:
+        neighbor_goals_rel = np.stack([goals[j] for j in closest_drones[i]]) - positions[i]
+
+        if swarm_obs == 'pos_vel_goals':
+            obs_neighbor_rel = np.concatenate((pos_neighbors_rel, vel_neighbors_rel, neighbor_goals_rel), axis=1)
+        elif swarm_obs == 'pos_vel_goals_ndist_gdist':
+            dist_to_neighbors = np.linalg.norm(pos_neighbors_rel, axis=1).reshape(-1, 1)
+            dist_to_neighbor_goals = np.linalg.norm(neighbor_goals_rel, axis=1).reshape(-1, 1)
+            obs_neighbor_rel = np.concatenate((pos_neighbors_rel, vel_neighbors_rel, neighbor_goals_rel,
+                                               dist_to_neighbors, dist_to_neighbor_goals), axis=1)
+        else:
+            raise NotImplementedError(f'Neighbor observation type: {swarm_obs} is not supported!')
+
+    return obs_neighbor_rel
+
+
+def extend_obs_space(num_agents, positions, velocities, goals, swarm_obs, clip_neighbor_space_min_box,
+                     clip_neighbor_space_max_box, obs, closest_drones):
+    obs_neighbors = []
+
+    for i in range(num_agents):
+        obs_neighbor_rel = get_obs_neighbor_rel(
+            num_agents=num_agents, positions=positions, velocities=velocities, goals=goals, swarm_obs=swarm_obs,
+            env_id=i, closest_drones=closest_drones)
+        obs_neighbors.append(obs_neighbor_rel.reshape(-1))
+
+    obs_neighbors = np.stack(obs_neighbors)
+
+    # clip observation space of neighborhoods
+    obs_neighbors = np.clip(
+        obs_neighbors, a_min=clip_neighbor_space_min_box, a_max=clip_neighbor_space_max_box,
+    )
+    obs_ext = np.concatenate((obs, obs_neighbors), axis=1)
+    return obs_ext
+
+
+def neighborhood_indices(num_agents, positions, velocities, num_use_neighbor_obs):
+    """Return a list of the closest drones for each drone in the swarm."""
+    # Indices of all the other drones except us
+    indices = [[j for j in range(num_agents) if i != j] for i in range(num_agents)]
+    indices = np.array(indices)
+
+    if num_use_neighbor_obs == num_agents - 1:
+        return indices
+
+    vaild_neighbor_num_flag = (1 <= num_use_neighbor_obs < num_agents - 1)
+    if not vaild_neighbor_num_flag:
+        raise NotImplementedError(f'Neighbor number: {num_use_neighbor_obs} is not supported!')
+
+    close_neighbor_indices = []
+
+    for i in range(num_agents):
+        rel_pos, rel_vel = get_rel_pos_vel_item(
+            num_agents=num_agents, positions=positions, velocities=velocities, env_id=i, indices=indices[i])
+
+        rel_dist = np.linalg.norm(rel_pos, axis=1)
+        rel_dist = np.maximum(rel_dist, EPS)
+        rel_pos_unit = rel_pos / rel_dist[:, None]
+
+        # new relative distance is a new metric that combines relative position and relative velocity
+        # F = alpha * distance + (1 - alpha) * dot(normalized_direction_to_other_drone, relative_vel)
+        # the smaller the new_rel_dist, the closer the drones
+        new_rel_dist = rel_dist + np.sum(rel_pos_unit * rel_vel, axis=1)
+
+        rel_pos_index = new_rel_dist.argsort()
+        rel_pos_index = rel_pos_index[:num_use_neighbor_obs]
+        close_neighbor_indices.append(indices[i][rel_pos_index])
+
+    return close_neighbor_indices
+
+
+def add_neighborhood_obs(obs, swarm_obs, num_agents, positions, velocities, num_use_neighbor_obs, goals,
+                         clip_neighbor_space_min_box, clip_neighbor_space_max_box):
+    if swarm_obs != 'none' and num_agents > 1:
+        indices = neighborhood_indices(num_agents, positions, velocities, num_use_neighbor_obs)
+
+        obs_ext = extend_obs_space(
+            num_agents=num_agents, positions=positions, velocities=velocities, goals=goals, swarm_obs=swarm_obs,
+            clip_neighbor_space_min_box=clip_neighbor_space_min_box,
+            clip_neighbor_space_max_box=clip_neighbor_space_max_box, obs=obs, closest_drones=indices)
+        return obs_ext
+    else:
+        return obs

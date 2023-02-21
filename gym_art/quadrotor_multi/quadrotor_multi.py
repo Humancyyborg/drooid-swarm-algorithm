@@ -11,7 +11,7 @@ from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSce
 from gym_art.quadrotor_multi.quadrotor_single import GRAV, QuadrotorSingle
 from gym_art.quadrotor_multi.scenarios.mix import create_scenario
 from gym_art.quadrotor_multi.utils.quad_neighbor_utils import perform_collision_between_drones, perform_downwash, \
-    compute_neighbor_interaction
+    compute_neighbor_interaction, add_neighborhood_obs
 from gym_art.quadrotor_multi.utils.quad_obst_utils import calculate_obst_drone_proximity_penalties, \
     perform_collision_with_obstacle
 from gym_art.quadrotor_multi.utils.quad_rew_info_utils import set_collision_rewards_infos
@@ -194,105 +194,6 @@ class QuadrotorEnvMulti(gym.Env):
         # dims is a (x, y, z) tuple
         self.room_dims = dims
 
-    def get_rel_pos_vel_item(self, env_id, indices=None):
-        i = env_id
-
-        if indices is None:
-            # if not specified explicitly, consider all neighbors
-            indices = [j for j in range(self.num_agents) if j != i]
-
-        cur_pos = self.envs[i].dynamics.pos
-        cur_vel = self.envs[i].dynamics.vel
-        pos_neighbor = np.stack([self.envs[j].dynamics.pos for j in indices])
-        vel_neighbor = np.stack([self.envs[j].dynamics.vel for j in indices])
-        pos_rel = pos_neighbor - cur_pos
-        vel_rel = vel_neighbor - cur_vel
-        return pos_rel, vel_rel
-
-    def get_rel_pos_vel_stack(self):
-        rel_pos_stack, rel_vel_stack = [], []
-        for i in range(self.num_agents):
-            pos_rel, vel_rel = self.get_rel_pos_vel_item(env_id=i)
-            rel_pos_stack.append(pos_rel)
-            rel_vel_stack.append(vel_rel)
-        return np.array(rel_pos_stack), np.array(rel_vel_stack)
-
-    def get_obs_neighbor_rel(self, env_id, closest_drones):
-        i = env_id
-        pos_neighbors_rel, vel_neighbors_rel = self.get_rel_pos_vel_item(env_id=i, indices=closest_drones[i])
-
-        if self.swarm_obs == 'pos_vel':
-            obs_neighbor_rel = np.concatenate((pos_neighbors_rel, vel_neighbors_rel), axis=1)
-        else:
-            neighbor_goals_rel = np.stack([self.envs[j].goal for j in closest_drones[i]]) - self.envs[i].dynamics.pos
-
-            if self.swarm_obs == 'pos_vel_goals':
-                obs_neighbor_rel = np.concatenate((pos_neighbors_rel, vel_neighbors_rel, neighbor_goals_rel), axis=1)
-            elif self.swarm_obs == 'pos_vel_goals_ndist_gdist':
-                dist_to_neighbors = np.linalg.norm(pos_neighbors_rel, axis=1).reshape(-1, 1)
-                dist_to_neighbor_goals = np.linalg.norm(neighbor_goals_rel, axis=1).reshape(-1, 1)
-                obs_neighbor_rel = np.concatenate((pos_neighbors_rel, vel_neighbors_rel, neighbor_goals_rel,
-                                                   dist_to_neighbors, dist_to_neighbor_goals), axis=1)
-            else:
-                raise NotImplementedError
-
-        return obs_neighbor_rel
-
-    def extend_obs_space(self, obs, closest_drones):
-        assert self.swarm_obs in ['pos_vel', 'pos_vel_goals', 'pos_vel_goals_ndist_gdist'], \
-            f'Invalid parameter {self.swarm_obs} passed in --obs_space'
-
-        obs_neighbors = []
-        for i in range(len(self.envs)):
-            obs_neighbor_rel = self.get_obs_neighbor_rel(env_id=i, closest_drones=closest_drones)
-            obs_neighbors.append(obs_neighbor_rel.reshape(-1))
-        obs_neighbors = np.stack(obs_neighbors)
-
-        # clip observation space of neighborhoods
-        obs_neighbors = np.clip(
-            obs_neighbors, a_min=self.clip_neighbor_space_min_box, a_max=self.clip_neighbor_space_max_box,
-        )
-        obs_ext = np.concatenate((obs, obs_neighbors), axis=1)
-        return obs_ext
-
-    def neighborhood_indices(self):
-        """Return a list of the closest drones for each drone in the swarm."""
-        # indices of all the other drones except us
-        indices = [[j for j in range(self.num_agents) if i != j] for i in range(self.num_agents)]
-        indices = np.array(indices)
-
-        if self.num_use_neighbor_obs == self.num_agents - 1:
-            return indices
-        elif 1 <= self.num_use_neighbor_obs < self.num_agents - 1:
-            close_neighbor_indices = []
-
-            for i in range(self.num_agents):
-                rel_pos, rel_vel = self.get_rel_pos_vel_item(env_id=i, indices=indices[i])
-                rel_dist = np.linalg.norm(rel_pos, axis=1)
-                rel_dist = np.maximum(rel_dist, 0.01)
-                rel_pos_unit = rel_pos / rel_dist[:, None]
-
-                # new relative distance is a new metric that combines relative position and relative velocity
-                # F = alpha * distance + (1 - alpha) * dot(normalized_direction_to_other_drone, relative_vel)
-                # the smaller the new_rel_dist, the closer the drones
-                new_rel_dist = rel_dist + np.sum(rel_pos_unit * rel_vel, axis=1)
-
-                rel_pos_index = new_rel_dist.argsort()
-                rel_pos_index = rel_pos_index[:self.num_use_neighbor_obs]
-                close_neighbor_indices.append(indices[i][rel_pos_index])
-
-            return close_neighbor_indices
-        else:
-            raise RuntimeError("Incorrect number of neigbors")
-
-    def add_neighborhood_obs(self, obs):
-        if self.swarm_obs != 'none' and self.num_agents > 1:
-            indices = self.neighborhood_indices()
-            obs_ext = self.extend_obs_space(obs, closest_drones=indices)
-            return obs_ext
-        else:
-            return obs
-
     def init_scene_multi(self):
         models = tuple(e.dynamics.model for e in self.envs)
         self.scene = Quadrotor3DSceneMulti(
@@ -313,16 +214,28 @@ class QuadrotorEnvMulti(gym.Env):
             self.crashes_in_recent_episodes.append(self.crashes_last_episode)
             self.activate_replay_buffer = can_drones_fly(crashes_in_recent_episodes=self.crashes_in_recent_episodes)
 
+        sense_positions = []
+        sense_velocities = []
+        goals = []
         for i, e in enumerate(self.envs):
             e.goal = self.scenario.goals[i]
             e.rew_coeff = self.rew_coeff
             e.update_env(*self.room_dims)
 
             observation = e.reset()
+
+            # Get info
             obs.append(observation)
+            sense_positions.append(e.sense_pos)
+            sense_velocities.append(e.sense_vel)
+            goals.append(e.goal)
 
         # extend obs to see neighbors
-        obs = self.add_neighborhood_obs(obs)
+        obs = add_neighborhood_obs(
+            obs=obs, swarm_obs=self.swarm_obs, num_agents=self.num_agents, positions=sense_positions,
+            velocities=sense_velocities, num_use_neighbor_obs=self.num_use_neighbor_obs, goals=goals,
+            clip_neighbor_space_min_box=self.clip_neighbor_space_min_box,
+            clip_neighbor_space_max_box=self.clip_neighbor_space_max_box)
 
         if self.use_obstacles:
             quads_pos = np.array([e.dynamics.pos for e in self.envs])
@@ -482,7 +395,16 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Concatenate observations of neighbor drones
         if self.num_use_neighbor_obs > 0:
-            obs = self.add_neighborhood_obs(obs)
+            # extend obs to see neighbors
+            sense_positions = [env.sense_pos for env in self.envs]
+            sense_velocities = [env.sense_vel for env in self.envs]
+            goals = [env.goal for env in self.envs]
+
+            obs = add_neighborhood_obs(
+                obs=obs, swarm_obs=self.swarm_obs, num_agents=self.num_agents, positions=sense_positions,
+                velocities=sense_velocities, num_use_neighbor_obs=self.num_use_neighbor_obs, goals=goals,
+                clip_neighbor_space_min_box=self.clip_neighbor_space_min_box,
+                clip_neighbor_space_max_box=self.clip_neighbor_space_max_box)
 
         # Concatenate obstacle observations
         if self.use_obstacles:

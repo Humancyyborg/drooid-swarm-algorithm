@@ -22,6 +22,8 @@ import logging
 import sys
 import time
 
+import numpy as np
+
 import gym_art.quadrotor_multi.get_state as get_state
 import gym_art.quadrotor_multi.quadrotor_randomization as quad_rand
 
@@ -350,7 +352,8 @@ class QuadrotorDynamics:
             rotor_drag_ti = cross_mx4(rotor_drag_fi, self.model.prop_pos)  # [4,3] x [4,3]
             rotor_drag_torque = np.sum(rotor_drag_ti, axis=0)
 
-            rotor_roll_torque = - self.C_rot_roll * self.prop_ccw[:, None] * np.sqrt(self.thrust_cmds_damp)[:, None] * v_rotors  # [4,3]
+            rotor_roll_torque = - self.C_rot_roll * self.prop_ccw[:, None] * np.sqrt(self.thrust_cmds_damp)[:,
+                                                                             None] * v_rotors  # [4,3]
             rotor_roll_torque = np.sum(rotor_roll_torque, axis=0)
             rotor_visc_torque = rotor_drag_torque + rotor_roll_torque
 
@@ -454,8 +457,8 @@ class QuadrotorDynamics:
 
     def step1_numba(self, thrust_cmds, dt, thrust_noise):
         self.motor_tau_up, self.motor_tau_down, self.thrust_rot_damp, self.thrust_cmds_damp, self.torques, \
-        self.torque, self.rot, self.since_last_svd, self.omega_dot, self.omega, self.pos, thrust, rotor_drag_force, \
-        self.vel, self.on_floor = \
+            self.torque, self.rot, self.since_last_svd, self.omega_dot, self.omega, self.pos, thrust, rotor_drag_force, \
+            self.vel, self.on_floor = \
             calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, EPS, self.motor_damp_time_up,
                                                                   self.motor_damp_time_down,
                                                                   self.thrust_cmds_damp, self.thrust_rot_damp,
@@ -543,7 +546,6 @@ class QuadrotorDynamics:
             # Computing accelerations
             force = np.matmul(self.rot, sum_thr_drag)
             self.acc = [0.0, 0.0, -GRAV] + (1.0 / self.mass) * force
-
 
     def rotors_drag_roll_glob_frame(self):
         # omega [3,] x prop_pos [4,3] = v_rot_body [4, 3]
@@ -803,9 +805,11 @@ class QuadrotorSingle:
                  dynamics_randomize_every=None, dyn_sampler_1=None, dyn_sampler_2=None,
                  raw_control=True, raw_control_zero_middle=True, dim_mode='3D', tf_control=False, sim_freq=200.,
                  sim_steps=2,
-                 obs_repr="xyz_vxyz_R_omega", ep_time=7, room_length=10, room_width=10, room_height=10, init_random_state=False,
+                 obs_repr="xyz_vxyz_R_omega", ep_time=7, room_length=10, room_width=10, room_height=10,
+                 init_random_state=False,
                  rew_coeff=None, sense_noise=None, verbose=False, gravity=GRAV,
-                 t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False, swarm_obs='none', num_agents=1,
+                 t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False,
+                 swarm_obs='none', num_agents=1,
                  view_mode='local', num_use_neighbor_obs=0, use_obstacles=False):
         np.seterr(under='ignore')
         """
@@ -966,6 +970,10 @@ class QuadrotorSingle:
         #########################################
         self._seed()
 
+        # Sense info
+        self.sense_pos = np.zeros(3)
+        self.sense_vel = np.zeros(3)
+
     def save_dyn_params(self, filename):
         import yaml
         with open(filename, 'w') as yaml_file:
@@ -1056,12 +1064,15 @@ class QuadrotorSingle:
             "act": [np.zeros(4), np.ones(4)],
             "quat": [-np.ones(4), np.ones(4)],
             "euler": [-np.pi * np.ones(3), np.pi * np.ones(3)],
-            "rxyz": [-room_range, room_range], # rxyz stands for relative pos between quadrotors
-            "rvxyz": [-2.0 * self.dynamics.vxyz_max * np.ones(3), 2.0 * self.dynamics.vxyz_max * np.ones(3)], # rvxyz stands for relative velocity between quadrotors
-            "roxyz": [-room_range, room_range], # roxyz stands for relative pos between quadrotor and obstacle
-            "rovxyz": [-20.0 * np.ones(3), 20.0 * np.ones(3)], # rovxyz stands for relative velocity between quadrotor and obstacle
+            "rxyz": [-room_range, room_range],  # rxyz stands for relative pos between quadrotors
+            "rvxyz": [-2.0 * self.dynamics.vxyz_max * np.ones(3), 2.0 * self.dynamics.vxyz_max * np.ones(3)],
+            # rvxyz stands for relative velocity between quadrotors
+            "roxyz": [-room_range, room_range],  # roxyz stands for relative pos between quadrotor and obstacle
+            "rovxyz": [-20.0 * np.ones(3), 20.0 * np.ones(3)],
+            # rovxyz stands for relative velocity between quadrotor and obstacle
             "osize": [np.zeros(3), 20.0 * np.ones(3)],  # obstacle size, [[0., 0., 0.], [20., 20., 20.]]
-            "otype": [np.zeros(1), 20.0 * np.ones(1)],  # obstacle type, [[0.], [20.]], which means we can support 21 types of obstacles
+            "otype": [np.zeros(1), 20.0 * np.ones(1)],
+            # obstacle type, [[0.], [20.]], which means we can support 21 types of obstacles
             "goal": [-room_range, room_range],
             "nbr_dist": [np.zeros(1), room_max_dist],
             "nbr_goal_dist": [np.zeros(1), room_max_dist],
@@ -1077,7 +1088,8 @@ class QuadrotorSingle:
         elif self.swarm_obs == 'pos_vel_goals' and self.num_agents > 1:
             obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['goal']) * self.num_use_neighbor_obs
         elif self.swarm_obs == 'pos_vel_goals_ndist_gdist' and self.num_agents > 1:
-            obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['goal'] + ['nbr_dist'] + ['nbr_goal_dist']) * self.num_use_neighbor_obs
+            obs_comps = obs_comps + (
+                        ['rxyz'] + ['rvxyz'] + ['goal'] + ['nbr_dist'] + ['nbr_goal_dist']) * self.num_use_neighbor_obs
 
         if self.use_obstacles:
             obs_comps = obs_comps + ["octmap"]
@@ -1173,7 +1185,8 @@ class QuadrotorSingle:
             "dt": [self.dt * self.sim_steps],
         }
 
-        # print(sv, obs_comp, dyn_params, self.obs_comp_sizes)      
+        self.sense_pos = sv[:3] + self.goal[:3]
+        self.sense_vel = sv[3:6]
         return sv, reward, done, {'rewards': rew_info, "obs_comp": obs_comp, "dyn_params": dyn_params}
 
     def resample_dynamics(self):
@@ -1272,6 +1285,9 @@ class QuadrotorSingle:
         self.actions = [np.zeros([4, ]), np.zeros([4, ])]
 
         state = self.state_vector(self)
+
+        self.sense_pos = state[:3] + self.goal[:3]
+        self.sense_vel = state[3:6]
         return state
 
     def reset(self):
@@ -1775,7 +1791,7 @@ def calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, eps, 
     pos = pos + dt * vel
 
     return motor_tau_up, motor_tau_down, thrust_rot_damp, thrust_cmds_damp, torques, \
-           torque, rot, since_last_svd, omega_dot, omega, pos, thrust, rotor_drag_force, vel, on_floor
+        torque, rot, since_last_svd, omega_dot, omega, pos, thrust, rotor_drag_force, vel, on_floor
 
 
 @njit
