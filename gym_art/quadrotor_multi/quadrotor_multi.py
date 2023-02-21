@@ -42,7 +42,9 @@ class QuadrotorEnvMulti(gym.Env):
 
         self.num_agents = num_agents
         self.swarm_obs = swarm_obs
-        assert local_obs <= self.num_agents - 1 or local_obs == -1, f'Invalid value ({local_obs}) passed to --local_obs. Should be 0 < n < num_agents - 1, or -1'
+        assert local_obs <= self.num_agents - 1 or local_obs == -1, f'Invalid value ({local_obs}) passed to ' \
+                                                                    f'--local_obs. Should be 0 < n < num_agents - 1, ' \
+                                                                    f'or -1'
         if local_obs == -1:
             self.num_use_neighbor_obs = self.num_agents - 1
         else:
@@ -138,7 +140,8 @@ class QuadrotorEnvMulti(gym.Env):
         self.simulation_start_time = 0
         self.frames_since_last_render = self.render_skip_frames = 0
         self.render_every_nth_frame = 1
-        self.render_speed = 1.0  # set to below 1 slowmo, higher than 1 for fast forward (if simulator can keep up)
+        # set to below 1 slow motion, higher than 1 for fast-forward (if simulator can keep up)
+        self.render_speed = 1.0
 
         # measuring the total number of pairwise collisions per episode
         self.collisions_per_episode = 0
@@ -167,8 +170,10 @@ class QuadrotorEnvMulti(gym.Env):
         self.viz_trace_nth_step = viz_trace_nth_step
 
         self.use_replay_buffer = use_replay_buffer
-        self.activate_replay_buffer = False  # only start using the buffer after the drones learn how to fly
-        self.saved_in_replay_buffer = False  # since the same collisions happen during replay, we don't want to keep resaving the same event
+        # only start using the buffer after the drones learn how to fly
+        self.activate_replay_buffer = False
+        # since the same collisions happen during replay, we don't want to keep resaving the same event
+        self.saved_in_replay_buffer = False
         self.last_step_unique_collisions = False
         self.crashes_in_recent_episodes = deque([], maxlen=100)
         self.crashes_last_episode = 0
@@ -242,7 +247,7 @@ class QuadrotorEnvMulti(gym.Env):
         return obs_ext
 
     def neighborhood_indices(self):
-        """Return a list of closest drones for each drone in the swarm."""
+        """Return a list of the closest drones for each drone in the swarm."""
         # indices of all the other drones except us
         indices = [[j for j in range(self.num_agents) if i != j] for i in range(self.num_agents)]
         indices = np.array(indices)
@@ -297,7 +302,7 @@ class QuadrotorEnvMulti(gym.Env):
             vis_acc_arrows=self.vis_acc_arrows, viz_traces=self.viz_traces, viz_trace_nth_step=self.viz_trace_nth_step,
         )
 
-    def reset(self):
+    def reset(self, **kwargs):
         obs, rewards, dones, infos = [], [], [], []
         self.scenario.reset()
         self.quads_formation_size = self.scenario.formation_size
@@ -392,7 +397,8 @@ class QuadrotorEnvMulti(gym.Env):
             self.crashes_last_episode += infos[0]["rewards"]["rew_crash"]
 
         curr_drone_collisions, self.prev_drone_collisions, rew_collisions_raw, rew_collisions, rew_proximity, \
-            self.collisions_per_episode, self.collisions_after_settle, drone_col_matrix, self.last_step_unique_collisions = \
+            self.collisions_per_episode, self.collisions_after_settle, drone_col_matrix, \
+            self.last_step_unique_collisions = \
             compute_neighbor_interaction(
                 num_agents=self.num_agents, tick=self.envs[0].tick, control_freq=self.control_freq, positions=self.pos,
                 rew_coeff_neighbor=self.rew_coeff["quadcol_bin"],
@@ -413,7 +419,8 @@ class QuadrotorEnvMulti(gym.Env):
             envs_dynamics = [env.dynamics for env in self.envs]
             perform_downwash(drones_dyn=envs_dynamics, dt=self.control_dt)
 
-        apply_room_collision, floor_crash_list, wall_crash_list, ceiling_crash_list = self.simulate_collision_with_room()
+        apply_room_collision, floor_crash_list, wall_crash_list, ceiling_crash_list = \
+            self.simulate_collision_with_room()
 
         room_crash_list = np.unique(np.concatenate([floor_crash_list, wall_crash_list, ceiling_crash_list]))
         self.collisions_room_per_episode += len(room_crash_list)
@@ -424,10 +431,10 @@ class QuadrotorEnvMulti(gym.Env):
                 perform_collision_between_drones(self.envs[val[0]].dynamics, self.envs[val[1]].dynamics)
             if self.use_obstacles:
                 for val in obst_quad_col_matrix:
-                    perform_collision_with_obstacle(drone_dyn=self.envs[int(val)].dynamics,
-                                                    obstacle_pos=self.obstacles.closest_obstacle(self.envs[val].dynamics.pos),
-                                                    obstacle_size=self.obstacle_size,
-                                                    col_coeff=self.rew_coeff["quadcol_obst_coeff"])
+                    perform_collision_with_obstacle(
+                        drone_dyn=self.envs[int(val)].dynamics,
+                        obstacle_pos=self.obstacles.closest_obstacle(self.envs[val].dynamics.pos),
+                        obstacle_size=self.obstacle_size, col_coeff=self.rew_coeff["quadcol_obst_coeff"])
 
         for i in range(self.num_agents):
             rewards[i] += rew_collisions[i]
@@ -589,14 +596,15 @@ class QuadrotorEnvMulti(gym.Env):
         copied_env = cls.__new__(cls)
         memo[id(self)] = copied_env
 
-        # this will actually break the reward shaping functionality in PBT, but we need to fix it in SampleFactory, not here
+        # this will actually break the reward shaping functionality in PBT, but we need to fix it in SampleFactory,
+        # not here
         skip_copying = {"scene", "reward_shaping_interface"}
 
         for k, v in self.__dict__.items():
             if k not in skip_copying:
                 setattr(copied_env, k, deepcopy(v, memo))
 
-        # warning! deep-copied env has its scene uninitialized! We gotta reuse one from the existing env
+        # warning! deep-copied env has its scene uninitialized! We need to reuse one from the existing env
         # to avoid creating tons of windows
         copied_env.scene = None
 
