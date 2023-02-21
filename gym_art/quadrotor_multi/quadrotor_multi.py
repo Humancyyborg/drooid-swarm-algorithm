@@ -14,6 +14,7 @@ from gym_art.quadrotor_multi.utils.quad_neighbor_utils import perform_collision_
     compute_neighbor_interaction
 from gym_art.quadrotor_multi.utils.quad_obst_utils import calculate_obst_drone_proximity_penalties, \
     perform_collision_with_obstacle
+from gym_art.quadrotor_multi.utils.quad_rew_info_utils import get_collision_reward_room, set_collision_rewards_infos
 from gym_art.quadrotor_multi.utils.quad_room_utils import perform_collision_with_wall, perform_collision_with_ceiling
 from gym_art.quadrotor_multi.utils.quad_utils import SELF_OBS_REPR, NEIGHBOR_OBS
 
@@ -178,6 +179,12 @@ class QuadrotorEnvMulti(gym.Env):
         self.crashes_in_recent_episodes = deque([], maxlen=100)
         self.crashes_last_episode = 0
 
+        # Room info
+        self.prev_collisions_room = []
+        self.prev_collisions_floor = []
+        self.prev_collisions_walls = []
+        self.prev_collisions_ceiling = []
+
     def set_room_dims(self, dims):
         # dims is a (x, y, z) tuple
         self.room_dims = dims
@@ -338,6 +345,13 @@ class QuadrotorEnvMulti(gym.Env):
 
         self.reset_scene = True
         self.crashes_last_episode = 0
+
+        # Reset room info
+        self.prev_collisions_room = []
+        self.prev_collisions_floor = []
+        self.prev_collisions_walls = []
+        self.prev_collisions_ceiling = []
+
         return obs
 
     # noinspection PyTypeChecker
@@ -396,7 +410,7 @@ class QuadrotorEnvMulti(gym.Env):
         if self.use_replay_buffer and not self.activate_replay_buffer:
             self.crashes_last_episode += infos[0]["rewards"]["rew_crash"]
 
-        curr_drone_collisions, self.prev_drone_collisions, rew_collisions_raw, rew_collisions, rew_proximity, \
+        curr_drone_collisions, self.prev_drone_collisions, rew_collisions, rew_proximity, \
             self.collisions_per_episode, self.collisions_after_settle, drone_col_matrix, \
             self.last_step_unique_collisions = \
             compute_neighbor_interaction(
@@ -423,7 +437,19 @@ class QuadrotorEnvMulti(gym.Env):
             self.simulate_collision_with_room()
 
         room_crash_list = np.unique(np.concatenate([floor_crash_list, wall_crash_list, ceiling_crash_list]))
-        self.collisions_room_per_episode += len(room_crash_list)
+
+        emergent_collisions_room = np.setdiff1d(room_crash_list, self.prev_collisions_room)
+        self.collisions_room_per_episode += len(emergent_collisions_room)
+
+        emergent_collisions_floor = np.setdiff1d(floor_crash_list, self.prev_collisions_floor)
+        emergent_collisions_walls = np.setdiff1d(wall_crash_list, self.prev_collisions_walls)
+        emergent_collisions_ceiling = np.setdiff1d(ceiling_crash_list, self.prev_collisions_ceiling)
+
+        rew_raw_floor, rew_floor, rew_raw_walls, rew_walls, rew_raw_ceiling, rew_ceiling = \
+            get_collision_reward_room(num_agents=self.num_agents, emergent_collisions_floor=emergent_collisions_floor,
+                                      emergent_collisions_walls=emergent_collisions_walls,
+                                      emergent_collisions_ceiling=emergent_collisions_ceiling, rew_coeff_floor=0.0,
+                                      rew_coeff_walls=0.0, rew_coeff_ceiling=0.0)
 
         # Applying random forces between drones
         if self.apply_collision_force:
@@ -436,21 +462,17 @@ class QuadrotorEnvMulti(gym.Env):
                         obstacle_pos=self.obstacles.closest_obstacle(self.envs[val].dynamics.pos),
                         obstacle_size=self.obstacle_size, col_coeff=self.rew_coeff["quadcol_obst_coeff"])
 
-        for i in range(self.num_agents):
-            rewards[i] += rew_collisions[i]
-            infos[i]["rewards"]["rew_quadcol"] = rew_collisions[i]
-            infos[i]["rewards"]["rewraw_quadcol"] = rew_collisions_raw[i]
-
-            rewards[i] += rew_proximity[i]
-            infos[i]["rewards"]["rew_proximity"] = rew_proximity[i]
-
-            if self.use_obstacles:
-                rewards[i] += rew_collisions_obst_quad[i]
-                infos[i]["rewards"]["rew_quadcol_obstacle"] = rew_collisions_obst_quad[i]
-                infos[i]["rewards"]["rewraw_quadcol_obstacle"] = rew_obst_quad_collisions_raw[i]
-
-                rewards[i] += rew_obst_quad_proximity[i]
-                infos[i]["rewards"]["rew_obst_quad_proximity"] = rew_obst_quad_proximity[i]
+        if self.use_obstacles:
+            rewards, infos = set_collision_rewards_infos(
+                rewards=rewards, infos=infos, rew_floor=rew_floor, rew_walls=rew_walls, rew_ceiling=rew_ceiling,
+                rew_raw_floor=rew_raw_floor, rew_raw_walls=rew_raw_walls, rew_raw_ceiling=rew_raw_ceiling,
+                rew_collisions_neighbor=rew_collisions, rew_collision_proximity_neighbor=rew_proximity,
+                rew_collisions_obst=rew_collisions_obst_quad, rew_collision_proximity_obst=rew_obst_quad_proximity)
+        else:
+            rewards, infos = set_collision_rewards_infos(
+                rewards=rewards, infos=infos, rew_floor=rew_floor, rew_walls=rew_walls, rew_ceiling=rew_ceiling,
+                rew_raw_floor=rew_raw_floor, rew_raw_walls=rew_raw_walls, rew_raw_ceiling=rew_raw_ceiling,
+                rew_collisions_neighbor=rew_collisions, rew_collision_proximity_neighbor=rew_proximity)
 
         # run the scenario passed to self.quads_mode
         infos, rewards = self.scenario.step(infos=infos, rewards=rewards, pos=self.pos)

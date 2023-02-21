@@ -71,8 +71,8 @@ def compute_neighbor_interaction(num_agents, tick, control_freq, positions, rew_
         num_agents=num_agents,
     )
 
-    return curr_drone_collisions, prev_drone_collisions, rew_collisions_raw, rew_collisions, rew_proximity, \
-        collisions_per_episode, collisions_after_settle, drone_col_matrix, last_step_unique_collisions
+    return curr_drone_collisions, prev_drone_collisions, rew_collisions, rew_proximity, collisions_per_episode, \
+        collisions_after_settle, drone_col_matrix, last_step_unique_collisions
 
 
 # Collision model
