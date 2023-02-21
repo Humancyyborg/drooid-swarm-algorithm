@@ -7,12 +7,11 @@ import gym
 
 from copy import deepcopy
 
-from gym_art.quadrotor_multi.utils.quad_utils import perform_downwash, \
-    perform_collision_with_wall, perform_collision_with_ceiling, \
+from gym_art.quadrotor_multi.utils.quad_utils import perform_collision_with_wall, perform_collision_with_ceiling, \
     SELF_OBS_REPR, NEIGHBOR_OBS
 
 from gym_art.quadrotor_multi.utils.quad_neighbor_utils import calculate_collision_matrix, \
-    calculate_drone_proximity_penalties, perform_collision_between_drones
+    calculate_drone_proximity_penalties, perform_collision_between_drones, perform_downwash
 
 from gym_art.quadrotor_multi.utils.quad_obst_utils import calculate_obst_drone_proximity_penalties, \
     perform_collision_with_obstacle
