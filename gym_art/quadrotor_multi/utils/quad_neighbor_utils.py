@@ -50,6 +50,7 @@ def compute_col_norm_and_new_velocities(dyn1, dyn2):
     return v1new, v2new, collision_norm
 
 
+# Collision model
 def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
     # Solve for the new velocities using the elastic collision equations.
     # vel noise has two different random components,
