@@ -207,7 +207,7 @@ class QuadrotorDynamics:
 
         ## the ratio between max torque and inertia around each axis
         ## the 0-1 matrix on the right is the way to sum-up
-        self.torque_to_inertia = self.G_omega @ np.array([[0, 0, 0], [0, 1, 1], [1, 1, 0], [1, 0, 1]])
+        self.torque_to_inertia = self.G_omega @ np.array([[0., 0., 0.], [0., 1., 1.], [1., 1., 0.], [1., 0., 1.]])
         self.torque_to_inertia = np.sum(self.torque_to_inertia, axis=1)
         # self.torque_to_inertia = self.torque_to_inertia / np.linalg.norm(self.torque_to_inertia)
 
@@ -501,7 +501,7 @@ class QuadrotorDynamics:
                 # Drone is on the floor, and on_floor flag still True
                 theta = np.arctan2(self.rot[1][0], self.rot[0][0] + EPS)
                 c, s = np.cos(theta), np.sin(theta)
-                self.rot = np.array(((c, -s, 0), (s, c, 0), (0, 0, 1)))
+                self.rot = np.array(((c, -s, 0.), (s, c, 0.), (0., 0., 1.)))
 
                 # Add friction if drone is on the floor
                 f = self.mu * GRAV * npa(np.sign(force[0]), np.sign(force[1]), 0) * self.mass
@@ -528,7 +528,7 @@ class QuadrotorDynamics:
                     while np.dot(self.rot[:, 0], to_xyhat(-self.pos)) < 0.5:
                         self.rot = randyaw()
                 else:
-                    self.rot = np.array(((c, -s, 0), (s, c, 0), (0, 0, 1)))
+                    self.rot = np.array(((c, -s, 0.), (s, c, 0.), (0., 0., 1.)))
 
                 self.set_state(self.pos, self.vel, self.rot, self.omega)
 
@@ -538,7 +538,7 @@ class QuadrotorDynamics:
                 self.thrust_cmds_damp = np.zeros([4])
                 self.thrust_rot_damp = np.zeros([4])
 
-            self.acc = [0, 0, -GRAV] + (1.0 / self.mass) * force
+            self.acc = [0., 0., -GRAV] + (1.0 / self.mass) * force
             self.acc[2] = np.maximum(0, self.acc[2])
         else:
             # self.pos[2] > self.floor_threshold
@@ -548,7 +548,7 @@ class QuadrotorDynamics:
 
             # Computing accelerations
             force = np.matmul(self.rot, sum_thr_drag)
-            self.acc = [0, 0, -GRAV] + (1.0 / self.mass) * force
+            self.acc = [0., 0., -GRAV] + (1.0 / self.mass) * force
 
 
     def rotors_drag_roll_glob_frame(self):
@@ -588,7 +588,7 @@ class QuadrotorDynamics:
         ## Angular orientation change
         omega_vec = np.matmul(rot, omega)  # Change from body2world frame
         wx, wy, wz = omega_vec
-        omega_mat_deriv = np.array([[0, -wz, wy], [wz, 0, -wx], [-wy, wx, 0]])
+        omega_mat_deriv = np.array([[0., -wz, wy], [wz, 0., -wx], [-wy, wx, 0.]])
 
         # ROtation matrix derivative
         dR = np.matmul(omega_mat_deriv, rot).flatten()
@@ -1755,7 +1755,7 @@ def calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, eps, 
 
     # (Square) Damping using torques (in case we would like to add damping using torques)
     torque = thrust_torque + rotor_visc_torque
-    thrust = np.array([0, 0, np.sum(thrusts)])
+    thrust = np.array([0., 0., np.sum(thrusts)])
 
     # ROTATIONAL DYNAMICS
     # Integrating rotations (based on current values)
@@ -1763,7 +1763,7 @@ def calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, eps, 
     wx, wy, wz = omega_vec
     omega_norm = np.linalg.norm(omega_vec)
     if omega_norm != 0:
-        K = np.array([[0, -wz, wy], [wz, 0, -wx], [-wy, wx, 0]]) / omega_norm
+        K = np.array([[0., -wz, wy], [wz, 0., -wx], [-wy, wx, 0.]]) / omega_norm
         rot_angle = omega_norm * dt
         dRdt = eye + np.sin(rot_angle) * K + (1. - np.cos(rot_angle)) * (K @ K)
         rot = dRdt @ rot
