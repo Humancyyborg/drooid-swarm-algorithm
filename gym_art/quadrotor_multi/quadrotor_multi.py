@@ -93,7 +93,7 @@ class QuadrotorEnvMulti(gym.Env):
                                         collision_falloff_radius=collision_falloff_radius,
                                         collision_smooth_max_penalty=collision_smooth_max_penalty,
                                         num_agents=num_agents, control_freq=self.control_freq,
-                                        rew_coeff=self.rew_coeff)
+                                        rew_coeff=self.rew_coeff, observation_space=self.observation_space)
 
         # Obstacles info
         if use_obstacles:

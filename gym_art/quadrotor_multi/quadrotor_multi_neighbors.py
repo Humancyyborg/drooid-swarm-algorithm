@@ -1,5 +1,3 @@
-import copy
-
 import numpy as np
 
 from gym_art.quadrotor_multi.utils.quad_neighbor_utils import add_neighborhood_obs, \
@@ -11,7 +9,7 @@ from gym_art.quadrotor_multi.utils.quad_utils import SELF_OBS_REPR, NEIGHBOR_OBS
 class MultiNeighbors:
     def __init__(self, obs_repr='xyz_vxyz_R_omega', obs_type='pos_vel', visible_neighbor_num=0, use_downwash=False,
                  collision_hitbox_radius=2., collision_falloff_radius=4., collision_smooth_max_penalty=10.,
-                 num_agents=8, control_freq=100, rew_coeff=None):
+                 num_agents=8, control_freq=100, rew_coeff=None, observation_space=None):
         # Pre-set
         self.num_agents = num_agents
         self.control_freq = control_freq
@@ -25,8 +23,8 @@ class MultiNeighbors:
         self.visible_neighbor_num = visible_neighbor_num
 
         self.clip_obs_length = visible_neighbor_num * obs_size
-        self.clip_obs_low_box = self.observation_space.low[obs_self_size:obs_self_size + self.clip_obs_length]
-        self.clip_obs_high_box = self.observation_space.high[obs_self_size:obs_self_size + self.clip_obs_length]
+        self.clip_obs_low_box = observation_space.low[obs_self_size:obs_self_size + self.clip_obs_length]
+        self.clip_obs_high_box = observation_space.high[obs_self_size:obs_self_size + self.clip_obs_length]
 
         # Collision
         # # Use to calculate unique collisions
@@ -123,8 +121,8 @@ class MultiNeighbors:
             downwash_velocities_change, downwash_omegas_change = perform_downwash(
                 num_agents=self.num_agents, positions=real_positions, rotations=real_rotations, dt=self.control_dt)
         else:
-            downwash_velocities_change = np.zeros(self.num_agents)
-            downwash_omegas_change = np.zeros(self.num_agents)
+            downwash_velocities_change = np.zeros((self.num_agents, 3))
+            downwash_omegas_change = np.zeros((self.num_agents, 3))
 
         return downwash_velocities_change, downwash_omegas_change
 
