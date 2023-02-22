@@ -96,7 +96,7 @@ class QuadrotorEnvMulti(gym.Env):
                                         rew_coeff=self.rew_coeff, observation_space=self.observation_space)
 
         # Obstacles info
-        if use_obstacles:
+        if use_obstacles and num_obstacles > 0:
             self.obstacles = MultiObstacles(num_obstacles=num_obstacles, room_dims=self.room_dims,
                                             resolution=octree_resolution, obstacle_size=obstacle_size,
                                             collision_obst_falloff_radius=collision_obst_falloff_radius,

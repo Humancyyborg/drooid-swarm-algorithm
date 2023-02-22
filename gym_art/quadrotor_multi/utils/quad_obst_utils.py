@@ -48,7 +48,7 @@ def perform_collision_with_obstacle(dyn_pos, dyn_vel, obstacle_pos, obstacle_siz
             break
 
     max_vel_magn = np.linalg.norm(dyn_vel)
-    if np.linalg.norm(dyn_pos - obstacle_pos) <= obstacle_size:
+    if np.linalg.norm(dyn_pos - obstacle_pos) <= obstacle_size / 2.0:
         dyn_vel_change = compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn_vel, vel_change=dyn_vel_shift, low=1.0,
                                          high=1.0)
     else:
