@@ -114,7 +114,7 @@ class ExperienceReplayWrapper(gym.Wrapper):
                     and self.env.envs[0].tick % self.replay_buffer.cp_step_size_freq == 0:
                 self.save_checkpoint(obs)
 
-            if self.env.last_step_unique_collisions.any() and self.env.use_replay_buffer and self.env.activate_replay_buffer \
+            if self.env.neighbors.last_step_unique_collisions.any() and self.env.use_replay_buffer and self.env.activate_replay_buffer \
                     and self.env.envs[0].tick > COLLISIONS_GRACE_PERIOD * self.env.envs[0].control_freq and not self.saved_in_replay_buffer:
 
                 if self.env.envs[0].tick - self.last_tick_added_to_buffer > 5 * self.env.envs[0].control_freq:

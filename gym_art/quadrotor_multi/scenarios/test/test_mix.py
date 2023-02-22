@@ -62,12 +62,12 @@ class Scenario_mix_test(QuadrotorScenario):
         """
         return self.scenario.__class__.__name__
 
-    def step(self, infos, rewards, pos):
-        infos, rewards = self.scenario.step(infos=infos, rewards=rewards, pos=pos)
+    def step(self):
+        self.scenario.step()
         # This is set for obstacle mode
         self.goals = self.scenario.goals
         self.formation_size = self.scenario.formation_size
-        return infos, rewards
+        return
 
     def reset(self):
         mode = self.quads_mode_list[self.counter]
