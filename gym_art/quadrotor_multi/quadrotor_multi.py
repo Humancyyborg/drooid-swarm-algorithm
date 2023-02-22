@@ -211,13 +211,17 @@ class QuadrotorEnvMulti(gym.Env):
             sense_velocities.append(e.sense_vel)
             goals.append(e.goal)
 
-        # extend obs to see neighbors
+        # Reset (have reset scenarios above)
+        # 1. neighbor 2. obstacles 3. room
+        # Reset neighbors and get obs
         obs = self.neighbors.reset(obs=obs, sense_positions=sense_positions, sense_velocities=sense_velocities,
                                    goals=goals, rew_coeff=self.rew_coeff)
 
         if self.obstacles is not None:
             obs = self.obstacles.reset(obs=obs, quads_pos=sense_positions, start_point=self.scenario.start_point,
                                        end_point=self.scenario.end_point, rew_coeff=self.rew_coeff)
+
+        self.room.reset()
 
         # Reset scene
         self.reset_scene = True
