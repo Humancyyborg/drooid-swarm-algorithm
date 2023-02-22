@@ -38,6 +38,11 @@ class MultiObstacles:
         # Update
         self.rew_coeff = rew_coeff
 
+        # Reset collisions
+        self.obst_quad_col_matrix = np.array([])
+        self.prev_obst_quad_collisions = np.array([])
+        self.obst_quad_collisions_per_episode = 0
+
         self.octree.reset()
         self.octree.generate_obstacles(num_obstacles=self.num_obstacles, start_point=start_point, end_point=end_point)
 

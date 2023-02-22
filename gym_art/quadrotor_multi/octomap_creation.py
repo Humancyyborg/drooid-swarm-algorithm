@@ -171,8 +171,10 @@ class OctTree:
     def generate_sdf(self):
         # max_dist: clamps distances at maxdist
         max_dist = 1.0
-        bottom_left = np.array([-0.5 * self.room_dims[0] - self.resolution, -0.5 * self.room_dims[1] - self.resolution, 0.0])
-        upper_right = np.array([0.5 * self.room_dims[0], 0.5 * self.room_dims[1], self.room_dims[2]])
+        bottom_left = np.array([-0.5 * self.room_dims[0] - self.resolution, -0.5 * self.room_dims[1] - self.resolution,
+                                0.0])
+        upper_right = np.array([0.5 * self.room_dims[0] + self.resolution, 0.5 * self.room_dims[1] + self.resolution,
+                                self.room_dims[2]])
         self.octree.dynamicEDT_generate(maxdist=max_dist,
                                         bbx_min=bottom_left,
                                         bbx_max=upper_right,
