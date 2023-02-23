@@ -135,7 +135,7 @@ class QuadrotorScenario:
         self.formation_size = np.random.uniform(low=self.lowest_formation_size, high=self.highest_formation_size)
         self.layer_dist = update_layer_dist(low=self.lowest_formation_size, high=self.highest_formation_size)
 
-    def step(self, infos, rewards, pos):
+    def step(self, infos, rewards):
         raise NotImplementedError("Implemented in a specific scenario")
 
     def reset(self):

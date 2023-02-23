@@ -12,7 +12,7 @@ class Scenario_ep_lissajous3D(QuadrotorScenario):
         z = c * np.cos(m * tick + psi)
         return x, y, z
 
-    def step(self, infos, rewards, pos):
+    def step(self, infos, rewards):
         control_freq = self.envs[0].control_freq
         tick = self.envs[0].tick / control_freq
         x, y, z = self.lissajous3D(tick)

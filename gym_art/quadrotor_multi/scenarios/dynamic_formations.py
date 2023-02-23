@@ -20,7 +20,7 @@ class Scenario_dynamic_formations(QuadrotorScenario):
         for env, goal in zip(self.envs, self.goals):
             env.goal = goal
 
-    def step(self, infos, rewards, pos):
+    def step(self, infos, rewards):
         if self.formation_size <= -self.highest_formation_size:
             self.increase_formation_size = True
             self.control_speed = np.random.uniform(low=1.0, high=3.0)
