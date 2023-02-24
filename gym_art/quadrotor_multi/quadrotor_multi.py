@@ -132,6 +132,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.use_downwash = use_downwash
         self.use_obstacles = use_obstacles
         self.obstacles = None
+        self.num_obstacles = 0
         if self.use_obstacles:
             self.prev_obst_quad_collisions = []
             self.obst_quad_collisions_per_episode = 0
