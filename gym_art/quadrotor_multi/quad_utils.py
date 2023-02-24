@@ -26,6 +26,7 @@ QUAD_COLOR = (
     (1.0, 0.0, 1.0),  # Violet
 )
 
+
 # dict pretty printing
 def print_dic(dic, indent=""):
     for key, item in dic.items():
@@ -313,6 +314,7 @@ def calculate_drone_proximity_penalties(distance_matrix, arm, dt, penalty_fall_o
 
     return dt * penalties  # actual penalties per tick to be added to the overall reward
 
+
 def calculate_obst_drone_proximity_penalties(distances, arm, dt, penalty_fall_off, max_penalty, num_agents):
     if not penalty_fall_off:
         # smooth penalties is disabled
@@ -352,6 +354,7 @@ def compute_col_norm_and_new_vel_obst(dyn, obstacle_pos):
 
     return vnew, collision_norm
 
+
 def compute_new_vel(max_vel_magn, vel, vel_shift, coeff, low=0.2, high=0.8):
     vel_decay_ratio = np.random.uniform(low=low, high=high)
     vel_new = vel + vel_shift
@@ -363,6 +366,7 @@ def compute_new_vel(max_vel_magn, vel, vel_shift, coeff, low=0.2, high=0.8):
     vel_shift = vel_new - vel
     vel += vel_shift * coeff
     return vel
+
 
 def compute_new_omega():
     # Random forces for omega
@@ -376,6 +380,7 @@ def compute_new_omega():
     omega = omega_dir * omega_mag
 
     return omega
+
 
 # This function is to change the velocities after a collision happens between two bodies
 def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
@@ -408,7 +413,6 @@ def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
     dyn1.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn1.vel, vel_shift=dyn1_vel_shift, coeff=col_coeff)
     dyn2.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn2.vel, vel_shift=dyn2_vel_shift, coeff=col_coeff)
 
-
     # Get new omega
     new_omega = compute_new_omega()
     dyn1.omega += new_omega * col_coeff
@@ -435,7 +439,8 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_pos, obstacle_size, col_
         drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel, vel_shift=dyn_vel_shift,
                                         coeff=col_coeff, low=1.0, high=1.0)
     else:
-        drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel, vel_shift=dyn_vel_shift, coeff=col_coeff)
+        drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel, vel_shift=dyn_vel_shift,
+                                        coeff=col_coeff)
 
     # Random forces for omega
     new_omega = compute_new_omega()
@@ -481,6 +486,50 @@ def perform_collision_with_wall(drone_dyn, room_box, damp_low_speed_ratio=0.2, d
 
     # add the disturbance to drone's angular velocities while preserving angular momentum
     drone_dyn.omega += new_omega
+
+
+@njit
+def perform_collision_with_wall_numba(vel, pos, omega, room_box, damp_low_speed_ratio=0.2, damp_high_speed_ratio=0.8,
+                                lowest_speed=0.1, highest_speed=6.0, eps=1e-5):
+    # Decrease drone's speed after collision with wall
+    drone_speed = np.linalg.norm(vel)
+    real_speed = np.random.uniform(damp_low_speed_ratio * drone_speed, damp_high_speed_ratio * drone_speed)
+    real_speed = np.clip(real_speed, lowest_speed, highest_speed)
+
+    drone_pos = pos
+    x_list = [drone_pos[0] == room_box[0][0], drone_pos[0] == room_box[1][0]]
+    y_list = [drone_pos[1] == room_box[0][1], drone_pos[1] == room_box[1][1]]
+
+    direction = np.random.uniform(-1.0, 1.0, size=(3,))
+    if x_list[0]:
+        direction[0] = np.random.uniform(0.1, 1.0)
+    elif x_list[1]:
+        direction[0] = np.random.uniform(-1.0, -0.1)
+
+    if y_list[0]:
+        direction[1] = np.random.uniform(0.1, 1.0)
+    elif y_list[1]:
+        direction[1] = np.random.uniform(-1.0, -0.1)
+
+    direction[2] = np.random.uniform(-1.0, -0.5)
+
+    direction_mag = np.linalg.norm(direction)
+    direction_norm = direction / (direction_mag + eps)
+
+    vel = real_speed * direction_norm
+
+    # Random forces for omega
+    omega_max = 20 * np.pi  # this will amount to max 3.5 revolutions per second
+    new_omega = np.random.uniform(-1, 1, size=(3,))  # random direction in 3D space
+    new_omega /= np.linalg.norm(new_omega) + eps  # normalize
+
+    new_omega_mag = np.random.uniform(omega_max / 2, omega_max)  # random magnitude of the force
+    new_omega *= new_omega_mag
+
+    # add the disturbance to drone's angular velocities while preserving angular momentum
+    omega += new_omega
+
+    return vel, omega
 
 
 def perform_collision_with_ceiling(drone_dyn, damp_low_speed_ratio=0.2, damp_high_speed_ratio=0.8,

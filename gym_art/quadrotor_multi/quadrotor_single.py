@@ -510,8 +510,7 @@ class QuadrotorDynamics:
                     if np.abs(f[i]) > np.abs(force[i]):
                         f[i] = force[i]
                 force -= f
-                # self.acc = [0, 0, -GRAV] + (1.0 / self.mass) * force
-                # self.acc[2] = max(0, self.acc[2])
+
             else:
                 # Previous step, drone still in the air, but in this step, it hits the floor
                 # In previous step, self.on_floor = False, self.crashed_floor = False
@@ -532,8 +531,6 @@ class QuadrotorDynamics:
 
                 self.set_state(self.pos, self.vel, self.rot, self.omega)
 
-                # self.acc = [0, 0, -GRAV] + (1.0 / self.mass) * force
-                # self.acc[2] = max(0, self.acc[2])
                 # reset momentum / accumulation of thrust
                 self.thrust_cmds_damp = np.zeros([4])
                 self.thrust_rot_damp = np.zeros([4])
@@ -549,7 +546,6 @@ class QuadrotorDynamics:
             # Computing accelerations
             force = np.matmul(self.rot, sum_thr_drag)
             self.acc = [0., 0., -GRAV] + (1.0 / self.mass) * force
-
 
     def rotors_drag_roll_glob_frame(self):
         # omega [3,] x prop_pos [4,3] = v_rot_body [4, 3]
@@ -1723,6 +1719,7 @@ def calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, eps, 
                                                           prop_crossproducts, prop_ccw, torque_max, rot, omega,
                                                           eye, since_last_svd, since_last_svd_limit, inertia,
                                                           damp_omega_quadratic, omega_max, pos, vel, arm, on_floor):
+
     # Filtering the thruster and adding noise
     thrust_cmds = np.clip(thrust_cmds, 0., 1.)
     motor_tau_up = 4 * dt / (motor_damp_time_up + eps)
