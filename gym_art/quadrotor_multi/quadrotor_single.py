@@ -350,7 +350,8 @@ class QuadrotorDynamics:
             rotor_drag_ti = cross_mx4(rotor_drag_fi, self.model.prop_pos)  # [4,3] x [4,3]
             rotor_drag_torque = np.sum(rotor_drag_ti, axis=0)
 
-            rotor_roll_torque = - self.C_rot_roll * self.prop_ccw[:, None] * np.sqrt(self.thrust_cmds_damp)[:, None] * v_rotors  # [4,3]
+            rotor_roll_torque = - self.C_rot_roll * self.prop_ccw[:, None] * np.sqrt(self.thrust_cmds_damp)[:,
+                                                                             None] * v_rotors  # [4,3]
             rotor_roll_torque = np.sum(rotor_roll_torque, axis=0)
             rotor_visc_torque = rotor_drag_torque + rotor_roll_torque
 
@@ -454,8 +455,8 @@ class QuadrotorDynamics:
 
     def step1_numba(self, thrust_cmds, dt, thrust_noise):
         self.motor_tau_up, self.motor_tau_down, self.thrust_rot_damp, self.thrust_cmds_damp, self.torques, \
-        self.torque, self.rot, self.since_last_svd, self.omega_dot, self.omega, self.pos, thrust, rotor_drag_force, \
-        self.vel, self.on_floor = \
+            self.torque, self.rot, self.since_last_svd, self.omega_dot, self.omega, self.pos, thrust, rotor_drag_force, \
+            self.vel, self.on_floor = \
             calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, EPS, self.motor_damp_time_up,
                                                                   self.motor_damp_time_down,
                                                                   self.thrust_cmds_damp, self.thrust_rot_damp,
@@ -480,7 +481,12 @@ class QuadrotorDynamics:
         sum_thr_drag = thrust + rotor_drag_force
         grav_arr = np.float64([0, 0, self.gravity])
 
-        self.floor_interaction(sum_thr_drag=sum_thr_drag)
+        # self.floor_interaction(sum_thr_drag=sum_thr_drag)
+        self.pos, self.vel, self.acc, self.omega, self.rot, self.thrust_cmds_damp, self.thrust_rot_damp, \
+            self.on_floor, self.crashed_floor = floor_interaction_numba(self.pos, self.vel, self.rot, self.omega,
+                                                                        self.mu, self.mass, sum_thr_drag,
+                                                                        self.thrust_cmds_damp, self.thrust_rot_damp,
+                                                                        self.arm, self.on_floor)
 
         # compute_velocity_and_acceleration(vel, vel_damp, dt, rot_tpose, grav_arr, acc):
         self.vel, self.accelerometer = compute_velocity_and_acceleration(vel=self.vel, vel_damp=self.vel_damp, dt=dt,
@@ -810,9 +816,11 @@ class QuadrotorSingle:
                  dynamics_randomize_every=None, dyn_sampler_1=None, dyn_sampler_2=None,
                  raw_control=True, raw_control_zero_middle=True, dim_mode='3D', tf_control=False, sim_freq=200.,
                  sim_steps=2,
-                 obs_repr="xyz_vxyz_R_omega", ep_time=7, room_length=10, room_width=10, room_height=10, init_random_state=False,
+                 obs_repr="xyz_vxyz_R_omega", ep_time=7, room_length=10, room_width=10, room_height=10,
+                 init_random_state=False,
                  rew_coeff=None, sense_noise=None, verbose=False, gravity=GRAV,
-                 t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False, swarm_obs='none', num_agents=1,
+                 t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False,
+                 swarm_obs='none', num_agents=1,
                  view_mode='local', num_use_neighbor_obs=0, use_obstacles=False):
         np.seterr(under='ignore')
         """
@@ -1063,12 +1071,15 @@ class QuadrotorSingle:
             "act": [np.zeros(4), np.ones(4)],
             "quat": [-np.ones(4), np.ones(4)],
             "euler": [-np.pi * np.ones(3), np.pi * np.ones(3)],
-            "rxyz": [-room_range, room_range], # rxyz stands for relative pos between quadrotors
-            "rvxyz": [-2.0 * self.dynamics.vxyz_max * np.ones(3), 2.0 * self.dynamics.vxyz_max * np.ones(3)], # rvxyz stands for relative velocity between quadrotors
-            "roxyz": [-room_range, room_range], # roxyz stands for relative pos between quadrotor and obstacle
-            "rovxyz": [-20.0 * np.ones(3), 20.0 * np.ones(3)], # rovxyz stands for relative velocity between quadrotor and obstacle
+            "rxyz": [-room_range, room_range],  # rxyz stands for relative pos between quadrotors
+            "rvxyz": [-2.0 * self.dynamics.vxyz_max * np.ones(3), 2.0 * self.dynamics.vxyz_max * np.ones(3)],
+            # rvxyz stands for relative velocity between quadrotors
+            "roxyz": [-room_range, room_range],  # roxyz stands for relative pos between quadrotor and obstacle
+            "rovxyz": [-20.0 * np.ones(3), 20.0 * np.ones(3)],
+            # rovxyz stands for relative velocity between quadrotor and obstacle
             "osize": [np.zeros(3), 20.0 * np.ones(3)],  # obstacle size, [[0., 0., 0.], [20., 20., 20.]]
-            "otype": [np.zeros(1), 20.0 * np.ones(1)],  # obstacle type, [[0.], [20.]], which means we can support 21 types of obstacles
+            "otype": [np.zeros(1), 20.0 * np.ones(1)],
+            # obstacle type, [[0.], [20.]], which means we can support 21 types of obstacles
             "goal": [-room_range, room_range],
             "nbr_dist": [np.zeros(1), room_max_dist],
             "nbr_goal_dist": [np.zeros(1), room_max_dist],
@@ -1084,7 +1095,8 @@ class QuadrotorSingle:
         elif self.swarm_obs == 'pos_vel_goals' and self.num_agents > 1:
             obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['goal']) * self.num_use_neighbor_obs
         elif self.swarm_obs == 'pos_vel_goals_ndist_gdist' and self.num_agents > 1:
-            obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['goal'] + ['nbr_dist'] + ['nbr_goal_dist']) * self.num_use_neighbor_obs
+            obs_comps = obs_comps + (
+                    ['rxyz'] + ['rvxyz'] + ['goal'] + ['nbr_dist'] + ['nbr_goal_dist']) * self.num_use_neighbor_obs
 
         if self.use_obstacles:
             obs_comps = obs_comps + ["octmap"]
@@ -1719,7 +1731,6 @@ def calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, eps, 
                                                           prop_crossproducts, prop_ccw, torque_max, rot, omega,
                                                           eye, since_last_svd, since_last_svd_limit, inertia,
                                                           damp_omega_quadratic, omega_max, pos, vel, arm, on_floor):
-
     # Filtering the thruster and adding noise
     thrust_cmds = np.clip(thrust_cmds, 0., 1.)
     motor_tau_up = 4 * dt / (motor_damp_time_up + eps)
@@ -1785,7 +1796,7 @@ def calculate_torque_integrate_rotations_and_update_omega(thrust_cmds, dt, eps, 
     pos = pos + dt * vel
 
     return motor_tau_up, motor_tau_down, thrust_rot_damp, thrust_cmds_damp, torques, \
-           torque, rot, since_last_svd, omega_dot, omega, pos, thrust, rotor_drag_force, vel, on_floor
+        torque, rot, since_last_svd, omega_dot, omega, pos, thrust, rotor_drag_force, vel, on_floor
 
 
 @njit
@@ -1796,6 +1807,65 @@ def compute_velocity_and_acceleration(vel, vel_damp, dt, rot_tpose, grav_arr, ac
     # Accelerometer measures so called "proper acceleration" that includes gravity with the opposite sign
     accm = rot_tpose @ (acc + grav_arr)
     return vel, accm
+
+
+@njit
+def floor_interaction_numba(pos, vel, rot, omega, mu, mass, sum_thr_drag, thrust_cmds_damp, thrust_rot_damp,
+                            floor_threshold, on_floor):
+    # Change pos, omega, rot, acc
+    crashed_floor = False
+    if pos[2] <= floor_threshold:
+        pos = np.array((pos[0], pos[1], floor_threshold))
+        force = rot @ sum_thr_drag
+        if on_floor:
+            # Drone is on the floor, and on_floor flag still True
+            theta = np.arctan2(rot[1][0], rot[0][0] + EPS)
+            c, s = np.cos(theta), np.sin(theta)
+            rot = np.array(((c, -s, 0.), (s, c, 0.), (0., 0., 1.)))
+
+            # Add friction if drone is on the floor
+            f = mu * GRAV * np.array((np.sign(force[0]), np.sign(force[1]), 0)) * mass
+            # Since fiction cannot be greater than force, we need to clip it
+            for i in range(2):
+                if np.abs(f[i]) > np.abs(force[i]):
+                    f[i] = force[i]
+            force -= f
+
+        else:
+            # Previous step, drone still in the air, but in this step, it hits the floor
+            # In previous step, self.on_floor = False, self.crashed_floor = False
+            on_floor = True
+            crashed_floor = True
+            # Set vel to [0, 0, 0]
+            vel, acc = np.zeros(3, dtype=np.float64), np.zeros(3, dtype=np.float64)
+            omega = np.zeros(3, dtype=np.float64)
+            # Set rot
+            theta = np.arctan2(rot[1][0], rot[0][0] + EPS)
+            c, s = np.cos(theta), np.sin(theta)
+            if rot[2, 2] < 0:
+                theta = np.random.uniform(-np.pi, np.pi)
+                c, s = np.cos(theta), np.sin(theta)
+                rot = np.array(((c, -s, 0), (s, c, 0), (0, 0, 1)))
+            else:
+                rot = np.array(((c, -s, 0.), (s, c, 0.), (0., 0., 1.)))
+
+            # reset momentum / accumulation of thrust
+            thrust_cmds_damp = np.zeros(4)
+            thrust_rot_damp = np.zeros(4)
+
+        acc = np.array((0., 0., -GRAV)) + (1.0 / mass) * force
+        acc[2] = np.maximum(0, acc[2])
+    else:
+        # self.pos[2] > self.floor_threshold
+        if on_floor:
+            # Drone is in the air, while on_floor flag still True
+            on_floor = False
+
+        # Computing accelerations
+        force = rot @ sum_thr_drag
+        acc = np.array((0., 0., -GRAV)) + (1.0 / mass) * force
+
+    return pos, vel, acc, omega, rot, thrust_cmds_damp, thrust_rot_damp, on_floor, crashed_floor
 
 
 if __name__ == '__main__':

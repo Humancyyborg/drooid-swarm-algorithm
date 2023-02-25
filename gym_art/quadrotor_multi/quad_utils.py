@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.random as nr
+import numba as nb
 from numba import njit
 from numpy.linalg import norm
 from numpy import cos, sin
@@ -469,6 +470,45 @@ def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
     dyn2.omega -= new_omega * col_coeff
 
 
+@njit
+def perform_collision_between_drones_numba(pos1, vel1, omega1, pos2, vel2, omega2, col_coeff=1.0):
+    # Solve for the new velocities using the elastic collision equations.
+    # vel noise has two different random components,
+    # One that preserves momentum in opposite directions
+    # Second that does not preserve momentum
+    v1new, v2new, collision_norm = compute_col_norm_and_new_velocities(pos1, vel1, pos2, vel2)
+    vel_change = (v2new - v1new) * collision_norm
+    dyn1_vel_shift = vel_change
+    dyn2_vel_shift = -vel_change
+
+    # Make sure new vel direction would be opposite to the original vel direction
+    for _ in range(3):
+        cons_rand_val = np.random.normal(loc=0, scale=0.8, size=3)
+        vel1_noise = cons_rand_val + np.random.normal(loc=0, scale=0.15, size=3)
+        vel2_noise = -cons_rand_val + np.random.normal(loc=0, scale=0.15, size=3)
+
+        dyn1_vel_shift = vel_change + vel1_noise
+        dyn2_vel_shift = -vel_change + vel2_noise
+
+        dyn1_new_vel_dir = np.dot(vel1 + dyn1_vel_shift, collision_norm)
+        dyn2_new_vel_dir = np.dot(vel2 + dyn2_vel_shift, collision_norm)
+
+        if dyn1_new_vel_dir > 0 > dyn2_new_vel_dir:
+            break
+
+    # Get new vel
+    max_vel_magn = max(np.linalg.norm(vel1), np.linalg.norm(vel2))
+    vel1 = compute_new_vel(max_vel_magn=max_vel_magn, vel=vel1, vel_shift=dyn1_vel_shift, coeff=col_coeff)
+    vel2 = compute_new_vel(max_vel_magn=max_vel_magn, vel=vel2, vel_shift=dyn2_vel_shift, coeff=col_coeff)
+
+    # Get new omega
+    new_omega = compute_new_omega()
+    omega1 += new_omega * col_coeff
+    omega2 -= new_omega * col_coeff
+
+    return vel1, omega1, vel2, omega2
+
+
 def perform_collision_with_obstacle(drone_dyn, obstacle_pos, obstacle_size, col_coeff=1.0):
     # Vel noise has two different random components,
     # One that preserves momentum in opposite directions
@@ -540,11 +580,11 @@ def perform_collision_with_wall(drone_dyn, room_box, damp_low_speed_ratio=0.2, d
 
 @njit
 def perform_collision_with_wall_numba(vel, pos, omega, room_box, damp_low_speed_ratio=0.2, damp_high_speed_ratio=0.8,
-                                lowest_speed=0.1, highest_speed=6.0, eps=1e-5):
+                                      lowest_speed=0.1, highest_speed=6.0, eps=1e-5):
     # Decrease drone's speed after collision with wall
     drone_speed = np.linalg.norm(vel)
-    real_speed = np.random.uniform(damp_low_speed_ratio * drone_speed, damp_high_speed_ratio * drone_speed)
-    real_speed = np.clip(real_speed, lowest_speed, highest_speed)
+    real_speed = nb.random.uniform(damp_low_speed_ratio * drone_speed, damp_high_speed_ratio * drone_speed)
+    real_speed = np.clip(real_speed, 0.1, 6.0)
 
     drone_pos = pos
     x_list = [drone_pos[0] == room_box[0][0], drone_pos[0] == room_box[1][0]]

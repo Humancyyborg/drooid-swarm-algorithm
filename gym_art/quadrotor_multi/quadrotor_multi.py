@@ -10,7 +10,8 @@ from copy import deepcopy
 from gym_art.quadrotor_multi.quad_utils import perform_collision_between_drones, \
     calculate_obst_drone_proximity_penalties, \
     calculate_collision_matrix, calculate_drone_proximity_penalties, perform_collision_with_obstacle, perform_downwash, \
-    perform_collision_with_wall, perform_collision_with_ceiling, perform_collision_with_wall_numba
+    perform_collision_with_wall, perform_collision_with_ceiling, perform_collision_with_wall_numba, \
+    perform_collision_between_drones_numba
 
 from gym_art.quadrotor_multi.quadrotor_single import GRAV, QuadrotorSingle
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
@@ -502,7 +503,10 @@ class QuadrotorEnvMulti(gym.Env):
 
         if self.apply_collision_force:
             for val in curr_drone_collisions:
-                perform_collision_between_drones(self.envs[val[0]].dynamics, self.envs[val[1]].dynamics)
+                # perform_collision_between_drones(self.envs[val[0]].dynamics, self.envs[val[1]].dynamics)
+                dyn1, dyn2 = self.envs[val[0]].dynamics, self.envs[val[1]].dynamics
+                dyn1.vel, dyn1.omega, dyn2.vel, dyn2.omega = perform_collision_between_drones_numba(dyn1.pos, dyn1.vel, dyn1.omega,
+                                                                                                    dyn2.pos, dyn2.vel, dyn2.omega)
             if self.use_obstacles:
                 for val in obst_quad_col_matrix:
                     perform_collision_with_obstacle(drone_dyn=self.envs[int(val)].dynamics,
