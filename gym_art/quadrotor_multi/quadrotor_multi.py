@@ -347,6 +347,7 @@ class QuadrotorEnvMulti(gym.Env):
 
             observation = e.reset()
             obs.append(observation)
+            self.pos[i, :] = e.dynamics.pos
 
         # extend obs to see neighbors
         obs = self.add_neighborhood_obs(obs)
