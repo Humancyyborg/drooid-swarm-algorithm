@@ -388,9 +388,10 @@ class QuadrotorEnvMulti(gym.Env):
 
             self.pos[i, :] = self.envs[i].dynamics.pos
 
-            if self.envs[i].time_remain < 5 * self.sim_freq / self.sim_steps:
-                self.distance_to_goal[i].append(-info["rewards"]["rewraw_pos"])
+            # if self.envs[i].time_remain < 5 * self.sim_freq / self.sim_steps:
+            #     self.distance_to_goal[i].append(-info["rewards"]["rewraw_pos"])
 
+        self.distance_to_goal = np.zeros((8, 1))
         # # Pre-set variables
         # dyn_positions = np.array([env.dynamics.pos for env in self.envs])
 
@@ -429,8 +430,8 @@ class QuadrotorEnvMulti(gym.Env):
                 rew_obst_quad_collisions_raw[curr_quad_col] = -1.0
 
         # 3) Collisions with room
-        floor_crash_list, wall_crash_list, ceiling_crash_list = self.calculate_room_collision()
-        room_crash_list = np.unique(np.concatenate([floor_crash_list, wall_crash_list, ceiling_crash_list]))
+        floor_crash_list, wall_crash_list, ceiling_crash_list = [], [], []
+        room_crash_list = np.array([])
 
         # # Calculate collisions with room
         # ground_collisions = [1.0 if env.dynamics.on_floor else 0.0 for env in self.envs]
@@ -515,7 +516,7 @@ class QuadrotorEnvMulti(gym.Env):
                                                     obstacle_size=self.obstacle_size,
                                                     col_coeff=self.rew_coeff["quadcol_obst_coeff"])
 
-        apply_room_collision = self.simulate_collision_with_room(wall_crash_list, ceiling_crash_list)
+        # apply_room_collision = self.simulate_collision_with_room(wall_crash_list, ceiling_crash_list)
 
         # 4. Run the scenario passed to self.quads_mode
         infos, rewards = self.scenario.step(infos=infos, rewards=rewards)
@@ -526,8 +527,8 @@ class QuadrotorEnvMulti(gym.Env):
             self.pos[i, :] = self.envs[i].dynamics.pos
             self.vel[i, :] = self.envs[i].dynamics.vel
 
-        if apply_room_collision:
-            obs = [e.state_vector(e) for e in self.envs]
+        # if apply_room_collision:
+        #     obs = [e.state_vector(e) for e in self.envs]
 
         # Concatenate observations of neighbor drones
         if self.num_use_neighbor_obs > 0:
