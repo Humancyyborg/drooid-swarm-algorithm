@@ -11,7 +11,7 @@ from gym_art.quadrotor_multi.quad_utils import perform_collision_between_drones,
     calculate_obst_drone_proximity_penalties, \
     calculate_collision_matrix, calculate_drone_proximity_penalties, perform_collision_with_obstacle, perform_downwash, \
     perform_collision_with_wall, perform_collision_with_ceiling, perform_collision_with_wall_numba, \
-    perform_collision_between_drones_numba, calculate_relative_pos_vel
+    perform_collision_between_drones_numba
 
 from gym_art.quadrotor_multi.quadrotor_single import GRAV, QuadrotorSingle
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
@@ -305,45 +305,7 @@ class QuadrotorEnvMulti(gym.Env):
         else:
             raise RuntimeError("Incorrect number of neigbors")
 
-    def neighborhood_indices_new(self):
-        """Return a list of closest drones for each drone in the swarm."""
-        # indices of all the other drones except us
-        indices = [[j for j in range(self.num_agents) if i != j] for i in range(self.num_agents)]
-        indices = np.array(indices)
-
-        if self.num_use_neighbor_obs == self.num_agents - 1:
-            return indices
-        elif 1 <= self.num_use_neighbor_obs < self.num_agents - 1:
-            close_neighbor_indices = []
-
-            for i in range(self.num_agents):
-                rel_pos, rel_vel = self.get_rel_pos_vel_item(env_id=i, indices=indices[i])
-                rel_dist = np.linalg.norm(rel_pos, axis=1)
-                rel_dist = np.maximum(rel_dist, 0.01)
-                rel_pos_unit = rel_pos / rel_dist[:, None]
-
-                # new relative distance is a new metric that combines relative position and relative velocity
-                # F = alpha * distance + (1 - alpha) * dot(normalized_direction_to_other_drone, relative_vel)
-                # the smaller the new_rel_dist, the closer the drones
-                new_rel_dist = rel_dist + np.sum(rel_pos_unit * rel_vel, axis=1)
-
-                rel_pos_index = new_rel_dist.argsort()
-                rel_pos_index = rel_pos_index[:self.num_use_neighbor_obs]
-                close_neighbor_indices.append(indices[i][rel_pos_index])
-
-            return close_neighbor_indices
-        else:
-            raise RuntimeError("Incorrect number of neigbors")
-
     def add_neighborhood_obs(self, obs):
-        if self.swarm_obs != 'none' and self.num_agents > 1:
-            indices = self.neighborhood_indices()
-            obs_ext = self.extend_obs_space(obs, closest_drones=indices)
-            return obs_ext
-        else:
-            return obs
-
-    def add_neighborhood_obs_new(self, obs):
         if self.swarm_obs != 'none' and self.num_agents > 1:
             indices = self.neighborhood_indices()
             obs_ext = self.extend_obs_space(obs, closest_drones=indices)
