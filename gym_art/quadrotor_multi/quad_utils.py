@@ -710,6 +710,43 @@ def perform_downwash(drones_dyn, dt):
 
     return
 
+# @njit
+# def calculate_relative_pos_vel(pos, vel, num_agents):
+#     rel_pos_matrix = np.zeros((num_agents, num_agents, 3))
+#     rel_vel_matrix = np.zeros((num_agents, num_agents, 3))
+#     for i in range(num_agents):
+#         for j in range(num_agents):
+#             rel_pos_matrix[i][j] = pos[j] - pos[i]
+#             rel_vel_matrix[i][j] = vel[j] - vel[i]
+#
+#     return rel_pos_matrix, rel_vel_matrix
+#
+#
+# @njit
+# def neighborhood_indices_numba(indices, rel_pos, rel_vel, num_agents, num_use_neighbor_obs):
+#     """Return a list of closest drones for each drone in the swarm."""
+#     # indices of all the other drones except us
+#     close_neighbor_indices = []
+#
+#     for i in range(num_agents):
+#         rel_pos, rel_vel = self.get_rel_pos_vel_item(env_id=i, indices=indices[i])
+#         rel_dist = np.linalg.norm(rel_pos, axis=1)
+#         rel_dist = np.maximum(rel_dist, 0.01)
+#         rel_pos_unit = rel_pos / rel_dist[:, None]
+#
+#         # new relative distance is a new metric that combines relative position and relative velocity
+#         # F = alpha * distance + (1 - alpha) * dot(normalized_direction_to_other_drone, relative_vel)
+#         # the smaller the new_rel_dist, the closer the drones
+#         new_rel_dist = rel_dist + np.sum(rel_pos_unit * rel_vel, axis=1)
+#
+#         rel_pos_index = new_rel_dist.argsort()
+#         rel_pos_index = rel_pos_index[:num_use_neighbor_obs]
+#         close_neighbor_indices.append(indices[i][rel_pos_index])
+#
+#         return close_neighbor_indices
+#     else:
+#         raise RuntimeError("Incorrect number of neigbors")
+
 
 class OUNoise:
     """Ornstein–Uhlenbeck process"""

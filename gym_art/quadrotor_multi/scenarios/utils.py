@@ -38,6 +38,7 @@ QUADS_PARAMS_DICT = {
     'o_uniform_same_goal_spawn': [['circle_horizontal'], [0.0, 0.0]],
     'o_uniform_diff_goal_spawn': [QUADS_FORMATION_LIST, [0.4, 0.8]],
     'o_uniform_swarm_vs_swarm': [QUADS_FORMATION_LIST, [0.4, 0.8]],
+    'o_test': [['circle_horizontal'], [0.0, 0.0]],
 }
 
 

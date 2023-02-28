@@ -19,6 +19,7 @@ from gym_art.quadrotor_multi.scenarios.obstacles.o_uniform_diff_goal_spawn impor
 from gym_art.quadrotor_multi.scenarios.obstacles.o_uniform_same_goal_spawn import Scenario_o_uniform_same_goal_spawn
 from gym_art.quadrotor_multi.scenarios.obstacles.o_uniform_swarm_vs_swarm import Scenario_o_uniform_swarm_vs_swarm
 from gym_art.quadrotor_multi.scenarios.test.test_mix import Scenario_mix_test
+from gym_art.quadrotor_multi.scenarios.obstacles.o_test import Scenario_o_test
 
 
 def create_scenario(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,

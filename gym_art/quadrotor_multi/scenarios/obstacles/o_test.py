@@ -3,7 +3,7 @@ import numpy as np
 from gym_art.quadrotor_multi.scenarios.base import QuadrotorScenario
 
 
-class Scenario_o_uniform_same_goal_spawn(QuadrotorScenario):
+class Scenario_o_test(QuadrotorScenario):
     def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
                  quads_formation_size):
         super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
@@ -43,7 +43,7 @@ class Scenario_o_uniform_same_goal_spawn(QuadrotorScenario):
         return infos, rewards
 
     def reset(self):
-        self.start_point = self.generate_pos()
-        self.end_point = self.generate_pos()
+        self.start_point = np.array([0.0, 3.0, 2.0])
+        self.end_point = np.array([0.0, -3.0, 2.0])
         self.duration_time = np.random.uniform(low=2.0, high=4.0)
         self.standard_reset(formation_center=self.start_point)

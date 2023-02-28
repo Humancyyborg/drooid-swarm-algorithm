@@ -30,7 +30,7 @@ class Scenario_o_uniform_diff_goal_spawn(Scenario_o_uniform_same_goal_spawn):
         self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.end_point, layer_dist=0.0)
         np.random.shuffle(self.goals)
 
-    def step(self, infos, rewards, pos):
+    def step(self, infos, rewards):
         tick = self.envs[0].tick
 
         if tick <= int(self.duration_time * self.envs[0].control_freq):
