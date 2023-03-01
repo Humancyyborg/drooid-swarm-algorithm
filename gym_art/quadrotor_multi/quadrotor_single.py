@@ -1084,6 +1084,7 @@ class QuadrotorSingle:
             "nbr_dist": [np.zeros(1), room_max_dist],
             "nbr_goal_dist": [np.zeros(1), room_max_dist],
             "wall": [np.zeros(6), 5.0 * np.ones(6)],
+            "floor": [0. * np.ones(1), self.room_box[1][2] * np.ones(1)],
             "octmap": [-10 * np.ones(9), 10 * np.ones(9)],
         }
         self.obs_comp_names = list(self.obs_space_low_high.keys())

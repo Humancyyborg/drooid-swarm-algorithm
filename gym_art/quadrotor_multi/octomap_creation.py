@@ -60,7 +60,10 @@ class OctTree:
         rot_pos_y = np.clip(rot_pos_y, a_min=-self.half_room_width + self.grid_size,
                             a_max=self.half_room_width - self.grid_size)
 
-        pos_xy = np.array([rot_pos_x, rot_pos_y])
+        if self.resolution >= 0.1:
+            pos_xy = np.around([rot_pos_x, rot_pos_y], decimals=1)
+        else:
+            raise NotImplementedError(f'Current obstacle resolution: {self.resolution} is not supported!')
 
         collide_start = self.check_pos(pos_xy, self.start_range)
         collide_end = self.check_pos(pos_xy, self.end_range)
@@ -114,6 +117,7 @@ class OctTree:
                     break
         # Test for pos with goal
         # self.pos_arr = np.array([[-4.5+x, 0, 5] for x in range(0, 8)])
+        self.pos_arr = np.around(self.pos_arr, decimals=1)
         if num_obstacles > 0:
             self.mark_octree()
         self.generate_sdf()
@@ -137,8 +141,8 @@ class OctTree:
     def generate_sdf(self):
         # max_dist: clamps distances at maxdist
         max_dist = 1.0
-        bottom_left = np.array([-0.5 * self.room_dims[0], -0.5 * self.room_dims[1], 0])
-        upper_right = np.array([0.5 * self.room_dims[0], 0.5 * self.room_dims[1], self.room_dims[2]])
+        bottom_left = np.array([-0.5 * self.room_dims[0] - self.resolution, -0.5 * self.room_dims[1] - self.resolution, 0])
+        upper_right = np.array([0.5 * self.room_dims[0] + self.resolution, 0.5 * self.room_dims[1] + self.resolution, self.room_dims[2]])
 
         self.octree.dynamicEDT_generate(maxdist=max_dist,
                                         bbx_min=bottom_left,

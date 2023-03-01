@@ -128,6 +128,8 @@ class QuadMultiEncoder(Encoder):
         # internal params -- cannot change from cmd line
         if cfg.quads_obs_repr == 'xyz_vxyz_R_omega':
             self.self_obs_dim = 18
+        elif cfg.quads_obs_repr == 'xyz_vxyz_R_omega_floor':
+            self.self_obs_dim = 19
         elif cfg.quads_obs_repr == 'xyz_vxyz_R_omega_wall':
             self.self_obs_dim = 24
         else:

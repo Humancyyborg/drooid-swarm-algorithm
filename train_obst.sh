@@ -14,5 +14,5 @@ python -m swarm_rl.train \
 --normalize_input=False --normalize_returns=False --reward_clip=10 \
 --use_obstacles=True --quads_obstacle_num=8 --quads_obstacle_size=1.0 \
 --quads_obst_collision_smooth_max_penalty=10.0 --quads_obst_collision_reward=5.0 \
---with_wandb=True --wandb_project=Quad-Swarm-RL --wandb_group=obstacles_test --wandb_user=multi-drones \
+--with_wandb=False --wandb_project=Quad-Swarm-RL --wandb_group=obstacles_test --wandb_user=multi-drones \
 --experiment=obstacles_test

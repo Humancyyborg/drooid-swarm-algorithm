@@ -106,6 +106,8 @@ class QuadrotorEnvMulti(gym.Env):
         self.quads_mode = quads_mode
         if obs_repr == 'xyz_vxyz_R_omega':
             obs_self_size = 18
+        elif obs_repr == 'xyz_vxyz_R_omega_floor':
+            obs_self_size = 19
         elif obs_repr == 'xyz_vxyz_R_omega_wall':
             obs_self_size = 24
         else:
@@ -352,7 +354,6 @@ class QuadrotorEnvMulti(gym.Env):
             self.pos[i, :] = e.dynamics.pos
 
         # extend obs to see neighbors
-        self.rel_pos, self.rel_vel = calculate_relative_pos_vel(self.pos, self.vel, self.num_agents)
         obs = self.add_neighborhood_obs(obs)
 
         if self.use_obstacles:
