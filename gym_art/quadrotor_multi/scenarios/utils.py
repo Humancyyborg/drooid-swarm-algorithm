@@ -39,6 +39,10 @@ QUADS_PARAMS_DICT = {
     'o_uniform_diff_goal_spawn': [QUADS_FORMATION_LIST, [0.4, 0.8]],
     'o_uniform_swarm_vs_swarm': [QUADS_FORMATION_LIST, [0.4, 0.8]],
     'o_test': [['circle_horizontal'], [0.0, 0.0]],
+    'o_random': [['circle_horizontal'], [0.0, 0.0]],
+    'o_dynamic_same_goal': [['circle_horizontal'], [0.0, 0.0]],
+    'o_dynamic_diff_goal': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size]],
+
 }
 
 

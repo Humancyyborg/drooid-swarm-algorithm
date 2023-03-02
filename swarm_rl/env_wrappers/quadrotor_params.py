@@ -35,6 +35,8 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obstacle_mode', default='no_obstacles', type=str, choices=['no_obstacles', 'static'], help='Choose which obstacle mode to run')
     p.add_argument('--quads_obstacle_num', default=0, type=int, help='Set obstacle number')
     p.add_argument('--quads_obstacle_size', default=1.0, type=float, help='The radius of obstacles')
+    p.add_argument('--quads_obstacle_density', default=0.2, type=float, help='Obstacle density in the map')
+    p.add_argument('--quads_obstacle_shape', default="cube", type=str, choices=["cube", "cylinder"], help='The shape of obstacles')
 
     p.add_argument('--quads_obst_collision_reward', default=0.0, type=float, help='Override default value for quadcol_bin_obst reward, which means collisions between quadrotor and obstacles')
     p.add_argument('--quads_obst_collision_smooth_max_penalty', default=10.0, type=float, help='The upper bound of the collision function given distance between drones and obstacles')
@@ -47,7 +49,7 @@ def add_quadrotors_env_args(env, parser):
 
     p.add_argument('--quads_view_mode', default='local', type=str, choices=['local', 'global'], help='Choose which kind of view/camera to use')
 
-    p.add_argument('--quads_mode', default='static_same_goal', type=str, choices=['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal', 'ep_lissajous3D', 'ep_rand_bezier', 'swarm_vs_swarm', 'swap_goals', 'dynamic_formations', 'mix', 'tunnel', 'o_uniform_same_goal_spawn', 'mix_test', 'o_test'], help='Choose which scenario to run. Ep = evader pursuit')
+    p.add_argument('--quads_mode', default='static_same_goal', type=str, choices=['static_same_goal', 'static_diff_goal', 'dynamic_same_goal', 'dynamic_diff_goal', 'ep_lissajous3D', 'ep_rand_bezier', 'swarm_vs_swarm', 'swap_goals', 'dynamic_formations', 'mix', 'tunnel', 'o_uniform_same_goal_spawn', 'mix_test', 'o_test', 'o_random', 'o_dynamic_diff_goal', 'o_dynamic_same_goal'], help='Choose which scenario to run. Ep = evader pursuit')
     p.add_argument('--quads_formation', default='circle_horizontal', type=str, choices=['circle_xz_vertical', 'circle_yz_vertical', 'circle_horizontal', 'sphere', 'grid_xz_vertical', 'grid_yz_vertical', 'grid_horizontal'], help='Choose the swarm formation at the goal')
     p.add_argument('--quads_formation_size', default=-1.0, type=float, help='The size of the formation, interpreted differently depending on the formation type. Default (-1) means it is determined by the mode')
     p.add_argument('--room_dims', nargs='+', default=[10, 10, 10], type=float, help='Length, width, and height dimensions respectively of the quadrotor env')

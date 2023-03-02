@@ -36,7 +36,7 @@ class QuadrotorEnvMulti(gym.Env):
                  collision_falloff_radius=2.0, collision_smooth_max_penalty=10.0, use_replay_buffer=False,
                  vis_acc_arrows=False, viz_traces=25, viz_trace_nth_step=1,
                  use_obstacles=False, num_obstacles=0, obstacle_size=0.0, octree_resolution=0.05, use_downwash=False,
-                 collision_obst_falloff_radius=3.0
+                 collision_obst_falloff_radius=3.0, obst_shape="cube", obstacle_density=0.2
                  ):
 
         super().__init__()
@@ -141,12 +141,15 @@ class QuadrotorEnvMulti(gym.Env):
         if self.use_obstacles:
             self.prev_obst_quad_collisions = []
             self.obst_quad_collisions_per_episode = 0
+            self.obst_shape = obst_shape
+            self.obstacle_density = obstacle_density
             self.num_obstacles = num_obstacles
             self.obstacle_size = obstacle_size
             self.collision_obst_falloff_radius = collision_obst_falloff_radius
             self.octree_resolution = octree_resolution
             self.obstacles = MultiObstacles(num_obstacles=self.num_obstacles, room_dims=self.room_dims,
-                                            resolution=self.octree_resolution, obstacle_size=self.obstacle_size)
+                                            resolution=self.octree_resolution, obstacle_size=self.obstacle_size,
+                                            obst_shape=self.obst_shape)
 
         # Aux variables for scenarios
         self.scenario = create_scenario(quads_mode=quads_mode, envs=self.envs, num_agents=self.num_agents,
@@ -336,7 +339,13 @@ class QuadrotorEnvMulti(gym.Env):
 
     def reset(self):
         obs, rewards, dones, infos = [], [], [], []
-        self.scenario.reset()
+        if self.use_obstacles:
+            self.obst_map, pos_arr = self.density_generation(self.obstacle_density)
+
+            self.scenario.reset(self.obst_map)
+        else:
+            self.scenario.reset()
+
         self.quads_formation_size = self.scenario.formation_size
 
         # try to activate replay buffer if enabled
@@ -353,16 +362,15 @@ class QuadrotorEnvMulti(gym.Env):
             obs.append(observation)
             self.pos[i, :] = e.dynamics.pos
 
-        # extend obs to see neighbors
-        obs = self.add_neighborhood_obs(obs)
-
         if self.use_obstacles:
             quads_pos = np.array([e.dynamics.pos for e in self.envs])
-            obs = self.obstacles.reset(obs=obs, quads_pos=quads_pos, start_point=self.scenario.start_point,
-                                       end_point=self.scenario.end_point)
+            obs = self.obstacles.reset(obs=obs, quads_pos=quads_pos, pos_arr=pos_arr)
 
             self.obst_quad_collisions_per_episode = 0
             self.prev_obst_quad_collisions = []
+
+        # extend obs to see neighbors
+        obs = self.add_neighborhood_obs(obs)
 
         self.all_collisions = {val: [0.0 for _ in range(len(self.envs))] for val in ['drone', 'ground', 'obstacle']}
 
@@ -602,6 +610,30 @@ class QuadrotorEnvMulti(gym.Env):
         ceiling_crash_list = np.where(ceiling_collisions >= 1)[0]
 
         return floor_crash_list, wall_crash_list, ceiling_crash_list
+
+    def density_generation(self, density=0.2):
+        r, c = self.room_dims[0], self.room_dims[1]
+        grid_size = 1.0
+        cell_centers = [
+            (i + (grid_size / 2) - self.room_dims[0]/2, j + (grid_size / 2) - self.room_dims[1]/2) for i in
+            np.arange(0, self.room_dims[0], grid_size) for j in
+            np.arange(self.room_dims[1] - grid_size, -grid_size, -grid_size)]
+        num_room_grids = r * c
+
+        visited = np.array([[False for i in range(r)] for j in range(c)])
+
+        room_map = [i for i in range(c, (r - 1) * c)]
+
+        obst_index = np.random.choice(a=room_map, size=int(num_room_grids * density), replace=False)
+
+        pos_arr = []
+        obst_map = np.zeros([r, c])  # 0: no obst, 1: obst
+        for obst_id in obst_index:
+            rid, cid = obst_id // c, obst_id - (obst_id // c) * c
+            obst_map[rid, cid] = 1
+            pos_arr.append(np.array(cell_centers[rid + (10 * cid)]))
+
+        return obst_map, pos_arr
 
     def simulate_collision_with_room(self, wall_crash_list, ceiling_crash_list):
         apply_room_collision_flag = False
