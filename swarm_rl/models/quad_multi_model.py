@@ -6,6 +6,8 @@ from sample_factory.algo.utils.torch_utils import calc_num_elements
 from sample_factory.model.encoder import Encoder
 from sample_factory.model.model_utils import fc_layer, nonlinearity
 
+from swarm_rl.models.attention_layer import MultiHeadAttention
+
 
 class QuadNeighborhoodEncoder(nn.Module):
     def __init__(self, cfg, self_obs_dim, neighbor_obs_dim, neighbor_hidden_size, num_use_neighbor_obs):
@@ -119,6 +121,103 @@ class QuadNeighborhoodEncoderMlp(QuadNeighborhoodEncoder):
         obs_neighbors = obs[:, self.self_obs_dim:self.self_obs_dim + all_neighbor_obs_size]
         final_neighborhood_embedding = self.neighbor_mlp(obs_neighbors)
         return final_neighborhood_embedding
+
+
+class QuadMultiHeadAttentionEncoder(Encoder):
+    def __init__(self, cfg, obs_space):
+        super().__init__(cfg)
+
+        # Internal params
+        if cfg.quads_obs_repr == 'xyz_vxyz_R_omega':
+            self.self_obs_dim = 18
+        elif cfg.quads_obs_repr == 'xyz_vxyz_R_omega_floor':
+            self.self_obs_dim = 19
+        elif cfg.quads_obs_repr == 'xyz_vxyz_R_omega_wall':
+            self.self_obs_dim = 24
+        else:
+            raise NotImplementedError(f'Layer {cfg.quads_obs_repr} not supported!')
+
+        self.neighbor_hidden_size = cfg.quads_neighbor_hidden_size
+        self.use_obstacles = cfg.use_obstacles
+        self.obstacle_mode = cfg.quads_obstacle_mode
+        self.neighbor_obs_type = cfg.neighbor_obs_type
+        self.use_spectral_norm = cfg.use_spectral_norm
+
+        if cfg.quads_local_obs == -1:
+            self.num_use_neighbor_obs = cfg.quads_num_agents - 1
+        else:
+            self.num_use_neighbor_obs = cfg.quads_local_obs
+
+        if self.neighbor_obs_type == 'pos_vel_goals':
+            self.neighbor_obs_dim = 9  # include goal pos info
+        elif self.neighbor_obs_type == 'pos_vel':
+            self.neighbor_obs_dim = 6
+        elif self.neighbor_obs_type == 'pos_vel_goals_ndist_gdist':
+            self.neighbor_obs_dim = 11
+        elif self.neighbor_obs_type == 'none':
+            # override these params so that neighbor encoder is a no-op during inference
+            self.neighbor_obs_dim = 0
+            self.num_use_neighbor_obs = 0
+        else:
+            raise NotImplementedError(f'Unknown value {cfg.neighbor_obs_type} passed to --neighbor_obs_type')
+
+        self.all_neighbor_obs_dim = self.neighbor_obs_dim * self.num_use_neighbor_obs
+
+        fc_encoder_layer = cfg.rnn_size
+        # Embedding Layer
+        self.self_embed_layer = nn.Sequential(
+            fc_layer(self.self_obs_dim, fc_encoder_layer, spec_norm=self.use_spectral_norm),
+            nonlinearity(cfg),
+            fc_layer(fc_encoder_layer, fc_encoder_layer, spec_norm=self.use_spectral_norm),
+            nonlinearity(cfg)
+        )
+        self.neighbor_embed_layer = nn.Sequential(
+            fc_layer(self.all_neighbor_obs_dim, fc_encoder_layer, spec_norm=self.use_spectral_norm),
+            nonlinearity(cfg),
+            fc_layer(fc_encoder_layer, fc_encoder_layer, spec_norm=self.use_spectral_norm),
+            nonlinearity(cfg)
+        )
+        self.obstacle_obs_dim = 9
+        self.obstacle_embed_layer = nn.Sequential(
+            fc_layer(self.obstacle_obs_dim, fc_encoder_layer, spec_norm=self.use_spectral_norm),
+            nonlinearity(cfg),
+            fc_layer(fc_encoder_layer, fc_encoder_layer, spec_norm=self.use_spectral_norm),
+            nonlinearity(cfg)
+        )
+
+        # Attention Layer
+        self.attention_layer = MultiHeadAttention(3, cfg.rnn_size, cfg.rnn_size, cfg.rnn_size)
+
+        # MLP Layer
+        self.feed_forward = nn.Sequential(fc_layer(3 * cfg.rnn_size, 2 * cfg.rnn_size, spec_norm=self.use_spectral_norm),
+                                          nn.Tanh())
+
+        self.encoder_output_size = 2 * cfg.rnn_size
+
+    def forward(self, obs_dict):
+        obs = obs_dict['obs']
+        batch_size = obs.shape[0]
+        obs_self = obs[:, :self.self_obs_dim]
+        obs_neighbor = obs[:, self.self_obs_dim: self.self_obs_dim + self.all_neighbor_obs_dim]
+        obs_obstacle = obs[:, self.self_obs_dim + self.all_neighbor_obs_dim:]
+
+        self_embed = self.self_embed_layer(obs_self)
+        neighbor_embed = self.neighbor_embed_layer(obs_neighbor)
+        obstacle_embed = self.obstacle_embed_layer(obs_obstacle)
+        self_embed = self_embed.view(batch_size, 1, -1)
+        neighbor_embed = neighbor_embed.view(batch_size, 1, -1)
+        obstacle_embed = obstacle_embed.view(batch_size, 1, -1)
+        embeddings = torch.cat((self_embed, neighbor_embed, obstacle_embed), dim=1)
+
+        embeddings, attn_embed = self.attention_layer(embeddings, embeddings, embeddings)
+        embeddings = embeddings.view(batch_size, -1)
+
+        out = self.feed_forward(embeddings)
+
+        return out
+
+    def get_out_size(self):
+        return self.encoder_output_size
 
 
 class QuadMultiEncoder(Encoder):
@@ -247,7 +346,15 @@ class QuadMultiEncoder(Encoder):
 
 
 def make_quadmulti_encoder(cfg, obs_space) -> Encoder:
-    return QuadMultiEncoder(cfg, obs_space)
+    if cfg.quads_encoder_type == "attention":
+        model = QuadMultiHeadAttentionEncoder(cfg, obs_space)
+    else:
+        model = QuadMultiEncoder(cfg, obs_space)
+    import numpy as np
+    model_parameters = filter(lambda p: p.requires_grad, model.parameters())
+    params = sum([np.prod(p.size()) for p in model_parameters])
+    print(params)
+    return model
 
 
 def register_models():

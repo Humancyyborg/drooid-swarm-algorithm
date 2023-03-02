@@ -18,6 +18,7 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_episode_duration', default=15.0, type=float, help='Override default value for episode duration')
     p.add_argument('--quads_num_agents', default=8, type=int, help='Override default value for the number of quadrotors')
     p.add_argument('--quads_neighbor_hidden_size', default=256, type=int, help='The hidden size for the neighbor encoder')
+    p.add_argument('--quads_encoder_type', default="corl", type=str, help='The type of the neighborhood encoder')
     p.add_argument('--quads_neighbor_encoder_type', default='attention', type=str, choices=['attention', 'mean_embed', 'mlp', 'no_encoder'], help='The type of the neighborhood encoder')
 
     # TODO: better default values for collision rewards
