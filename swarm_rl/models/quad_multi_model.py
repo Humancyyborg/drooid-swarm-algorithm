@@ -350,10 +350,6 @@ def make_quadmulti_encoder(cfg, obs_space) -> Encoder:
         model = QuadMultiHeadAttentionEncoder(cfg, obs_space)
     else:
         model = QuadMultiEncoder(cfg, obs_space)
-    import numpy as np
-    model_parameters = filter(lambda p: p.requires_grad, model.parameters())
-    params = sum([np.prod(p.size()) for p in model_parameters])
-    print(params)
     return model
 
 
