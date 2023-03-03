@@ -1,4 +1,5 @@
 import numpy as np
+from gym_art.quadrotor_multi.quad_utils import get_cell_centers
 
 from gym_art.quadrotor_multi.scenarios.base import QuadrotorScenario
 
@@ -16,11 +17,12 @@ class Scenario_o_base(QuadrotorScenario):
         self.obstacle_map = None
         self.free_space = []
         self.grid_size = 1.0
-        self.cell_centers = [
-            [i + (self.grid_size / 2) - self.room_dims[0] / 2, j + (self.grid_size / 2) - self.room_dims[1] / 2] for i
-            in
-            np.arange(0, self.room_dims[0], self.grid_size) for j in
-            np.arange(self.room_dims[1] - self.grid_size, -self.grid_size, -self.grid_size)]
+        # self.cell_centers = [
+        #     [i + (self.grid_size / 2) - 3, j + (self.grid_size / 2) - 3] for i
+        #     in
+        #     np.arange(0, 3, self.grid_size) for j in
+        #     np.arange(self.room_dims[1] - self.grid_size, -self.grid_size, -self.grid_size)]
+        self.cell_centers = get_cell_centers(grid_size=1.)
 
     def update_formation_size(self, new_formation_size):
         pass
@@ -62,7 +64,7 @@ class Scenario_o_base(QuadrotorScenario):
         xy_noise = np.random.uniform(low=-0.5, high=0.5, size=2)
 
         x, y = self.free_space[idx][0], self.free_space[idx][1]
-        index = x + (10 * y)
+        index = x + (6 * y)
         pos_x, pos_y = self.cell_centers[index]
 
         return np.array([pos_x + xy_noise[0], pos_y + xy_noise[1], z_list_start])

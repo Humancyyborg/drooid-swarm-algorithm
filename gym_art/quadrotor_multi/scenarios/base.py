@@ -66,8 +66,10 @@ class QuadrotorScenario:
 
             goals = np.array(goals)
             goals += formation_center
+
         elif self.formation == "sphere":
             goals = self.formation_size * np.array(generate_points(num_agents)) + formation_center
+
         elif self.formation.startswith("grid"):
             if num_agents <= self.num_agents_per_layer:
                 dim_1, dim_2 = get_grid_dim_number(num_agents)

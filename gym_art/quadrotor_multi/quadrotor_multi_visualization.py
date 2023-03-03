@@ -225,7 +225,7 @@ class Quadrotor3DSceneMulti:
 
         goal_sphere = r3d.sphere(self.goal_diameter / 2, 18)
         for i in range(len(self.models)):
-            color = QUAD_COLOR[0 % len(QUAD_COLOR)]
+            color = QUAD_COLOR[i % len(QUAD_COLOR)]
             goal_transform = r3d.transform_and_color(np.eye(4), color, goal_sphere)
             self.goal_transforms.append(goal_transform)
 

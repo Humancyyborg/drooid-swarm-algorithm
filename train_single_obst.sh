@@ -12,5 +12,6 @@ python -m swarm_rl.train \
 --quads_collision_reward=5.0 --quads_collision_smooth_max_penalty=10.0 \
 --replay_buffer_sample_prob=0 --anneal_collision_steps=0 --save_milestones_sec=1800 \
 --normalize_input=False --normalize_returns=False --reward_clip=10 \
---use_obstacles=True --quads_obstacle_num=8 --quads_obst_collision_smooth_max_penalty=10.0 --quads_obst_collision_reward=5.0 \
+--use_obstacles=True --quads_obstacle_size=0.6 --quads_obstacle_density=0.25 \
+--quads_obst_collision_smooth_max_penalty=0.0 --quads_obst_collision_reward=5.0 \
 --experiment=obstacles_single

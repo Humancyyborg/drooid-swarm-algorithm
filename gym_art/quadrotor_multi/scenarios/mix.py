@@ -75,7 +75,7 @@ class Scenario_mix(QuadrotorScenario):
         self.formation_size = self.scenario.formation_size
         return infos, rewards
 
-    def reset(self):
+    def reset(self, obstacle_map=None):
         mode_index = np.random.randint(low=0, high=len(self.quads_mode_list))
         mode = self.quads_mode_list[mode_index]
 
@@ -84,8 +84,11 @@ class Scenario_mix(QuadrotorScenario):
                                         room_dims=self.room_dims, room_dims_callback=self.room_dims_callback,
                                         rew_coeff=self.rew_coeff, quads_formation=self.formation,
                                         quads_formation_size=self.formation_size)
+        if obstacle_map is not None:
+            self.scenario.reset(obstacle_map)
+        else:
+            self.scenario.reset()
 
-        self.scenario.reset()
         self.goals = self.scenario.goals
         self.formation_size = self.scenario.formation_size
 

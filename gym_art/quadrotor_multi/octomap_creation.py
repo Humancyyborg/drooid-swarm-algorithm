@@ -3,7 +3,7 @@ import math
 import octomap
 import random
 
-from gym_art.quadrotor_multi.utils.quad_utils import EPS
+from gym_art.quadrotor_multi.quad_utils import EPS
 
 
 class OctTree:
@@ -21,8 +21,11 @@ class OctTree:
         self.end_range = np.zeros((2, 2))
         self.init_box = np.array([[-0.5, -0.5, -0.5 * 2.0], [0.5, 0.5, 1.5 * 2.0]])
         self.cell_centers = [
-            (i + (self.grid_size / 2) - self.half_room_length, j + (self.grid_size / 2) - self.half_room_width) for i in
-            np.arange(0, self.room_dims[0], self.grid_size) for j in np.arange(self.room_dims[1]-self.grid_size, -self.grid_size, -self.grid_size)]
+            (
+            i + (self.grid_size / 2) - self.half_room_length // 2, j + (self.grid_size / 2) - self.half_room_width // 2)
+            for i in
+            np.arange(0, self.room_dims[0] // 2, self.grid_size) for j in
+            np.arange(self.room_dims[1] // 2 - self.grid_size, -self.grid_size, -self.grid_size)]
         self.pos_arr = None
 
     def reset(self):
@@ -102,7 +105,7 @@ class OctTree:
         return overlap_flag
 
     def generate_obstacles_gaussian(self, num_obstacles=0, start_point=np.array([-3.0, -2.0, 2.0]),
-                           end_point=np.array([3.0, 2.0, 2.0])):
+                                    end_point=np.array([3.0, 2.0, 2.0])):
         self.pos_arr = []
         self.start_range = np.array([start_point[:2] + self.init_box[0][:2], start_point[:2] + self.init_box[1][:2]])
         self.end_range = np.array([end_point[:2] + self.init_box[0][:2], end_point[:2] + self.init_box[1][:2]])
@@ -161,7 +164,8 @@ class OctTree:
                 raise NotImplementedError(f'{self.obst_shape} is not supported!')
 
     def mark_walls(self):
-        bottom_left = np.array([-0.5 * self.room_dims[0] - self.resolution, -0.5 * self.room_dims[1] - self.resolution, 0.0])
+        bottom_left = np.array(
+            [-0.5 * self.room_dims[0] - self.resolution, -0.5 * self.room_dims[1] - self.resolution, 0.0])
         upper_right = np.array([0.5 * self.room_dims[0], 0.5 * self.room_dims[1], self.room_dims[2]])
 
         range_x = np.arange(bottom_left[0] + self.resolution, upper_right[0], self.resolution)
@@ -227,54 +231,32 @@ class OctTree:
                     stack.append(new)
         return False, start_points
 
-    def density_generation(self, density=0.2):
-        r, c = self.room_dims[0], self.room_dims[1]
-        num_room_grids = r * c
+    # def density_generation(self, density=0.2):
+    #     r, c = self.room_dims[0] // 2, self.room_dims[1] //2
+    #     num_room_grids = r * c
+    #
+    #     visited = np.array([[False for i in range(r)] for j in range(c)])
+    #
+    #     room_map = [i for i in range(c, (r - 1) * c)]
+    #
+    #     obst_index = np.random.choice(a=room_map, size=int(num_room_grids * density), replace=False)
+    #
+    #     pos_arr = []
+    #     obst_map = np.zeros([r, c])  # 0: no obst, 1: obst
+    #     for obst_id in obst_index:
+    #         rid, cid = obst_id // c, obst_id - (obst_id // c) * c
+    #         obst_map[rid, cid] = 1
+    #         pos_arr.append(np.array(self.cell_centers[rid + (5 * cid)]))
+    #
+    #     return pos_arr
 
-        visited = np.array([[False for i in range(r)] for j in range(c)])
-
-        room_map = [i for i in range(c, (r - 1) * c)]
-
-        obst_index = np.random.choice(a=room_map, size=int(num_room_grids * density), replace=False)
-
-        pos_arr = []
-        obst_map = np.zeros([r, c])  # 0: no obst, 1: obst
-        for obst_id in obst_index:
-            rid, cid = obst_id // c, obst_id - (obst_id // c) * c
-            obst_map[rid, cid] = 1
-            pos_arr.append(np.array(self.cell_centers[rid + (10 * cid)]))
-
-        '''obst_map_locs = np.where(obst_map == 1)
-        for i in list(zip(*obst_map_locs)):
-            visited[i] = True
-
-        best_start = []
-        for regen_id in range(20):
-            quad_start_pos_map = np.where(visited == False)
-            start_id = random.choice(list(zip(*quad_start_pos_map)))
-            free_neighbors, start_points = self.check_neighbor(start_id, visited, np.random.randint(4, 8))
-            if free_neighbors:
-                best_start = start_points
-                break
-            else:
-                if len(best_start) < len(start_points):
-                    best_start = start_points
-
-        for start in best_start:
-            obst_map[start[1], start[0]] = 2
-
-        start_pos = []
-        for start in best_start:
-            start_pos.append(self.cell_centers[start[1] + (10 * start[0])])'''
-        return pos_arr
-
-    def generate_obstacles(self, obstacle_density=0.2):
-        self.start_points, self.pos_arr = self.density_generation(obstacle_density)
-
-        self.mark_octree()
-        self.generate_sdf()
-        return self.start_points, self.pos_arr
-
+    # def generate_obstacles(self, obstacle_density=0.2):
+    #     self.start_points, self.pos_arr = self.density_generation(obstacle_density)
+    #
+    #     self.mark_octree()
+    #     self.generate_sdf()
+    #     return self.start_points, self.pos_arr
+    #
     def set_obst(self, pos_arr):
         for i in range(len(pos_arr)):
             pos_arr[i] = np.append(pos_arr[i], 5.0)
@@ -283,6 +265,7 @@ class OctTree:
 
         self.mark_octree()
         self.generate_sdf()
+
 
 if __name__ == "__main__":
     oct = OctTree()

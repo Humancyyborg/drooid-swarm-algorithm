@@ -777,6 +777,15 @@ class OUNoise:
         return self.state
 
 
+def get_cell_centers(obst_area_length=6., obst_area_width=6., grid_size=1.):
+    cell_centers = [
+        (i + (grid_size / 2) - obst_area_length // 2, j + (grid_size / 2) - obst_area_width // 2)
+        for i in
+        np.arange(0, obst_area_length, grid_size) for j in
+        np.arange(obst_area_width - grid_size, -grid_size, -grid_size)]
+    return cell_centers
+
+
 if __name__ == "__main__":
     ## Cross product test
     import time

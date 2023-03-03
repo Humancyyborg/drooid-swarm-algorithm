@@ -11,7 +11,7 @@ from gym_art.quadrotor_multi.quad_utils import perform_collision_between_drones,
     calculate_obst_drone_proximity_penalties, \
     calculate_collision_matrix, calculate_drone_proximity_penalties, perform_collision_with_obstacle, perform_downwash, \
     perform_collision_with_wall, perform_collision_with_ceiling, perform_collision_with_wall_numba, \
-    perform_collision_between_drones_numba
+    perform_collision_between_drones_numba, get_cell_centers
 
 from gym_art.quadrotor_multi.quadrotor_single import GRAV, QuadrotorSingle
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
@@ -340,7 +340,7 @@ class QuadrotorEnvMulti(gym.Env):
     def reset(self):
         obs, rewards, dones, infos = [], [], [], []
         if self.use_obstacles:
-            self.obst_map, pos_arr = self.density_generation(self.obstacle_density)
+            self.obst_map, pos_arr = self.density_generation(density=self.obstacle_density)
 
             self.scenario.reset(self.obst_map)
         else:
@@ -611,18 +611,16 @@ class QuadrotorEnvMulti(gym.Env):
 
         return floor_crash_list, wall_crash_list, ceiling_crash_list
 
-    def density_generation(self, density=0.2):
-        r, c = self.room_dims[0], self.room_dims[1]
-        grid_size = 1.0
-        cell_centers = [
-            (i + (grid_size / 2) - self.room_dims[0]/2, j + (grid_size / 2) - self.room_dims[1]/2) for i in
-            np.arange(0, self.room_dims[0], grid_size) for j in
-            np.arange(self.room_dims[1] - grid_size, -grid_size, -grid_size)]
+    def density_generation(self, obst_area_length=6.0, obst_area_width=6.0, grid_size=1.0, density=0.2):
+        r, c = int(obst_area_length), int(obst_area_width)
+        cell_centers = get_cell_centers(obst_area_length=obst_area_length, obst_area_width=obst_area_width,
+                                        grid_size=grid_size)
+
         num_room_grids = r * c
 
         visited = np.array([[False for i in range(r)] for j in range(c)])
 
-        room_map = [i for i in range(c, (r - 1) * c)]
+        room_map = [i for i in range(0, r * c)]
 
         obst_index = np.random.choice(a=room_map, size=int(num_room_grids * density), replace=False)
 
@@ -631,7 +629,7 @@ class QuadrotorEnvMulti(gym.Env):
         for obst_id in obst_index:
             rid, cid = obst_id // c, obst_id - (obst_id // c) * c
             obst_map[rid, cid] = 1
-            pos_arr.append(np.array(cell_centers[rid + (10 * cid)]))
+            pos_arr.append(np.array(cell_centers[rid + int(obst_area_length / grid_size) * cid]))
 
         return obst_map, pos_arr
 
