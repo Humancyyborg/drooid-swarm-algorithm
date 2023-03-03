@@ -3,7 +3,7 @@ import math
 import octomap
 import random
 
-from gym_art.quadrotor_multi.quad_utils import EPS
+from gym_art.quadrotor_multi.quad_utils import EPS, get_cell_centers
 
 
 class OctTree:
@@ -20,12 +20,6 @@ class OctTree:
         self.start_range = np.zeros((2, 2))
         self.end_range = np.zeros((2, 2))
         self.init_box = np.array([[-0.5, -0.5, -0.5 * 2.0], [0.5, 0.5, 1.5 * 2.0]])
-        self.cell_centers = [
-            (
-            i + (self.grid_size / 2) - self.half_room_length // 2, j + (self.grid_size / 2) - self.half_room_width // 2)
-            for i in
-            np.arange(0, self.room_dims[0] // 2, self.grid_size) for j in
-            np.arange(self.room_dims[1] // 2 - self.grid_size, -self.grid_size, -self.grid_size)]
         self.pos_arr = None
 
     def reset(self):
@@ -261,12 +255,12 @@ class OctTree:
         for i in range(len(pos_arr)):
             pos_arr[i] = np.append(pos_arr[i], 5.0)
 
-        self.pos_arr = pos_arr
+        self.pos_arr = np.array(pos_arr)
 
         self.mark_octree()
         self.generate_sdf()
 
 
-if __name__ == "__main__":
-    oct = OctTree()
-    oct.density_generation(density=0.5)
+# if __name__ == "__main__":
+#     oct = OctTree()
+#     oct.density_generation(density=0.5)

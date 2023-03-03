@@ -207,6 +207,8 @@ class QuadrotorEnvMulti(gym.Env):
 
         self.use_numba = quads_use_numba
 
+        self.obst_map = None
+
     def set_room_dims(self, dims):
         # dims is a (x, y, z) tuple
         self.room_dims = dims
@@ -341,7 +343,6 @@ class QuadrotorEnvMulti(gym.Env):
         obs, rewards, dones, infos = [], [], [], []
         if self.use_obstacles:
             self.obst_map, pos_arr = self.density_generation(density=self.obstacle_density)
-
             self.scenario.reset(self.obst_map)
         else:
             self.scenario.reset()
@@ -424,6 +425,8 @@ class QuadrotorEnvMulti(gym.Env):
         self.prev_drone_collisions = curr_drone_collisions
 
         # 2) Collisions with obstacles
+        obst_quad_col_matrix = []
+        rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
         if self.use_obstacles:
             obst_quad_col_matrix = self.obstacles.collision_detection(pos_quads=self.pos)
             # We assume drone can only collide with one obstacle at the same time.
@@ -432,8 +435,6 @@ class QuadrotorEnvMulti(gym.Env):
             self.obst_quad_collisions_per_episode += len(curr_quad_col)
 
             self.prev_obst_quad_collisions = obst_quad_col_matrix
-
-            rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
 
             if len(obst_quad_col_matrix) > 0:
                 # We assign penalties to the drones which collide with the obstacles
@@ -467,8 +468,6 @@ class QuadrotorEnvMulti(gym.Env):
         )
 
         # 2) With obstacles
-        obst_quad_col_matrix = []
-        rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
         rew_collisions_obst_quad = np.zeros(self.num_agents)
         rew_obst_quad_proximity = np.zeros(self.num_agents)
         if self.use_obstacles:
@@ -520,7 +519,7 @@ class QuadrotorEnvMulti(gym.Env):
                 dyn1, dyn2 = self.envs[val[0]].dynamics, self.envs[val[1]].dynamics
                 dyn1.vel, dyn1.omega, dyn2.vel, dyn2.omega = perform_collision_between_drones_numba(dyn1.pos, dyn1.vel, dyn1.omega,
                                                                                                     dyn2.pos, dyn2.vel, dyn2.omega)
-            if self.use_obstacles and self.num_obstacles > 0:
+            if self.use_obstacles:
                 for val in obst_quad_col_matrix:
                     perform_collision_with_obstacle(drone_dyn=self.envs[int(val)].dynamics,
                                                     obstacle_pos=self.obstacles.closest_obstacle(self.pos[val]),

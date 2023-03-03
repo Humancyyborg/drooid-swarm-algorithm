@@ -897,7 +897,10 @@ class QuadrotorSingle:
         ## WARN: If you
         # size of the box from which initial position will be randomly sampled
         # if box_scale > 1.0 then it will also growevery episode
-        self.box = 2.0
+        if self.use_obstacles:
+            self.box = 0.5
+        else:
+            self.box = 2.0
         self.box_scale = 1.0  # scale the initialbox by this factor eache episode
 
         self.goal = None

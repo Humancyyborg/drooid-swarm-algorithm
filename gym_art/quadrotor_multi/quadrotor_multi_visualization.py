@@ -76,7 +76,7 @@ class Quadrotor3DSceneMulti:
         self.video_target = None
 
         self.obstacles = None
-        if obstacles and num_obstacles > 0:
+        if obstacles:
             self.obstacles = obstacles
 
         # Save parameters to help transfer from global camera to local camera

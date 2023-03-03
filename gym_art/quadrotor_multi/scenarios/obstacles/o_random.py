@@ -9,11 +9,11 @@ class Scenario_o_random(Scenario_o_base):
                  quads_formation_size):
         super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
                          quads_formation_size)
-        self.free_x = [-self.room_dims[0] / 2 + 1.5, self.room_dims[0] / 2 - 1.5,
-                       -self.room_dims[0] / 2 + 1.5, self.room_dims[0] / 2 - 1.5]
+        self.free_x = [-self.room_dims[0] / 2 + 1, self.room_dims[0] / 2 - 1,
+                       -self.room_dims[0] / 2 + 1, self.room_dims[0] / 2 - 1]
 
-        self.free_y = [-self.room_dims[1] / 2 + 1.5, -self.room_dims[1] / 2 + 1.5,
-                       self.room_dims[1] / 2 - 1.5, self.room_dims[1] / 2 - 1.5]
+        self.free_y = [-self.room_dims[1] / 2 + 1, -self.room_dims[1] / 2 + 1,
+                       self.room_dims[1] / 2 - 1, self.room_dims[1] / 2 - 1]
 
     def update_formation_size(self, new_formation_size):
         pass
@@ -77,7 +77,6 @@ class Scenario_o_random(Scenario_o_base):
             self.formation_center = np.array((self.free_x[start_quadrant], self.free_y[start_quadrant], 2.0))
         else:
             self.formation_center = np.array((0., 0., 2.))
-
         self.goals = copy.deepcopy(self.start_point)
 
     def generate_pos_obst_map(self):
