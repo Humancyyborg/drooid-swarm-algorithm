@@ -16,7 +16,7 @@ from gym_art.quadrotor_multi.quad_utils import perform_collision_between_drones,
 from gym_art.quadrotor_multi.quadrotor_single import GRAV, QuadrotorSingle
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
 from gym_art.quadrotor_multi.scenarios.mix import create_scenario
-from gym_art.quadrotor_multi.quadrotor_multi_obstacles import MultiObstacles
+from gym_art.quadrotor_multi.obstacles.obstacles import MultiObstacles
 
 EPS = 1E-6
 
@@ -428,7 +428,7 @@ class QuadrotorEnvMulti(gym.Env):
         obst_quad_col_matrix = []
         rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
         if self.use_obstacles:
-            obst_quad_col_matrix = self.obstacles.collision_detection(pos_quads=self.pos)
+            obst_quad_col_matrix, collided_obstacles_id = self.obstacles.collision_detection(pos_quads=self.pos)
             # We assume drone can only collide with one obstacle at the same time.
             # Given this setting, in theory, the gap between obstacles should >= 0.1 (drone diameter: 0.46*2 = 0.92)
             curr_quad_col = np.setdiff1d(obst_quad_col_matrix, self.prev_obst_quad_collisions)
@@ -476,14 +476,14 @@ class QuadrotorEnvMulti(gym.Env):
             # Penalties for smallest distance between obstacles and drones
             # Only penalize the smallest instead of checking all nearby obstacles makes sense.
             # Since we don't want drones afraid of flying into obstacle dense zone.
-            drone_obst_dists = np.array([self.obstacles.octree.sdf_dist(self.pos[i]) for i in range(self.num_agents)])
-
-            rew_obst_quad_proximity = -1.0 * calculate_obst_drone_proximity_penalties(
-                distances=drone_obst_dists, arm=self.quad_arm, dt=self.control_dt,
-                penalty_fall_off=self.collision_obst_falloff_radius,
-                max_penalty=self.rew_coeff["quadcol_bin_obst_smooth_max"],
-                num_agents=self.num_agents,
-            )
+            # drone_obst_dists = np.array([self.obstacles.octree.sdf_dist(self.pos[i]) for i in range(self.num_agents)])
+            #
+            # rew_obst_quad_proximity = -1.0 * calculate_obst_drone_proximity_penalties(
+            #     distances=drone_obst_dists, arm=self.quad_arm, dt=self.control_dt,
+            #     penalty_fall_off=self.collision_obst_falloff_radius,
+            #     max_penalty=self.rew_coeff["quadcol_bin_obst_smooth_max"],
+            #     num_agents=self.num_agents,
+            # )
 
         # 3) With room
         self.collisions_room_per_episode += len(room_crash_list)
@@ -505,8 +505,8 @@ class QuadrotorEnvMulti(gym.Env):
                 infos[i]["rewards"]["rew_quadcol_obstacle"] = rew_collisions_obst_quad[i]
                 infos[i]["rewards"]["rewraw_quadcol_obstacle"] = rew_obst_quad_collisions_raw[i]
 
-                rewards[i] += rew_obst_quad_proximity[i]
-                infos[i]["rewards"]["rew_obst_quad_proximity"] = rew_obst_quad_proximity[i]
+                # rewards[i] += rew_obst_quad_proximity[i]
+                # infos[i]["rewards"]["rew_obst_quad_proximity"] = rew_obst_quad_proximity[i]
 
         # 3. Applying random forces: 1) between drones 2) obstacles 3) room
         if self.use_downwash:
@@ -520,9 +520,9 @@ class QuadrotorEnvMulti(gym.Env):
                 dyn1.vel, dyn1.omega, dyn2.vel, dyn2.omega = perform_collision_between_drones_numba(dyn1.pos, dyn1.vel, dyn1.omega,
                                                                                                     dyn2.pos, dyn2.vel, dyn2.omega)
             if self.use_obstacles:
-                for val in obst_quad_col_matrix:
+                for obst_id, val in enumerate(obst_quad_col_matrix):
                     perform_collision_with_obstacle(drone_dyn=self.envs[int(val)].dynamics,
-                                                    obstacle_pos=self.obstacles.closest_obstacle(self.pos[val]),
+                                                    obstacle_pos=collided_obstacles_id[obst_id],
                                                     obstacle_size=self.obstacle_size,
                                                     col_coeff=self.rew_coeff["quadcol_obst_coeff"])
 
