@@ -342,7 +342,7 @@ class QuadrotorEnvMulti(gym.Env):
     def reset(self):
         obs, rewards, dones, infos = [], [], [], []
         if self.use_obstacles:
-            self.obst_map, pos_arr = self.density_generation(density=self.obstacle_density)
+            self.obst_map, obst_pos_arr = self.obst_generation_given_density(density=self.obstacle_density)
             self.scenario.reset(self.obst_map)
         else:
             self.scenario.reset()
@@ -365,7 +365,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         if self.use_obstacles:
             quads_pos = np.array([e.dynamics.pos for e in self.envs])
-            obs = self.obstacles.reset(obs=obs, quads_pos=quads_pos, pos_arr=pos_arr)
+            obs = self.obstacles.reset(obs=obs, quads_pos=quads_pos, pos_arr=obst_pos_arr)
 
             self.obst_quad_collisions_per_episode = 0
             self.prev_obst_quad_collisions = []
@@ -428,7 +428,7 @@ class QuadrotorEnvMulti(gym.Env):
         obst_quad_col_matrix = []
         rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
         if self.use_obstacles:
-            obst_quad_col_matrix, collided_obstacles_id = self.obstacles.collision_detection(pos_quads=self.pos)
+            obst_quad_col_matrix, quad_obst_pair = self.obstacles.collision_detection(pos_quads=self.pos)
             # We assume drone can only collide with one obstacle at the same time.
             # Given this setting, in theory, the gap between obstacles should >= 0.1 (drone diameter: 0.46*2 = 0.92)
             curr_quad_col = np.setdiff1d(obst_quad_col_matrix, self.prev_obst_quad_collisions)
@@ -520,9 +520,11 @@ class QuadrotorEnvMulti(gym.Env):
                 dyn1.vel, dyn1.omega, dyn2.vel, dyn2.omega = perform_collision_between_drones_numba(dyn1.pos, dyn1.vel, dyn1.omega,
                                                                                                     dyn2.pos, dyn2.vel, dyn2.omega)
             if self.use_obstacles:
-                for obst_id, val in enumerate(obst_quad_col_matrix):
+                for val in curr_quad_col:
+                    obstacle_id = quad_obst_pair[int(val)]
+                    obstacle_pos = self.obstacles.pos_arr[int(obstacle_id)]
                     perform_collision_with_obstacle(drone_dyn=self.envs[int(val)].dynamics,
-                                                    obstacle_pos=collided_obstacles_id[obst_id],
+                                                    obstacle_pos=obstacle_pos,
                                                     obstacle_size=self.obstacle_size,
                                                     col_coeff=self.rew_coeff["quadcol_obst_coeff"])
 
@@ -610,27 +612,27 @@ class QuadrotorEnvMulti(gym.Env):
 
         return floor_crash_list, wall_crash_list, ceiling_crash_list
 
-    def density_generation(self, obst_area_length=6.0, obst_area_width=6.0, grid_size=1.0, density=0.2):
+    def obst_generation_given_density(self, obst_area_length=6.0, obst_area_width=6.0, grid_size=1.0, density=0.2):
         r, c = int(obst_area_length), int(obst_area_width)
+        num_room_grids = r * c
+
         cell_centers = get_cell_centers(obst_area_length=obst_area_length, obst_area_width=obst_area_width,
                                         grid_size=grid_size)
 
-        num_room_grids = r * c
-
-        visited = np.array([[False for i in range(r)] for j in range(c)])
-
-        room_map = [i for i in range(0, r * c)]
+        room_map = [i for i in range(0, num_room_grids)]
 
         obst_index = np.random.choice(a=room_map, size=int(num_room_grids * density), replace=False)
 
-        pos_arr = []
+        obst_pos_arr = []
         obst_map = np.zeros([r, c])  # 0: no obst, 1: obst
         for obst_id in obst_index:
             rid, cid = obst_id // c, obst_id - (obst_id // c) * c
             obst_map[rid, cid] = 1
-            pos_arr.append(np.array(cell_centers[rid + int(obst_area_length / grid_size) * cid]))
+            obst_item = list(cell_centers[rid + int(obst_area_length / grid_size) * cid])
+            obst_item.append(self.room_dims[2] / 2.)
+            obst_pos_arr.append(obst_item)
 
-        return obst_map, pos_arr
+        return obst_map, obst_pos_arr
 
     def simulate_collision_with_room(self, wall_crash_list, ceiling_crash_list):
         apply_room_collision_flag = False

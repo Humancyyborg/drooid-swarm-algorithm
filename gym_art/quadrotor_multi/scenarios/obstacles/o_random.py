@@ -35,13 +35,13 @@ class Scenario_o_random(Scenario_o_base):
 
         xy_noise = np.random.uniform(low=-0.2, high=0.2, size=2)
         start_x, start_y = self.free_x[start_quadrant], self.free_y[start_quadrant]
-        start_z = np.random.uniform(low=0.5, high=3.0)
+        start_z = np.random.uniform(low=1.5, high=3.5)
         start_point = np.array((start_x + xy_noise[0], start_y + xy_noise[1], start_z))
 
         end_quadrant = 3 - start_quadrant
         xy_noise = np.random.uniform(low=-0.2, high=0.2, size=2)
         end_x, end_y = self.free_x[end_quadrant], self.free_y[end_quadrant]
-        end_z = np.random.uniform(low=0.5, high=3.0)
+        end_z = np.random.uniform(low=1.5, high=3.5)
         end_point = np.array((end_x + xy_noise[0], end_y + xy_noise[1], end_z))
 
         return start_point, end_point, start_quadrant

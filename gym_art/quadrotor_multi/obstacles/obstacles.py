@@ -9,7 +9,7 @@ class MultiObstacles:
         self.num_obstacles = num_obstacles
         self.room_dims = room_dims
         self.obst_shape = obst_shape
-        self.obstacle_size = obstacle_size
+        self.size = obstacle_size
         self.obstacle_radius = obstacle_size / 2.0
         self.pos_arr = []
         self.resolution = resolution
@@ -18,7 +18,7 @@ class MultiObstacles:
         self.pos_arr = copy.deepcopy(np.array(pos_arr))
 
         quads_sdf_obs = 100 * np.ones((len(quads_pos), 9))
-        quads_sdf_obs = get_surround_sdfs(quad_poses=quads_pos[:, :2], obst_poses=self.pos_arr,
+        quads_sdf_obs = get_surround_sdfs(quad_poses=quads_pos[:, :2], obst_poses=self.pos_arr[:, :2],
                                           quads_sdf_obs=quads_sdf_obs, obst_radius=self.obstacle_radius,
                                           resolution=self.resolution)
 
@@ -28,7 +28,7 @@ class MultiObstacles:
 
     def step(self, obs=None, quads_pos=None):
         quads_sdf_obs = 100 * np.ones((len(quads_pos), 9))
-        quads_sdf_obs = get_surround_sdfs(quad_poses=quads_pos[:, :2], obst_poses=self.pos_arr,
+        quads_sdf_obs = get_surround_sdfs(quad_poses=quads_pos[:, :2], obst_poses=self.pos_arr[:, :2],
                                           quads_sdf_obs=quads_sdf_obs, obst_radius=self.obstacle_radius,
                                           resolution=self.resolution)
 
@@ -37,10 +37,13 @@ class MultiObstacles:
         return obs
 
     def collision_detection(self, pos_quads=None):
-        quad_collisions = collision_detection(quad_poses=pos_quads[:, :2], obst_poses=self.pos_arr,
+        quad_collisions = collision_detection(quad_poses=pos_quads[:, :2], obst_poses=self.pos_arr[:, :2],
                                               obst_radius=self.obstacle_radius)
 
         collided_quads_id = np.where(quad_collisions > -1)[0]
         collided_obstacles_id = quad_collisions[collided_quads_id]
+        quad_obst_pair = {}
+        for i, key in enumerate(collided_quads_id):
+            quad_obst_pair[key] = int(collided_obstacles_id[i])
 
-        return collided_quads_id, collided_obstacles_id
+        return collided_quads_id, quad_obst_pair

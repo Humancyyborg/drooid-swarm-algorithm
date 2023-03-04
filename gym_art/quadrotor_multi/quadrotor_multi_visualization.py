@@ -200,21 +200,21 @@ class Quadrotor3DSceneMulti:
 
     def create_obstacles(self):
         import gym_art.quadrotor_multi.rendering3d as r3d
-        for item in self.obstacles.octree.pos_arr:
+        for item in self.obstacles.pos_arr:
             color = QUAD_COLOR[14]
             obst_height = self.room_dims[2]
             obstacle_transform = r3d.transform_and_color(np.eye(4), color, r3d.cylinder(
-                radius=self.obstacles.octree.size / 2.0, height=obst_height, sections=64))
+                radius=self.obstacles.size / 2.0, height=obst_height, sections=64))
 
             self.obstacle_transforms.append(obstacle_transform)
 
     def update_obstacles(self, obstacles):
         import gym_art.quadrotor_multi.rendering3d as r3d
 
-        if len(obstacles.octree.pos_arr) == 1:
+        if len(obstacles.pos_arr) == 1:
             return
 
-        for i, g in enumerate(obstacles.octree.pos_arr):
+        for i, g in enumerate(obstacles.pos_arr):
             # self.obstacle_transforms[i].set_transform(r3d.translate(g.pos))
             pos_update = [g[0], g[1], g[2] - self.room_dims[2] / 2]
 

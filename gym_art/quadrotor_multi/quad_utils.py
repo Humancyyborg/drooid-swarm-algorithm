@@ -420,10 +420,10 @@ def compute_new_vel(max_vel_magn, vel, vel_shift, coeff, low=0.2, high=0.8):
 
 
 @njit
-def compute_new_omega():
+def compute_new_omega(magn_scale=20.0):
     # Random forces for omega
     # This will amount to max 3.5 revolutions per second
-    omega_max = 20 * np.pi
+    omega_max = magn_scale * np.pi
     omega = np.random.uniform(-1, 1, size=(3,))
     omega_mag = np.linalg.norm(omega)
 
@@ -518,12 +518,17 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_pos, obstacle_size, col_
     vel_change = -vnew * collision_norm
 
     dyn_vel_shift = vel_change
+    change_flag = False
     for _ in range(3):
-        cons_rand_val = np.random.normal(loc=0, scale=0.8, size=3)
-        vel_noise = cons_rand_val + np.random.normal(loc=0, scale=0.15, size=3)
+        cons_rand_val = np.random.normal(loc=0, scale=0.1, size=3)
+        vel_noise = cons_rand_val + np.random.normal(loc=0, scale=0.05, size=3)
         dyn_vel_shift = vel_change + vel_noise
         if np.dot(drone_dyn.vel + dyn_vel_shift, collision_norm) > 0:
+            change_flag = True
             break
+
+    if change_flag is False:
+        dyn_vel_shift = np.zeros(3)
 
     max_vel_magn = np.linalg.norm(drone_dyn.vel)
     if np.linalg.norm(drone_dyn.pos - obstacle_pos) <= obstacle_size:
@@ -534,7 +539,7 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_pos, obstacle_size, col_
                                         coeff=col_coeff)
 
     # Random forces for omega
-    new_omega = compute_new_omega()
+    new_omega = compute_new_omega(magn_scale=1.0)
     drone_dyn.omega += new_omega * col_coeff
 
 
