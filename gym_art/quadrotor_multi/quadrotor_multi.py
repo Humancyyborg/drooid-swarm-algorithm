@@ -519,12 +519,12 @@ class QuadrotorEnvMulti(gym.Env):
                 dyn1, dyn2 = self.envs[val[0]].dynamics, self.envs[val[1]].dynamics
                 dyn1.vel, dyn1.omega, dyn2.vel, dyn2.omega = perform_collision_between_drones_numba(dyn1.pos, dyn1.vel, dyn1.omega,
                                                                                                     dyn2.pos, dyn2.vel, dyn2.omega)
-            if self.use_obstacles:
-                for val in obst_quad_col_matrix:
-                    perform_collision_with_obstacle(drone_dyn=self.envs[int(val)].dynamics,
-                                                    obstacle_pos=self.obstacles.closest_obstacle(self.pos[val]),
-                                                    obstacle_size=self.obstacle_size,
-                                                    col_coeff=self.rew_coeff["quadcol_obst_coeff"])
+            # if self.use_obstacles:
+            #     for val in obst_quad_col_matrix:
+            #         perform_collision_with_obstacle(drone_dyn=self.envs[int(val)].dynamics,
+            #                                         obstacle_pos=self.obstacles.closest_obstacle(self.pos[val]),
+            #                                         obstacle_size=self.obstacle_size,
+            #                                         col_coeff=self.rew_coeff["quadcol_obst_coeff"])
 
         apply_room_collision = self.simulate_collision_with_room(wall_crash_list, ceiling_crash_list)
 
