@@ -402,7 +402,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.pos[i, :] = self.envs[i].dynamics.pos
 
             if self.envs[i].time_remain < 5 * self.sim_freq / self.sim_steps:
-                self.distance_to_goal[i].append(-info["rewards"]["rewraw_pos"])
+                self.distance_to_goal[i].append(-info["rewards"]["rewraw_pos"] * self.sim_freq)
 
         # # Pre-set variables
         # dyn_positions = np.array([env.dynamics.pos for env in self.envs])
