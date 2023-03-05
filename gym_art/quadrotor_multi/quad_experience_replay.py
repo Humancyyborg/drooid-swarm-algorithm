@@ -125,8 +125,10 @@ class ExperienceReplayWrapper(gym.Wrapper):
                     else:
                         env, obs = self.episode_checkpoints[-steps_ago]
 
-                        env.envs[0].tick = self.env.envs[0].ep_len - 300
-                        self.env.envs[0].tick = self.env.envs[0].ep_len - 300
+                        time_remain = self.env.envs[0].ep_len - 300
+                        for i in range(len(self.env.envs)):
+                            env.envs[i].tick = time_remain
+                            self.env.envs[i].tick = time_remain
 
                         self.replay_buffer.write_cp_to_buffer(env, obs)
                         self.env.collision_occurred = False  # this allows us to add a copy of this episode to the buffer once again if another collision happens
