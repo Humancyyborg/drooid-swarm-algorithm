@@ -8,6 +8,7 @@ from scipy import spatial
 from copy import deepcopy
 
 EPS = 1e-5
+QUAD_RADIUS = 0.05
 
 QUAD_COLOR = (
     (1.0, 0.0, 0.0),  # red
@@ -419,10 +420,10 @@ def compute_new_vel(max_vel_magn, vel, vel_shift, coeff, low=0.2, high=0.8):
 
 
 @njit
-def compute_new_omega():
+def compute_new_omega(magn_scale=20.0):
     # Random forces for omega
     # This will amount to max 3.5 revolutions per second
-    omega_max = 20 * np.pi
+    omega_max = magn_scale * np.pi
     omega = np.random.uniform(-1, 1, size=(3,))
     omega_mag = np.linalg.norm(omega)
 
@@ -514,26 +515,30 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_pos, obstacle_size, col_
     # One that preserves momentum in opposite directions
     # Second that does not preserve momentum
     vnew, collision_norm = compute_col_norm_and_new_vel_obst(drone_dyn.pos, drone_dyn.vel, obstacle_pos)
-    vel_change = -vnew * collision_norm
+    vel_magn = np.linalg.norm(drone_dyn.vel)
+    new_vel = vel_magn * collision_norm
 
-    dyn_vel_shift = vel_change
-    for _ in range(3):
-        cons_rand_val = np.random.normal(loc=0, scale=0.8, size=3)
-        vel_noise = cons_rand_val + np.random.normal(loc=0, scale=0.15, size=3)
-        dyn_vel_shift = vel_change + vel_noise
-        if np.dot(drone_dyn.vel + dyn_vel_shift, collision_norm) > 0:
+    vel_noise = np.zeros(3)
+    for i in range(3):
+        cons_rand_val = np.random.normal(loc=0, scale=0.1, size=3)
+        tmp_vel_noise = cons_rand_val + np.random.normal(loc=0, scale=0.05, size=3)
+        if np.dot(new_vel + vel_noise, collision_norm) > 0:
+            vel_noise = tmp_vel_noise
             break
 
     max_vel_magn = np.linalg.norm(drone_dyn.vel)
-    if np.linalg.norm(drone_dyn.pos - obstacle_pos) <= obstacle_size:
-        drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel, vel_shift=dyn_vel_shift,
+    # In case drone that is inside the obstacle
+    if np.linalg.norm(drone_dyn.pos - obstacle_pos) < obstacle_size / 2:
+        drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel,
+                                        vel_shift=new_vel - drone_dyn.vel + vel_noise,
                                         coeff=col_coeff, low=1.0, high=1.0)
     else:
-        drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel, vel_shift=dyn_vel_shift,
+        drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel,
+                                        vel_shift=new_vel - drone_dyn.vel + vel_noise,
                                         coeff=col_coeff)
 
     # Random forces for omega
-    new_omega = compute_new_omega()
+    new_omega = compute_new_omega(magn_scale=1.0)
     drone_dyn.omega += new_omega * col_coeff
 
 

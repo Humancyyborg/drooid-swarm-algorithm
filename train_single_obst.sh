@@ -13,5 +13,5 @@ python -m swarm_rl.train \
 --normalize_input=False --normalize_returns=False --reward_clip=10 \
 --use_obstacles=True --quads_obstacle_size=0.6 --quads_obstacle_density=0.25 \
 --quads_obst_collision_smooth_max_penalty=0.0 --quads_obst_collision_reward=2.0 \
---room_dims 12 12 10
+--room_dims 12 12 10 \
 --experiment=obstacles_single
