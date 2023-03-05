@@ -9,7 +9,7 @@ _params = ParamGrid(
 )
 
 OBSTACLE_MODEL_CLI = QUAD_BASELINE_CLI_8 + (
-    '--train_for_env_steps=1000000000 --num_workers=36 --num_envs_per_worker=4 '
+    '--train_for_env_steps=1000000000 --num_workers=36 --num_envs_per_worker=8 '
     '--use_obstacles=True --quads_obstacle_density=0.25 --quads_obstacle_size=0.6 '
     '--quads_collision_obst_falloff_radius=3.0 '
     '--quads_obst_collision_smooth_max_penalty=0.0 '
