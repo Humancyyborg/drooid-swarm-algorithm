@@ -515,27 +515,26 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_pos, obstacle_size, col_
     # One that preserves momentum in opposite directions
     # Second that does not preserve momentum
     vnew, collision_norm = compute_col_norm_and_new_vel_obst(drone_dyn.pos, drone_dyn.vel, obstacle_pos)
-    vel_change = -vnew * collision_norm
+    vel_magn = np.linalg.norm(drone_dyn.vel)
+    new_vel = vel_magn * collision_norm
 
-    dyn_vel_shift = vel_change
-    change_flag = False
-    for _ in range(3):
+    vel_noise = np.zeros(3)
+    for i in range(3):
         cons_rand_val = np.random.normal(loc=0, scale=0.1, size=3)
-        vel_noise = cons_rand_val + np.random.normal(loc=0, scale=0.05, size=3)
-        dyn_vel_shift = vel_change + vel_noise
-        if np.dot(drone_dyn.vel + dyn_vel_shift, collision_norm) > 0:
-            change_flag = True
+        tmp_vel_noise = cons_rand_val + np.random.normal(loc=0, scale=0.05, size=3)
+        if np.dot(new_vel + vel_noise, collision_norm) > 0:
+            vel_noise = tmp_vel_noise
             break
 
-    if change_flag is False:
-        dyn_vel_shift = np.zeros(3)
-
     max_vel_magn = np.linalg.norm(drone_dyn.vel)
-    if np.linalg.norm(drone_dyn.pos - obstacle_pos) <= obstacle_size:
-        drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel, vel_shift=dyn_vel_shift,
+    # In case drone that is inside the obstacle
+    if np.linalg.norm(drone_dyn.pos - obstacle_pos) < obstacle_size / 2:
+        drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel,
+                                        vel_shift=new_vel - drone_dyn.vel + vel_noise,
                                         coeff=col_coeff, low=1.0, high=1.0)
     else:
-        drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel, vel_shift=dyn_vel_shift,
+        drone_dyn.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=drone_dyn.vel,
+                                        vel_shift=new_vel - drone_dyn.vel + vel_noise,
                                         coeff=col_coeff)
 
     # Random forces for omega

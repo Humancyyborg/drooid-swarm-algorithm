@@ -74,7 +74,8 @@ class Scenario_o_random(Scenario_o_base):
         self.update_formation_and_relate_param()
 
         if self.num_agents == 1:
-            self.formation_center = np.array((self.free_x[start_quadrant], self.free_y[start_quadrant], 2.0))
+            formation_z = np.random.uniform(low=1.5, high=3.5)
+            self.formation_center = np.array((self.free_x[start_quadrant], self.free_y[start_quadrant], formation_z))
         else:
             self.formation_center = np.array((0., 0., 2.))
         self.goals = copy.deepcopy(self.start_point)
