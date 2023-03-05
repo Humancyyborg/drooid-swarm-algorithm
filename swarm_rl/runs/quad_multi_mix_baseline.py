@@ -36,7 +36,8 @@ QUAD_BASELINE_CLI_8 = (
     '--quads_collision_reward=5.0 --quads_collision_smooth_max_penalty=10.0 '
     '--quads_neighbor_encoder_type=attention --replay_buffer_sample_prob=0.75 --save_milestones_sec=1800 '
     '--normalize_input=False --normalize_returns=False --reward_clip=10 '
-    '--anneal_collision_steps=300000000'
+    '--anneal_collision_steps=300000000 --with_wandb=True --wandb_project=curriculum --wandb_group=replay_buffer '
+    '--wandb_user=multi-drones'
 )
 
 # For scale, need to change
