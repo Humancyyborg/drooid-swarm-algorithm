@@ -613,7 +613,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         return floor_crash_list, wall_crash_list, ceiling_crash_list
 
-    def obst_generation_given_density(self, obst_area_length=6.0, obst_area_width=6.0, grid_size=1.0, density=0.2):
+    def obst_generation_given_density(self, obst_area_length=8.0, obst_area_width=8.0, grid_size=1.0, density=0.2):
         r, c = int(obst_area_length), int(obst_area_width)
         num_room_grids = r * c
 

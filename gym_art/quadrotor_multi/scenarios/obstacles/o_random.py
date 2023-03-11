@@ -86,7 +86,7 @@ class Scenario_o_random(Scenario_o_base):
         xy_noise = np.random.uniform(low=-0.2, high=0.2, size=2)
 
         x, y = self.free_space[idx][0], self.free_space[idx][1]
-        index = y + (6 * x)
+        index = y + (8 * x)
         pos_x, pos_y = self.cell_centers[index]
 
         return np.array([pos_x + xy_noise[0], pos_y + xy_noise[1], z_list_start])

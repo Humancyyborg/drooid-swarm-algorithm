@@ -1,6 +1,6 @@
 python -m swarm_rl.train \
 --env=quadrotor_multi --train_for_env_steps=1000000000 --algo=APPO --use_rnn=False \
---num_workers=12 --num_envs_per_worker=8 --learning_rate=0.0001 --ppo_clip_value=5.0 --recurrence=1 \
+--num_workers=16 --num_envs_per_worker=8 --learning_rate=0.0001 --ppo_clip_value=5.0 --recurrence=1 \
 --nonlinearity=tanh --actor_critic_share_weights=False --policy_initialization=xavier_uniform \
 --adaptive_stddev=False --with_vtrace=False --max_policy_lag=100000000 --rnn_size=256 \
 --gae_lambda=1.00 --max_grad_norm=5.0 --exploration_loss_coeff=0.0 --rollout=128 --batch_size=1024 \
@@ -11,7 +11,6 @@ python -m swarm_rl.train \
 --quads_local_obs=-1 --quads_num_agents=1 \
 --replay_buffer_sample_prob=0 --anneal_collision_steps=0 --save_milestones_sec=1800 \
 --normalize_input=False --normalize_returns=False --reward_clip=10 \
---use_obstacles=True --quads_obstacle_size=0.6 --quads_obstacle_density=0.25 \
+--use_obstacles=True --quads_obstacle_size=0.6 --quads_obstacle_density=0.2 \
 --quads_obst_collision_smooth_max_penalty=0.0 --quads_obst_collision_reward=2.0 \
---room_dims 12 12 10 \
---experiment=obstacles_single
+--experiment=obstacles_single_large_model
