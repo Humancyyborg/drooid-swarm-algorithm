@@ -21,7 +21,7 @@ PAGE_WIDTH_INCHES = 8.2
 FULL_PAGE_WIDTH = 1.4 * PAGE_WIDTH_INCHES
 HALF_PAGE_WIDTH = FULL_PAGE_WIDTH / 2
 
-plt.rcParams['figure.figsize'] = (HALF_PAGE_WIDTH, 3.5)  # (2.5, 2.0) 7.5， 4
+plt.rcParams['figure.figsize'] = (FULL_PAGE_WIDTH, 3.5)  # (2.5, 2.0) 7.5， 4
 plt.rcParams["axes.formatter.limits"] = [-1, 1]
 
 NUM_AGENTS = 8
@@ -32,17 +32,23 @@ COLLISIONS_SCALE = ((TIME_METRIC_COLLISION/EPISODE_DURATION) / NUM_AGENTS) * 2  
 CRASH_GROUND_SCALE = (-1.0 / EPISODE_DURATION)
 
 PLOTS = [
+    dict(key='0_aux/avg_reward', name='Total reward', label='Avg. episode reward'),
     dict(key='0_aux/avg_rewraw_pos', name='Avg. distance to the target', label='Avg. distance, meters', coeff=-1.0/EPISODE_DURATION, logscale=True, clip_min=0.2, y_scale_formater=[0.2, 0.5, 1.0, 2.0]),
-    dict(key='0_aux/avg_num_collisions_Scenario_ep_rand_bezier', name='Avg. collisions for pursuit evasion (bezier)', label='Number of collisions', logscale=True, coeff=COLLISIONS_SCALE, clip_min=0.05),
-    dict(key='0_aux/avg_num_collisions_after_settle', name='Avg. collisions between drones per minute', label='Number of collisions', logscale=True, coeff=COLLISIONS_SCALE, clip_min=0.05),
-    dict(key='0_aux/avg_num_collisions_Scenario_static_same_goal', name='Avg. collisions for static same goal', label='Number of collisions', logscale=True, coeff=COLLISIONS_SCALE, clip_min=0.05),
+    dict(key='0_aux/avg_rewraw_crash', name='Time in the air', label='Fraction of the episode in the air', coeff=CRASH_GROUND_SCALE, mutate=lambda y: 1 - y, clip_max=1.0),
+    # dict(key='0_aux/avg_num_collisions_after_settle', name='Avg. collisions between quadrotors',
+    #      label='Number of collisions / min', logscale=True, coeff=COLLISIONS_SCALE, clip_min=0.05),
+    # dict(key='0_aux/avg_num_collisions_Scenario_ep_rand_bezier', name='Avg. collisions for pursuit evasion', label='Number of collisions / min', logscale=True, coeff=COLLISIONS_SCALE, clip_min=0.05),
+    # dict(key='0_aux/avg_num_collisions_Scenario_static_same_goal', name='Avg. collisions for static same goal', label='Number of collisions / min', logscale=True, coeff=COLLISIONS_SCALE, clip_min=0.05),
+
 ]
 
 PLOT_STEP = int(5e6)
 TOTAL_STEP = int(1e9+10000)
 
 # 'blue': '#1F77B4', 'orange': '#FF7F0E', 'green': '#2CA02C', 'red': '#d70000'
-COLOR = ['#1F77B4', '#FF7F0E', '#2CA02C', '#d70000']
+LINESTYLE = ['solid', 'dotted', 'dashed', 'dashdot']
+# COLOR = ['#1F77B4', '#FF7F0E', '#2CA02C', '#d70000']
+COLOR = ['tab:blue', 'tab:orange', 'tab:red', 'tab:purple']
 
 
 def extract(experiments):
@@ -148,8 +154,8 @@ def plot(index, interpolated_key, ax, legend_name, group_id):
     # set title
     title_text = params['name']
     ax.set_title(title_text, fontsize=8)
-    if index >= 2:
-        ax.set_xlabel('Simulation steps')
+    # if index >= 2:
+    ax.set_xlabel('Simulation steps')
 
     x, y = interpolated_key
     y_np = [np.array(yi) for yi in y]
@@ -229,7 +235,7 @@ def plot(index, interpolated_key, ax, legend_name, group_id):
 
     lw = 1.0
     ax.fill_between(x, y_minus_std, y_plus_std, color=COLOR[group_id], alpha=0.25, antialiased=True, linewidth=0.0)
-    ax.plot(x, y_mean, color=COLOR[group_id], label=legend_name, linewidth=lw, antialiased=True)
+    ax.plot(x, y_mean, color=COLOR[group_id], linestyle=LINESTYLE[group_id], label=legend_name, linewidth=lw, antialiased=True)
     # ax.legend()
 
 def hide_tick_spine(ax):
@@ -252,7 +258,7 @@ def main():
         raise argparse.ArgumentTypeError('Parameter {} is not a valid path'.format(path))
 
     subpaths = sorted(os.listdir(path))
-    legend_name = sorted(["ATTENTION", "DEEPSETS", "MLP"])
+    legend_name = sorted(["ATTENTION", "DEEPSETS", "MLP", "BLIND"])
     all_experiment_dirs = {}
     for subpath in subpaths:
         if subpath not in all_experiment_dirs:
@@ -265,21 +271,23 @@ def main():
     if args.output not in ['summary', 'csv']:
         raise argparse.ArgumentTypeError("Parameter {} is not summary or csv".format(args.output))
 
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
-    ax = (ax1, ax2, ax3, ax4)
-    for i in range(len(all_experiment_dirs)):
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
+    ax = (ax1, ax2, ax3)
+    idx = [1, 3, 2, 0]
+    for id in range(len(all_experiment_dirs)):
+        i = idx[id]
         aggregate(path, subpaths[i], all_experiment_dirs[subpaths[i]], ax, legend_name[i], i)
 
         # if i != 0:
     handles, labels = ax[-1].get_legend_handles_labels()
-    lgd = fig.legend(handles, labels, bbox_to_anchor=(0.15, 0.85, 0.8, 0.2), loc='upper left', ncol=3, mode="expand", prop={'size': 6})
+    lgd = fig.legend(handles, labels, bbox_to_anchor=(0.1, 0.9, 0.8, 0.2), loc='upper left', ncol=4, mode="expand", prop={'size': 8})
     lgd.set_in_layout(True)
 
     plt.tight_layout(pad=1.0)
-    plt.subplots_adjust(wspace=0.25, hspace=0.3)
+    plt.subplots_adjust(wspace=0.15, hspace=0.3)
     # plt.margins(0, 0)
 
-    plt.savefig(os.path.join(os.getcwd(), f'../final_plots/quads_compare_arch.pdf'), format='pdf', bbox_inches='tight', pad_inches=0.01)
+    plt.savefig(os.path.join(os.getcwd(), f'final_plots/quads_compare_arch.pdf'), format='pdf', bbox_inches='tight', pad_inches=0.01)
 
     return 0
 

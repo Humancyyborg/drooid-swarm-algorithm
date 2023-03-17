@@ -123,7 +123,7 @@ def aggregate(path, subpath, experiments, ax, legend_name, group_id):
     print("Started aggregation {}".format(path / subpath))
 
     curr_dir = os.path.dirname(os.path.abspath(__file__))
-    cache_dir = join(curr_dir, 'cache')
+    cache_dir = join(curr_dir, 'cache_part1')
     cache_env = join(cache_dir, subpath)
 
     if os.path.isdir(cache_env):
