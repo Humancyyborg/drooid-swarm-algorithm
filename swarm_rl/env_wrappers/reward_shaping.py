@@ -92,14 +92,8 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface):
 
                 if hasattr(self.env.unwrapped, 'scenario') and self.env.unwrapped.scenario:
                     scenario_name = self.env.unwrapped.scenario.name()
-                    for rew_key in ['rew_pos', 'rewraw_pos', 'rew_crash', 'rewraw_crash']:
-                        extra_stats[f'{rew_key}_{scenario_name}'] = self.cumulative_rewards[i][rew_key]
-
-                    # Track drone's distance to goal in the last 1s, 3s, 5s
-                    if 'distance_to_goal_5s' in extra_stats:
-                        extra_stats[f'distance_to_goal_5s_{scenario_name}'] = extra_stats['distance_to_goal_5s']
-                        extra_stats[f'distance_to_goal_3s_{scenario_name}'] = extra_stats['distance_to_goal_3s']
-                        extra_stats[f'distance_to_goal_1s_{scenario_name}'] = extra_stats['distance_to_goal_1s']
+                    for rew_key in ['rew_pos', 'rew_crash']:
+                        extra_stats[f'{scenario_name}/{rew_key}'] = self.cumulative_rewards[i][rew_key]
 
                 episode_actions = np.array(self.episode_actions)
                 episode_actions = episode_actions.transpose()

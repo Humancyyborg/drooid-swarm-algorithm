@@ -554,20 +554,28 @@ class QuadrotorEnvMulti(gym.Env):
                         'num_collisions_with_ceiling': self.collisions_ceiling_per_episode,
                         'num_collisions_after_settle': self.collisions_after_settle,
 
-                        f'num_collisions_{self.scenario.name()}': self.collisions_after_settle,
+                        f'{self.scenario.name()}/num_collisions': self.collisions_after_settle,
 
                         'distance_to_goal_1s': (1.0 / self.envs[0].dt) * np.mean(
                             self.distance_to_goal[i, int(-1 * self.control_freq):]),
                         'distance_to_goal_3s': (1.0 / self.envs[0].dt) * np.mean(
                             self.distance_to_goal[i, int(-3 * self.control_freq):]),
                         'distance_to_goal_5s': (1.0 / self.envs[0].dt) * np.mean(
+                            self.distance_to_goal[i, int(-5 * self.control_freq):]),
+
+                        f'{self.scenario.name()}/distance_to_goal_1s': (1.0 / self.envs[0].dt) * np.mean(
+                            self.distance_to_goal[i, int(-1 * self.control_freq):]),
+                        f'{self.scenario.name()}/distance_to_goal_3s': (1.0 / self.envs[0].dt) * np.mean(
+                            self.distance_to_goal[i, int(-3 * self.control_freq):]),
+                        f'{self.scenario.name()}/distance_to_goal_5s': (1.0 / self.envs[0].dt) * np.mean(
                             self.distance_to_goal[i, int(-5 * self.control_freq):])
                     }
 
                     if self.use_obstacles:
                         infos[i]['episode_extra_stats']['num_collisions_obst_quad'] = \
                             self.obst_quad_collisions_per_episode
-                        infos[i]['episode_extra_stats'][f'num_collisions_obst_{self.scenario.name()}'] = \
+
+                        infos[i]['episode_extra_stats'][f'{self.scenario.name()}/num_collisions_obst'] = \
                             self.obst_quad_collisions_per_episode
 
             obs = self.reset()
