@@ -4,17 +4,15 @@ from gym_art.quadrotor_multi.scenarios.base import QuadrotorScenario
 
 
 class Scenario_run_away(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
-                 quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
-                         quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims):
+        super().__init__(quads_mode, envs, num_agents, room_dims)
 
     def update_goals(self):
         self.goals = self.generate_goals(self.num_agents, self.formation_center, layer_dist=self.layer_dist)
         for env, goal in zip(self.envs, self.goals):
             env.goal = goal
 
-    def step(self, infos, rewards):
+    def step(self):
         tick = self.envs[0].tick
         control_step_for_sec = int(1.0 * self.envs[0].control_freq)
 
@@ -25,7 +23,7 @@ class Scenario_run_away(QuadrotorScenario):
             self.envs[0].goal = self.goals[0]
             self.envs[1].goal = self.goals[1]
 
-        return infos, rewards
+        return
 
     def reset(self):
         # Reset formation and related parameters

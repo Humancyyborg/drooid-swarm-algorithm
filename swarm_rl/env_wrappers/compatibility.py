@@ -4,6 +4,7 @@ import gym
 from gym.core import ObsType
 from gym.utils.step_api_compatibility import convert_to_terminated_truncated_step_api
 
+
 # Wrapper for compatibility with gym 0.26
 # Mostly copied from gym.EnvCompatability
 # Modified since swarm_rl does not have a seed, and is a vectorized env
@@ -43,9 +44,9 @@ class QuadEnvCompatibility(gym.Wrapper):
         """
         obs, reward, done, info = self.env.step(action)
 
-        #convert_to_terminated_truncated_step_api treats done as an iterable if info is a dictionary, fails if it not iterable
+        # convert_to_terminated_truncated_step_api treats done as an iterable if info is a dictionary, fails if it not iterable
         if isinstance(info, dict) and isinstance(done, bool):
-                done = [done]
+            done = [done]
 
         return convert_to_terminated_truncated_step_api((obs, reward, done, info), is_vector_env=True)
 

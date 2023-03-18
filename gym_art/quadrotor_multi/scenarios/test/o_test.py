@@ -4,10 +4,8 @@ from gym_art.quadrotor_multi.scenarios.base import QuadrotorScenario
 
 
 class Scenario_o_test(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
-                 quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
-                         quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims):
+        super().__init__(quads_mode, envs, num_agents, room_dims)
         self.start_point = np.array([0.0, -3.0, 2.0])
         self.end_point = np.array([0.0, 3.0, 2.0])
         self.room_dims = room_dims
@@ -28,11 +26,11 @@ class Scenario_o_test(QuadrotorScenario):
 
         return np.array([x, y, z])
 
-    def step(self, infos, rewards):
+    def step(self):
         tick = self.envs[0].tick
 
         if tick <= int(self.duration_time * self.envs[0].control_freq):
-            return infos, rewards
+            return
 
         self.duration_time += self.envs[0].ep_time + 1
         self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.end_point, layer_dist=0.0)
@@ -40,7 +38,7 @@ class Scenario_o_test(QuadrotorScenario):
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
 
-        return infos, rewards
+        return
 
     def reset(self):
         self.start_point = np.array([0.0, 3.0, 2.0])

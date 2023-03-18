@@ -5,10 +5,9 @@ from gym_art.quadrotor_multi.scenarios.obstacles.o_base import Scenario_o_base
 
 
 class Scenario_o_random(Scenario_o_base):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
-                 quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
-                         quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims):
+        super().__init__(quads_mode, envs, num_agents, room_dims)
+
         self.free_x = [-self.room_dims[0] / 2 + 2, self.room_dims[0] / 2 - 2,
                        -self.room_dims[0] / 2 + 2, self.room_dims[0] / 2 - 2]
 
@@ -18,17 +17,17 @@ class Scenario_o_random(Scenario_o_base):
     def update_formation_size(self, new_formation_size):
         pass
 
-    def step(self, infos, rewards):
+    def step(self):
         tick = self.envs[0].tick
 
         if tick <= int(self.duration_time * self.envs[0].control_freq):
-            return infos, rewards
+            return
 
         self.duration_time += self.envs[0].ep_time + 1
         for i, env in enumerate(self.envs):
             env.goal = self.end_point[i]
 
-        return infos, rewards
+        return
 
     def single_agent_start_end_point(self):
         start_quadrant = np.random.randint(low=0, high=4)

@@ -6,7 +6,7 @@ from gym_art.quadrotor_multi.quad_experience_replay import ExperienceReplayWrapp
 from gym_art.quadrotor_multi.quadrotor_multi import QuadrotorEnvMulti
 
 
-def create_env(num_agents, use_numba=False, use_replay_buffer=False, episode_duration=7, local_obs=-1):
+def create_env(num_agents, use_numba=False, use_replay_buffer=False, episode_duration=7):
     quad = 'Crazyflie'
     dyn_randomize_every = dyn_randomization_ratio = None
 
@@ -26,11 +26,10 @@ def create_env(num_agents, use_numba=False, use_replay_buffer=False, episode_dur
         num_agents=num_agents,
         dynamics_params=quad, raw_control=raw_control, raw_control_zero_middle=raw_control_zero_middle,
         dynamics_randomize_every=dyn_randomize_every, dynamics_change=dynamics_change, dyn_sampler_1=sampler_1,
-        sense_noise=sense_noise, init_random_state=True, ep_time=episode_duration, quads_use_numba=use_numba,
-        use_replay_buffer=use_replay_buffer,
-        swarm_obs="pos_vel_goals_ndist_gdist",
-        local_obs=local_obs,
+        sense_noise=sense_noise, init_random_state=True, ep_time=episode_duration, use_numba=use_numba,
+        use_replay_buffer=use_replay_buffer, neighbor_obs_type="pos_vel", neighbor_visible_num=-1,
     )
+
     return env
 
 

@@ -21,6 +21,7 @@ import argparse
 import logging
 import sys
 import time
+import copy
 
 import gym_art.quadrotor_multi.get_state as get_state
 import gym_art.quadrotor_multi.quadrotor_randomization as quad_rand
@@ -33,7 +34,6 @@ import transforms3d as t3d
 from gym.utils import seeding
 from gym_art.quadrotor_multi.inertia import QuadLink, QuadLinkSimplified
 from gym_art.quadrotor_multi.quadrotor_control import *
-from gym_art.quadrotor_multi.quadrotor_visualization import *
 from gym_art.quadrotor_multi.sensor_noise import SensorNoise
 from gym_art.quadrotor_multi.numba_utils import *
 
@@ -730,16 +730,6 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
     cost_crash_raw = float(on_floor)
     cost_crash = rew_coeff["crash"] * cost_crash_raw
 
-    # Loss for hitting the room
-    cost_crash_floor_raw = float(crashed_floor)
-    cost_crash_floor = rew_coeff["crash_room"] * cost_crash_floor_raw
-
-    cost_crash_wall_raw = float(crashed_wall)
-    cost_crash_wall = rew_coeff["crash_room"] * cost_crash_wall_raw
-
-    cost_crash_ceiling_raw = float(crashed_ceiling)
-    cost_crash_ceiling = rew_coeff["crash_room"] * cost_crash_ceiling_raw
-
     reward = -dt * np.sum([
         cost_pos,
         cost_effort,
@@ -751,9 +741,6 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
         cost_spin,
         cost_act_change,
         cost_vel,
-        cost_crash_floor,
-        cost_crash_wall,
-        cost_crash_ceiling,
     ])
 
     rew_info = {
@@ -768,9 +755,6 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
         "rew_spin": -cost_spin,
         "rew_act_change": -cost_act_change,
         "rew_vel": -cost_vel,
-        'rew_crash_floor': -cost_crash_floor,
-        'rew_crash_wall': -cost_crash_wall,
-        'rew_crash_ceiling': -cost_crash_ceiling,
 
         "rewraw_main": -cost_pos_raw,
         'rewraw_pos': -cost_pos_raw,
@@ -783,9 +767,6 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
         "rewraw_spin": -cost_spin_raw,
         "rewraw_act_change": -cost_act_change_raw,
         "rewraw_vel": -cost_vel_raw,
-        "rewraw_crash_floor_raw": -cost_crash_floor_raw,
-        "rewraw_crash_wall_raw": -cost_crash_wall_raw,
-        "rewraw_crash_ceiling_raw": -cost_crash_ceiling_raw,
     }
 
     # report rewards in the same format as they are added to the actual agent's reward (easier to debug this way)
@@ -815,13 +796,11 @@ class QuadrotorSingle:
     def __init__(self, dynamics_params="DefaultQuad", dynamics_change=None,
                  dynamics_randomize_every=None, dyn_sampler_1=None, dyn_sampler_2=None,
                  raw_control=True, raw_control_zero_middle=True, dim_mode='3D', tf_control=False, sim_freq=200.,
-                 sim_steps=2,
-                 obs_repr="xyz_vxyz_R_omega", ep_time=7, room_length=10, room_width=10, room_height=10,
-                 init_random_state=False,
-                 rew_coeff=None, sense_noise=None, verbose=False, gravity=GRAV,
+                 sim_steps=2, obs_repr="xyz_vxyz_R_omega", ep_time=7, room_dims=(10.0, 10.0, 10.0),
+                 init_random_state=False, rew_coeff=None, sense_noise=None, verbose=False, gravity=GRAV,
                  t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False,
-                 swarm_obs='none', num_agents=1,
-                 view_mode='local', num_use_neighbor_obs=0, use_obstacles=False):
+                 neighbor_obs_type='none', num_agents=1,
+                 view_mode='local', num_use_neighbor_obs=0, use_obstacles=False, obst_obs_type='none'):
         np.seterr(under='ignore')
         """
         Args:
@@ -844,7 +823,6 @@ class QuadrotorSingle:
             sim_steps: [int] how many simulation steps for each control step
             obs_repr: [str] options: xyz_vxyz_rot_omega, xyz_vxyz_quat_omega
             ep_time: [float] episode time in simulated seconds. This parameter is used to compute env max time length in steps.
-            room_size: [int] env room size. Not the same as the initialization box to allow shorter episodes
             init_random_state: [bool] use random state initialization or horizontal initialization with 0 velocities
             rew_coeff: [dict] weights for different reward components (see compute_weighted_reward() function)
             sens_noise (dict or str): sensor noise parameters. If None - no noise. If "default" then the default params are loaded. Otherwise one can provide specific params.
@@ -852,10 +830,9 @@ class QuadrotorSingle:
         """
         ## ARGS
         self.init_random_state = init_random_state
-        self.room_length = room_length
-        self.room_width = room_width
-        self.room_height = room_height
-        self.room_size = room_length * room_width * room_height
+        self.room_length = room_dims[0]
+        self.room_width = room_dims[1]
+        self.room_height = room_dims[2]
         self.obs_repr = obs_repr
         self.sim_steps = sim_steps
         self.dim_mode = dim_mode
@@ -867,10 +844,10 @@ class QuadrotorSingle:
         self.use_numba = use_numba
         self.update_sense_noise(sense_noise=sense_noise)
         self.gravity = gravity
-        self.swarm_obs = swarm_obs
         self.num_use_neighbor_obs = num_use_neighbor_obs
         self.num_agents = num_agents
         self.use_obstacles = use_obstacles
+
         ## t2w and t2t ranges
         self.t2w_std = t2w_std
         self.t2w_min = 1.5
@@ -880,6 +857,7 @@ class QuadrotorSingle:
         self.t2t_min = 0.005
         self.t2t_max = 1.0
         self.excite = excite
+
         ## dynmaics simplification
         self.dynamics_simplification = dynamics_simplification
         ## PARAMS
@@ -888,6 +866,9 @@ class QuadrotorSingle:
         # self.pitch_max = 1. #rad
         # self.roll_max = 1.  #rad
         # self.yaw_max = np.pi   #rad
+
+        # Neighbor
+        self.neighbor_obs_type = neighbor_obs_type
 
         self.room_box = np.array(
             [[-self.room_length / 2., -self.room_width / 2, 0.],
@@ -957,6 +938,8 @@ class QuadrotorSingle:
         ###############################################################################
         ## OBSERVATIONS
         self.observation_space = self.make_observation_space()
+        self.obst_obs_type = obst_obs_type
+        self.obs_space_low_high = None
 
         ################################################################################
         ## DIMENSIONALITY
@@ -973,13 +956,13 @@ class QuadrotorSingle:
         # TODO get this from a wrapper
         self.ep_time = ep_time  # In seconds
         self.dt = 1.0 / sim_freq
-        self.metadata["video.frames_per_second"] = sim_freq / self.sim_steps
+        self.metadata["video.frames_per_second"] = int(sim_freq / self.sim_steps)
         self.ep_len = int(self.ep_time / (self.dt * self.sim_steps))
         self.tick = 0
         self.crashed = False
         self.control_freq = sim_freq / sim_steps
 
-        self.rew_coeff = None  # provided by the parent multi_env
+        self.rew_coeff = rew_coeff  # provided by the parent multi_env
 
         #########################################
         self._seed()
@@ -993,13 +976,6 @@ class QuadrotorSingle:
             self.dynamics_params_converted = copy.deepcopy(self.dynamics_params)
             walk_dict(self.dynamics_params_converted, numpy_convert)
             yaml_file.write(yaml.dump(self.dynamics_params_converted, default_flow_style=False))
-
-    def update_env(self, room_length, room_width, room_height):
-        self.room_length, self.room_width, self.room_height = room_length, room_width, room_height
-        self.room_box = np.array(
-            [[-self.room_length / 2., -self.room_width / 2., 0.],
-             [self.room_length / 2., self.room_width / 2., self.room_height]])  # diagonal coordinates of box (?)
-        self.dynamics.room_box = self.room_box
 
     def update_sense_noise(self, sense_noise):
         if isinstance(sense_noise, dict):
@@ -1057,9 +1033,7 @@ class QuadrotorSingle:
         self.state_vector = getattr(get_state, "state_" + self.obs_repr)
 
     def make_observation_space(self):
-        self.wall_offset = 0.3
         room_range = self.room_box[1] - self.room_box[0]
-        room_max_dist = np.linalg.norm(self.room_box[1] - self.room_box[0]) * np.ones(1)
         self.obs_space_low_high = {
             "xyz": [-room_range, room_range],
             "xyzr": [-room_range, room_range],
@@ -1081,29 +1055,18 @@ class QuadrotorSingle:
             "rovxyz": [-20.0 * np.ones(3), 20.0 * np.ones(3)],
             # rovxyz stands for relative velocity between quadrotor and obstacle
             "osize": [np.zeros(3), 20.0 * np.ones(3)],  # obstacle size, [[0., 0., 0.], [20., 20., 20.]]
-            "otype": [np.zeros(1), 20.0 * np.ones(1)],
             # obstacle type, [[0.], [20.]], which means we can support 21 types of obstacles
-            "goal": [-room_range, room_range],
-            "nbr_dist": [np.zeros(1), room_max_dist],
-            "nbr_goal_dist": [np.zeros(1), room_max_dist],
             "wall": [np.zeros(6), 5.0 * np.ones(6)],
             "floor": [0. * np.ones(1), self.room_box[1][2] * np.ones(1)],
-            "octmap": [-10 * np.ones(9), 10 * np.ones(9)],
+            "octomap_2d": [-10 * np.ones(9), 10 * np.ones(9)],
         }
-        self.obs_comp_names = list(self.obs_space_low_high.keys())
-        self.obs_comp_sizes = [self.obs_space_low_high[name][1].size for name in self.obs_comp_names]
 
         obs_comps = self.obs_repr.split("_")
-        if self.swarm_obs == 'pos_vel' and self.num_agents > 1:
+        if self.neighbor_obs_type == 'pos_vel' and self.num_use_neighbor_obs > 0:
             obs_comps = obs_comps + (['rxyz'] + ['rvxyz']) * self.num_use_neighbor_obs
-        elif self.swarm_obs == 'pos_vel_goals' and self.num_agents > 1:
-            obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['goal']) * self.num_use_neighbor_obs
-        elif self.swarm_obs == 'pos_vel_goals_ndist_gdist' and self.num_agents > 1:
-            obs_comps = obs_comps + (
-                    ['rxyz'] + ['rvxyz'] + ['goal'] + ['nbr_dist'] + ['nbr_goal_dist']) * self.num_use_neighbor_obs
-
         if self.use_obstacles:
-            obs_comps = obs_comps + ["octmap"]
+            if self.obst_obs_type == "octomap_2d":
+                obs_comps = obs_comps + ["octomap_2d"]
 
         print("Observation components:", obs_comps)
         obs_low, obs_high = [], []
@@ -1113,16 +1076,8 @@ class QuadrotorSingle:
         obs_low = np.concatenate(obs_low)
         obs_high = np.concatenate(obs_high)
 
-        self.obs_comp_sizes_dict, self.obs_space_comp_indx, self.obs_comp_end = {}, {}, []
-        end_indx = 0
-        for obs_i, obs_name in enumerate(self.obs_comp_names):
-            end_indx += self.obs_comp_sizes[obs_i]
-            self.obs_comp_sizes_dict[obs_name] = self.obs_comp_sizes[obs_i]
-            self.obs_space_comp_indx[obs_name] = obs_i
-            self.obs_comp_end.append(end_indx)
-
-        self.observation_space = spaces.Box(obs_low, obs_high, dtype=np.float32)
-        return self.observation_space
+        observation_space = spaces.Box(obs_low, obs_high, dtype=np.float32)
+        return observation_space
 
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -1131,18 +1086,12 @@ class QuadrotorSingle:
     def _step(self, action):
         self.actions[1] = copy.deepcopy(self.actions[0])
         self.actions[0] = copy.deepcopy(action)
-        # print('actions_norm: ', np.linalg.norm(self.actions[0]-self.actions[1]))
 
-        # if not self.crashed:
-        # print('goal: ', self.goal, 'goal_type: ', type(self.goal))
         self.controller.step_func(dynamics=self.dynamics,
                                   action=action,
                                   goal=self.goal,
                                   dt=self.dt,
-                                  # observation=np.expand_dims(self.state_vector(self), axis=0))
-                                  observation=None)  # assuming we aren't using observations in step function
-        # self.oracle.step(self.dynamics, self.goal, self.dt)
-        # self.scene.update_state(self.dynamics, self.goal)
+                                  observation=None)
 
         self.crashed_floor = self.dynamics.crashed_floor
         self.crashed_wall = self.dynamics.crashed_wall
@@ -1153,17 +1102,13 @@ class QuadrotorSingle:
                                                    rew_coeff=self.rew_coeff, action_prev=self.actions[1],
                                                    on_floor=self.dynamics.on_floor
                                                    )
-        # if self.dynamics.crashed_floor:
-        #     self.dynamics.crashed_floor = False
 
         self.tick += 1
-        done = self.tick > self.ep_len  # or self.crashed
+        done = self.tick > self.ep_len
         sv = self.state_vector(self)
 
         self.traj_count += int(done)
 
-        ## TODO: OPTIMIZATION: sv_comp should be a dictionary formed when state() function is called
-        sv_comp = np.split(sv, self.obs_comp_end[:-1], axis=0)
         obs_comp = {
             "xyz": [self.dynamics.pos],
             "vxyz": [self.dynamics.vel],
@@ -1198,7 +1143,6 @@ class QuadrotorSingle:
             "dt": [self.dt * self.sim_steps],
         }
 
-        # print(sv, obs_comp, dyn_params, self.obs_comp_sizes)      
         return sv, reward, done, {'rewards': rew_info, "obs_comp": obs_comp, "dyn_params": dyn_params}
 
     def resample_dynamics(self):
