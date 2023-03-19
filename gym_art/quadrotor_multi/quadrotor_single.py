@@ -19,6 +19,7 @@ References:
 """
 import copy
 import logging
+import time
 
 import gym_art.quadrotor_multi.get_state as get_state
 import gym_art.quadrotor_multi.quadrotor_randomization as quad_rand
@@ -41,23 +42,6 @@ EPS = 1e-6  # small constant to avoid divisions by 0 and log(0)
 # WARN:
 # - linearity is set to 1 always, by means of check_quad_param_limits().
 # The def. value of linarity for CF is set to 1 as well (due to firmware nonlinearity compensation)
-
-def random_state(box, vel_max=15.0, omega_max=2 * np.pi):
-    box = np.array(box)
-    pos = np.random.uniform(low=-box, high=box, size=(3,))
-
-    vel = np.random.uniform(low=-vel_max, high=vel_max, size=(3,))
-    vel_magn = np.random.uniform(low=0., high=vel_max)
-    vel = vel_magn / (np.linalg.norm(vel) + EPS) * vel
-
-    omega = np.random.uniform(low=-omega_max, high=omega_max, size=(3,))
-    omega_magn = np.random.uniform(low=0., high=omega_max)
-    omega = omega_magn / (np.linalg.norm(omega) + EPS) * omega
-
-    rot = rand_uniform_rot3d()
-    return pos, vel, rot, omega
-
-
 class QuadrotorDynamics:
     """
     Simple simulation of quadrotor dynamics.
@@ -78,6 +62,9 @@ class QuadrotorDynamics:
 
     def __init__(self, model_params, room_box=None, dynamics_steps_num=1, dt=0.005, dim_mode="3D", gravity=GRAV,
                  dynamics_simplification=False, use_numba=False):
+
+        # Numba
+        self.use_numba = use_numba
 
         # Dynamics
         self.pos = None
@@ -181,8 +168,21 @@ class QuadrotorDynamics:
         self.crashed_ceiling = False
         self.crashed_floor = False
 
-        # # Numba
-        self.use_numba = use_numba
+    @staticmethod
+    def random_state(box, vel_max=15.0, omega_max=2 * np.pi):
+        box = np.array(box)
+        pos = np.random.uniform(low=-box, high=box, size=(3,))
+
+        vel = np.random.uniform(low=-vel_max, high=vel_max, size=(3,))
+        vel_magn = np.random.uniform(low=0., high=vel_max)
+        vel = vel_magn / (np.linalg.norm(vel) + EPS) * vel
+
+        omega = np.random.uniform(low=-omega_max, high=omega_max, size=(3,))
+        omega_magn = np.random.uniform(low=0., high=omega_max)
+        omega = omega_magn / (np.linalg.norm(omega) + EPS) * omega
+
+        rot = rand_uniform_rot3d()
+        return pos, vel, rot, omega
 
     @staticmethod
     def angvel2thrust(w, linearity=0.424):
@@ -697,7 +697,23 @@ class QuadrotorSingle:
                 If "default" then the default params are loaded. Otherwise one can provide specific params.
             excite: [bool] change the setpoint at the fixed frequency to perturb the quad
         """
+        # Numba Speed Up
+        self.use_numba = use_numba
+
         # Params
+        self.obs_repr = obs_repr
+        self.obst_obs_type = obst_obs_type
+        self.obs_space_low_high = None
+
+        # Neighbor
+        self.num_agents = num_agents
+        self.num_use_neighbor_obs = num_use_neighbor_obs
+        self.neighbor_obs_type = neighbor_obs_type
+
+        # Goal
+        self.goal = None
+
+        # Dynamics Parameters
         self.gravity = gravity
         # t2w and t2t ranges
         self.t2w_std = t2w_std
@@ -764,6 +780,23 @@ class QuadrotorSingle:
             self.dyn_sampler_2 = getattr(quad_rand, sampler_type)(params=self.dynamics_params,
                                                                   **self.dyn_sampler_2_params)
 
+        # Room
+        self.room_length = room_dims[0]
+        self.room_width = room_dims[1]
+        self.room_height = room_dims[2]
+        self.room_box = np.array(
+            [[-self.room_length / 2., -self.room_width / 2, 0.],
+             [self.room_length / 2., self.room_width / 2., self.room_height]])
+
+        # Obstacles
+        self.use_obstacles = use_obstacles
+        # Spawn around goal box
+        if self.use_obstacles:
+            self.box = 0.1
+        else:
+            self.box = 2.0
+        self.box_scale = 1.0  # scale the initialbox by this factor eache episode
+
         # Updating dynamics
         dyn_upd_start_time = time.time()
         # Also performs update of the dynamics
@@ -773,44 +806,12 @@ class QuadrotorSingle:
         print("QuadEnv: Dyn update time: ", time.time() - dyn_upd_start_time)
 
         # Obs
-        self.obs_repr = obs_repr
         self.state_vector = self.state_vector = getattr(get_state, "state_" + self.obs_repr)
         # # Sense Noise
         self.sense_noise = None
         self.update_sense_noise(sense_noise=sense_noise)
 
         self.observation_space = self.make_observation_space()
-        self.obst_obs_type = obst_obs_type
-        self.obs_space_low_high = None
-
-        # Neighbor
-        self.num_agents = num_agents
-        self.num_use_neighbor_obs = num_use_neighbor_obs
-        self.neighbor_obs_type = neighbor_obs_type
-
-        # Obstacles
-        self.use_obstacles = use_obstacles
-
-        # Room
-        self.room_length = room_dims[0]
-        self.room_width = room_dims[1]
-        self.room_height = room_dims[2]
-        self.room_box = np.array(
-            [[-self.room_length / 2., -self.room_width / 2, 0.],
-             [self.room_length / 2., self.room_width / 2., self.room_height]])
-
-        # Numba Speed Up
-        self.use_numba = use_numba
-
-        # Goal
-        self.goal = None
-
-        # Spawn around goal box
-        if self.use_obstacles:
-            self.box = 0.1
-        else:
-            self.box = 2.0
-        self.box_scale = 1.0  # scale the initialbox by this factor eache episode
 
         # Rendering
         self.view_mode = view_mode
