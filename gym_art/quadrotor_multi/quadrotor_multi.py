@@ -295,13 +295,17 @@ class QuadrotorEnvMulti(gym.Env):
 
     def init_scene_multi(self):
         models = tuple(e.dynamics.model for e in self.envs)
+        if self.quads_view_mode == 'local':
+            viewpoint = 'chase'
+        else:
+            viewpoint = 'global'
+
         self.scene = Quadrotor3DSceneMulti(
             models=models,
-            w=640, h=480, resizable=True, viewpoint=self.envs[0].viewpoint,
+            w=640, h=480, resizable=True, viewpoint=viewpoint,
             room_dims=self.room_dims, num_agents=self.num_agents,
             render_speed=self.render_speed, formation_size=self.quads_formation_size, obstacles=self.obstacles,
-            vis_acc_arrows=False, viz_traces=25, viz_trace_nth_step=1
-        )
+            vis_acc_arrows=False, viz_traces=25, viz_trace_nth_step=1)
 
     def reset(self, **kwargs):
         obs, rewards, dones, infos = [], [], [], []
