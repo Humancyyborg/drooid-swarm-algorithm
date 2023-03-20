@@ -43,6 +43,7 @@ QUADS_OBSTACLE_OBS_TYPE = {
     'octomap_2d': 9,
 }
 
+
 # dict pretty printing
 def print_dic(dic, indent=""):
     for key, item in dic.items():
@@ -264,6 +265,7 @@ def calculate_collision_matrix(positions, arm, hitbox_radius):
     return collision_matrix, all_collisions, dist
 
 
+
 @njit
 def calculate_drone_proximity_penalties(distance_matrix, arm, dt, penalty_fall_off, max_penalty, num_agents):
     if not penalty_fall_off:
@@ -388,43 +390,6 @@ def compute_new_omega(magn_scale=20.0):
     omega = omega_dir * omega_mag
 
     return omega
-
-
-# This function is to change the velocities after a collision happens between two bodies
-# def perform_collision_between_drones(dyn1, dyn2, col_coeff=1.0):
-#     # Solve for the new velocities using the elastic collision equations.
-#     # vel noise has two different random components,
-#     # One that preserves momentum in opposite directions
-#     # Second that does not preserve momentum
-#     v1new, v2new, collision_norm = compute_col_norm_and_new_velocities(dyn1.pos, dyn1.vel, dyn2.pos, dyn2.vel)
-#     vel_change = (v2new - v1new) * collision_norm
-#     dyn1_vel_shift = vel_change
-#     dyn2_vel_shift = -vel_change
-#
-#     # Make sure new vel direction would be opposite to the original vel direction
-#     for _ in range(3):
-#         cons_rand_val = np.random.normal(loc=0, scale=0.8, size=3)
-#         vel1_noise = cons_rand_val + np.random.normal(loc=0, scale=0.15, size=3)
-#         vel2_noise = -cons_rand_val + np.random.normal(loc=0, scale=0.15, size=3)
-#
-#         dyn1_vel_shift = vel_change + vel1_noise
-#         dyn2_vel_shift = -vel_change + vel2_noise
-#
-#         dyn1_new_vel_dir = np.dot(dyn1.vel + dyn1_vel_shift, collision_norm)
-#         dyn2_new_vel_dir = np.dot(dyn2.vel + dyn2_vel_shift, collision_norm)
-#
-#         if dyn1_new_vel_dir > 0 > dyn2_new_vel_dir:
-#             break
-#
-#     # Get new vel
-#     max_vel_magn = max(np.linalg.norm(dyn1.vel), np.linalg.norm(dyn2.vel))
-#     dyn1.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn1.vel, vel_shift=dyn1_vel_shift)
-#     dyn2.vel = compute_new_vel(max_vel_magn=max_vel_magn, vel=dyn2.vel, vel_shift=dyn2_vel_shift)
-#
-#     # Get new omega
-#     new_omega = compute_new_omega()
-#     dyn1.omega += new_omega * col_coeff
-#     dyn2.omega -= new_omega * col_coeff
 
 
 @njit
