@@ -1,12 +1,12 @@
 from sample_factory.launcher.run_description import RunDescription, Experiment, ParamGrid
-from swarm_rl.runs.quad_multi_mix_baseline import QUAD_BASELINE_CLI_8
+from swarm_rl.runs.quad_multi_mix_baseline import QUAD_BASELINE_CLI
 
 _params = ParamGrid([
     ('quads_neighbor_encoder_type', ['attention']),
     ('seed', [0000, 1111, 2222, 3333]),
 ])
 
-MULTI_8_CLI = QUAD_BASELINE_CLI_8 + (
+MULTI_8_CLI = QUAD_BASELINE_CLI + (
     ' --with_wandb=True --wandb_project=Quad-Swarm-RL --wandb_group=test_refactor --wandb_user=multi-drones'
 )
 
