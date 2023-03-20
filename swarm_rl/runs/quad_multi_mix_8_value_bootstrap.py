@@ -2,16 +2,17 @@ from sample_factory.launcher.run_description import RunDescription, Experiment, 
 from swarm_rl.runs.quad_multi_mix_baseline import QUAD_BASELINE_CLI
 
 _params = ParamGrid([
-    ('seed', [0000, 1111, 2222, 3333]),
+    ('seed', [0000, 1111]),
+    ('value_bootstrap', [True]),
 ])
 
 MULTI_8_CLI = QUAD_BASELINE_CLI + (
     '--quads_neighbor_encoder_type=attention --with_wandb=True --wandb_project=Quad-Swarm-RL '
-    '--wandb_group=test_refactor_v2 --wandb_user=multi-drones'
+    '--wandb_group=value_bootstrap --wandb_user=multi-drones'
 )
 
 _experiment = Experiment(
-    'test_refactor_v2',
+    'value_bootstrap_True',
     MULTI_8_CLI,
     _params.generate_params(randomize=False),
 )
