@@ -6,7 +6,7 @@ _params = ParamGrid([
 ])
 
 MULTI_8_CLI = QUAD_BASELINE_CLI + (
-    '--quads_neighbor_encoder_type=attention --with_wandb=True --wandb_project=Quad-Swarm-RL '
+    ' --quads_neighbor_encoder_type=attention --with_wandb=True --wandb_project=Quad-Swarm-RL '
     '--wandb_group=test_refactor_v2 --wandb_user=multi-drones'
 )
 
