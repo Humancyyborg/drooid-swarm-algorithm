@@ -337,7 +337,8 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Obstacles
         if self.use_obstacles:
-            obs = self.obstacles.reset(obs=obs, quads_pos=self.pos, pos_arr=obst_pos_arr)
+            quads_pos = np.array([e.dynamics.pos for e in self.envs])
+            obs = self.obstacles.reset(obs=obs, quads_pos=quads_pos, pos_arr=obst_pos_arr)
             self.obst_quad_collisions_per_episode = 0
             self.prev_obst_quad_collisions = []
 
