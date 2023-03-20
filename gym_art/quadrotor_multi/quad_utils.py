@@ -3,7 +3,6 @@ import numpy.random as nr
 import numba as nb
 from numba import njit
 from numpy.linalg import norm
-from numpy import cos, sin
 from scipy import spatial
 from copy import deepcopy
 
@@ -248,64 +247,6 @@ def dict_update_existing(dic, dic_upd):
             dict_update_existing(dic[key], dic_upd[key])
         else:
             dic[key] = dic_upd[key]
-
-
-@njit
-def spherical_coordinate(x, y):
-    return [cos(x) * cos(y), sin(x) * cos(y), sin(y)]
-
-
-@njit
-def generate_points(n=3):
-    if n < 3:
-        # print("The number of goals can not smaller than 3, The system has cast it to 3")
-        n = 3
-
-    x = 0.1 + 1.2 * n
-
-    pts = []
-    start = (-1. + 1. / (n - 1.))
-    increment = (2. - 2. / (n - 1.)) / (n - 1.)
-    pi = np.pi
-    for j in range(n):
-        s = start + j * increment
-        pts.append(spherical_coordinate(
-            s * x, pi / 2. * np.sign(s) * (1. - np.sqrt(1. - abs(s)))
-        ))
-    return pts
-
-
-def get_sphere_radius(num, dist):
-    A = 1.75388487222762
-    B = 0.860487305801679
-    C = 10.3632729642351
-    D = 0.0920858134405214
-    ratio = (A - D) / (1 + (num / C) ** B) + D
-    radius = dist / ratio
-    return radius
-
-
-@njit
-def get_circle_radius(num, dist):
-    theta = 2 * np.pi / num
-    radius = (0.5 * dist) / np.sin(theta / 2)
-    return radius
-
-
-@njit
-def get_grid_dim_number(num):
-    assert num > 0
-    sqrt_goal_num = np.sqrt(num)
-    grid_number = int(np.floor(sqrt_goal_num))
-    dim_1 = grid_number
-    while dim_1 > 1:
-        if num % dim_1 == 0:
-            break
-        else:
-            dim_1 -= 1
-
-    dim_2 = num // dim_1
-    return dim_1, dim_2
 
 
 def calculate_collision_matrix(positions, arm, hitbox_radius):
