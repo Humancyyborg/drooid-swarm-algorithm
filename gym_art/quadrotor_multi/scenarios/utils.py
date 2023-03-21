@@ -38,14 +38,6 @@ QUADS_PARAMS_DICT = {
 }
 
 
-def create_scenario(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
-                    quads_formation_size):
-    cls = eval('Scenario_' + quads_mode)
-    scenario = cls(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
-                   quads_formation_size)
-    return scenario
-
-
 def update_formation_and_max_agent_per_layer(mode):
     formation_index = np.random.randint(low=0, high=len(QUADS_PARAMS_DICT[mode][0]))
     formation = QUADS_FORMATION_LIST[formation_index]
@@ -176,11 +168,21 @@ def get_z_value(num_agents, num_agents_per_layer, box_size, formation, formation
     return z
 
 
+@njit
+def test():
+    # x = np.linalg.norm(np.array([1., 2., 3.]))
+    # x = (1 ** 2 + 2 **2 + 3 ** 2 ) ** 0.5
+    pi = np.ones(3)
+    pj = np.zeros(3)
+    np.sqrt(np.sum((pi - pj) ** 2))
+    # x = ((pi[0]-pj[0]) ** 2 + (pi[1]-pj[1]) **2 + (pi[2]-pj[2]) ** 2 ) ** 0.5
+
+
 def main():
     import timeit
-    SETUP_CODE = '''from __main__ import get_circle_radius'''
+    SETUP_CODE = '''from __main__ import test'''
 
-    TEST_CODE = '''get_circle_radius(num=8, dist=1.1)'''
+    TEST_CODE = '''test()'''
 
     # timeit.repeat statement
     times = timeit.repeat(setup=SETUP_CODE,
