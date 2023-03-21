@@ -5,7 +5,7 @@ _params = ParamGrid([
     ('seed', [0000, 1111, 2222, 3333]),
 ])
 
-MULTI_8_CLI = QUAD_BASELINE_CLI + (
+MULTI_8_CLI = QUAD_BASELINE_CLI_8 + (
     ' --quads_neighbor_encoder_type=attention --with_wandb=True --wandb_project=Quad-Swarm-RL '
     '--wandb_group=restart_refactor_v1 --wandb_user=multi-drones'
 )
