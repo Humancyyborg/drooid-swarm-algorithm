@@ -27,6 +27,23 @@ QUAD_COLOR = (
     (1.0, 0.0, 1.0),  # Violet
 )
 
+QUADS_OBS_REPR = {
+    'xyz_vxyz_R_omega': 18,
+    'xyz_vxyz_R_omega_floor': 19,
+    'xyz_vxyz_R_omega_wall': 24,
+}
+
+QUADS_NEIGHBOR_OBS_TYPE = {
+    'none': 0,
+    'pos_vel': 6,
+}
+
+QUADS_OBSTACLE_OBS_TYPE = {
+    'none': 0,
+    'octomap': 9,
+}
+
+
 
 # dict pretty printing
 def print_dic(dic, indent=""):

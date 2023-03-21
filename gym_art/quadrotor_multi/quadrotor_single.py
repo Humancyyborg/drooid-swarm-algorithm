@@ -677,26 +677,12 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
     cost_pos_raw = dist
     cost_pos = rew_coeff["pos"] * cost_pos_raw
 
-    # # reward for being near the goal
-    # cost_near_goal = 0.
-    # if dist < 0.2:
-    #     cost_near_goal = -10.
-
-    # sphere of equal reward if drones are close to the goal position
-    vel_coeff = rew_coeff["vel"]
     ##################################################
     # penalize amount of control effort
     cost_effort_raw = np.linalg.norm(action)
     cost_effort = rew_coeff["effort"] * cost_effort_raw
 
-    dact = action - action_prev
-    cost_act_change_raw = (dact[0] ** 2 + dact[1] ** 2 + dact[2] ** 2 + dact[3] ** 2) ** 0.5
-    cost_act_change = rew_coeff["action_change"] * cost_act_change_raw
 
-    ##################################################
-    ## loss velocity
-    cost_vel_raw = np.linalg.norm(dynamics.vel)
-    cost_vel = vel_coeff * cost_vel_raw
 
     ##################################################
     ## Loss orientation
@@ -706,19 +692,6 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
         cost_orient_raw = -dynamics.rot[2, 2]
 
     cost_orient = rew_coeff["orient"] * cost_orient_raw
-
-    cost_yaw_raw = -dynamics.rot[0, 0]
-    cost_yaw = rew_coeff["yaw"] * cost_yaw_raw
-
-    # Projection of the z-body axis to z-world axis
-    # Negative, because the larger the projection the smaller the loss (i.e. the higher the reward)
-    rot_cos = ((dynamics.rot[0, 0] + dynamics.rot[1, 1] + dynamics.rot[2, 2]) - 1.) / 2.
-    # We have to clip since rotation matrix falls out of orthogonalization from time to time
-    cost_rotation_raw = np.arccos(np.clip(rot_cos, -1., 1.))  # angle = arccos((trR-1)/2) See: [6]
-    cost_rotation = rew_coeff["rot"] * cost_rotation_raw
-
-    cost_attitude_raw = np.arccos(np.clip(dynamics.rot[2, 2], -1., 1.))
-    cost_attitude = rew_coeff["attitude"] * cost_attitude_raw
 
     ##################################################
     ## Loss for constant uncontrolled rotation around vertical axis
@@ -730,30 +703,12 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
     cost_crash_raw = float(on_floor)
     cost_crash = rew_coeff["crash"] * cost_crash_raw
 
-    # Loss for hitting the room
-    cost_crash_floor_raw = float(crashed_floor)
-    cost_crash_floor = rew_coeff["crash_room"] * cost_crash_floor_raw
-
-    cost_crash_wall_raw = float(crashed_wall)
-    cost_crash_wall = rew_coeff["crash_room"] * cost_crash_wall_raw
-
-    cost_crash_ceiling_raw = float(crashed_ceiling)
-    cost_crash_ceiling = rew_coeff["crash_room"] * cost_crash_ceiling_raw
-
     reward = -dt * np.sum([
         cost_pos,
         cost_effort,
         cost_crash,
         cost_orient,
-        cost_yaw,
-        cost_rotation,
-        cost_attitude,
         cost_spin,
-        cost_act_change,
-        cost_vel,
-        cost_crash_floor,
-        cost_crash_wall,
-        cost_crash_ceiling,
     ])
 
     rew_info = {
@@ -762,30 +717,14 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
         'rew_action': -cost_effort,
         'rew_crash': -cost_crash,
         "rew_orient": -cost_orient,
-        "rew_yaw": -cost_yaw,
-        "rew_rot": -cost_rotation,
-        "rew_attitude": -cost_attitude,
         "rew_spin": -cost_spin,
-        "rew_act_change": -cost_act_change,
-        "rew_vel": -cost_vel,
-        'rew_crash_floor': -cost_crash_floor,
-        'rew_crash_wall': -cost_crash_wall,
-        'rew_crash_ceiling': -cost_crash_ceiling,
 
         "rewraw_main": -cost_pos_raw,
         'rewraw_pos': -cost_pos_raw,
         'rewraw_action': -cost_effort_raw,
         'rewraw_crash': -cost_crash_raw,
         "rewraw_orient": -cost_orient_raw,
-        "rewraw_yaw": -cost_yaw_raw,
-        "rewraw_rot": -cost_rotation_raw,
-        "rewraw_attitude": -cost_attitude_raw,
         "rewraw_spin": -cost_spin_raw,
-        "rewraw_act_change": -cost_act_change_raw,
-        "rewraw_vel": -cost_vel_raw,
-        "rewraw_crash_floor_raw": -cost_crash_floor_raw,
-        "rewraw_crash_wall_raw": -cost_crash_wall_raw,
-        "rewraw_crash_ceiling_raw": -cost_crash_ceiling_raw,
     }
 
     # report rewards in the same format as they are added to the actual agent's reward (easier to debug this way)
