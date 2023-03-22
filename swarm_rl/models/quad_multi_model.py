@@ -204,12 +204,18 @@ class QuadMultiEncoder(Encoder):
         total_encoder_out_size = self_encoder_out_size + neighbor_encoder_out_size + obstacle_encoder_out_size
 
         # this is followed by another fully connected layer in the action parameterization, so we add a nonlinearity here
-        self.feed_forward = nn.Sequential(
-            fc_layer(total_encoder_out_size, 2 * cfg.rnn_size, spec_norm=self.use_spectral_norm),
-            nn.Tanh(),
-        )
-
-        self.encoder_out_size = 2 * cfg.rnn_size
+        if self.num_use_neighbor_obs == 0 and self.obstacle_mode == 'no_obstacles':
+            self.feed_forward = nn.Sequential(
+                fc_layer(total_encoder_out_size, cfg.rnn_size, spec_norm=self.use_spectral_norm),
+                nn.Tanh(),
+            )
+            self.encoder_out_size = cfg.rnn_size
+        else:
+            self.feed_forward = nn.Sequential(
+                fc_layer(total_encoder_out_size, 2 * cfg.rnn_size, spec_norm=self.use_spectral_norm),
+                nn.Tanh(),
+            )
+            self.encoder_out_size = 2 * cfg.rnn_size
 
     def forward(self, obs_dict):
         obs = obs_dict['obs']
