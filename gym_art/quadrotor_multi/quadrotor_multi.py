@@ -552,6 +552,7 @@ class QuadrotorEnvMulti(gym.Env):
         # 7. DONES
         if any(dones):
             for i in range(len(infos)):
+                infos[i]['TimeLimit.truncated'] = True
                 if self.saved_in_replay_buffer:
                     infos[i]['episode_extra_stats'] = {
                         'num_collisions_replay': self.collisions_per_episode,
