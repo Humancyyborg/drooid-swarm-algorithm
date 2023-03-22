@@ -8,6 +8,7 @@ from scipy import spatial
 from copy import deepcopy
 
 EPS = 1e-5
+QUAD_RADIUS = 0.05
 
 QUAD_COLOR = (
     (1.0, 0.0, 0.0),  # red

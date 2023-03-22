@@ -1,5 +1,8 @@
+import sys
+
 import numpy as np
-from gym_art.quadrotor_multi.quad_utils import get_circle_radius, get_sphere_radius, get_grid_dim_number
+from numpy import cos, sin
+from numba import njit
 
 QUADS_MODE_LIST = ['static_same_goal', 'static_diff_goal',  # static formations
                    'ep_lissajous3D', 'ep_rand_bezier',  # evader pursuit
@@ -11,16 +14,15 @@ QUADS_MODE_LIST_SINGLE = ['static_same_goal', 'static_diff_goal',  # static form
                           'dynamic_same_goal',  # dynamic formations
                           ]
 
-QUADS_MODE_LIST_OBSTACLES = ['o_uniform_same_goal_spawn', 'o_uniform_diff_goal_spawn', 'o_uniform_swarm_vs_swarm']
+QUADS_MODE_LIST_OBSTACLES = ['o_random', 'o_dynamic_diff_goal', 'o_dynamic_same_goal']
 
-QUADS_MODE_LIST_OBSTACLES_SINGLE = ['o_uniform_same_goal_spawn']
-
+QUADS_MODE_LIST_OBSTACLES_SINGLE = ['o_random']
 
 QUADS_FORMATION_LIST = ['circle_horizontal', 'circle_vertical_xz', 'circle_vertical_yz', 'sphere', 'grid_horizontal',
                         'grid_vertical_xz', 'grid_vertical_yz', 'cube']
 
 # key: quads_mode
-# value: 0. formation, 1: [formation_low_size, formation_high_size], 2: episode_time
+# value: 0. formation, 1: [formation_low_size, formation_high_size]
 quad_arm_size = 0.05
 QUADS_PARAMS_DICT = {
     'static_same_goal': [['circle_horizontal'], [0.0, 0.0]],
@@ -33,11 +35,6 @@ QUADS_PARAMS_DICT = {
     'swap_goals': [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size]],
     'dynamic_formations': [QUADS_FORMATION_LIST, [0.0, 20 * quad_arm_size]],
     'run_away': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size]],
-
-    # For obstacles
-    'o_uniform_same_goal_spawn': [['circle_horizontal'], [0.0, 0.0]],
-    'o_uniform_diff_goal_spawn': [QUADS_FORMATION_LIST, [0.4, 0.8]],
-    'o_uniform_swarm_vs_swarm': [QUADS_FORMATION_LIST, [0.4, 0.8]],
 }
 
 
@@ -68,7 +65,66 @@ def update_layer_dist(low, high):
     return layer_dist
 
 
+@njit
+def spherical_coordinate(x, y):
+    return [cos(x) * cos(y), sin(x) * cos(y), sin(y)]
+
+
+@njit
+def generate_points(n=3):
+    if n < 3:
+        # print("The number of goals can not smaller than 3, The system has cast it to 3")
+        n = 3
+
+    x = 0.1 + 1.2 * n
+
+    pts = np.zeros((n, 3))
+    start = (-1. + 1. / (n - 1.))
+    increment = (2. - 2. / (n - 1.)) / (n - 1.)
+    pi = np.pi
+    for j in range(n):
+        s = start + j * increment
+        pts[j] = spherical_coordinate(
+            x=s * x, y=pi / 2. * np.sign(s) * (1. - np.sqrt(1. - abs(s)))
+        )
+    return pts
+
+
+@njit
+def get_sphere_radius(num, dist):
+    A = 1.75388487222762
+    B = 0.860487305801679
+    C = 10.3632729642351
+    D = 0.0920858134405214
+    ratio = (A - D) / (1 + (num / C) ** B) + D
+    radius = dist / ratio
+    return radius
+
+
+@njit
+def get_circle_radius(num, dist):
+    theta = 2 * np.pi / num
+    radius = (0.5 * dist) / np.sin(theta / 2)
+    return radius
+
+
+@njit
+def get_grid_dim_number(num):
+    sqrt_goal_num = np.sqrt(num)
+    grid_number = int(np.floor(sqrt_goal_num))
+    dim_1 = grid_number
+    while dim_1 > 1:
+        if num % dim_1 == 0:
+            break
+        else:
+            dim_1 -= 1
+
+    dim_2 = num // dim_1
+    return dim_1, dim_2
+
+
 def get_formation_range(mode, formation, num_agents, low, high, num_agents_per_layer):
+    # Numba just makes it ~ 5 times slower
     if mode == 'swarm_vs_swarm':
         n = num_agents // 2
     else:
@@ -93,6 +149,7 @@ def get_formation_range(mode, formation, num_agents, low, high, num_agents_per_l
 
 
 def get_goal_by_formation(formation, pos_0, pos_1, layer_pos=0.):
+    # Numba just makes it ~ 4 times slower
     if formation.endswith("horizontal"):
         goal = np.array([pos_0, pos_1, layer_pos])
     elif formation.endswith("vertical_xz"):
@@ -117,3 +174,24 @@ def get_z_value(num_agents, num_agents_per_layer, box_size, formation, formation
 
     z = max(z_lower_bound, z)
     return z
+
+
+def main():
+    import timeit
+    SETUP_CODE = '''from __main__ import get_circle_radius'''
+
+    TEST_CODE = '''get_circle_radius(num=8, dist=1.1)'''
+
+    # timeit.repeat statement
+    times = timeit.repeat(setup=SETUP_CODE,
+                          stmt=TEST_CODE,
+                          repeat=5,
+                          number=int(1e5))
+
+    # printing minimum exec. time
+    print('times:   ', times)
+    print('mean times:   ', np.mean(times[1:]))
+
+
+if __name__ == '__main__':
+    sys.exit(main())

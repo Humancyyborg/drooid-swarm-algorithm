@@ -5,10 +5,8 @@ from gym_art.quadrotor_multi.scenarios.base import QuadrotorScenario
 
 
 class Scenario_dynamic_diff_goal(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
-                 quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
-                         quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims):
+        super().__init__(quads_mode, envs, num_agents, room_dims)
         # teleport every [4.0, 6.0] secs
         duration_time = 5.0
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
@@ -22,7 +20,7 @@ class Scenario_dynamic_diff_goal(QuadrotorScenario):
                                          layer_dist=self.layer_dist)
         np.random.shuffle(self.goals)
 
-    def step(self, infos, rewards):
+    def step(self):
         tick = self.envs[0].tick
         if tick % self.control_step_for_sec == 0 and tick > 0:
             box_size = self.envs[0].box
@@ -39,7 +37,7 @@ class Scenario_dynamic_diff_goal(QuadrotorScenario):
             for i, env in enumerate(self.envs):
                 env.goal = self.goals[i]
 
-        return infos, rewards
+        return
 
     def reset(self):
         # Update duration time

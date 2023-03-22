@@ -39,20 +39,20 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         num_agents=cfg.quads_num_agents, ep_time=cfg.quads_episode_duration, rew_coeff=rew_coeff,
         obs_repr=cfg.quads_obs_repr,
         # Neighbor
-        local_obs=cfg.quads_neighbor_visible_num, swarm_obs=cfg.quads_neighbor_obs_type,
+        neighbor_visible_num=cfg.quads_neighbor_visible_num, neighbor_obs_type=cfg.quads_neighbor_obs_type,
         collision_hitbox_radius=cfg.quads_collision_hitbox_radius,
         collision_falloff_radius=cfg.quads_collision_falloff_radius,
         # Obstacle
-        use_obstacles=cfg.quads_use_obstacles,
-        obstacle_size=cfg.quads_obst_size,
+        use_obstacles=cfg.quads_use_obstacles, obst_density=cfg.quads_obst_density,
+        obst_spawn_area=cfg.quads_obst_spawn_area, obst_size=cfg.quads_obst_size,
         # Aerodynamics
         use_downwash=cfg.quads_use_downwash,
         # Numba Speed Up
-        quads_use_numba=cfg.quads_use_numba,
+        use_numba=cfg.quads_use_numba,
         # Scenarios
         quads_mode=cfg.quads_mode,
         # Room
-        # room_dims=cfg.quads_room_dims,
+        room_dims=cfg.quads_room_dims,
         # Replay Buffer
         use_replay_buffer=use_replay_buffer,
         # Rendering

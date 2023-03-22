@@ -6,10 +6,8 @@ from gym_art.quadrotor_multi.scenarios.base import QuadrotorScenario
 
 
 class Scenario_swarm_vs_swarm(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
-                 quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
-                         quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims):
+        super().__init__(quads_mode, envs, num_agents, room_dims)
         # teleport every [4.0, 6.0] secs
         duration_time = 5.0
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
@@ -73,12 +71,12 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
 
-    def step(self, infos, rewards):
+    def step(self):
         tick = self.envs[0].tick
         # Switch every [4, 6] seconds
         if tick % self.control_step_for_sec == 0 and tick > 0:
             self.update_goals()
-        return infos, rewards
+        return
 
     def reset(self):
         # Update duration time

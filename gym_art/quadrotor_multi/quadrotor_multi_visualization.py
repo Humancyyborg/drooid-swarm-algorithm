@@ -111,10 +111,6 @@ class Quadrotor3DSceneMulti:
         else:
             self.goal_diameter = self.diameter
 
-    def update_env(self, room_dims):
-        self.room_dims = room_dims
-        self._make_scene()
-
     def _make_scene(self):
         import gym_art.quadrotor_multi.rendering3d as r3d
 
