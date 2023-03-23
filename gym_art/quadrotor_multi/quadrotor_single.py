@@ -754,13 +754,10 @@ class QuadrotorSingle:
     def __init__(self, dynamics_params="DefaultQuad", dynamics_change=None,
                  dynamics_randomize_every=None, dyn_sampler_1=None, dyn_sampler_2=None,
                  raw_control=True, raw_control_zero_middle=True, dim_mode='3D', tf_control=False, sim_freq=200.,
-                 sim_steps=2,
-                 obs_repr="xyz_vxyz_R_omega", ep_time=7, room_length=10, room_width=10, room_height=10,
-                 init_random_state=False,
-                 rew_coeff=None, sense_noise=None, verbose=False, gravity=GRAV,
+                 sim_steps=2, obs_repr="xyz_vxyz_R_omega", ep_time=7, room_dims=(10.0, 10.0, 10.0),
+                 init_random_state=False, sense_noise=None, verbose=False, gravity=GRAV,
                  t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False,
-                 swarm_obs='none', num_agents=1,
-                 view_mode='local', num_use_neighbor_obs=0, use_obstacles=False):
+                 neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0, use_obstacles=False):
         np.seterr(under='ignore')
         """
         Args:
@@ -789,13 +786,22 @@ class QuadrotorSingle:
             sens_noise (dict or str): sensor noise parameters. If None - no noise. If "default" then the default params are loaded. Otherwise one can provide specific params.
             excite: [bool] change the setpoint at the fixed frequency to perturb the quad
         """
-        ## ARGS
+        # Numba Speed Up
+        self.use_numba = use_numba
+
+        # Room
+        self.room_length = room_dims[0]
+        self.room_width = room_dims[1]
+        self.room_height = room_dims[2]
+        self.room_box = np.array([[-self.room_length / 2., -self.room_width / 2, 0.],
+                                  [self.room_length / 2., self.room_width / 2., self.room_height]])
+
         self.init_random_state = init_random_state
-        self.room_length = room_length
-        self.room_width = room_width
-        self.room_height = room_height
-        self.room_size = room_length * room_width * room_height
+
+        # Preset parameters
         self.obs_repr = obs_repr
+
+        # Self dynamics
         self.sim_steps = sim_steps
         self.dim_mode = dim_mode
         self.raw_control_zero_middle = raw_control_zero_middle
@@ -803,14 +809,8 @@ class QuadrotorSingle:
         self.dynamics_randomize_every = dynamics_randomize_every
         self.verbose = verbose
         self.raw_control = raw_control
-        self.use_numba = use_numba
-        self.update_sense_noise(sense_noise=sense_noise)
         self.gravity = gravity
-        self.swarm_obs = swarm_obs
-        self.num_use_neighbor_obs = num_use_neighbor_obs
-        self.num_agents = num_agents
-        self.use_obstacles = use_obstacles
-        ## t2w and t2t ranges
+        self.update_sense_noise(sense_noise=sense_noise)
         self.t2w_std = t2w_std
         self.t2w_min = 1.5
         self.t2w_max = 10.0
@@ -819,43 +819,16 @@ class QuadrotorSingle:
         self.t2t_min = 0.005
         self.t2t_max = 1.0
         self.excite = excite
-        ## dynmaics simplification
         self.dynamics_simplification = dynamics_simplification
-        ## PARAMS
         self.max_init_vel = 1.  # m/s
         self.max_init_omega = 2 * np.pi  # rad/s
-        # self.pitch_max = 1. #rad
-        # self.roll_max = 1.  #rad
-        # self.yaw_max = np.pi   #rad
 
-        self.room_box = np.array(
-            [[-self.room_length / 2., -self.room_width / 2, 0.],
-             [self.room_length / 2., self.room_width / 2., self.room_height]])  # diagonal coordinates of box (?)
-        self.state_vector = self.state_vector = getattr(get_state, "state_" + self.obs_repr)
-
-        ## WARN: If you
-        # size of the box from which initial position will be randomly sampled
-        # if box_scale > 1.0 then it will also growevery episode
-        self.box = 2.0
-        self.box_scale = 1.0  # scale the initialbox by this factor eache episode
-
-        self.goal = None
-
-        ## Statistics vars
-        self.traj_count = 0
-
-        ## View / Camera mode
-        self.view_mode = view_mode
-
-        ###############################################################################
-        ## DYNAMICS (and randomization)
-
+        # DYNAMICS (and randomization)
         # Could be dynamics of a specific quad or a random dynamics (i.e. randomquad)
         self.dyn_base_sampler = getattr(quad_rand, dynamics_params)()
         self.dynamics_change = copy.deepcopy(dynamics_change)
-
         self.dynamics_params = self.dyn_base_sampler.sample()
-        ## Now, updating if we are providing modifications
+        # Now, updating if we are providing modifications
         if self.dynamics_change is not None:
             dict_update_existing(self.dynamics_params, self.dynamics_change)
 
@@ -875,49 +848,38 @@ class QuadrotorSingle:
             self.dyn_sampler_2 = getattr(quad_rand, sampler_type)(params=self.dynamics_params,
                                                                   **self.dyn_sampler_2_params)
 
-        ## Updating dynamics
+        # Updating dynamics
         dyn_upd_start_time = time.time()
-        ## Also performs update of the dynamics
         self.action_space = None  # to be defined in update_dynamics
         self.resample_dynamics()
-        # self.update_dynamics(dynamics_params=self.dynamics_params)
         print("QuadEnv: Dyn update time: ", time.time() - dyn_upd_start_time)
 
-        if self.verbose:
-            print("###############################################")
-            print("DYN RANDOMIZATION PARAMS:")
-            print_dic(self.dyn_randomization_params)
-            print("###############################################")
-            self.dynamics_params = self.dynamics_params_def
+        # Self info
+        self.state_vector = self.state_vector = getattr(get_state, "state_" + self.obs_repr)
+        self.box = 2.0
+        self.box_scale = 1.0
+        self.goal = None
 
-        ###############################################################################
-        ## OBSERVATIONS
+        # Neighbor info
+        self.num_agents = num_agents
+        self.neighbor_obs_type = neighbor_obs_type
+        self.num_use_neighbor_obs = num_use_neighbor_obs
+
+        # Obstacles info
+        self.use_obstacles = use_obstacles
+
+        # Make observation space
         self.observation_space = self.make_observation_space()
 
-        ################################################################################
-        ## DIMENSIONALITY
-        if self.view_mode == 'local':
-            if self.dim_mode == '1D' or self.dim_mode == '2D':
-                self.viewpoint = 'side'
-            else:
-                self.viewpoint = 'chase'
-        else:
-            self.viewpoint = 'global'
-
-        ################################################################################
-        ## EPISODE PARAMS
-        # TODO get this from a wrapper
+        # EPISODE PARAMS
         self.ep_time = ep_time  # In seconds
         self.dt = 1.0 / sim_freq
-        self.metadata["video.frames_per_second"] = sim_freq / self.sim_steps
         self.ep_len = int(self.ep_time / (self.dt * self.sim_steps))
         self.tick = 0
-        self.crashed = False
         self.control_freq = sim_freq / sim_steps
+        self.traj_count = 0
+        self.rew_coeff = None
 
-        self.rew_coeff = None  # provided by the parent multi_env
-
-        #########################################
         self._seed()
 
     def save_dyn_params(self, filename):
@@ -993,9 +955,7 @@ class QuadrotorSingle:
         self.state_vector = getattr(get_state, "state_" + self.obs_repr)
 
     def make_observation_space(self):
-        self.wall_offset = 0.3
         room_range = self.room_box[1] - self.room_box[0]
-        room_max_dist = np.linalg.norm(self.room_box[1] - self.room_box[0]) * np.ones(1)
         self.obs_space_low_high = {
             "xyz": [-room_range, room_range],
             "xyzr": [-room_range, room_range],
@@ -1020,8 +980,6 @@ class QuadrotorSingle:
             "otype": [np.zeros(1), 20.0 * np.ones(1)],
             # obstacle type, [[0.], [20.]], which means we can support 21 types of obstacles
             "goal": [-room_range, room_range],
-            "nbr_dist": [np.zeros(1), room_max_dist],
-            "nbr_goal_dist": [np.zeros(1), room_max_dist],
             "wall": [np.zeros(6), 5.0 * np.ones(6)],
             "octmap": [-10 * np.ones(9), 10 * np.ones(9)],
         }
@@ -1029,13 +987,8 @@ class QuadrotorSingle:
         self.obs_comp_sizes = [self.obs_space_low_high[name][1].size for name in self.obs_comp_names]
 
         obs_comps = self.obs_repr.split("_")
-        if self.swarm_obs == 'pos_vel' and self.num_agents > 1:
+        if self.neighbor_obs_type == 'pos_vel' and self.num_use_neighbor_obs > 0:
             obs_comps = obs_comps + (['rxyz'] + ['rvxyz']) * self.num_use_neighbor_obs
-        elif self.swarm_obs == 'pos_vel_goals' and self.num_agents > 1:
-            obs_comps = obs_comps + (['rxyz'] + ['rvxyz'] + ['goal']) * self.num_use_neighbor_obs
-        elif self.swarm_obs == 'pos_vel_goals_ndist_gdist' and self.num_agents > 1:
-            obs_comps = obs_comps + (
-                    ['rxyz'] + ['rvxyz'] + ['goal'] + ['nbr_dist'] + ['nbr_goal_dist']) * self.num_use_neighbor_obs
 
         if self.use_obstacles:
             obs_comps = obs_comps + ["octmap"]
@@ -1066,18 +1019,12 @@ class QuadrotorSingle:
     def _step(self, action):
         self.actions[1] = copy.deepcopy(self.actions[0])
         self.actions[0] = copy.deepcopy(action)
-        # print('actions_norm: ', np.linalg.norm(self.actions[0]-self.actions[1]))
 
-        # if not self.crashed:
-        # print('goal: ', self.goal, 'goal_type: ', type(self.goal))
         self.controller.step_func(dynamics=self.dynamics,
                                   action=action,
                                   goal=self.goal,
                                   dt=self.dt,
-                                  # observation=np.expand_dims(self.state_vector(self), axis=0))
-                                  observation=None)  # assuming we aren't using observations in step function
-        # self.oracle.step(self.dynamics, self.goal, self.dt)
-        # self.scene.update_state(self.dynamics, self.goal)
+                                  observation=None)
 
         self.crashed_floor = self.dynamics.crashed_floor
         self.crashed_wall = self.dynamics.crashed_wall
