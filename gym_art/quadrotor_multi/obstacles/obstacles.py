@@ -5,14 +5,12 @@ from gym_art.quadrotor_multi.obstacles.utils import get_surround_sdfs, collision
 
 
 class MultiObstacles:
-    def __init__(self, num_obstacles=0, room_dims=np.array([10, 10, 10]), obstacle_size=1.0):
-        self.num_obstacles = num_obstacles
-        self.room_dims = room_dims
+    def __init__(self, obstacle_size=1.0):
         self.obstacle_radius = obstacle_size / 2.0
         self.pos_arr = []
         self.resolution = 0.1
 
-    def reset(self, obs=None, quads_pos=None, pos_arr=None):
+    def reset(self, obs, quads_pos, pos_arr):
         self.pos_arr = copy.deepcopy(np.array(pos_arr))
 
         quads_sdf_obs = 100 * np.ones((len(quads_pos), 9))
@@ -24,7 +22,7 @@ class MultiObstacles:
 
         return obs
 
-    def step(self, obs=None, quads_pos=None):
+    def step(self, obs, quads_pos):
         quads_sdf_obs = 100 * np.ones((len(quads_pos), 9))
         quads_sdf_obs = get_surround_sdfs(quad_poses=quads_pos[:, :2], obst_poses=self.pos_arr[:, :2],
                                           quads_sdf_obs=quads_sdf_obs, obst_radius=self.obstacle_radius,
@@ -34,7 +32,7 @@ class MultiObstacles:
 
         return obs
 
-    def collision_detection(self, pos_quads=None):
+    def collision_detection(self, pos_quads):
         quad_collisions = collision_detection(quad_poses=pos_quads[:, :2], obst_poses=self.pos_arr[:, :2],
                                               obst_radius=self.obstacle_radius)
 

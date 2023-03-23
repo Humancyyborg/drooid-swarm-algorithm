@@ -999,8 +999,7 @@ class QuadrotorSingle:
         self.time_remain = self.ep_len - self.tick
         reward, rew_info = compute_reward_weighted(self.dynamics, self.goal, action, self.dt, self.time_remain,
                                                    rew_coeff=self.rew_coeff, action_prev=self.actions[1],
-                                                   on_floor=self.dynamics.on_floor
-                                                   )
+                                                   on_floor=self.dynamics.on_floor)
 
         self.tick += 1
         done = self.tick > self.ep_len

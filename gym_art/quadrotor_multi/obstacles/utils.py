@@ -46,41 +46,25 @@ def collision_detection(quad_poses, obst_poses, obst_radius):
     return quad_collisions
 
 
+@njit
 def get_cell_centers(obst_area_length, obst_area_width, grid_size=1.):
-    cell_centers = [
-        (i + (grid_size / 2) - obst_area_length // 2, j + (grid_size / 2) - obst_area_width // 2)
-        for i in
-        np.arange(0, obst_area_length, grid_size) for j in
-        np.arange(obst_area_width - grid_size, -grid_size, -grid_size)]
+    count = 0
+    i_len = obst_area_length / grid_size
+    j_len = obst_area_width / grid_size
+    cell_centers = np.zeros((int(i_len * j_len), 2))
+    for i in np.arange(0, obst_area_length, grid_size):
+        for j in np.arange(obst_area_width - grid_size, -grid_size, -grid_size):
+            cell_centers[count][0] = i + (grid_size / 2) - obst_area_length // 2
+            cell_centers[count][1] = j + (grid_size / 2) - obst_area_width // 2
+            count += 1
+
     return cell_centers
 
 
 if __name__ == "__main__":
-    quad_poses = np.array([[0., 0.]])
-    obst_poses = np.array([[0.2, 0.]])
-    quads_sdf_obs = 100 * np.ones((len(quad_poses), 9))
+    from gym_art.quadrotor_multi.obstacles.test.unit_test import unit_test
+    from gym_art.quadrotor_multi.obstacles.test.speed_test import speed_test
 
-    dist = []
-    for i, x in enumerate([-0.1, 0, 0.1]):
-        for j, y in enumerate([-0.1, 0, 0.1]):
-            tmp = np.linalg.norm([x - obst_poses[0][0], y - obst_poses[0][1]]) - 0.3
-            dist.append(tmp)
-
-    test_res = get_surround_sdfs(quad_poses, obst_poses, quads_sdf_obs, obst_radius=0.3, resolution=0.1)
-    true_res = np.array(dist)
-    # print('algo:    ', test_res)
-    # print('true:    ', true_res)
-    assert test_res.all() == true_res.all()
-
-    quad_collisions = collision_detection(quad_poses, obst_poses, obst_radius=0.3)
-    test_res = np.where(quad_collisions > -1)[0]
-    true_res = -1 * np.ones(len(quad_poses), dtype=int)
-    if dist[4] < 0:
-        true_res[0] = int(0)
-
-    # print('algo:    ', test_res)
-    # print('true:    ', true_res)
-
-    assert test_res.all() == true_res.all()
-
-    print('Pass unit test!')
+    # Unit Test
+    unit_test()
+    speed_test()

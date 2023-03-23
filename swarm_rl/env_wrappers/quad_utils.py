@@ -1,11 +1,8 @@
 import copy
 
 from gym_art.quadrotor_multi.quad_experience_replay import ExperienceReplayWrapper
-from swarm_rl.env_wrappers.additional_input import QuadsAdditionalInputWrapper
-from swarm_rl.env_wrappers.discrete_actions import QuadsDiscreteActionsWrapper
-from swarm_rl.env_wrappers.reward_shaping import DEFAULT_QUAD_REWARD_SHAPING, QuadsRewardShapingWrapper, \
-    DEFAULT_QUAD_REWARD_SHAPING_SINGLE
 from swarm_rl.env_wrappers.compatibility import QuadEnvCompatibility
+from swarm_rl.env_wrappers.reward_shaping import DEFAULT_QUAD_REWARD_SHAPING, QuadsRewardShapingWrapper
 
 
 class AnnealSchedule:
@@ -19,9 +16,6 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
     from gym_art.quadrotor_multi.quadrotor_multi import QuadrotorEnvMulti
     quad = 'Crazyflie'
     dyn_randomize_every = dyn_randomization_ratio = None
-
-    episode_duration = cfg.quads_episode_duration  # seconds
-
     raw_control = raw_control_zero_middle = True
 
     sampler_1 = None
@@ -29,12 +23,11 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         sampler_1 = dict(type='RelativeSampler', noise_ratio=dyn_randomization_ratio, sampler='normal')
 
     sense_noise = 'default'
-
-    rew_coeff = DEFAULT_QUAD_REWARD_SHAPING['quad_rewards']
-
     dynamics_change = dict(noise=dict(thrust_noise_ratio=0.05), damp=dict(vel=0, omega_quadratic=0))
 
+    rew_coeff = DEFAULT_QUAD_REWARD_SHAPING['quad_rewards']
     use_replay_buffer = cfg.replay_buffer_sample_prob > 0.0
+
     env = QuadrotorEnvMulti(
         num_agents=cfg.quads_num_agents, ep_time=cfg.quads_episode_duration, rew_coeff=rew_coeff,
         obs_repr=cfg.quads_obs_repr,
