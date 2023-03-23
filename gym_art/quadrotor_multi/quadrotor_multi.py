@@ -6,9 +6,9 @@ from copy import deepcopy
 import gym
 import numpy as np
 
-from gym_art.quadrotor_multi.quad_utils import calculate_obst_drone_proximity_penalties, \
-    calculate_collision_matrix, calculate_drone_proximity_penalties, perform_collision_with_obstacle, \
-    perform_downwash, perform_collision_between_drones_numba, QUADS_OBS_REPR, QUADS_NEIGHBOR_OBS_TYPE
+from gym_art.quadrotor_multi.quad_utils import calculate_collision_matrix, calculate_drone_proximity_penalties, \
+    perform_collision_with_obstacle, perform_downwash, perform_collision_between_drones_numba, QUADS_OBS_REPR, \
+    QUADS_NEIGHBOR_OBS_TYPE, perform_collision_with_wall, perform_collision_with_ceiling
 from gym_art.quadrotor_multi.quadrotor_multi_obstacles import MultiObstacles
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
 from gym_art.quadrotor_multi.quadrotor_single import QuadrotorSingle
@@ -381,8 +381,8 @@ class QuadrotorEnvMulti(gym.Env):
                 rew_obst_quad_collisions_raw[curr_quad_col] = -1.0
 
         # 3) Collisions with room
-        floor_crash_list, wall_crash_list, ceiling_crash_list = [], [], []
-        room_crash_list = np.array([])
+        floor_crash_list, wall_crash_list, ceiling_crash_list = self.calculate_room_collision()
+        room_crash_list = np.unique(np.concatenate([floor_crash_list, wall_crash_list, ceiling_crash_list]))
 
         # 2. Calculate rewards and infos for collision
         # 1) Between drones
@@ -435,6 +435,7 @@ class QuadrotorEnvMulti(gym.Env):
             envs_dynamics = [env.dynamics for env in self.envs]
             perform_downwash(drones_dyn=envs_dynamics, dt=self.control_dt)
 
+        self_state_update_flag = False
         if self.apply_collision_force:
             for val in curr_drone_collisions:
                 # perform_collision_between_drones(self.envs[val[0]].dynamics, self.envs[val[1]].dynamics)
@@ -448,7 +449,15 @@ class QuadrotorEnvMulti(gym.Env):
                                                     obstacle_size=self.obstacle_size,
                                                     col_coeff=self.rew_coeff["quadcol_obst_coeff"])
 
-        # apply_room_collision = self.simulate_collision_with_room(wall_crash_list, ceiling_crash_list)
+            # # 4) Room
+            if len(wall_crash_list) > 0 or len(ceiling_crash_list) > 0:
+                self_state_update_flag = True
+
+            for val in wall_crash_list:
+                perform_collision_with_wall(drone_dyn=self.envs[val].dynamics, room_box=self.envs[0].room_box)
+
+            for val in ceiling_crash_list:
+                perform_collision_with_ceiling(drone_dyn=self.envs[val].dynamics)
 
         # 4. Run the scenario passed to self.quads_mode
         self.scenario.step()
@@ -459,8 +468,8 @@ class QuadrotorEnvMulti(gym.Env):
             self.pos[i, :] = self.envs[i].dynamics.pos
             self.vel[i, :] = self.envs[i].dynamics.vel
 
-        # if apply_room_collision:
-        #     obs = [e.state_vector(e) for e in self.envs]
+        if self_state_update_flag:
+            obs = [e.state_vector(e) for e in self.envs]
 
         # Concatenate observations of neighbor drones
         if self.num_use_neighbor_obs > 0:
