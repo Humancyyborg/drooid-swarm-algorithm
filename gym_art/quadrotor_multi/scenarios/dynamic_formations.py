@@ -4,10 +4,8 @@ from gym_art.quadrotor_multi.scenarios.base import QuadrotorScenario
 
 
 class Scenario_dynamic_formations(QuadrotorScenario):
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
-                 quads_formation_size):
-        super().__init__(quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
-                         quads_formation_size)
+    def __init__(self, quads_mode, envs, num_agents, room_dims):
+        super().__init__(quads_mode, envs, num_agents, room_dims)
         # if increase_formation_size is True, increase the formation size
         # else, decrease the formation size
         self.increase_formation_size = True
@@ -20,7 +18,7 @@ class Scenario_dynamic_formations(QuadrotorScenario):
         for env, goal in zip(self.envs, self.goals):
             env.goal = goal
 
-    def step(self, infos, rewards):
+    def step(self):
         if self.formation_size <= -self.highest_formation_size:
             self.increase_formation_size = True
             self.control_speed = np.random.uniform(low=1.0, high=3.0)
@@ -34,7 +32,7 @@ class Scenario_dynamic_formations(QuadrotorScenario):
             self.formation_size -= 0.001 * self.control_speed
 
         self.update_goals()
-        return infos, rewards
+        return
 
     def reset(self):
         self.increase_formation_size = True if np.random.uniform(low=0.0, high=1.0) < 0.5 else False

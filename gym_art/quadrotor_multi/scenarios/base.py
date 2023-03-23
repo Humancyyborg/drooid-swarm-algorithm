@@ -2,34 +2,28 @@ import numpy as np
 
 from gym_art.quadrotor_multi.scenarios.utils import QUADS_PARAMS_DICT, update_formation_and_max_agent_per_layer, \
     update_layer_dist, get_formation_range, get_goal_by_formation
-from gym_art.quadrotor_multi.quad_utils import generate_points, get_grid_dim_number
+from gym_art.quadrotor_multi.scenarios.utils import generate_points, get_grid_dim_number
 
 
 class QuadrotorScenario:
-    def __init__(self, quads_mode, envs, num_agents, room_dims, room_dims_callback, rew_coeff, quads_formation,
-                 quads_formation_size):
+    def __init__(self, quads_mode, envs, num_agents, room_dims):
         self.quads_mode = quads_mode
         self.envs = envs
         self.num_agents = num_agents
         self.room_dims = room_dims
-        self.set_room_dims = room_dims_callback  # usage example: self.set_room_dims((10, 10, 10))
-        self.rew_coeff = rew_coeff
         self.goals = None
 
         #  Set formation, num_agents_per_layer, lowest_formation_size, highest_formation_size, formation_size,
         #  layer_dist, formation_center
         #  Note: num_agents_per_layer for scalability, the maximum number of agent per layer
-        self.formation = quads_formation
-        self.num_agents_per_layer = 8
-        quad_arm = self.envs[0].dynamics.arm
-        self.lowest_formation_size, self.highest_formation_size = 8 * quad_arm, 16 * quad_arm
-        self.formation_size = quads_formation_size
-        self.layer_dist = self.lowest_formation_size
-        self.formation_center = np.array([0.0, 0.0, 2.0])
+        self.formation = None
+        self.formation_center = None
+        self.lowest_formation_size, self.highest_formation_size = 1.0, 2.0
+        self.formation_size = 1.0
 
-        # Aux variables for scenario: circular configuration
-        self.settle_count = np.zeros(self.num_agents)
-        self.metric_of_settle = 2.0 * quad_arm
+        self.num_agents_per_layer = 8
+        self.layer_dist = self.lowest_formation_size
+
         # Aux variables for scenario: pursuit evasion
         self.interp = None
 
@@ -66,8 +60,10 @@ class QuadrotorScenario:
 
             goals = np.array(goals)
             goals += formation_center
+
         elif self.formation == "sphere":
             goals = self.formation_size * np.array(generate_points(num_agents)) + formation_center
+
         elif self.formation.startswith("grid"):
             if num_agents <= self.num_agents_per_layer:
                 dim_1, dim_2 = get_grid_dim_number(num_agents)
@@ -135,7 +131,7 @@ class QuadrotorScenario:
         self.formation_size = np.random.uniform(low=self.lowest_formation_size, high=self.highest_formation_size)
         self.layer_dist = update_layer_dist(low=self.lowest_formation_size, high=self.highest_formation_size)
 
-    def step(self, infos, rewards):
+    def step(self):
         raise NotImplementedError("Implemented in a specific scenario")
 
     def reset(self):

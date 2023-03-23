@@ -146,9 +146,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Aux variables for scenarios
         self.scenario = create_scenario(quads_mode=quads_mode, envs=self.envs, num_agents=self.num_agents,
-                                        room_dims=self.room_dims, room_dims_callback=self.set_room_dims,
-                                        rew_coeff=self.rew_coeff,
-                                        quads_formation=quads_formation, quads_formation_size=quads_formation_size)
+                                        room_dims=self.room_dims)
         self.quads_formation_size = quads_formation_size
 
         # set render
@@ -519,7 +517,7 @@ class QuadrotorEnvMulti(gym.Env):
         # apply_room_collision = self.simulate_collision_with_room(wall_crash_list, ceiling_crash_list)
 
         # 4. Run the scenario passed to self.quads_mode
-        infos, rewards = self.scenario.step(infos=infos, rewards=rewards)
+        self.scenario.step()
 
         # 5. Collect final observations
         # Collect positions after physical interaction
