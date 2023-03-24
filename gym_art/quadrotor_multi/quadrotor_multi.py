@@ -358,10 +358,10 @@ class QuadrotorEnvMulti(gym.Env):
         self.distance_to_goal = [[] for _ in range(len(self.envs))]
 
         # Rendering
-        if self.scene:
-            self.reset_scene = True
-            self.quads_formation_size = self.scenario.formation_size
-            self.all_collisions = {val: [0.0 for _ in range(len(self.envs))] for val in ['drone', 'ground', 'obstacle']}
+
+        self.reset_scene = True
+        self.quads_formation_size = self.scenario.formation_size
+        self.all_collisions = {val: [0.0 for _ in range(len(self.envs))] for val in ['drone', 'ground', 'obstacle']}
 
         return obs
 
@@ -536,12 +536,14 @@ class QuadrotorEnvMulti(gym.Env):
             self.crashes_last_episode += infos[0]["rewards"]["rew_crash"]
 
         # Rendering
-        if self.scene:
+        # if self.scene:
             # Collisions with room
-            ground_collisions = [1.0 if env.dynamics.on_floor else 0.0 for env in self.envs]
-            obst_coll = [1.0 if i < 0 else 0.0 for i in rew_obst_quad_collisions_raw]
-            self.all_collisions = {'drone': drone_col_matrix, 'ground': ground_collisions,
-                                   'obstacle': obst_coll}
+        if not self.use_obstacles:
+            rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
+        ground_collisions = [1.0 if env.dynamics.on_floor else 0.0 for env in self.envs]
+        obst_coll = [1.0 if i < 0 else 0.0 for i in rew_obst_quad_collisions_raw]
+        self.all_collisions = {'drone': drone_col_matrix, 'ground': ground_collisions,
+                               'obstacle': obst_coll}
 
         # 7. DONES
         if any(dones):
@@ -599,6 +601,8 @@ class QuadrotorEnvMulti(gym.Env):
         if self.reset_scene:
             self.scene.update_models(models)
             self.scene.formation_size = self.quads_formation_size
+            self.scene.update_env(self.room_dims)
+
             self.scene.reset(tuple(e.goal for e in self.envs), self.all_dynamics(), self.obstacles, self.all_collisions)
             self.reset_scene = False
 

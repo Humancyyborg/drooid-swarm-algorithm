@@ -42,10 +42,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, time_remain, rew_coeff, 
     cost_effort = rew_coeff["effort"] * cost_effort_raw
 
     # Loss orientation
-    if on_floor:
-        cost_orient_raw = 1.0
-    else:
-        cost_orient_raw = -dynamics.rot[2, 2]
+    cost_orient_raw = -dynamics.rot[2, 2]
 
     cost_orient = rew_coeff["orient"] * cost_orient_raw
 

@@ -396,7 +396,10 @@ class QuadrotorDynamics:
                 # Drone is on the floor, and on_floor flag still True
                 theta = np.arctan2(self.rot[1][0], self.rot[0][0] + EPS)
                 c, s = np.cos(theta), np.sin(theta)
-                self.rot = np.array(((c, -s, 0.), (s, c, 0.), (0., 0., 1.)))
+                if self.rot[2, 2] < EPS:
+                    self.rot = np.array(((c, -s, 0.), (s, c, 0.), (0, 0, -1.)))
+                else:
+                    self.rot = np.array(((c, -s, 0.), (s, c, 0.), (0., 0., 1.)))
 
                 # Add friction if drone is on the floor
                 f = self.mu * GRAV * npa(np.sign(force[0]), np.sign(force[1]), 0) * self.mass
@@ -417,10 +420,10 @@ class QuadrotorDynamics:
                 # Set rot
                 theta = np.arctan2(self.rot[1][0], self.rot[0][0] + EPS)
                 c, s = np.cos(theta), np.sin(theta)
-                if self.rot[2, 2] < 0:
-                    self.rot = randyaw()
-                    while np.dot(self.rot[:, 0], to_xyhat(-self.pos)) < 0.5:
-                        self.rot = randyaw()
+                if self.rot[2, 2] < EPS:
+                    theta = np.random.uniform(-np.pi, np.pi)
+                    c, s = np.cos(theta), np.sin(theta)
+                    self.rot = np.array(((c, -s, 0.), (s, c, 0.), (0, 0, -1.)))
                 else:
                     self.rot = np.array(((c, -s, 0.), (s, c, 0.), (0., 0., 1.)))
 
@@ -552,7 +555,7 @@ def calculate_torque_integrate_rotations_and_update_omega(
         rotor_drag_force, vel
 
 
-@njit
+# @njit
 def floor_interaction_numba(pos, vel, rot, omega, mu, mass, sum_thr_drag, thrust_cmds_damp, thrust_rot_damp,
                             floor_threshold, on_floor):
     # Change pos, omega, rot, acc
@@ -564,7 +567,10 @@ def floor_interaction_numba(pos, vel, rot, omega, mu, mass, sum_thr_drag, thrust
             # Drone is on the floor, and on_floor flag still True
             theta = np.arctan2(rot[1][0], rot[0][0] + EPS)
             c, s = np.cos(theta), np.sin(theta)
-            rot = np.array(((c, -s, 0.), (s, c, 0.), (0., 0., 1.)))
+            if rot[2, 2] < EPS:
+                rot = np.array(((c, -s, 0.), (s, c, 0.), (0, 0, -1.)))
+            else:
+                rot = np.array(((c, -s, 0.), (s, c, 0.), (0., 0., 1.)))
 
             # Add friction if drone is on the floor
             f = mu * GRAV * np.array((np.sign(force[0]), np.sign(force[1]), 0)) * mass
@@ -585,10 +591,10 @@ def floor_interaction_numba(pos, vel, rot, omega, mu, mass, sum_thr_drag, thrust
             # Set rot
             theta = np.arctan2(rot[1][0], rot[0][0] + EPS)
             c, s = np.cos(theta), np.sin(theta)
-            if rot[2, 2] < 0:
+            if rot[2, 2] < EPS:
                 theta = np.random.uniform(-np.pi, np.pi)
                 c, s = np.cos(theta), np.sin(theta)
-                rot = np.array(((c, -s, 0), (s, c, 0), (0, 0, 1)))
+                rot = np.array(((c, -s, 0.), (s, c, 0.), (0, 0, -1.)))
             else:
                 rot = np.array(((c, -s, 0.), (s, c, 0.), (0., 0., 1.)))
 
