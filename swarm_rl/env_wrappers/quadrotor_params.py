@@ -84,7 +84,7 @@ def add_quadrotors_env_args(env, parser):
                             'o_static_diff_goal'], help='Choose which scenario to run. ep = evader pursuit')
 
     # Room
-    p.add_argument('--quads_room_dims', nargs='+', default=[10, 10, 10], type=float,
+    p.add_argument('--quads_room_dims', nargs='+', default=[10., 10., 10.], type=float,
                    help='Length, width, and height dimensions respectively of the quadrotor env')
 
     # Replay Buffer
