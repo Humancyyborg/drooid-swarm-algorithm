@@ -231,7 +231,6 @@ class QuadrotorEnvMulti(gym.Env):
                 rel_pos_unit = rel_pos / rel_dist[:, None]
 
                 # new relative distance is a new metric that combines relative position and relative velocity
-                # F = alpha * distance + (1 - alpha) * dot(normalized_direction_to_other_drone, relative_vel)
                 # the smaller the new_rel_dist, the closer the drones
                 new_rel_dist = rel_dist + np.sum(rel_pos_unit * rel_vel, axis=1)
 

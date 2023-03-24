@@ -2,9 +2,7 @@ import copy
 
 import gym
 import numpy as np
-
-from sample_factory.envs.env_utils import RewardShapingInterface, TrainingInfoInterface
-
+from sample_factory.envs.env_utils import TrainingInfoInterface
 
 DEFAULT_QUAD_REWARD_SHAPING_SINGLE = dict(
     quad_rewards=dict(
