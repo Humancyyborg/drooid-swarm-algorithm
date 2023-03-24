@@ -300,7 +300,6 @@ class QuadrotorEnvMulti(gym.Env):
         for i, e in enumerate(self.envs):
             e.goal = self.scenario.goals[i]
             e.rew_coeff = self.rew_coeff
-            e.update_env(*self.room_dims)
 
             observation = e.reset()
             obs.append(observation)
@@ -563,10 +562,7 @@ class QuadrotorEnvMulti(gym.Env):
         if self.reset_scene:
             self.scene.update_models(models)
             self.scene.formation_size = self.quads_formation_size
-            self.scene.update_env(self.room_dims)
-
             self.scene.reset(tuple(e.goal for e in self.envs), self.all_dynamics(), self.obstacles, self.all_collisions)
-
             self.reset_scene = False
 
         if self.quads_mode == "mix":
