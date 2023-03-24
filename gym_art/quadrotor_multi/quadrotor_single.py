@@ -68,13 +68,8 @@ class QuadrotorDynamics:
     - only diagonal inertia is used at the moment
     """
 
-    def __init__(self, model_params,
-                 room_box=None,
-                 dynamics_steps_num=1,
-                 dim_mode="3D",
-                 gravity=GRAV,
-                 dynamics_simplification=False,
-                 use_numba=False):
+    def __init__(self, model_params, room_box=None, dynamics_steps_num=1, dim_mode="3D", gravity=GRAV,
+                 dynamics_simplification=False, use_numba=False):
 
         self.dynamics_steps_num = dynamics_steps_num
         self.dynamics_simplification = dynamics_simplification
@@ -133,7 +128,7 @@ class QuadrotorDynamics:
         self.floor_threshold = 0.05
         self.mu = 0.6
 
-        ## Collision with room
+        # Collision with room
         self.crashed_wall = False
         self.crashed_ceiling = False
         self.crashed_floor = False
