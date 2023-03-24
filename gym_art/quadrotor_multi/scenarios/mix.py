@@ -19,7 +19,6 @@ from gym_art.quadrotor_multi.scenarios.swarm_vs_swarm import Scenario_swarm_vs_s
 
 # Test Scenarios
 from gym_art.quadrotor_multi.scenarios.test.o_test import Scenario_o_test
-from gym_art.quadrotor_multi.scenarios.test.test_mix import Scenario_mix_test
 
 
 def create_scenario(quads_mode, envs, num_agents, room_dims):

@@ -97,8 +97,8 @@ def calculate_drone_proximity_penalties(distance_matrix, collision_falloff_thres
     penalty_ratio = -max_penalty / collision_falloff_threshold
     for i, j, dist in distance_matrix:
         penalty = penalty_ratio * dist + max_penalty
-        penalties[i] += penalty
-        penalties[j] += penalty
+        penalties[int(i)] += penalty
+        penalties[int(j)] += penalty
 
     return dt * penalties  # actual penalties per tick to be added to the overall reward
 

@@ -6,9 +6,12 @@ from copy import deepcopy
 import gym
 import numpy as np
 
-from gym_art.quadrotor_multi.quad_utils import calculate_collision_matrix, calculate_drone_proximity_penalties, \
-    perform_collision_with_obstacle, perform_downwash, perform_collision_between_drones_numba, QUADS_OBS_REPR, \
-    QUADS_NEIGHBOR_OBS_TYPE, perform_collision_with_wall, perform_collision_with_ceiling
+from gym_art.quadrotor_multi.collisions.obstacles import perform_collision_with_obstacle
+from gym_art.quadrotor_multi.collisions.quadrotors import calculate_collision_matrix, \
+    calculate_drone_proximity_penalties, perform_collision_between_drones
+from gym_art.quadrotor_multi.collisions.room import perform_collision_with_wall, perform_collision_with_ceiling
+from gym_art.quadrotor_multi.quad_utils import QUADS_OBS_REPR, QUADS_NEIGHBOR_OBS_TYPE
+
 from gym_art.quadrotor_multi.quadrotor_multi_obstacles import MultiObstacles
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
 from gym_art.quadrotor_multi.quadrotor_single import QuadrotorSingle
@@ -356,6 +359,7 @@ class QuadrotorEnvMulti(gym.Env):
             calculate_collision_matrix(positions=self.pos, collision_threshold=self.collision_threshold)
 
         # # Filter curr_drone_collisions
+        curr_drone_collisions = curr_drone_collisions.astype(int)
         curr_drone_collisions = np.delete(curr_drone_collisions, np.unique(
             np.where(curr_drone_collisions == [-1000, -1000])[0]), axis=0)
 
@@ -404,10 +408,13 @@ class QuadrotorEnvMulti(gym.Env):
         rew_collisions = self.rew_coeff["quadcol_bin"] * rew_collisions_raw
 
         # penalties for being too close to other drones
-        rew_proximity = -1.0 * calculate_drone_proximity_penalties(
-            distance_matrix=distance_matrix, collision_falloff_threshold=self.collision_falloff_threshold,
-            dt=self.control_dt, max_penalty=self.rew_coeff["quadcol_bin_smooth_max"], num_agents=self.num_agents,
-        )
+        if len(distance_matrix) > 0:
+            rew_proximity = -1.0 * calculate_drone_proximity_penalties(
+                distance_matrix=distance_matrix, collision_falloff_threshold=self.collision_falloff_threshold,
+                dt=self.control_dt, max_penalty=self.rew_coeff["quadcol_bin_smooth_max"], num_agents=self.num_agents,
+            )
+        else:
+            rew_proximity = np.zeros(self.num_agents)
 
         # 2) With obstacles
         rew_collisions_obst_quad = np.zeros(self.num_agents)
@@ -442,10 +449,10 @@ class QuadrotorEnvMulti(gym.Env):
         self_state_update_flag = False
 
         # # 1) aerodynamics
-        if self.use_downwash:
-            # TODO: Support self_state_update_flag
-            envs_dynamics = [env.dynamics for env in self.envs]
-            perform_downwash(drones_dyn=envs_dynamics, dt=self.control_dt)
+        # if self.use_downwash:
+        #     # TODO: Support self_state_update_flag
+        #     envs_dynamics = [env.dynamics for env in self.envs]
+        #     perform_downwash(drones_dyn=envs_dynamics, dt=self.control_dt)
 
         # # 2) Drones
         if self.apply_collision_force:
