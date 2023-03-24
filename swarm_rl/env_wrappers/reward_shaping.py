@@ -92,7 +92,7 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface):
                 if hasattr(self.env.unwrapped, 'scenario') and self.env.unwrapped.scenario:
                     scenario_name = self.env.unwrapped.scenario.name()
                     for rew_key in ['rew_pos', 'rew_crash']:
-                        extra_stats[f'{rew_key}_{scenario_name}'] = self.cumulative_rewards[i][rew_key]
+                        extra_stats[f'{scenario_name}/{rew_key}'] = self.cumulative_rewards[i][rew_key]
 
                 episode_actions = np.array(self.episode_actions)
                 episode_actions = episode_actions.transpose()

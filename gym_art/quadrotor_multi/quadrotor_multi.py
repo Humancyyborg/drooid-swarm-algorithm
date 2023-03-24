@@ -132,8 +132,8 @@ class QuadrotorEnvMulti(gym.Env):
         self.prev_drone_collisions = []
 
         # # # Dense reward info
-        self.collision_hitbox_radius = collision_hitbox_radius
-        self.collision_falloff_radius = collision_falloff_radius
+        self.collision_threshold = collision_hitbox_radius * self.quad_arm
+        self.collision_falloff_threshold = collision_falloff_radius * self.quad_arm
 
         # # Collisions: Room
         self.collisions_room_per_episode = 0
@@ -353,18 +353,25 @@ class QuadrotorEnvMulti(gym.Env):
         # 1. Calculate collisions: 1) between drones 2) with obstacles 3) with room
         # 1) Collisions between drones
         drone_col_matrix, curr_drone_collisions, distance_matrix = \
-            calculate_collision_matrix(positions=self.pos, arm=self.quad_arm,
-                                       hitbox_radius=self.collision_hitbox_radius)
+            calculate_collision_matrix(positions=self.pos, collision_threshold=self.collision_threshold)
+
+        # # Filter curr_drone_collisions
+        curr_drone_collisions = np.delete(curr_drone_collisions, np.unique(
+            np.where(curr_drone_collisions == [-1000, -1000])[0]), axis=0)
 
         self.last_step_unique_collisions = np.setdiff1d(curr_drone_collisions, self.prev_drone_collisions)
+
+        # # Filter distance_matrix; Only contains quadrotor pairs with distance <= self.collision_threshold
+        near_quad_ids = np.where(distance_matrix[:, 2] <= self.collision_falloff_threshold)
+        distance_matrix = distance_matrix[near_quad_ids]
 
         # Collision between 2 drones counts as a single collision
         # # Calculate collisions (i) All collisions (ii) collisions after grace period
         collisions_curr_tick = len(self.last_step_unique_collisions) // 2
         self.collisions_per_episode += collisions_curr_tick
 
-        if collisions_curr_tick > 0 and self.envs[0].tick >= self.collisions_grace_period_seconds * self.control_freq:
-                self.collisions_after_settle += collisions_curr_tick
+        if collisions_curr_tick > 0 and self.envs[0].tick >= self.collisions_grace_period_steps:
+            self.collisions_after_settle += collisions_curr_tick
 
         # # Aux: Collisions
         self.prev_drone_collisions = curr_drone_collisions
@@ -398,10 +405,8 @@ class QuadrotorEnvMulti(gym.Env):
 
         # penalties for being too close to other drones
         rew_proximity = -1.0 * calculate_drone_proximity_penalties(
-            distance_matrix=distance_matrix, arm=self.quad_arm, dt=self.control_dt,
-            penalty_fall_off=self.collision_falloff_radius,
-            max_penalty=self.rew_coeff["quadcol_bin_smooth_max"],
-            num_agents=self.num_agents,
+            distance_matrix=distance_matrix, collision_falloff_threshold=self.collision_falloff_threshold,
+            dt=self.control_dt, max_penalty=self.rew_coeff["quadcol_bin_smooth_max"], num_agents=self.num_agents,
         )
 
         # 2) With obstacles
@@ -448,7 +453,7 @@ class QuadrotorEnvMulti(gym.Env):
                 self_state_update_flag = True
             for val in curr_drone_collisions:
                 dyn1, dyn2 = self.envs[val[0]].dynamics, self.envs[val[1]].dynamics
-                dyn1.vel, dyn1.omega, dyn2.vel, dyn2.omega = perform_collision_between_drones_numba(
+                dyn1.vel, dyn1.omega, dyn2.vel, dyn2.omega = perform_collision_between_drones(
                     pos1=dyn1.pos, vel1=dyn1.vel, omega1=dyn1.omega, pos2=dyn2.pos, vel2=dyn2.vel, omega2=dyn2.omega)
 
             # # 3) Obstacles
@@ -502,7 +507,7 @@ class QuadrotorEnvMulti(gym.Env):
             # Collisions with room
             ground_collisions = [1.0 if env.dynamics.on_floor else 0.0 for env in self.envs]
             obst_coll = [1.0 if i < 0 else 0.0 for i in rew_obst_quad_collisions_raw]
-            self.all_collisions = {'drone': np.sum(drone_col_matrix, axis=1), 'ground': ground_collisions,
+            self.all_collisions = {'drone': drone_col_matrix, 'ground': ground_collisions,
                                    'obstacle': obst_coll}
 
         # 7. DONES

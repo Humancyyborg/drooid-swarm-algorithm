@@ -44,9 +44,8 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_collision_hitbox_radius', default=2.0, type=float,
                    help='When the distance between two drones are less than N arm_length, we would view them as '
                         'collide.')
-    p.add_argument('--quads_collision_falloff_radius', default=0.0, type=float,
-                   help='The falloff radius for the smooth penalty. 0: radius is 0 arm_length, which means we would '
-                        'not add extra penalty except drones collide')
+    p.add_argument('--quads_collision_falloff_radius', default=-1.0, type=float,
+                   help='The falloff radius for the smooth penalty. -1.0: no smooth penalty')
     p.add_argument('--quads_collision_smooth_max_penalty', default=10.0, type=float,
                    help='The upper bound of the collision function given distance among drones')
 

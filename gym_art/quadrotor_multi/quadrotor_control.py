@@ -38,7 +38,7 @@ class RawControl(object):
         if not self.zero_action_middle:
             # Range of actions 0 .. 1
             self.low = np.zeros(4)
-            self.bias = 0
+            self.bias = 0.0
             self.scale = 1.0
         else:
             # Range of actions -1 .. 1
