@@ -664,23 +664,17 @@ class QuadrotorDynamics:
 
 
 # reasonable reward function for hovering at a goal and not flying too high
-def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_wall, crashed_ceiling, time_remain,
-                            rew_coeff, action_prev, on_floor=False):
-    ##################################################
-    ## log to create a sharp peak at the goal
+def compute_reward_weighted(dynamics, goal, action, dt, time_remain, rew_coeff, action_prev, on_floor=False):
+    # Distance to the goal
     dist = np.linalg.norm(goal - dynamics.pos)
     cost_pos_raw = dist
     cost_pos = rew_coeff["pos"] * cost_pos_raw
 
-    ##################################################
-    # penalize amount of control effort
+    # Penalize amount of control effort
     cost_effort_raw = np.linalg.norm(action)
     cost_effort = rew_coeff["effort"] * cost_effort_raw
 
-
-
-    ##################################################
-    ## Loss orientation
+    # Loss orientation
     if on_floor:
         cost_orient_raw = 1.0
     else:
@@ -688,8 +682,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
 
     cost_orient = rew_coeff["orient"] * cost_orient_raw
 
-    ##################################################
-    ## Loss for constant uncontrolled rotation around vertical axis
+    # Loss for constant uncontrolled rotation around vertical axis
     cost_spin_raw = (dynamics.omega[0] ** 2 + dynamics.omega[1] ** 2 + dynamics.omega[2] ** 2) ** 0.5
     cost_spin = rew_coeff["spin"] * cost_spin_raw
 
@@ -722,7 +715,6 @@ def compute_reward_weighted(dynamics, goal, action, dt, crashed_floor, crashed_w
         "rewraw_spin": -cost_spin_raw,
     }
 
-    # report rewards in the same format as they are added to the actual agent's reward (easier to debug this way)
     for k, v in rew_info.items():
         rew_info[k] = dt * v
 
@@ -1021,22 +1013,14 @@ class QuadrotorSingle:
                                   dt=self.dt,
                                   observation=None)
 
-        self.crashed_floor = self.dynamics.crashed_floor
-        self.crashed_wall = self.dynamics.crashed_wall
-        self.crashed_ceiling = self.dynamics.crashed_ceiling
         self.time_remain = self.ep_len - self.tick
-        reward, rew_info = compute_reward_weighted(self.dynamics, self.goal, action, self.dt, self.crashed_floor,
-                                                   self.crashed_wall, self.crashed_ceiling, self.time_remain,
-                                                   rew_coeff=self.rew_coeff, action_prev=self.actions[1],
-                                                   on_floor=self.dynamics.on_floor
-                                                   )
-        # if self.dynamics.crashed_floor:
-        #     self.dynamics.crashed_floor = False
+        reward, rew_info = compute_reward_weighted(
+            dynamics=self.dynamics, goal=self.goal, action=action, dt=self.dt, time_remain=self.time_remain,
+            rew_coeff=self.rew_coeff, action_prev=self.actions[1], on_floor=self.dynamics.on_floor)
 
         self.tick += 1
-        done = self.tick > self.ep_len  # or self.crashed
+        done = self.tick > self.ep_len
         sv = self.state_vector(self)
-
         self.traj_count += int(done)
 
         ## TODO: OPTIMIZATION: sv_comp should be a dictionary formed when state() function is called
@@ -1107,15 +1091,11 @@ class QuadrotorSingle:
         self.update_dynamics(dynamics_params=self.dynamics_params)
 
     def _reset(self):
-        ## I have to update state vector 
-        ##############################################################
-        ## DYNAMICS RANDOMIZATION AND UPDATE       
+        # DYNAMICS RANDOMIZATION AND UPDATE
         if self.dynamics_randomize_every is not None and \
                 (self.traj_count + 1) % (self.dynamics_randomize_every) == 0:
             self.resample_dynamics()
 
-        ## CURRICULUM (NOT REALLY NEEDED ANYMORE)
-        # from 0.5 to 10 after 100k episodes (a form of curriculum)
         if self.box < 10:
             self.box = self.box * self.box_scale
         x, y, z = self.np_random.uniform(-self.box, self.box, size=(3,)) + self.goal
@@ -1169,7 +1149,6 @@ class QuadrotorSingle:
         self.dynamics.crashed_floor = self.dynamics.crashed_wall = self.dynamics.crashed_ceiling = False
 
         # Reseting some internal state (counters, etc)
-        self.crashed = False
         self.tick = 0
         self.actions = [np.zeros([4, ]), np.zeros([4, ])]
 
