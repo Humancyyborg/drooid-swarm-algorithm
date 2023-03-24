@@ -1,9 +1,6 @@
 import numpy as np
 from numba import njit
 
-from gym_art.quadrotor_multi.quad_utils import QUAD_RADIUS
-
-
 @njit
 def get_surround_sdfs(quad_poses, obst_poses, quads_sdf_obs, obst_radius, resolution=0.1):
     # Shape of quads_sdf_obs: (quad_num, 9)
@@ -31,9 +28,9 @@ def get_surround_sdfs(quad_poses, obst_poses, quads_sdf_obs, obst_radius, resolu
 
 
 @njit
-def collision_detection(quad_poses, obst_poses, obst_radius):
+def collision_detection(quad_poses, obst_poses, obst_radius, quad_radius):
     quad_num = len(quad_poses)
-    collide_threshold = QUAD_RADIUS + obst_radius
+    collide_threshold = quad_radius + obst_radius
     # Get distance matrix b/w quad and obst
     quad_collisions = -1 * np.ones(quad_num)
     for i, q_pos in enumerate(quad_poses):

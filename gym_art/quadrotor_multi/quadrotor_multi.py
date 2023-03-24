@@ -10,9 +10,10 @@ from gym_art.quadrotor_multi.collisions.obstacles import perform_collision_with_
 from gym_art.quadrotor_multi.collisions.quadrotors import calculate_collision_matrix, \
     calculate_drone_proximity_penalties, perform_collision_between_drones
 from gym_art.quadrotor_multi.collisions.room import perform_collision_with_wall, perform_collision_with_ceiling
+from gym_art.quadrotor_multi.obstacles.utils import get_cell_centers
 from gym_art.quadrotor_multi.quad_utils import QUADS_OBS_REPR, QUADS_NEIGHBOR_OBS_TYPE
 
-from gym_art.quadrotor_multi.quadrotor_multi_obstacles import MultiObstacles
+from gym_art.quadrotor_multi.obstacles.obstacles import MultiObstacles
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
 from gym_art.quadrotor_multi.quadrotor_single import QuadrotorSingle
 from gym_art.quadrotor_multi.scenarios.mix import create_scenario
@@ -24,7 +25,7 @@ class QuadrotorEnvMulti(gym.Env):
                  neighbor_visible_num, neighbor_obs_type, collision_hitbox_radius, collision_falloff_radius,
 
                  # Obstacle
-                 use_obstacles, obst_size,
+                 use_obstacles, obst_density, obst_size, obst_spawn_area,
 
                  # Aerodynamics, Numba Speed Up, Scenarios, Room, Replay Buffer, Rendering
                  use_downwash, use_numba, quads_mode, room_dims, use_replay_buffer, quads_view_mode,
@@ -115,10 +116,12 @@ class QuadrotorEnvMulti(gym.Env):
         if self.use_obstacles:
             self.prev_obst_quad_collisions = []
             self.obst_quad_collisions_per_episode = 0
+            self.obstacle_density = obst_density
+            self.obst_spawn_area = obst_spawn_area
+            self.num_obstacles = int(obst_density * obst_spawn_area[0] * obst_spawn_area[1])
             self.obst_map = None
             self.obstacle_size = obst_size
-            self.obstacles = MultiObstacles(num_obstacles=self.num_obstacles, room_dims=self.room_dims,
-                                            obstacle_size=self.obstacle_size)
+            self.obstacles = MultiObstacles(obstacle_size=self.obstacle_size, quad_radius=self.quad_arm)
 
         # Scenarios
         self.quads_mode = quads_mode
@@ -268,6 +271,29 @@ class QuadrotorEnvMulti(gym.Env):
         ceiling_crash_list = np.where(ceiling_collisions >= 1)[0]
 
         return floor_crash_list, wall_crash_list, ceiling_crash_list
+
+    def obst_generation_given_density(self, grid_size=1.0):
+        obst_area_length, obst_area_width = int(self.obst_spawn_area[0]), int(self.obst_spawn_area[1])
+        num_room_grids = obst_area_length * obst_area_width
+
+        cell_centers = get_cell_centers(obst_area_length=obst_area_length, obst_area_width=obst_area_width,
+                                        grid_size=grid_size)
+
+        room_map = [i for i in range(0, num_room_grids)]
+
+        obst_index = np.random.choice(a=room_map, size=int(num_room_grids * self.obstacle_density), replace=False)
+
+        obst_pos_arr = []
+        # 0: No Obst, 1: Obst
+        obst_map = np.zeros([obst_area_length, obst_area_width])
+        for obst_id in obst_index:
+            rid, cid = obst_id // obst_area_width, obst_id - (obst_id // obst_area_width) * obst_area_width
+            obst_map[rid, cid] = 1
+            obst_item = list(cell_centers[rid + int(obst_area_length / grid_size) * cid])
+            obst_item.append(self.room_dims[2] / 2.)
+            obst_pos_arr.append(obst_item)
+
+        return obst_map, obst_pos_arr, cell_centers
 
     def init_scene_multi(self):
         models = tuple(e.dynamics.model for e in self.envs)
