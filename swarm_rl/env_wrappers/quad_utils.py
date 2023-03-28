@@ -53,7 +53,7 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         # Replay Buffer
         use_replay_buffer=use_replay_buffer,
         # Rendering
-        quads_view_mode=cfg.quads_view_mode,
+        quads_view_mode=cfg.quads_view_mode, quads_render=cfg.quads_render,
         # Quadrotor Specific (Do Not Change)
         dynamics_params=quad, raw_control=raw_control, raw_control_zero_middle=raw_control_zero_middle,
         dynamics_randomize_every=dyn_randomize_every, dynamics_change=dynamics_change, dyn_sampler_1=sampler_1,

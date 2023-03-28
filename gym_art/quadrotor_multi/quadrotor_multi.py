@@ -28,7 +28,7 @@ class QuadrotorEnvMulti(gym.Env):
                  use_obstacles, obst_density, obst_size, obst_spawn_area,
 
                  # Aerodynamics, Numba Speed Up, Scenarios, Room, Replay Buffer, Rendering
-                 use_downwash, use_numba, quads_mode, room_dims, use_replay_buffer, quads_view_mode,
+                 use_downwash, use_numba, quads_mode, room_dims, use_replay_buffer, quads_view_mode, quads_render,
 
                  # Quadrotor Specific (Do Not Change)
                  dynamics_params, raw_control, raw_control_zero_middle,
@@ -165,15 +165,18 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Rendering
         # # set to true whenever we need to reset the OpenGL scene in render()
-        self.reset_scene = False
+        self.quads_render = quads_render
         self.scene = None
-        self.simulation_start_time = 0
-        self.frames_since_last_render = self.render_skip_frames = 0
-        self.render_every_nth_frame = 1
-        # # Use this to control rendering speed
-        self.render_speed = 1.0
-        self.quads_formation_size = 2.0
-        self.all_collisions = {}
+        if self.quads_render:
+            self.reset_scene = False
+            self.simulation_start_time = 0
+            self.frames_since_last_render = self.render_skip_frames = 0
+            self.render_every_nth_frame = 1
+            # # Use this to control rendering speed
+            self.render_speed = 1.0
+            self.quads_formation_size = 2.0
+            self.all_collisions = {}
+
 
         # Log
         self.distance_to_goal = [[] for _ in range(len(self.envs))]
@@ -358,7 +361,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.distance_to_goal = [[] for _ in range(len(self.envs))]
 
         # Rendering
-        if self.scene:
+        if self.quads_render:
             self.reset_scene = True
             self.quads_formation_size = self.scenario.formation_size
             self.all_collisions = {val: [0.0 for _ in range(len(self.envs))] for val in ['drone', 'ground', 'obstacle']}
@@ -539,10 +542,13 @@ class QuadrotorEnvMulti(gym.Env):
             self.crashes_last_episode += infos[0]["rewards"]["rew_crash"]
 
         # Rendering
-        if self.scene:
+        if self.quads_render:
             # Collisions with room
             ground_collisions = [1.0 if env.dynamics.on_floor else 0.0 for env in self.envs]
-            obst_coll = [1.0 if i < 0 else 0.0 for i in rew_obst_quad_collisions_raw]
+            if self.use_obstacles:
+                obst_coll = [1.0 if i < 0 else 0.0 for i in rew_obst_quad_collisions_raw]
+            else:
+                obst_coll = [0.0 for _ in range(self.num_agents)]
             self.all_collisions = {'drone': drone_col_matrix, 'ground': ground_collisions,
                                    'obstacle': obst_coll}
 

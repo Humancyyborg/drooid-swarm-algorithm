@@ -100,3 +100,4 @@ def add_quadrotors_env_args(env, parser):
     # Rendering
     p.add_argument('--quads_view_mode', default='local', type=str, choices=['local', 'global'],
                    help='Choose which kind of view/camera to use')
+    p.add_argument('--quads_render', default=False, type=bool, help='Use render or not')
