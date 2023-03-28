@@ -48,16 +48,3 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_pos, obstacle_size):
     # Random forces for omega
     new_omega = compute_new_omega(magn_scale=1.0)
     drone_dyn.omega += new_omega
-
-
-@njit
-def calculate_obst_drone_proximity_penalties(distances, arm, dt, penalty_fall_off, max_penalty, num_agents):
-    if not penalty_fall_off:
-        # smooth penalties is disabled
-        return np.zeros(num_agents)
-
-    dist_ratio = 1 - distances / (penalty_fall_off * arm)
-    dist_ratio = np.maximum(dist_ratio, 0)
-    penalties = dist_ratio * max_penalty
-
-    return dt * penalties
