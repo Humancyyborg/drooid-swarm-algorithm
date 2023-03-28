@@ -22,7 +22,6 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface):
         TrainingInfoInterface.__init__(self)
 
         self.reward_shaping_scheme = reward_shaping_scheme
-        self.cumulative_rewards = None
         self.episode_actions = None
 
         self.num_agents = env.num_agents if hasattr(env, 'num_agents') else 1
@@ -43,7 +42,6 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface):
 
     def reset(self):
         obs = self.env.reset()
-        self.cumulative_rewards = [dict() for _ in range(self.num_agents)]
         self.episode_actions = []
         return obs
 
@@ -65,34 +63,13 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface):
             infos_multi, dones_multi = [infos], [dones]
 
         for i, info in enumerate(infos_multi):
-            rew_dict = info['rewards']
-
-            for key, value in rew_dict.items():
-                if key.startswith('rew'):
-                    if key not in self.cumulative_rewards[i]:
-                        self.cumulative_rewards[i][key] = 0
-                    self.cumulative_rewards[i][key] += value
-
             if dones_multi[i]:
-                true_reward = self.cumulative_rewards[i]['rewraw_main']
-                true_reward_consider_collisions = True
-                if true_reward_consider_collisions:
-                    # we ideally want zero collisions, so collisions between quads are given very high weight
-                    true_reward += 1000 * self.cumulative_rewards[i].get('rewraw_quadcol', 0)
-
-                info['true_reward'] = true_reward
                 if 'episode_extra_stats' not in info:
                     info['episode_extra_stats'] = dict()
                 extra_stats = info['episode_extra_stats']
-                extra_stats.update(self.cumulative_rewards[i])
 
                 approx_total_training_steps = self.training_info.get('approx_total_training_steps', 0)
                 extra_stats['z_approx_total_training_steps'] = approx_total_training_steps
-
-                if hasattr(self.env.unwrapped, 'scenario') and self.env.unwrapped.scenario:
-                    scenario_name = self.env.unwrapped.scenario.name()
-                    for rew_key in ['rew_pos', 'rew_crash']:
-                        extra_stats[f'{scenario_name}/{rew_key}'] = self.cumulative_rewards[i][rew_key]
 
                 episode_actions = np.array(self.episode_actions)
                 episode_actions = episode_actions.transpose()
@@ -101,8 +78,6 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface):
                     std_action = np.std(episode_actions[action_idx])
                     extra_stats[f'z_action{action_idx}_mean'] = mean_action
                     extra_stats[f'z_action{action_idx}_std'] = std_action
-
-                self.cumulative_rewards[i] = dict()
 
                 if self.annealing:
                     env_reward_shaping = self.env.unwrapped.rew_coeff
