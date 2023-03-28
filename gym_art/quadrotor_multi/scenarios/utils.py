@@ -35,6 +35,9 @@ QUADS_PARAMS_DICT = {
     'swap_goals': [QUADS_FORMATION_LIST, [8 * quad_arm_size, 16 * quad_arm_size]],
     'dynamic_formations': [QUADS_FORMATION_LIST, [0.0, 20 * quad_arm_size]],
     'run_away': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size]],
+
+    # Obstacles
+    'o_random': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size]],
 }
 
 

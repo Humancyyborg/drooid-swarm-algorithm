@@ -53,7 +53,7 @@ def add_quadrotors_env_args(env, parser):
     # # Obstacle Features
     p.add_argument('--quads_use_obstacles', default=False, type=str2bool, help='Use obstacles or not')
     p.add_argument('--quads_obstacle_obs_type', default='none', type=str,
-                   choices=['none', 'octomap_2d'], help='Choose what kind of obs to send to encoder.')
+                   choices=['none', 'octomap'], help='Choose what kind of obs to send to encoder.')
     p.add_argument('--quads_obst_density', default=0.2, type=float, help='Obstacle density in the map')
     p.add_argument('--quads_obst_size', default=1.0, type=float, help='The radius of obstacles')
     p.add_argument('--quads_obst_spawn_area', nargs='+', default=[6.0, 6.0], type=float,

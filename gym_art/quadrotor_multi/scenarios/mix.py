@@ -17,6 +17,9 @@ from gym_art.quadrotor_multi.scenarios.static_same_goal import Scenario_static_s
 from gym_art.quadrotor_multi.scenarios.swap_goals import Scenario_swap_goals
 from gym_art.quadrotor_multi.scenarios.swarm_vs_swarm import Scenario_swarm_vs_swarm
 
+# Obstacles
+from gym_art.quadrotor_multi.scenarios.obstacles.o_random import Scenario_o_random
+
 # Test Scenarios
 from gym_art.quadrotor_multi.scenarios.test.o_test import Scenario_o_test
 
@@ -64,7 +67,7 @@ class Scenario_mix(QuadrotorScenario):
         self.formation_size = self.scenario.formation_size
         return
 
-    def reset(self):
+    def reset(self, obst_map, cell_centers):
         mode_index = np.random.randint(low=0, high=len(self.quads_mode_list))
         mode = self.quads_mode_list[mode_index]
 
@@ -72,6 +75,10 @@ class Scenario_mix(QuadrotorScenario):
         self.scenario = create_scenario(quads_mode=mode, envs=self.envs, num_agents=self.num_agents,
                                         room_dims=self.room_dims)
 
-        self.scenario.reset()
+        if obst_map is not None:
+            self.scenario.reset(obst_map, cell_centers)
+        else:
+            self.scenario.reset()
+
         self.goals = self.scenario.goals
         self.formation_size = self.scenario.formation_size

@@ -1,7 +1,6 @@
 import numpy as np
 
 from gym_art.quadrotor_multi.collisions.obstacles import compute_col_norm_and_new_vel_obst
-from gym_art.quadrotor_multi.obstacles.utils import get_surround_sdfs, collision_detection, get_cell_centers
 
 
 def test_compute_col_norm_and_new_vel_obst():
