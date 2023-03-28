@@ -7,11 +7,11 @@ _params = ParamGrid([
 
 MULTI_8_CLI = QUAD_BASELINE_CLI_8 + (
     ' --quads_neighbor_encoder_type=attention --with_wandb=True --wandb_project=Quad-Swarm-RL '
-    '--wandb_group=restart_refactor_v1_10 --wandb_user=multi-drones'
+    '--wandb_group=restart_refactor_v1_11 --wandb_user=multi-drones'
 )
 
 _experiment = Experiment(
-    'restart_refactor_v1_10',
+    'restart_refactor_v1_11',
     MULTI_8_CLI,
     _params.generate_params(randomize=False),
 )
