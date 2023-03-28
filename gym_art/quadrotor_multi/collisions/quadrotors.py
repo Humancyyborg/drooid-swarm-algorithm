@@ -100,43 +100,4 @@ def calculate_drone_proximity_penalties(distance_matrix, collision_falloff_thres
         penalties[int(i)] += penalty
         penalties[int(j)] += penalty
 
-    return dt * penalties  # actual penalties per tick to be added to the overall reward
-
-
-if __name__ == "__main__":
-    def main():
-        positions = np.ones((8, 3))
-        positions[7][0] = 3
-        positions[7][1] = 3
-        positions[7][2] = 6
-        collision_threshold = 0.2
-        drone_col_matrix, curr_drone_collisions, distance_matrix = \
-            calculate_collision_matrix(positions=positions, collision_threshold=collision_threshold)
-
-        # diff = np.setdiff1d(curr_drone_collisions, [0, 0])
-        # diff = np.delete(diff,  np.where(diff == -1000))
-        # diff = np.delete(curr_drone_collisions, np.unique(np.where(curr_drone_collisions == [-1000, -1000])[0]), axis=0)
-
-        id = np.where(distance_matrix[:, 2] <= collision_threshold)
-        idx = distance_matrix[id]
-        print(1)
-        # import timeit
-        # SETUP_CODE = '''from __main__ import calculate_collision_matrix_numba; import numpy as np'''
-        #
-        # TEST_CODE = '''calculate_collision_matrix_numba(positions=np.ones((8, 3)), collision_threshold=0.2)'''
-        #
-        # # timeit.repeat statement
-        # times = timeit.repeat(setup=SETUP_CODE,
-        #                       stmt=TEST_CODE,
-        #                       repeat=5,
-        #                       number=int(1e4))
-        #
-        # # printing minimum exec. time
-        # print('times:   ', times)
-        # print('mean times:   ', np.mean(times[1:]))
-
-
-    if __name__ == '__main__':
-        import sys
-
-        sys.exit(main())
+    return dt * penalties
