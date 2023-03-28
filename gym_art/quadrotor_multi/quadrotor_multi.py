@@ -389,6 +389,9 @@ class QuadrotorEnvMulti(gym.Env):
         curr_drone_collisions = np.delete(curr_drone_collisions, np.unique(
             np.where(curr_drone_collisions == [-1000, -1000])[0]), axis=0)
 
+        old_quad_collision = set(map(tuple, self.prev_drone_collisions))
+        new_quad_collision = np.array([x for x in curr_drone_collisions if tuple(x) not in old_quad_collision])
+
         self.last_step_unique_collisions = np.setdiff1d(curr_drone_collisions, self.prev_drone_collisions)
 
         # # Filter distance_matrix; Only contains quadrotor pairs with distance <= self.collision_threshold
@@ -482,33 +485,33 @@ class QuadrotorEnvMulti(gym.Env):
 
         # # 2) Drones
         if self.apply_collision_force:
-            if len(self.last_step_unique_collisions) > 0:
+            if len(new_quad_collision) > 0:
                 self_state_update_flag = True
-            for val in self.last_step_unique_collisions:
-                dyn1, dyn2 = self.envs[val[0]].dynamics, self.envs[val[1]].dynamics
-                dyn1.vel, dyn1.omega, dyn2.vel, dyn2.omega = perform_collision_between_drones(
-                    pos1=dyn1.pos, vel1=dyn1.vel, omega1=dyn1.omega, pos2=dyn2.pos, vel2=dyn2.vel, omega2=dyn2.omega)
+                for val in new_quad_collision:
+                    dyn1, dyn2 = self.envs[val[0]].dynamics, self.envs[val[1]].dynamics
+                    dyn1.vel, dyn1.omega, dyn2.vel, dyn2.omega = perform_collision_between_drones(
+                        pos1=dyn1.pos, vel1=dyn1.vel, omega1=dyn1.omega, pos2=dyn2.pos, vel2=dyn2.vel, omega2=dyn2.omega)
 
             # # 3) Obstacles
             if self.use_obstacles:
                 if len(curr_quad_col) > 0:
                     self_state_update_flag = True
-                for val in curr_quad_col:
-                    obstacle_id = quad_obst_pair[int(val)]
-                    obstacle_pos = self.obstacles.pos_arr[int(obstacle_id)]
-                    perform_collision_with_obstacle(drone_dyn=self.envs[int(val)].dynamics,
-                                                    obstacle_pos=obstacle_pos,
-                                                    obstacle_size=self.obstacle_size)
+                    for val in curr_quad_col:
+                        obstacle_id = quad_obst_pair[int(val)]
+                        obstacle_pos = self.obstacles.pos_arr[int(obstacle_id)]
+                        perform_collision_with_obstacle(drone_dyn=self.envs[int(val)].dynamics,
+                                                        obstacle_pos=obstacle_pos,
+                                                        obstacle_size=self.obstacle_size)
 
             # # 4) Room
             if len(wall_crash_list) > 0 or len(ceiling_crash_list) > 0:
                 self_state_update_flag = True
 
-            for val in wall_crash_list:
-                perform_collision_with_wall(drone_dyn=self.envs[val].dynamics, room_box=self.envs[0].room_box)
+                for val in wall_crash_list:
+                    perform_collision_with_wall(drone_dyn=self.envs[val].dynamics, room_box=self.envs[0].room_box)
 
-            for val in ceiling_crash_list:
-                perform_collision_with_ceiling(drone_dyn=self.envs[val].dynamics)
+                for val in ceiling_crash_list:
+                    perform_collision_with_ceiling(drone_dyn=self.envs[val].dynamics)
 
         # 4. Run the scenario passed to self.quads_mode
         self.scenario.step()
