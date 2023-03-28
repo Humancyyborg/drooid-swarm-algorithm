@@ -482,9 +482,9 @@ class QuadrotorEnvMulti(gym.Env):
 
         # # 2) Drones
         if self.apply_collision_force:
-            if len(curr_drone_collisions) > 0:
+            if len(self.last_step_unique_collisions) > 0:
                 self_state_update_flag = True
-            for val in curr_drone_collisions:
+            for val in self.last_step_unique_collisions:
                 dyn1, dyn2 = self.envs[val[0]].dynamics, self.envs[val[1]].dynamics
                 dyn1.vel, dyn1.omega, dyn2.vel, dyn2.omega = perform_collision_between_drones(
                     pos1=dyn1.pos, vel1=dyn1.vel, omega1=dyn1.omega, pos2=dyn2.pos, vel2=dyn2.vel, omega2=dyn2.omega)
