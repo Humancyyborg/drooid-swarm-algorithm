@@ -9,11 +9,10 @@ class Scenario_o_base(QuadrotorScenario):
         self.start_point = np.array([0.0, -3.0, 2.0])
         self.end_point = np.array([0.0, 3.0, 2.0])
         self.room_dims = room_dims
-        self.duration_time = 0.0
+        self.duration_step = 0
         self.quads_mode = quads_mode
         self.obstacle_map = None
         self.free_space = []
-        self.grid_size = 1.0
 
     def update_formation_size(self, new_formation_size):
         pass
@@ -32,10 +31,10 @@ class Scenario_o_base(QuadrotorScenario):
     def step(self):
         tick = self.envs[0].tick
 
-        if tick <= int(self.duration_time * self.envs[0].control_freq):
+        if tick <= self.duration_step:
             return
 
-        self.duration_time += self.envs[0].ep_time + 1
+        self.duration_step += int(self.envs[0].ep_time * self.envs[0].control_freq)
         self.goals = self.generate_goals(num_agents=self.num_agents, formation_center=self.end_point, layer_dist=0.0)
 
         for i, env in enumerate(self.envs):
@@ -46,7 +45,7 @@ class Scenario_o_base(QuadrotorScenario):
     def reset(self, obst_map, cell_centers):
         self.start_point = self.generate_pos()
         self.end_point = self.generate_pos()
-        self.duration_time = np.random.uniform(low=2.0, high=4.0)
+        self.duration_step = int(np.random.uniform(low=2.0, high=4.0) * self.envs[0].control_freq)
         self.standard_reset(formation_center=self.start_point)
 
     def generate_pos_obst_map(self, check_surroundings=False):
