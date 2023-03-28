@@ -147,6 +147,10 @@ class QuadrotorEnvMulti(gym.Env):
         self.collisions_wall_per_episode = 0
         self.collisions_ceiling_per_episode = 0
 
+        self.prev_crashed_walls = []
+        self.prev_crashed_ceiling = []
+        self.prev_crashed_room = []
+
         # Replay
         self.use_replay_buffer = use_replay_buffer
         # # only start using the buffer after the drones learn how to fly
@@ -270,8 +274,12 @@ class QuadrotorEnvMulti(gym.Env):
         ceiling_collisions = np.array([env.dynamics.crashed_ceiling for env in self.envs])
 
         floor_crash_list = np.where(floor_collisions >= 1)[0]
-        wall_crash_list = np.where(wall_collisions >= 1)[0]
-        ceiling_crash_list = np.where(ceiling_collisions >= 1)[0]
+
+        cur_wall_crash_list = np.where(wall_collisions >= 1)[0]
+        wall_crash_list = np.setdiff1d(cur_wall_crash_list, self.prev_crashed_walls)
+
+        cur_ceiling_crash_list = np.where(ceiling_collisions >= 1)[0]
+        ceiling_crash_list = np.setdiff1d(cur_ceiling_crash_list, self.prev_crashed_ceiling)
 
         return floor_crash_list, wall_crash_list, ceiling_crash_list
 
@@ -355,6 +363,9 @@ class QuadrotorEnvMulti(gym.Env):
         # # Collision: Room
         self.collisions_room_per_episode = 0
         self.collisions_floor_per_episode = self.collisions_wall_per_episode = self.collisions_ceiling_per_episode = 0
+        self.prev_crashed_walls = []
+        self.prev_crashed_ceiling = []
+        self.prev_crashed_room = []
 
         # Log
         # # Final Distance (1s / 3s / 5s)
@@ -409,7 +420,7 @@ class QuadrotorEnvMulti(gym.Env):
         if collisions_curr_tick > 0 and self.envs[0].tick >= self.collisions_grace_period_steps:
             self.collisions_after_settle += collisions_curr_tick
 
-        # # Aux: Collisions
+        # # Aux: Neighbor Collisions
         self.prev_drone_collisions = curr_drone_collisions
 
         # 2) Collisions with obstacles
@@ -421,6 +432,7 @@ class QuadrotorEnvMulti(gym.Env):
             curr_quad_col = np.setdiff1d(obst_quad_col_matrix, self.prev_obst_quad_collisions)
             self.obst_quad_collisions_per_episode += len(curr_quad_col)
 
+            # # Aux: Obstacle Collisions
             self.prev_obst_quad_collisions = obst_quad_col_matrix
 
             if len(obst_quad_col_matrix) > 0:
@@ -431,6 +443,11 @@ class QuadrotorEnvMulti(gym.Env):
         # 3) Collisions with room
         floor_crash_list, wall_crash_list, ceiling_crash_list = self.calculate_room_collision()
         room_crash_list = np.unique(np.concatenate([floor_crash_list, wall_crash_list, ceiling_crash_list]))
+        room_crash_list = np.setdiff1d(room_crash_list, self.prev_crashed_room)
+        # # Aux: Room Collisions
+        self.prev_crashed_walls = wall_crash_list
+        self.prev_crashed_ceiling = ceiling_crash_list
+        self.prev_crashed_room = room_crash_list
 
         # 2. Calculate rewards and infos for collision
         # 1) Between drones

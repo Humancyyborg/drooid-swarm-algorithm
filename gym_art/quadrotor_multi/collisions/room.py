@@ -25,7 +25,10 @@ def perform_collision_with_wall(drone_dyn, room_box, damp_low_speed_ratio=0.2, d
     elif y_list[1]:
         direction[1] = np.random.uniform(low=-1.0, high=-0.1)
 
-    direction[2] = np.random.uniform(low=-1.0, high=-0.5)
+    if drone_dyn.on_floor:
+        direction[2] = np.random.uniform(low=0.1, high=0.5)
+    else:
+        direction[2] = np.random.uniform(low=-1.0, high=-0.5)
 
     direction_mag = np.linalg.norm(direction)
     direction_norm = direction / (direction_mag + eps)
@@ -47,6 +50,13 @@ def perform_collision_with_wall(drone_dyn, room_box, damp_low_speed_ratio=0.2, d
 @njit
 def perform_collision_with_wall_numba(vel, pos, omega, room_box, damp_low_speed_ratio=0.2, damp_high_speed_ratio=0.8,
                                       lowest_speed=0.1, highest_speed=6.0, eps=1e-5):
+    """
+    # TODO: Match perform_collision_with_wall
+        if drone_dyn.on_floor:
+            direction[2] = np.random.uniform(low=0.1, high=0.5)
+        else:
+            direction[2] = np.random.uniform(low=-1.0, high=-0.5)
+    """
     # Decrease drone's speed after collision with wall
     drone_speed = np.linalg.norm(vel)
     real_speed = nb.random.uniform(damp_low_speed_ratio * drone_speed, damp_high_speed_ratio * drone_speed)
