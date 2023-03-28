@@ -298,6 +298,7 @@ class QuadrotorSingle:
             # obstacle type, [[0.], [20.]], which means we can support 21 types of obstacles
             "goal": [-room_range, room_range],
             "wall": [np.zeros(6), 5.0 * np.ones(6)],
+            "floor": [np.zeros(1), self.room_box[1][2] * np.ones(1)],
             "octmap": [-10 * np.ones(9), 10 * np.ones(9)],
         }
         self.obs_comp_names = list(self.obs_space_low_high.keys())

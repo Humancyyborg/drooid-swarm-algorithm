@@ -17,6 +17,6 @@ QUAD_BASELINE_CLI_8 = (
     '--quads_collision_falloff_radius=4.0 --quads_collision_reward=5.0 --quads_collision_smooth_max_penalty=4.0 '
     '--quads_neighbor_encoder_type=no_encoder --quads_neighbor_visible_num=0 '
     # Obstacles
-    '--use_obstacles=True --quads_obstacle_spawn_area 8 8 --quads_obstacle_density=0.2 --quads_obstacle_size=0.6 '
-    '--quads_obst_collision_reward=5.0'
+    '--quads_use_obstacles=True --quads_obst_spawn_area 8 8 --quads_obst_density=0.2 --quads_obst_size=0.6 '
+    '--quads_obst_collision_reward=5.0 --quads_obstacle_obs_type=octomap'
 )
