@@ -67,7 +67,7 @@ class Scenario_mix(QuadrotorScenario):
         self.formation_size = self.scenario.formation_size
         return
 
-    def reset(self, obst_map, cell_centers):
+    def reset(self, obst_map=None, cell_centers=None):
         mode_index = np.random.randint(low=0, high=len(self.quads_mode_list))
         mode = self.quads_mode_list[mode_index]
 
