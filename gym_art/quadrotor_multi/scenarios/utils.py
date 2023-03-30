@@ -37,7 +37,7 @@ QUADS_PARAMS_DICT = {
     'run_away': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size]],
 
     # Obstacles
-    'o_random': [QUADS_FORMATION_LIST, [5 * quad_arm_size, 10 * quad_arm_size]],
+    'o_random': [['circle_horizontal'], [0.0, 0.0]],
 }
 
 

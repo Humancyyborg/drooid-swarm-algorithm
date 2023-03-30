@@ -212,7 +212,10 @@ class QuadrotorSingle:
 
         # Self info
         self.state_vector = self.state_vector = getattr(get_state, "state_" + self.obs_repr)
-        self.box = 2.0
+        if use_obstacles:
+            self.box = 0.1
+        else:
+            self.box = 2.0
         self.box_scale = 1.0
         self.goal = None
 
