@@ -10,11 +10,11 @@ _params = ParamGrid(
 OBSTACLE_MODEL_CLI = QUAD_BASELINE_CLI_8 + (
     ' --num_workers=36 --num_envs_per_worker=8 --quads_num_agents=1 '
     '--with_wandb=True --wandb_project=Quad-Swarm-RL --wandb_user=multi-drones '
-    '--wandb_group=sf_2_0_restart_refactor_obstacle_v1_3'
+    '--wandb_group=restart_refactor_obstacle_v1_4'
 )
 
 _experiment = Experiment(
-    "sf_2_0_restart_refactor_obstacle_v1_3",
+    "restart_refactor_obstacle_v1_4",
     OBSTACLE_MODEL_CLI,
     _params.generate_params(randomize=False),
 )
