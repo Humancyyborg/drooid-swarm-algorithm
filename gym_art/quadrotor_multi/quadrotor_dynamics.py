@@ -581,11 +581,11 @@ def floor_interaction_numba(pos, vel, rot, omega, mu, mass, sum_thr_drag, thrust
             rot = np.array(((c, -s, 0.), (s, c, 0.), (0., 0., 1.)))
 
             # Add friction if drone is on the floor
-            force_xy = np.array([force[0], force[1]])
-            force_xy_magn = np.linalg.norm(force_xy)
             friction_xy_magn = mu * (mass * GRAV - force[2])
 
-            if np.linalg.norm(vel) == 0.0:
+            if np.linalg.norm(vel) < EPS:
+                force_xy = np.array([force[0], force[1]])
+                force_xy_magn = np.linalg.norm(force_xy)
                 force_xy_magn = max(force_xy_magn - friction_xy_magn, 0.)
                 if force_xy_magn == 0.:
                     force[0] = 0.
