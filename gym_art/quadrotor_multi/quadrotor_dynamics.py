@@ -399,13 +399,27 @@ class QuadrotorDynamics:
                 self.rot = np.array(((c, -s, 0.), (s, c, 0.), (0., 0., 1.)))
 
                 # Add friction if drone is on the floor
-                f = self.mu * GRAV * npa(np.sign(force[0]), np.sign(force[1]), 0) * self.mass
-                # Since fiction cannot be greater than force, we need to clip it
-                for i in range(2):
-                    if np.abs(f[i]) > np.abs(force[i]):
-                        f[i] = force[i]
-                force -= f
+                force_xy = np.array([force[0], force[1]])
+                force_xy_magn = np.linalg.norm(force_xy)
+                friction_xy_magn = self.mu * (self.mass * GRAV - force[2])
 
+                if np.linalg.norm(self.vel) == 0.0:
+                    force_xy_magn = max(force_xy_magn - friction_xy_magn, 0.)
+                    if force_xy_magn == 0.:
+                        force[0] = 0.
+                        force[1] = 0.
+                    else:
+                        force_angle = np.arctan2(force[1], force[0])
+                        force_xy_dir = np.array([np.cos(force_angle), np.sin(force_angle)])
+                        force_xy = force_xy_magn * force_xy_dir
+                        force[0] = force_xy[0]
+                        force[1] = force_xy[1]
+                else:
+                    # vel > 0, friction direction is opposite to velocity direction
+                    friction_xy_angle = np.arctan2(-1.0 * self.vel[1], -1.0 * self.vel[0])
+                    friction_xy_dir = np.array([np.cos(friction_xy_angle), np.sin(friction_xy_angle)])
+                    force[0] = force[0] - friction_xy_dir[0] * friction_xy_magn
+                    force[1] = force[1] - friction_xy_dir[1] * friction_xy_magn
             else:
                 # Previous step, drone still in the air, but in this step, it hits the floor
                 # In previous step, self.on_floor = False, self.crashed_floor = False
@@ -567,13 +581,27 @@ def floor_interaction_numba(pos, vel, rot, omega, mu, mass, sum_thr_drag, thrust
             rot = np.array(((c, -s, 0.), (s, c, 0.), (0., 0., 1.)))
 
             # Add friction if drone is on the floor
-            f = mu * GRAV * np.array((np.sign(force[0]), np.sign(force[1]), 0)) * mass
-            # Since fiction cannot be greater than force, we need to clip it
-            for i in range(2):
-                if np.abs(f[i]) > np.abs(force[i]):
-                    f[i] = force[i]
-            force -= f
+            force_xy = np.array([force[0], force[1]])
+            force_xy_magn = np.linalg.norm(force_xy)
+            friction_xy_magn = mu * (mass * GRAV - force[2])
 
+            if np.linalg.norm(vel) == 0.0:
+                force_xy_magn = max(force_xy_magn - friction_xy_magn, 0.)
+                if force_xy_magn == 0.:
+                    force[0] = 0.
+                    force[1] = 0.
+                else:
+                    force_angle = np.arctan2(force[1], force[0])
+                    force_xy_dir = np.array([np.cos(force_angle), np.sin(force_angle)])
+                    force_xy = force_xy_magn * force_xy_dir
+                    force[0] = force_xy[0]
+                    force[1] = force_xy[1]
+            else:
+                # vel > 0, friction direction is opposite to velocity direction
+                friction_xy_angle = np.arctan2(-1.0 * vel[1], -1.0 * vel[0])
+                friction_xy_dir = np.array([np.cos(friction_xy_angle), np.sin(friction_xy_angle)])
+                force[0] = force[0] - friction_xy_dir[0] * friction_xy_magn
+                force[1] = force[1] - friction_xy_dir[1] * friction_xy_magn
         else:
             # Previous step, drone still in the air, but in this step, it hits the floor
             # In previous step, self.on_floor = False, self.crashed_floor = False

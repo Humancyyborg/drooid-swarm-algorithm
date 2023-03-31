@@ -6,6 +6,7 @@ from gym_art.quadrotor_multi.obstacles.utils import get_surround_sdfs, collision
 
 class MultiObstacles:
     def __init__(self, obstacle_size=1.0, quad_radius=0.046):
+        self.size = obstacle_size
         self.obstacle_radius = obstacle_size / 2.0
         self.quad_radius = quad_radius
         self.pos_arr = []
