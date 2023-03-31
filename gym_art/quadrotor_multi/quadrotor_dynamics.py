@@ -598,7 +598,7 @@ def floor_interaction_numba(pos, vel, rot, omega, mu, mass, sum_thr_drag, thrust
                     force[1] = force_xy[1]
             else:
                 # vel > 0, friction direction is opposite to velocity direction
-                friction_xy_angle = np.arctan2(-1.0 * vel[1], -1.0 * vel[0])
+                friction_xy_angle = np.arctan2(vel[1], vel[0])
                 friction_xy_dir = np.array([np.cos(friction_xy_angle), np.sin(friction_xy_angle)])
                 force[0] = force[0] - friction_xy_dir[0] * friction_xy_magn
                 force[1] = force[1] - friction_xy_dir[1] * friction_xy_magn
