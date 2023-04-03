@@ -6,7 +6,9 @@ _params = ParamGrid([
 ])
 
 SINGLE_CLI = QUAD_BASELINE_CLI + (
-    ' --with_wandb=False --wandb_project=Quad-Swarm-RL --wandb_group=single --wandb_user=multi-drones'
+    ' --async_rl=False --serial_mode=True --num_workers=16 --num_envs_per_worker=2 --rollout=128 --batch_size=2048 '
+    '--num_batches_per_epoch=4 '
+    '--with_wandb=False --wandb_project=HyperPPO --wandb_group=single --wandb_user=multi-drones'
 )
 
 _experiment = Experiment(
