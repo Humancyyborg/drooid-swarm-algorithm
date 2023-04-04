@@ -22,7 +22,7 @@ rects2 = ax.bar(x_pos + bar_width/2, y_quad_swarm, bar_width, label='QuadSwarm')
 
 # Add labels and legend
 ax.set_xlabel('Number of Quadrotors')
-ax.set_ylabel('FPS')
+ax.set_ylabel('Simulation Samples Per Second (SPS)')
 # ax.set_title('Comparison of Quad Swarm and PyBullet')
 ax.set_xticks(x_pos)
 ax.set_xticklabels(x)
