@@ -1,8 +1,6 @@
 import copy
-
 from numpy.linalg import norm
 
-from gym_art.quadrotor_multi.params import quad_color
 from gym_art.quadrotor_multi.quad_utils import *
 
 
@@ -120,7 +118,7 @@ def quadrotor_3dmodel(model, quad_id=0):
         # print("LINK: ", link.name, "R:", rot, end=" ")
         if link.name[:4] == "prop":
             prop_r = link.r
-            color = np.array(quad_color[quad_id % len(quad_color)])
+            color = np.array(QUAD_COLOR[quad_id % len(QUAD_COLOR)])
         if link.type == "box":
             # print("Type: Box")
             link_transf = r3d.transform_and_color(
@@ -184,7 +182,7 @@ def quadrotor_simple_3dmodel(diam):
 # this class deals both with map and mapless cases.
 class Quadrotor3DScene:
     def __init__(self, w, h,
-                 quad_arm=None, model=None, obstacles=True, resizable=True, goal_diameter=None,
+                 quad_arm=None, model=None, resizable=True, goal_diameter=None,
                  viewpoint='chase', obs_hw=(64, 64)):
 
         gym_art_module = __import__('gym_art.quadrotor_multi.rendering3d')
@@ -198,7 +196,6 @@ class Quadrotor3DScene:
 
         # self.world_box = 40.0
         self.quad_arm = quad_arm
-        self.obstacles = obstacles
         self.model = model
 
         if goal_diameter:
@@ -259,9 +256,6 @@ class Quadrotor3DScene:
         
         bodies = [r3d.BackToFront([floor, self.shadow_transform]),
             self.goal_transform, self.quad_transform] + self.goal_arrows
-        
-        if self.obstacles:
-            bodies += self.obstacles.bodies
 
         world = r3d.World(bodies)
         batch = r3d.Batch()

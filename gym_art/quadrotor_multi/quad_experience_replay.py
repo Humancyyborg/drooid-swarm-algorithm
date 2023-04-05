@@ -112,8 +112,12 @@ class ExperienceReplayWrapper(gym.Wrapper):
                     and self.env.envs[0].tick % self.replay_buffer.cp_step_size_freq == 0:
                 self.save_checkpoint(obs)
 
-            if self.env.last_step_unique_collisions.any() and self.env.use_replay_buffer and self.env.activate_replay_buffer \
-                    and self.env.envs[0].tick > self.env.collisions_grace_period_seconds * self.env.envs[0].control_freq and not self.saved_in_replay_buffer:
+            collision_flag = self.env.last_step_unique_collisions.any()
+            if self.env.use_obstacles:
+                collision_flag = collision_flag or len(self.env.curr_quad_col) > 0
+
+            if collision_flag and self.env.use_replay_buffer and self.env.activate_replay_buffer \
+                    and self.env.envs[0].tick > self.env.collisions_grace_period_seconds * self.env.envs[0].control_freq and not self.env.saved_in_replay_buffer:
 
                 if self.env.envs[0].tick - self.last_tick_added_to_buffer > 5 * self.env.envs[0].control_freq:
                     # added this check to avoid adding a lot of collisions from the same episode to the buffer
@@ -151,6 +155,7 @@ class ExperienceReplayWrapper(gym.Wrapper):
 
             # we want to use these for tensorboard, so reset them to zero to get accurate stats
             replayed_env.collisions_per_episode = replayed_env.collisions_after_settle = 0
+            replayed_env.obst_quad_collisions_per_episode = replayed_env.obst_quad_collisions_after_settle = 0
             self.env = replayed_env
 
             self.replay_buffer.cleanup()
