@@ -127,12 +127,8 @@ class QuadMultiHeadAttentionEncoder(Encoder):
         super().__init__(cfg)
 
         # Internal params
-        if cfg.quads_obs_repr == 'xyz_vxyz_R_omega':
-            self.self_obs_dim = 18
-        elif cfg.quads_obs_repr == 'xyz_vxyz_R_omega_floor':
-            self.self_obs_dim = 19
-        elif cfg.quads_obs_repr == 'xyz_vxyz_R_omega_wall':
-            self.self_obs_dim = 24
+        if cfg.quads_obs_repr in QUADS_OBS_REPR:
+            self.self_obs_dim = QUADS_OBS_REPR[cfg.quads_obs_repr]
         else:
             raise NotImplementedError(f'Layer {cfg.quads_obs_repr} not supported!')
 
@@ -144,12 +140,12 @@ class QuadMultiHeadAttentionEncoder(Encoder):
         else:
             self.num_use_neighbor_obs = cfg.quads_neighbor_visible_num
 
-        self.neighbor_obs_dim = 6
+        self.neighbor_obs_dim = QUADS_NEIGHBOR_OBS_TYPE[cfg.quads_neighbor_obs_type]
 
         self.all_neighbor_obs_dim = self.neighbor_obs_dim * self.num_use_neighbor_obs
 
-        fc_encoder_layer = cfg.rnn_size
         # Embedding Layer
+        fc_encoder_layer = cfg.rnn_size
         self.self_embed_layer = nn.Sequential(
             fc_layer(self.self_obs_dim, fc_encoder_layer),
             nonlinearity(cfg),
@@ -162,7 +158,7 @@ class QuadMultiHeadAttentionEncoder(Encoder):
             fc_layer(fc_encoder_layer, fc_encoder_layer),
             nonlinearity(cfg)
         )
-        self.obstacle_obs_dim = 9
+        self.obstacle_obs_dim = QUADS_OBSTACLE_OBS_TYPE[cfg.quads_obstacle_obs_type]
         self.obstacle_embed_layer = nn.Sequential(
             fc_layer(self.obstacle_obs_dim, fc_encoder_layer),
             nonlinearity(cfg),

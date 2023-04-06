@@ -14,6 +14,5 @@ python -m swarm_rl.train \
 --replay_buffer_sample_prob=0 --anneal_collision_steps=300000000 --save_milestones_sec=1800 \
 --normalize_input=False --normalize_returns=False --reward_clip=10 \
 --quads_use_obstacles=True --quads_obst_collision_reward=5.0 \
---quads_obst_size=0.6 --quads_obst_density=0.2 --quads_obst_spawn_area 8 8 \
---with_wandb=False --wandb_project=Quad-Swarm-RL --wandb_group=obstacles_test --wandb_user=multi-drones \
+--quads_obst_size=0.6 --quads_obst_density=0.2 --quads_obst_spawn_area 8 8 --quads_obstacle_obs_type=octomap \
 --experiment=obstacles_multi_test
