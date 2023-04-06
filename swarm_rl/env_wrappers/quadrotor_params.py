@@ -22,6 +22,7 @@ def add_quadrotors_env_args(env, parser):
                    help='obs space for quadrotor self')
     p.add_argument('--quads_episode_duration', default=15.0, type=float,
                    help='Override default value for episode duration')
+    p.add_argument('--quads_encoder_type', default="corl", type=str, help='The type of the neighborhood encoder')
 
     # Neighbor
     # Neighbor Features
@@ -81,7 +82,7 @@ def add_quadrotors_env_args(env, parser):
                             'ep_lissajous3D', 'ep_rand_bezier', 'swarm_vs_swarm', 'swap_goals', 'dynamic_formations',
                             'mix', 'o_uniform_same_goal_spawn', 'o_random',
                             'o_dynamic_diff_goal', 'o_dynamic_same_goal', 'o_diagonal', 'o_static_same_goal',
-                            'o_static_diff_goal'], help='Choose which scenario to run. ep = evader pursuit')
+                            'o_static_diff_goal', 'o_swap_goals'], help='Choose which scenario to run. ep = evader pursuit')
 
     # Room
     p.add_argument('--quads_room_dims', nargs='+', default=[10., 10., 10.], type=float,
