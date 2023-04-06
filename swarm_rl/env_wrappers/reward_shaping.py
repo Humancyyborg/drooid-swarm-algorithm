@@ -2,7 +2,7 @@ import copy
 
 import gym
 import numpy as np
-from sample_factory.envs.env_utils import TrainingInfoInterface
+from sample_factory.envs.env_utils import TrainingInfoInterface, RewardShapingInterface
 
 DEFAULT_QUAD_REWARD_SHAPING_SINGLE = dict(
     quad_rewards=dict(
@@ -16,10 +16,12 @@ DEFAULT_QUAD_REWARD_SHAPING['quad_rewards'].update(dict(
 ))
 
 
-class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface):
-    def __init__(self, env, reward_shaping_scheme=None, annealing=None):
+class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapingInterface):
+    def __init__(self, env, reward_shaping_scheme=None, annealing=None, with_pbt=False):
         gym.Wrapper.__init__(self, env)
         TrainingInfoInterface.__init__(self)
+        if with_pbt:
+            RewardShapingInterface.__init__(self)
 
         self.reward_shaping_scheme = reward_shaping_scheme
         self.cumulative_rewards = None
