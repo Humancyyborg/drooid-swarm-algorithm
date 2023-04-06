@@ -14,9 +14,6 @@ class Scenario_o_base(QuadrotorScenario):
         self.obstacle_map = None
         self.free_space = []
 
-    def update_formation_size(self, new_formation_size):
-        pass
-
     def generate_pos(self):
         half_room_length = self.room_dims[0] / 2
         half_room_width = self.room_dims[1] / 2
