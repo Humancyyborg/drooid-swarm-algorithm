@@ -29,7 +29,7 @@ class QuadrotorEnvMulti(gym.Env):
 
                  # Aerodynamics, Numba Speed Up, Scenarios, Room, Replay Buffer, Rendering
                  use_downwash, use_numba, quads_mode, room_dims, use_replay_buffer, quads_view_mode,
-                 quads_render, vis_acc_arrows, vis_vel_arrows,
+                 quads_render,
 
                  # Quadrotor Specific (Do Not Change)
                  dynamics_params, raw_control, raw_control_zero_middle,
@@ -50,8 +50,6 @@ class QuadrotorEnvMulti(gym.Env):
         self.is_multiagent = True
         self.room_dims = room_dims
         self.quads_view_mode = quads_view_mode
-        self.vis_acc_arrows = vis_acc_arrows
-        self.vis_vel_arrows = vis_vel_arrows
 
         # Generate All Quadrotors
         self.envs = []
@@ -318,7 +316,7 @@ class QuadrotorEnvMulti(gym.Env):
                 w=600, h=480, resizable=True, viewpoint=self.quads_view_mode[i],
                 room_dims=self.room_dims, num_agents=self.num_agents,
                 render_speed=self.render_speed, formation_size=self.quads_formation_size, obstacles=self.obstacles,
-                vis_vel_arrows=self.vis_vel_arrows, vis_acc_arrows=self.vis_acc_arrows,
+                vis_vel_arrows=False, vis_acc_arrows=False, viz_traces=25, viz_trace_nth_step=1,
                 num_obstacles=self.num_obstacles, scene_index=i
             ))
 

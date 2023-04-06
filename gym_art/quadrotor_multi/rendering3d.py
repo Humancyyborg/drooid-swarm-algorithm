@@ -123,7 +123,7 @@ class WindowTarget(object):
         display = get_display(display)
         # vsync is set to false to speed up FBO-only renders, we enable before draw
         self.window = pyglet.window.Window(display=display,
-            width=width, height=height, resizable=resizable,
+            width=width, height=height, resizable=resizable, style=pyglet.window.Window.WINDOW_STYLE_BORDERLESS,
             visible=True, vsync=False, config=config
         )
         self.window.on_close = self.close
@@ -147,6 +147,12 @@ class WindowTarget(object):
         else:
             glViewport(0, 0, self.window.width, self.window.height)
         glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
+    def location(self):
+        return self.window.get_location()
+
+    def set_location(self, x, y):
+        self.window.set_location(x, y)
 
     def finish(self):
         self.window.flip()
