@@ -14,6 +14,7 @@ OBSTACLE_MODEL_CLI = QUAD_BASELINE_CLI_8 + (
     '--pbt_optimize_gamma=True --pbt_perturb_max=1.2 '
     # Pre-set hyperparameters
     '--exploration_loss_coeff=0.0005 --max_entropy_coeff=0.0005 '
+    '--anneal_collision_steps=0 --train_for_env_steps=10000000000 '
     # Num workers
     '--num_workers=68 --num_envs_per_worker=2 --quads_num_agents=8 '
     # Neighbor & General Encoder for obst & neighbor

@@ -34,13 +34,13 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapin
         self.annealing = annealing
 
     def get_default_reward_shaping(self):
-        return self.reward_shaping_scheme
+        return dict()
 
     def get_current_reward_shaping(self, agent_idx: int):
-        return self.reward_shaping_scheme
+        return dict()
 
     def set_reward_shaping(self, reward_shaping, unused_agent_idx):
-        self.reward_shaping_scheme = reward_shaping
+        self.reward_shaping_scheme = dict()
         self.reward_shaping_updated = True
 
     def reset(self):
