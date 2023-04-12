@@ -35,12 +35,12 @@ conda create -n swarm-rl python=3.8
 conda activate swarm-rl
 ```
 
-Then clone Sample Factory and install version 2.0.0:
+Then clone Sample Factory and install version 2.0:
 ```
 git clone https://github.com/alex-petrenko/sample-factory.git
 cd sample-factory
 git checkout sf2
-pip install -e .
+pip install -e . && cd ..
 ```
 
 Clone and install this repo as an editable Pip package:
@@ -98,13 +98,32 @@ To monitor the experiments, go to the experiment folder, and run the following c
 ```
 tensorboard --logdir=./
 ```
+### WandB support
+
+If you want to monitor training with WandB, follow the steps below: 
+- setup WandB locally by running `wandb login` in the terminal (https://docs.wandb.ai/quickstart#1.-set-up-wandb).
+* add `--with_wandb=True` in the command.
+
+Here is a total list of wandb settings: 
+```
+--with_wandb: Enables Weights and Biases integration (default: False)
+--wandb_user: WandB username (entity). Must be specified from command line! Also see https://docs.wandb.ai/quickstart#1.-set-up-wandb (default: None)
+--wandb_project: WandB "Project" (default: sample_factory)
+--wandb_group: WandB "Group" (to group your experiments). By default this is the name of the env. (default: None)
+--wandb_job_type: WandB job type (default: SF)
+--wandb_tags: [WANDB_TAGS [WANDB_TAGS ...]] Tags can help with finding experiments in WandB web console (default: [])
+```
 
 ### Test
 To test the trained model, run the following command:
 
 ```
-python -m swarm_rl.enjoy --algo=APPO --env=quadrotor_multi --replay_buffer_sample_prob=0 --quads_use_numba=False --train_dir=PATH_TO_PROJECT/train_dir/RUN_NAME --experiment=EXPERIMENT_NAME
+python -m swarm_rl.enjoy --algo=APPO --env=quadrotor_multi --replay_buffer_sample_prob=0 --quads_use_numba=False --train_dir=PATH_TO_TRAIN_DIR --experiment=EXPERIMENT_NAME --quads_view_mode CAMERA_VIEWS
 ```
+EXPERIMENT_NAME and PATH_TO_TRAIN_DIR can be found in the cfg.json file of your trained model
+
+CAMERA_VIEWS can be any number of views from the following: `[topdown, global, chase, side, corner0, corner1, corner2, corner3, topdownfollow]`
+
 
 ## Unit Tests
 
