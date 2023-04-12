@@ -88,6 +88,28 @@ class CornerCamera(object):
         center = (center/np.linalg.norm(center)) * self.radius
         return eye, center, up
 
+class TopDownFollowCamera(object):
+    def __init__(self, view_dist=4):
+        self.view_dist = view_dist
+
+    def reset(self, goal, pos, vel):
+        self.goal = goal
+        self.pos_smooth = pos
+        self.vel_smooth = vel
+        self.right_smooth, _ = normalize(cross(vel, npa(0, 0, 1)))
+
+    def step(self, pos, vel):
+        # lowpass filter
+        ap = 0.6
+        self.pos_smooth = ap * self.pos_smooth + (1 - ap) * pos
+
+    # return eye, center, up suitable for gluLookAt
+    def look_at(self):
+        up = npa(0, 1, 0)
+        eye = self.pos_smooth + np.array([0, 0, 5])
+        center = self.pos_smooth
+        return eye, center, up
+
 
 class Quadrotor3DSceneMulti:
     first_spawn_x = 0
@@ -135,6 +157,8 @@ class Quadrotor3DSceneMulti:
             self.chase_cam = GlobalCamera(view_dist=2.5)
         elif self.viewpoint == 'topdown':
             self.chase_cam = TopDownCamera(view_dist=2.5)
+        elif self.viewpoint == 'topdownfollow':
+            self.chase_cam = TopDownFollowCamera(view_dist=2.5)
         elif self.viewpoint[:-1] == 'corner':
             self.chase_cam = CornerCamera(view_dist=4.0, room_dims=self.room_dims, corner_index=int(self.viewpoint[-1]))
 
@@ -468,6 +492,9 @@ class Quadrotor3DSceneMulti:
                 newy = first_spawn[1]+((self.scene_index // 3) * self.window_h)
 
                 self.window_target.set_location(newx, newy)
+
+                if self.viewpoint == 'global':
+                   self.window_target.draw_axes()
 
                 self.keys = self.pygl_window.key.KeyStateHandler()
                 self.window_target.window.push_handlers(self.keys)

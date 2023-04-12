@@ -100,8 +100,7 @@ def add_quadrotors_env_args(env, parser):
 
     # Rendering
     p.add_argument('--quads_view_mode', nargs='+', default=['topdown', 'chase', 'global'],
-                   type=str, choices=['topdown', 'chase', 'side', 'global', 'corner0', 'corner1', 'corner2', 'corner3'],
+                   type=str, choices=['topdown', 'chase', 'side', 'global', 'corner0', 'corner1', 'corner2', 'corner3', 'topdownfollow'],
                    help='Choose which kind of view/camera to use')
     p.add_argument('--quads_render', default=False, type=bool, help='Use render or not')
-    # p.add_argument('--quads_show_vel', default=False, type=str2bool, help='Whether to show velocity arrows or not')
-    # p.add_argument('--quads_show_acc', default=False, type=str2bool, help='Whether to show acceleration arrows or not')
+    p.add_argument('--visualize_v_value', action='store_true', help="Visualize v value map")

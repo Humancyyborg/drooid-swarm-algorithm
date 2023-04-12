@@ -154,6 +154,15 @@ class WindowTarget(object):
     def set_location(self, x, y):
         self.window.set_location(x, y)
 
+    def draw_axes(self):
+        # define the axes vertices and colors
+        axes = pyglet.graphics.vertex_list(3,
+                                           ('v3f', (0, 0, 0, 600, 0, 0, 0, 600, 0)),
+                                           ('c3B', (255, 0, 0, 255, 0, 0, 0, 255, 0)))
+
+        # draw the axes
+        axes.draw(pyglet.gl.GL_LINES)
+
     def finish(self):
         self.window.flip()
         # self.window.set_vsync(False)
@@ -260,6 +269,7 @@ class World(SceneNode):
         self.pyg_grp = None
 
     def build(self, batch):
+        #batch.add(3, GL_LINES, None, ('v2f', (0, 0, 5, 0, 0, 5)))
         self._build_children(batch)
 
 class Transform(SceneNode):

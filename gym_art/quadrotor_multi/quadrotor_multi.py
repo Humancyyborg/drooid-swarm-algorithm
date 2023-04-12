@@ -316,7 +316,7 @@ class QuadrotorEnvMulti(gym.Env):
                 w=600, h=480, resizable=True, viewpoint=self.quads_view_mode[i],
                 room_dims=self.room_dims, num_agents=self.num_agents,
                 render_speed=self.render_speed, formation_size=self.quads_formation_size, obstacles=self.obstacles,
-                vis_vel_arrows=False, vis_acc_arrows=False, viz_traces=25, viz_trace_nth_step=1,
+                vis_vel_arrows=False, vis_acc_arrows=True, viz_traces=25, viz_trace_nth_step=1,
                 num_obstacles=self.num_obstacles, scene_index=i
             ))
 
