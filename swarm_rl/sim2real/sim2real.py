@@ -23,8 +23,8 @@ from swarm_rl.sim2real.code_blocks import (
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--torch_model_dir', type=str, help='Path where the policy and cfg is stored')
-    parser.add_argument('--output_dir', type=str, help='Where you want the c model to be saved')
+    parser.add_argument('--torch_model_dir', type=str, default='swarm_rl/sim2real/torch_models/single', help='Path where the policy and cfg is stored')
+    parser.add_argument('--output_dir', type=str, default = 'swarm_rl/sim2real/c_models', help='Where you want the c model to be saved')
     parser.add_argument('--output_model_name', type=str, default='model.c')
     parser.add_argument('--testing', type=lambda x: bool(strtobool(x)), default=False, help='Whether or not to save the'
                          'c model in testing mode. Enable this if you want to run the unit test to make sure the output'
