@@ -1,3 +1,5 @@
+import copy
+
 import gym
 import numpy as np
 from sample_factory.algo.utils.rl_utils import prepare_and_normalize_obs
@@ -41,11 +43,12 @@ class V_ValueMapWrapper(gym.Wrapper):
         rnn_states = None
         obs = dict(obs=np.array(self.curr_obs))
         normalized_obs = prepare_and_normalize_obs(self.model, obs)
+        init_x, init_y = copy.deepcopy(normalized_obs['obs'][0][0]), copy.deepcopy(normalized_obs['obs'][0][1])
         for i in range(-10, 11):
             ti_score = []
             for j in range(-10, 11):
-                normalized_obs['obs'][0][0] = i * 0.2
-                normalized_obs['obs'][0][1] = j * 0.2
+                normalized_obs['obs'][0][0] = init_x + i * 0.2
+                normalized_obs['obs'][0][1] = init_y + j * 0.2
 
                 # x = self.model.forward_head(self.curr_obs)
                 # x, new_rnn_states = self.model.forward_core(x, rnn_states)

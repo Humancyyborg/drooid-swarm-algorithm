@@ -40,8 +40,8 @@ def plot_v_value_2d(x, y, value, width=480, height=480, show=False):
     max_index_2d = np.unravel_index(max_index, value.shape)
     max_x_index, max_y_index = max_index_2d
 
-    max_x = (-10 + max_x_index) * 0.05
-    max_y = (-10 + max_y_index) * 0.05
+    max_x = (-10 + max_x_index) * 0.2
+    max_y = (-10 + max_y_index) * 0.2
 
     text = "max value={:.3f}, x={:.2f}, y={:.2f}".format(max_value, max_x, max_y)
 
