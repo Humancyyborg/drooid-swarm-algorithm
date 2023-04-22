@@ -57,3 +57,4 @@ def test_compare_torch_to_c_model_outputs_single_drone():
 
 if __name__ == '__main__':
     test_compare_torch_to_c_model_outputs_single_drone()
+    print('Pass Unit Test!')

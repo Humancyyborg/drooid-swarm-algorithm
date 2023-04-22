@@ -1,16 +1,15 @@
+import argparse
+import json
+import os
+from distutils.util import strtobool
+from pathlib import Path
+
 import torch
 import torch.nn as nn
-import numpy as np
-import json
-import argparse
-
-from pathlib import Path
 from attrdict import AttrDict
-from distutils.util import strtobool
-from swarm_rl.train import register_swarm_components
 from sample_factory.model.actor_critic import create_actor_critic
-from swarm_rl.env_wrappers.quad_utils import make_quadrotor_env, make_quadrotor_env_multi
 
+from swarm_rl.env_wrappers.quad_utils import make_quadrotor_env_multi
 from swarm_rl.sim2real.code_blocks import (
     headers_network_evaluate,
     headers_evaluation,
@@ -19,49 +18,57 @@ from swarm_rl.sim2real.code_blocks import (
     relu_activation,
     single_drone_eval
 )
+from swarm_rl.train import register_swarm_components
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--torch_model_dir', type=str, default='swarm_rl/sim2real/torch_models/single', help='Path where the policy and cfg is stored')
-    parser.add_argument('--output_dir', type=str, default = 'swarm_rl/sim2real/c_models', help='Where you want the c model to be saved')
+    parser.add_argument('--torch_model_dir', type=str, default='swarm_rl/sim2real/torch_models/single',
+                        help='Path where the policy and cfg is stored')
+    parser.add_argument('--output_dir', type=str, default='swarm_rl/sim2real/c_models',
+                        help='Where you want the c model to be saved')
     parser.add_argument('--output_model_name', type=str, default='model.c')
-    parser.add_argument('--testing', type=lambda x: bool(strtobool(x)), default=False, help='Whether or not to save the'
-                         'c model in testing mode. Enable this if you want to run the unit test to make sure the output'
-                         'of the c model is the same as the pytorch model. Set to False if you want to output a c model'
-                         'that will be actually used for sim2real')
-    parser.add_argument('--model_type', type=str, choices=['single'], help='What kind of model we are working with. Currently only single drone models are supported.')
+    parser.add_argument('--testing', type=lambda x: bool(strtobool(x)), default=False,
+                        help='Whether or not to save the c model in testing mode. Enable this if you want to run the '
+                             'unit test to make sure the output of the c model is the same as the pytorch model. Set '
+                             'to False if you want to output a c model that will be actually used for sim2real')
+    parser.add_argument('--model_type', type=str, choices=['single'],
+                        help='What kind of model we are working with. '
+                             'Currently only single drone models are supported.')
     args = parser.parse_args()
     return AttrDict(vars(args))
 
 
-def torch_to_c_model(cfg):
-    model_dir = Path(cfg.torch_model_dir)
+def torch_to_c_model(args):
+    model_dir = Path(args.torch_model_dir)
     model = load_sf_model(model_dir)
-    weights = generate_c_weights(model)
 
-    output_dir = Path(cfg.output_dir)
-    output_path = output_dir.joinpath(cfg.model_type, cfg.output_model_name)
-    generate_c_model(model, str(output_path), testing=cfg.testing)
+    output_dir = Path(args.output_dir)
+    output_path = output_dir.joinpath(args.model_type, args.output_model_name)
+    output_folder = output_dir.joinpath(args.model_type)
+    generate_c_model(model, str(output_path), str(output_folder), testing=args.testing)
 
 
 def load_sf_model(model_dir: Path):
-    '''Load a trained SF pytorch model '''
+    """
+        Load a trained SF pytorch model
+    """
     assert model_dir.exists(), f'Path {str(model_dir)} is not a valid path'
+    # Load hyper-parameters
     cfg_path = model_dir.joinpath('config.json')
     with open(cfg_path, 'r') as f:
-        cfg = json.load(f)
-    cfg = AttrDict(cfg)
-    cfg.visualize_v_value = False
-    cfg.quads_encoder_type = 'corl'
+        args = json.load(f)
+    args = AttrDict(args)
 
+    # Manually set some values
+    args.visualize_v_value = False
+    args.quads_encoder_type = 'corl'
+
+    # Load model
     register_swarm_components()
-
-    # spawn a dummy env so we can get the obs and action space info
-    env = make_quadrotor_env_multi(cfg)
-
-    model = create_actor_critic(cfg, env.observation_space, env.action_space)
-
+    # spawn a dummy env, so we can get the obs and action space info
+    env = make_quadrotor_env_multi(args)
+    model = create_actor_critic(args, env.observation_space, env.action_space)
     model_path = list(model_dir.glob('*.pth'))[0]
     model.load_state_dict(torch.load(model_path)['model'])
 
@@ -69,9 +76,9 @@ def load_sf_model(model_dir: Path):
 
 
 def generate_c_weights(model: nn.Module, transpose: bool = False):
-    '''
-    Generate c friendly weight strings for the c version of the model
-    '''
+    """
+        Generate c friendly weight strings for the c version of the model
+    """
     weights, biases = [], []
     layer_names, bias_names, outputs = [], [], []
     n_bias = 0
@@ -110,7 +117,7 @@ def generate_c_weights(model: nn.Module, transpose: bool = False):
     return layer_names, bias_names, weights, biases, outputs
 
 
-def generate_c_model(model: nn.Module, output_path: str, testing=False):
+def generate_c_model(model: nn.Module, output_path: str, output_folder: str, testing=False):
     layer_names, bias_names, weights, biases, outputs = generate_c_weights(model, transpose=True)
     num_layers = len(layer_names)
 
@@ -205,6 +212,9 @@ def generate_c_model(model: nn.Module, output_path: str, testing=False):
     if testing:
         source += single_drone_eval
 
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
     if output_path:
         with open(output_path, 'w') as f:
             f.write(source)
@@ -225,5 +235,4 @@ if __name__ == '__main__':
     # torch_to_c_model(cfg)
 
     cfg = parse_args()
-    torch_to_c_model(cfg)
-
+    torch_to_c_model(args=cfg)
