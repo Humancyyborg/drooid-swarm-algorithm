@@ -327,8 +327,8 @@ def sample_simplified_random_dyn():
 
 
 class Crazyflie(object):
-    def sample(self, params=None):
-        return crazyflie_params()
+    def sample(self, params=None, extra_deck=0):
+        return crazyflie_params(extra_deck=extra_deck)
 
 class DefaultQuad(object):
     def sample(self, params=None):

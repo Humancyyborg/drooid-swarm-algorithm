@@ -23,6 +23,8 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_episode_duration', default=15.0, type=float,
                    help='Override default value for episode duration')
     p.add_argument('--quads_encoder_type', default="corl", type=str, help='The type of the neighborhood encoder')
+    p.add_argument('--quads_extra_deck', default=0, type=int,
+                   help='0: default; 1: based on 0, + LED deck + Marker deck; 2: based on 1, + AI deck')
 
     # Neighbor
     # Neighbor Features

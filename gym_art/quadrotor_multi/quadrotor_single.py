@@ -102,7 +102,7 @@ class QuadrotorSingle:
                  sim_steps=2, obs_repr="xyz_vxyz_R_omega", ep_time=7, room_dims=(10.0, 10.0, 10.0),
                  init_random_state=False, sense_noise=None, verbose=False, gravity=GRAV,
                  t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False,
-                 neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0, use_obstacles=False):
+                 neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0, use_obstacles=False, extra_deck=0):
         np.seterr(under='ignore')
         """
         Args:
@@ -136,6 +136,8 @@ class QuadrotorSingle:
                 are loaded. Otherwise one can provide specific params.
             excite: [bool] change the set point at the fixed frequency to perturb the quad
         """
+        # Pre set
+        self.extra_deck = extra_deck
         # Numba Speed Up
         self.use_numba = use_numba
 
@@ -363,7 +365,7 @@ class QuadrotorSingle:
             - MUST call reset() after this function
         """
         # Getting base parameters (could also be random parameters)
-        self.dynamics_params = self.dyn_base_sampler.sample()
+        self.dynamics_params = self.dyn_base_sampler.sample(extra_deck=self.extra_deck)
 
         # Now, updating if we are providing modifications
         if self.dynamics_change is not None:

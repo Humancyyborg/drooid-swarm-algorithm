@@ -1,9 +1,22 @@
-def crazyflie_params():
+def crazyflie_params(extra_deck):
     ## See: Ref[2] for details
     ## Geometric parameters for Inertia and the model
     geom_params = {}
     geom_params["body"] = {"l": 0.03, "w": 0.03, "h": 0.004, "m": 0.005}
-    geom_params["payload"] = {"l": 0.035, "w": 0.02, "h": 0.008, "m": 0.01}
+    if extra_deck == 0:
+        # Battery: 9e-3; four markers: 0.2e-3 * 4 = 0.8e-3; + Some surplus
+        geom_params["payload"] = {"l": 0.035, "w": 0.02, "h": 0.008, "m": 0.01}
+    elif extra_deck == 1:
+        # Based on extra_deck = 0
+        # marker deck: 1.6e-3; LED-ring deck: 3.3e-3;
+        # assume we have some extra weight that we didn't consider, such as glue = 0.3e-3
+        # Total = 9e-3 + 0.8e-3 + 1.6e-3 + 3.3e-3 + 0.3e-3 = 1.47e-2 + 0.3e-3 = 1.5e-2
+        geom_params["payload"] = {"l": 0.035, "w": 0.02, "h": 0.008, "m": 0.015}
+    elif extra_deck == 2:
+        # Based on extra_deck = 1
+        # AI deck: 4.4e-3;
+        # Total: 15 e-3 + 4.4 e-3 = 19.4e-3 = 1.94e-2
+        geom_params["payload"] = {"l": 0.035, "w": 0.02, "h": 0.008, "m": 0.0194}
     geom_params["arms"] = {"l": 0.022, "w":0.005, "h":0.005, "m":0.001}
     geom_params["motors"] = {"h":0.02, "r":0.0035, "m":0.0015}
     geom_params["propellers"] = {"h":0.002, "r":0.022, "m":0.00075}
@@ -126,10 +139,6 @@ def mediumquad_params():
         "motor": motor_params
     }
     return params
-
-
-
-
 
 
 def crazyflie_lowinertia_params():
