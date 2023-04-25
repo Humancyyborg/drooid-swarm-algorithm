@@ -25,6 +25,8 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_encoder_type', default="corl", type=str, help='The type of the neighborhood encoder')
     p.add_argument('--quads_extra_deck', default=0, type=int,
                    help='0: default; 1: based on 0, + LED deck + Marker deck; 2: based on 1, + AI deck')
+    p.add_argument('--quads_random_t2w', default=False, type=str2bool,
+                   help='random thrust to weight or not')
 
     # Neighbor
     # Neighbor Features

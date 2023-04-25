@@ -34,7 +34,7 @@ class QuadrotorEnvMulti(gym.Env):
                  # Quadrotor Specific (Do Not Change)
                  dynamics_params, raw_control, raw_control_zero_middle,
                  dynamics_randomize_every, dynamics_change, dyn_sampler_1,
-                 sense_noise, init_random_state, extra_deck):
+                 sense_noise, init_random_state, extra_deck, random_t2w):
         super().__init__()
 
         # Predefined Parameters
@@ -65,7 +65,7 @@ class QuadrotorEnvMulti(gym.Env):
                 num_agents=num_agents,
                 neighbor_obs_type=neighbor_obs_type, num_use_neighbor_obs=self.num_use_neighbor_obs,
                 # Obstacle
-                use_obstacles=use_obstacles, extra_deck=extra_deck
+                use_obstacles=use_obstacles, extra_deck=extra_deck, random_t2w=random_t2w
             )
             self.envs.append(e)
 

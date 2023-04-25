@@ -102,7 +102,8 @@ class QuadrotorSingle:
                  sim_steps=2, obs_repr="xyz_vxyz_R_omega", ep_time=7, room_dims=(10.0, 10.0, 10.0),
                  init_random_state=False, sense_noise=None, verbose=False, gravity=GRAV,
                  t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False,
-                 neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0, use_obstacles=False, extra_deck=0):
+                 neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0, use_obstacles=False, extra_deck=0,
+                 random_t2w=False):
         np.seterr(under='ignore')
         """
         Args:
@@ -138,6 +139,7 @@ class QuadrotorSingle:
         """
         # Pre set
         self.extra_deck = extra_deck
+        self.random_t2w = random_t2w
         # Numba Speed Up
         self.use_numba = use_numba
 
@@ -389,6 +391,9 @@ class QuadrotorSingle:
         # DYNAMICS RANDOMIZATION AND UPDATE
         if self.dynamics_randomize_every is not None and (self.traj_count + 1) % self.dynamics_randomize_every == 0:
             self.resample_dynamics()
+
+        if self.random_t2w:
+            self.dynamics_params['motor']['thrust_to_weight'] = np.random.uniform(low=1.4, high=2.4)
 
         if self.box < 10:
             self.box = self.box * self.box_scale
