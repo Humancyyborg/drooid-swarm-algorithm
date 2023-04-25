@@ -3,10 +3,13 @@ from swarm_rl.runs.single_quad.baseline import QUAD_BASELINE_CLI
 
 _params = ParamGrid([
     ('seed', [0000, 3333]),
+    ('quads_extra_deck', [0, 1]),
+    ('quads_random_t2w', [True, False]),
 ])
 
 SINGLE_CLI = QUAD_BASELINE_CLI + (
-    ' --with_wandb=False --wandb_project=Quad-Swarm-RL --wandb_group=single --wandb_user=multi-drones'
+    ' --rnn_size=16 '
+    '--with_wandb=False --wandb_project=Quad-Swarm-RL --wandb_group=single-deck --wandb_user=multi-drones'
 )
 
 _experiment = Experiment(
