@@ -126,6 +126,11 @@ class QuadrotorEnvMulti(gym.Env):
             self.obstacle_size = obst_size
             self.obstacles = MultiObstacles(obstacle_size=self.obstacle_size, quad_radius=self.quad_arm)
 
+            # Log more info
+            self.distance_to_goal_3_5 = 0
+            self.distance_to_goal_5 = 0
+
+
         # Scenarios
         self.quads_mode = quads_mode
         self.scenario = create_scenario(quads_mode=quads_mode, envs=self.envs, num_agents=num_agents,
@@ -139,6 +144,9 @@ class QuadrotorEnvMulti(gym.Env):
         self.collisions_grace_period_steps = 1.5 * self.control_freq
         self.collisions_grace_period_seconds = 1.5
         self.prev_drone_collisions = []
+
+        self.collisions_final_grace_period_steps = 5.0 * self.control_freq
+        self.collisions_final_5s = 0
 
         # # # Dense reward info
         self.collision_threshold = collision_hitbox_radius * self.quad_arm
@@ -354,10 +362,12 @@ class QuadrotorEnvMulti(gym.Env):
             obs = self.obstacles.reset(obs=obs, quads_pos=quads_pos, pos_arr=obst_pos_arr)
             self.obst_quad_collisions_per_episode = self.obst_quad_collisions_after_settle = 0
             self.prev_obst_quad_collisions = []
+            self.distance_to_goal_3_5 = 0
+            self.distance_to_goal_5 = 0
 
         # Collision
         # # Collision: Neighbor
-        self.collisions_per_episode = self.collisions_after_settle = 0
+        self.collisions_per_episode = self.collisions_after_settle = self.collisions_final_5s = 0
         self.prev_drone_collisions = []
 
         # # Collision: Room
@@ -419,6 +429,9 @@ class QuadrotorEnvMulti(gym.Env):
 
         if collisions_curr_tick > 0 and self.envs[0].tick >= self.collisions_grace_period_steps:
             self.collisions_after_settle += collisions_curr_tick
+        if collisions_curr_tick > 0 and self.envs[0].time_remain <= self.collisions_final_grace_period_steps:
+            self.collisions_final_5s += collisions_curr_tick
+
 
         # # Aux: Neighbor Collisions
         self.prev_drone_collisions = curr_drone_collisions
@@ -435,6 +448,12 @@ class QuadrotorEnvMulti(gym.Env):
 
             if collisions_obst_curr_tick > 0 and self.envs[0].tick >= self.collisions_grace_period_steps:
                 self.obst_quad_collisions_after_settle += collisions_obst_curr_tick
+                for qid in self.curr_quad_col:
+                    q_rel_dist = np.linalg.norm(obs[qid][0:3])
+                    if q_rel_dist > 3.5:
+                        self.distance_to_goal_3_5 += 1
+                    if q_rel_dist > 5.0:
+                        self.distance_to_goal_5 += 1
 
             # # Aux: Obstacle Collisions
             self.prev_obst_quad_collisions = obst_quad_col_matrix
@@ -590,8 +609,10 @@ class QuadrotorEnvMulti(gym.Env):
                         'num_collisions_with_wall': self.collisions_wall_per_episode,
                         'num_collisions_with_ceiling': self.collisions_ceiling_per_episode,
                         'num_collisions_after_settle': self.collisions_after_settle,
-
                         f'{self.scenario.name()}/num_collisions': self.collisions_after_settle,
+
+                        'num_collisions_final_5_s': self.collisions_final_5s,
+                        f'{self.scenario.name()}/num_collisions_final_5_s': self.collisions_final_5s,
 
                         'distance_to_goal_1s': (1.0 / self.envs[0].dt) * np.mean(
                             self.distance_to_goal[i, int(-1 * self.control_freq):]),
@@ -615,6 +636,16 @@ class QuadrotorEnvMulti(gym.Env):
                             self.obst_quad_collisions_after_settle
                         infos[i]['episode_extra_stats'][f'{self.scenario.name()}/num_collisions_obst'] = \
                             self.obst_quad_collisions_per_episode
+
+                        infos[i]['episode_extra_stats']['num_collisions_obst_quad_3_5'] = \
+                            self.distance_to_goal_3_5
+                        infos[i]['episode_extra_stats'][f'{self.scenario.name()}/num_collisions_obst'] = \
+                            self.distance_to_goal_3_5
+
+                        infos[i]['episode_extra_stats']['num_collisions_obst_quad_5'] = \
+                            self.distance_to_goal_5
+                        infos[i]['episode_extra_stats'][f'{self.scenario.name()}/num_collisions_obst'] = \
+                            self.distance_to_goal_5
 
             obs = self.reset()
             # terminate the episode for all "sub-envs"
