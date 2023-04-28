@@ -190,6 +190,16 @@ class QuadrotorEnvMulti(gym.Env):
         # Others
         self.apply_collision_force = True
 
+        # Print for debug
+        self.collide_obst_0_dist = deque([], maxlen=100)
+        self.collide_obst_1_5_dist = deque([], maxlen=100)
+        self.collide_obst_3_5_dist = deque([], maxlen=100)
+        self.collide_obst_5_dist = deque([], maxlen=100)
+        self.episode_0 = 0
+        self.episode_15 = 0
+        self.episode_35 = 0
+        self.episode_5 = 0
+
     def all_dynamics(self):
         return tuple(e.dynamics for e in self.envs)
 
@@ -377,6 +387,10 @@ class QuadrotorEnvMulti(gym.Env):
             self.quads_formation_size = self.scenario.formation_size
             self.all_collisions = {val: [0.0 for _ in range(len(self.envs))] for val in ['drone', 'ground', 'obstacle']}
 
+        self.episode_0 = 0
+        self.episode_15 = 0
+        self.episode_35 = 0
+        self.episode_5 = 0
         return obs
 
     def step(self, actions):
@@ -419,6 +433,17 @@ class QuadrotorEnvMulti(gym.Env):
 
         if collisions_curr_tick > 0 and self.envs[0].tick >= self.collisions_grace_period_steps:
             self.collisions_after_settle += collisions_curr_tick
+            print('tick; quad & quad:   ', self.envs[0].tick)
+            print('quad & quad:     ', self.last_step_unique_collisions)
+            for i in self.last_step_unique_collisions:
+                print('++++++++++++++++++++++++++++++++++++++')
+                print('quad id: ', i)
+                # print('quad state:    ', np.round(obs[i], 2))
+                print('pos:  ', np.round(obs[i][0:3], 2))
+                print('vel:  ', np.round(obs[i][3:6], 2))
+                print('omega:    ', np.round(obs[i][15:18], 2))
+                print('ori:    ', np.round(obs[i][14], 2))
+                print('++++++++++++++++++++++++++++++++++++++')
 
         # # Aux: Neighbor Collisions
         self.prev_drone_collisions = curr_drone_collisions
@@ -435,6 +460,42 @@ class QuadrotorEnvMulti(gym.Env):
 
             if collisions_obst_curr_tick > 0 and self.envs[0].tick >= self.collisions_grace_period_steps:
                 self.obst_quad_collisions_after_settle += collisions_obst_curr_tick
+
+                for i in self.curr_quad_col:
+                    tt_dist = np.linalg.norm(obs[i][:3])
+                    self.episode_0 += 1
+                    if tt_dist > 1.5:
+                        self.episode_15 += 1
+                    if tt_dist > 3.5:
+                        self.episode_35 += 1
+                    if tt_dist > 5:
+                        self.episode_5 += 1
+
+                # print('tick:   ', self.envs[0].tick)
+                # print('obst & quad:     ', self.curr_quad_col)
+                # for i in self.curr_quad_col:
+                #     print('obst: quad id: ', i)
+                #     # print('state:    ', np.round(obs[i], 2))
+                #     print('pos:    ', np.round(obs[i][:3], 2))
+                #     print('++++++++++++++++++++++++++++++++++++++')
+                #     tt_vel = obs[i][3:6]
+                #     tt_rel_obst_pos = self.envs[i].dynamics.pos - self.obstacles.pos_arr[quad_obst_pair[i]]
+                #     tt_rel_obst_pos[2] = 0.0
+                #     norm_tt_rel_obst_pos = np.linalg.norm(tt_rel_obst_pos)
+                #     final_tt_rel_obst_pos = tt_rel_obst_pos / (norm_tt_rel_obst_pos + 1e-6)
+                #     # print('tt_rel_obst_pos: ', tt_rel_obst_pos)
+                #     print('vel rel to obst pos:    ', np.dot(tt_vel, final_tt_rel_obst_pos))
+                #     print('vel:    ', np.round(tt_vel, 2))
+                #     # print('vel value:    ', np.linalg.norm(tt_vel))
+                #     print('++++++++++++++++++++++++++++++++++++++')
+
+                    # print('ori:    ', np.round(obs[i][14], 2))
+                    #
+                    # print('++++++++++++++++++++++++++++++++++++++')
+                    # print('omega:    ', np.round(obs[i][15:18], 2))
+                    # print('omega value:    ', np.linalg.norm(obs[i][15:18]))
+                    # print('++++++++++++++++++++++++++++++++++++++')
+                    # print('height:    ', np.round(obs[i][18], 2))
 
             # # Aux: Obstacle Collisions
             self.prev_obst_quad_collisions = obst_quad_col_matrix
@@ -575,6 +636,24 @@ class QuadrotorEnvMulti(gym.Env):
 
         # 7. DONES
         if any(dones):
+            # if self.obst_quad_collisions_after_settle > 0:
+            #     print('total collisions:    ', self.obst_quad_collisions_after_settle)
+            #     self.collide_obst_0_dist.append(self.episode_0)
+            #     self.collide_obst_1_5_dist.append(self.episode_15)
+            #     self.collide_obst_3_5_dist.append(self.episode_35)
+            #     self.collide_obst_5_dist.append(self.episode_5)
+            #     print('self.collide_obst_0_dist:  ', self.collide_obst_0_dist)
+            #     print('self.collide_obst_1_5_dist:  ', self.collide_obst_1_5_dist)
+            #     print('self.collide_obst_3_5_dist:  ', self.collide_obst_3_5_dist)
+            #     print('self.collide_obst_5_dist:  ', self.collide_obst_5_dist)
+            #
+            #     print('mean: 0:   ', np.mean(self.collide_obst_0_dist))
+            #     print('mean: 1.5:   ', np.mean(self.collide_obst_1_5_dist))
+            #     print('mean: 3.5:   ', np.mean(self.collide_obst_3_5_dist))
+            #     print('mean: 5:   ', np.mean(self.collide_obst_5_dist))
+            # else:
+            #     print('no collisions with obstacle')
+
             for i in range(len(infos)):
                 if self.saved_in_replay_buffer:
                     infos[i]['episode_extra_stats'] = {
