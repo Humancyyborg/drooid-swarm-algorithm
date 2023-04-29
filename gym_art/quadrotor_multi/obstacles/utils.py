@@ -29,7 +29,7 @@ def get_surround_sdfs(quad_poses, obst_poses, quads_sdf_obs, obst_radius, resolu
 
 
 @njit
-def get_surround_sdfs_radar_2d(quad_poses, obst_poses, quad_vels, obst_radius, scan_range, ray_num):
+def get_surround_sdfs_radar_2d(quad_poses, obst_poses, quad_vels, obst_radius, scan_range, ray_num, room_dims):
     """
         quad_poses:     quadrotor positions, only with xy pos
         obst_poses:     obstacle positions, only with xy pos
@@ -41,6 +41,8 @@ def get_surround_sdfs_radar_2d(quad_poses, obst_poses, quad_vels, obst_radius, s
     quads_sdf_obs = 100.0 * np.ones((len(quad_poses), ray_num))
     scan_angle = scan_range / (ray_num - 1)
     scan_angle_arr = np.zeros(ray_num)
+    room_x = room_dims[0] / 2
+    room_y = room_dims[1] / 2
     # Get ray angle list
     # If scan_range = 180 deg and ray_num = 4
     # scan_angle_arr = [90, 30, -30, -90]
@@ -66,15 +68,46 @@ def get_surround_sdfs_radar_2d(quad_poses, obst_poses, quad_vels, obst_radius, s
                 if cos_obst_ray_rad == 1.0:
                     quads_sdf_obs[q_id][ray_id] = min(quads_sdf_obs[q_id][ray_id], rel_dot_obst_quad_xy - obst_radius)
                 else:
-                    obst_ray_rad = np.arccos(cos_obst_ray_rad)
                     if cos_obst_ray_rad <= 0.0:
                         if rel_obst_quad_xy_mag <= obst_radius:
                             quads_sdf_obs[q_id][ray_id] = 0.0
-                        else:
-                            continue
                     else:
-                        if rel_obst_quad_xy_mag * np.sin(obst_ray_rad) <= obst_radius:
-                            quads_sdf_obs[q_id][ray_id] = min(quads_sdf_obs[q_id][ray_id], rel_dot_obst_quad_xy)
+                        obst_ray_rad = np.arccos(cos_obst_ray_rad)
+                        closest_dist = rel_obst_quad_xy_mag * np.sin(obst_ray_rad)
+                        if closest_dist <= obst_radius:
+                            len_in_obst = (obst_radius ** 2 - closest_dist ** 2) ** 0.5
+                            quads_sdf_obs[q_id][ray_id] = min(quads_sdf_obs[q_id][ray_id],
+                                                              rel_dot_obst_quad_xy - len_in_obst)
+
+        # for quad_sdf_obs in quads_sdf_obs:
+        for q_id in range(len(quad_poses)):
+            q_pos_xy = quad_poses[q_id]
+            q_vel_xy = quad_vels[q_id]
+            base_rad = np.arctan2(q_vel_xy[1], q_vel_xy[0])
+            for ray_id, rad_shift in enumerate(scan_angle_arr):
+                if quads_sdf_obs[q_id][ray_id] >= 100.0:
+                    cur_rad = base_rad + rad_shift
+                    cur_dir = np.array([np.cos(cur_rad), np.sin(cur_rad)])
+                    # Wall: from [-5., 0.] -> [5., 0.]
+                    for wall_id in range(4):
+                        if wall_id == 0:
+                            rel_obst_quad_xy = np.array([-room_x - q_pos_xy[0], 0.0])
+                        elif wall_id == 1:
+                            rel_obst_quad_xy = np.array([0.0, room_y - q_pos_xy[1]])
+                        elif wall_id == 2:
+                            rel_obst_quad_xy = np.array([room_x - q_pos_xy[0], 0.0])
+                        else:
+                            rel_obst_quad_xy = np.array([0.0, -room_y - q_pos_xy[1]])
+
+                        rel_dot_obst_quad_xy = np.dot(cur_dir, rel_obst_quad_xy)
+                        if rel_dot_obst_quad_xy > 0.0:
+                            rel_obst_quad_xy_mag = (rel_obst_quad_xy[0] ** 2 + rel_obst_quad_xy[1] ** 2) ** 0.5
+                            cos_obst_ray_rad = rel_dot_obst_quad_xy / rel_obst_quad_xy_mag
+                            if cos_obst_ray_rad == 1.0:
+                                quads_sdf_obs[q_id][ray_id] = min(quads_sdf_obs[q_id][ray_id], rel_dot_obst_quad_xy)
+                            else:
+                                quads_sdf_obs[q_id][ray_id] = min(quads_sdf_obs[q_id][ray_id],
+                                                                  rel_obst_quad_xy_mag / cos_obst_ray_rad)
 
     return quads_sdf_obs
 

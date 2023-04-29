@@ -126,7 +126,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.obstacle_size = obst_size
             self.obstacles = MultiObstacles(obstacle_size=self.obstacle_size, quad_radius=self.quad_arm,
                                             obst_obs_type=obst_obs_type, obst_scan_range=obst_scan_range,
-                                            obst_ray_num=obst_ray_num)
+                                            obst_ray_num=obst_ray_num, room_dims=room_dims)
 
             # Log more info
             self.distance_to_goal_3_5 = 0

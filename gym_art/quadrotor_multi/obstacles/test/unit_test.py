@@ -52,28 +52,38 @@ def test_get_surround_sdfs_radar_2d():
     quad_poses = np.array([[0., 0.]])
     quad_vels = np.array([[0., 1.]])
     obst_poses = np.array([[0., 0.5]])
-    true_res = np.array([100., np.sqrt(3) / 4., np.sqrt(3) / 4., 100.])
+    room_dims = np.array([10., 10., 10.])
+    true_res = np.array([[5., 0.2671814623744493, 0.2671814623744493, 5.]])
     test_res = get_surround_sdfs_radar_2d(quad_poses=quad_poses, obst_poses=obst_poses, quad_vels=quad_vels,
-                                          obst_radius=0.3, scan_range=np.pi, ray_num=4)
+                                          obst_radius=0.3, scan_range=np.pi, ray_num=4, room_dims=room_dims)
+    # print('test_res:     ', test_res)
+    # print('true_res:     ', true_res)
     assert np.array_equiv(np.round(test_res, decimals=5), np.round(true_res, decimals=5))
 
-    true_res = np.array([100., 100., 0.2, 100., 100.])
+    true_res = np.array([[5., 5.0 * np.sqrt(2), 0.2, 5.0 * np.sqrt(2), 5.]])
     test_res = get_surround_sdfs_radar_2d(quad_poses=quad_poses, obst_poses=obst_poses, quad_vels=quad_vels,
-                                          obst_radius=0.3, scan_range=np.pi, ray_num=5)
+                                          obst_radius=0.3, scan_range=np.pi, ray_num=5, room_dims=room_dims)
+    # print('test_res:     ', test_res)
+    # print('true_res:     ', true_res)
     assert np.array_equiv(np.round(test_res, decimals=5), np.round(true_res, decimals=5))
 
     quad_vels = np.array([[1., 0.]])
-    true_res = np.array([0.2, 100., 100., 100., 100.])
+    true_res = np.array([[0.2, 5.0 * np.sqrt(2), 5.0, 5.0 * np.sqrt(2), 5.0]])
     test_res = get_surround_sdfs_radar_2d(quad_poses=quad_poses, obst_poses=obst_poses, quad_vels=quad_vels,
-                                          obst_radius=0.3, scan_range=np.pi, ray_num=5)
+                                          obst_radius=0.3, scan_range=np.pi, ray_num=5, room_dims=room_dims)
+    # print('test_res:     ', test_res)
+    # print('true_res:     ', true_res)
     assert np.array_equiv(np.round(test_res, decimals=5), np.round(true_res, decimals=5))
 
     quad_poses = np.array([[0., 0.], [0.5, 0.5]])
     quad_vels = np.array([[0., 1.], [1., 0.]])
     obst_poses = np.array([[0., 0.5], [0.5, 0.]])
-    true_res = np.array([[100., 100., 0.2, 100., 0.2], [100., 100., 100., 100., 0.2]])
+    true_res = np.array([[5., 5.0 * np.sqrt(2), 0.2, 5.0 * np.sqrt(2), 0.2],
+                         [4.5, 4.5*np.sqrt(2), 4.5, 4.5*np.sqrt(2), 0.2]])
     test_res = get_surround_sdfs_radar_2d(quad_poses=quad_poses, obst_poses=obst_poses, quad_vels=quad_vels,
-                                          obst_radius=0.3, scan_range=np.pi, ray_num=5)
+                                          obst_radius=0.3, scan_range=np.pi, ray_num=5, room_dims=room_dims)
+    # print('test_res:     ', test_res)
+    # print('true_res:     ', true_res)
     assert np.array_equiv(np.round(test_res, decimals=5), np.round(true_res, decimals=5))
 
 

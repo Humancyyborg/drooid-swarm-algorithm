@@ -6,7 +6,9 @@ from gym_art.quadrotor_multi.obstacles.utils import get_surround_sdfs, collision
 
 class MultiObstacles:
     def __init__(self, obstacle_size=1.0, quad_radius=0.046, obst_obs_type='octomap', obst_scan_range=np.pi,
-                 obst_ray_num=4):
+                 obst_ray_num=4, room_dims=None):
+        if room_dims is None:
+            room_dims = [10., 10., 10.]
         self.size = obstacle_size
         self.obstacle_radius = obstacle_size / 2.0
         self.quad_radius = quad_radius
@@ -15,6 +17,7 @@ class MultiObstacles:
         self.obst_obs_type = obst_obs_type
         self.obst_scan_range = obst_scan_range
         self.obst_ray_num = obst_ray_num
+        self.room_dims = np.array(room_dims)
 
     def reset(self, obs, quads_pos, pos_arr, quads_vel):
         self.pos_arr = copy.deepcopy(np.array(pos_arr))
@@ -27,7 +30,8 @@ class MultiObstacles:
         elif self.obst_obs_type == 'radar':
             quads_sdf_obs = get_surround_sdfs_radar_2d(
                 quad_poses=quads_pos[:, :2], obst_poses=self.pos_arr[:, :2], quad_vels=quads_vel[:, :2],
-                obst_radius=self.obstacle_radius, scan_range=self.obst_scan_range, ray_num=self.obst_ray_num)
+                obst_radius=self.obstacle_radius, scan_range=self.obst_scan_range, ray_num=self.obst_ray_num,
+                room_dims=self.room_dims)
         else:
             raise NotImplementedError(f'self.obst_obs_type: {self.obst_obs_type} is not supported!')
 
@@ -44,7 +48,8 @@ class MultiObstacles:
         elif self.obst_obs_type == 'radar':
             quads_sdf_obs = get_surround_sdfs_radar_2d(
                 quad_poses=quads_pos[:, :2], obst_poses=self.pos_arr[:, :2], quad_vels=quads_vel[:, :2],
-                obst_radius=self.obstacle_radius, scan_range=self.obst_scan_range, ray_num=self.obst_ray_num)
+                obst_radius=self.obstacle_radius, scan_range=self.obst_scan_range, ray_num=self.obst_ray_num,
+                room_dims=self.room_dims)
         else:
             raise NotImplementedError(f'self.obst_obs_type: {self.obst_obs_type} is not supported!')
 
