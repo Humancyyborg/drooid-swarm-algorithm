@@ -1,15 +1,13 @@
 import copy
 
+import numpy as np
+import torch
 from sample_factory.algo.learning.learner import Learner
 from sample_factory.model.actor_critic import create_actor_critic
-import torch
 
 from gym_art.quadrotor_multi.quad_experience_replay import ExperienceReplayWrapper
-from swarm_rl.env_wrappers.additional_input import QuadsAdditionalInputWrapper
-from swarm_rl.env_wrappers.discrete_actions import QuadsDiscreteActionsWrapper
-from swarm_rl.env_wrappers.reward_shaping import DEFAULT_QUAD_REWARD_SHAPING, QuadsRewardShapingWrapper, \
-    DEFAULT_QUAD_REWARD_SHAPING_SINGLE
 from swarm_rl.env_wrappers.compatibility import QuadEnvCompatibility
+from swarm_rl.env_wrappers.reward_shaping import DEFAULT_QUAD_REWARD_SHAPING, QuadsRewardShapingWrapper
 from swarm_rl.env_wrappers.v_value_map import V_ValueMapWrapper
 
 
@@ -36,6 +34,8 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
     rew_coeff = DEFAULT_QUAD_REWARD_SHAPING['quad_rewards']
     use_replay_buffer = cfg.replay_buffer_sample_prob > 0.0
 
+    obstacle_scan_range = np.radians(cfg.quads_obstacle_scan_range)
+
     env = QuadrotorEnvMulti(
         num_agents=cfg.quads_num_agents, ep_time=cfg.quads_episode_duration, rew_coeff=rew_coeff,
         obs_repr=cfg.quads_obs_repr,
@@ -45,7 +45,8 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         collision_falloff_radius=cfg.quads_collision_falloff_radius,
         # Obstacle
         use_obstacles=cfg.quads_use_obstacles, obst_density=cfg.quads_obst_density, obst_size=cfg.quads_obst_size,
-        obst_spawn_area=cfg.quads_obst_spawn_area,
+        obst_spawn_area=cfg.quads_obst_spawn_area, obst_obs_type=cfg.quads_obstacle_obs_type,
+        obst_scan_range=obstacle_scan_range, obst_ray_num=cfg.quads_obstacle_ray_num,
 
         # Aerodynamics
         use_downwash=cfg.quads_use_downwash,

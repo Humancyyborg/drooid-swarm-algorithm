@@ -25,7 +25,7 @@ class QuadrotorEnvMulti(gym.Env):
                  neighbor_visible_num, neighbor_obs_type, collision_hitbox_radius, collision_falloff_radius,
 
                  # Obstacle
-                 use_obstacles, obst_density, obst_size, obst_spawn_area,
+                 use_obstacles, obst_density, obst_size, obst_spawn_area, obst_obs_type, obst_scan_range, obst_ray_num,
 
                  # Aerodynamics, Numba Speed Up, Scenarios, Room, Replay Buffer, Rendering
                  use_downwash, use_numba, quads_mode, room_dims, use_replay_buffer, quads_view_mode,
@@ -65,7 +65,7 @@ class QuadrotorEnvMulti(gym.Env):
                 num_agents=num_agents,
                 neighbor_obs_type=neighbor_obs_type, num_use_neighbor_obs=self.num_use_neighbor_obs,
                 # Obstacle
-                use_obstacles=use_obstacles,
+                use_obstacles=use_obstacles, obst_obs_type=obst_obs_type, obst_ray_num=obst_ray_num
             )
             self.envs.append(e)
 
@@ -124,12 +124,13 @@ class QuadrotorEnvMulti(gym.Env):
             self.num_obstacles = int(obst_density * obst_spawn_area[0] * obst_spawn_area[1])
             self.obst_map = None
             self.obstacle_size = obst_size
-            self.obstacles = MultiObstacles(obstacle_size=self.obstacle_size, quad_radius=self.quad_arm)
+            self.obstacles = MultiObstacles(obstacle_size=self.obstacle_size, quad_radius=self.quad_arm,
+                                            obst_obs_type=obst_obs_type, obst_scan_range=obst_scan_range,
+                                            obst_ray_num=obst_ray_num)
 
             # Log more info
             self.distance_to_goal_3_5 = 0
             self.distance_to_goal_5 = 0
-
 
         # Scenarios
         self.quads_mode = quads_mode
@@ -359,7 +360,8 @@ class QuadrotorEnvMulti(gym.Env):
         # Obstacles
         if self.use_obstacles:
             quads_pos = np.array([e.dynamics.pos for e in self.envs])
-            obs = self.obstacles.reset(obs=obs, quads_pos=quads_pos, pos_arr=obst_pos_arr)
+            quads_vel = np.array([e.dynamics.vel for e in self.envs])
+            obs = self.obstacles.reset(obs=obs, quads_pos=quads_pos, pos_arr=obst_pos_arr, quads_vel=quads_vel)
             self.obst_quad_collisions_per_episode = self.obst_quad_collisions_after_settle = 0
             self.prev_obst_quad_collisions = []
             self.distance_to_goal_3_5 = 0
@@ -431,7 +433,6 @@ class QuadrotorEnvMulti(gym.Env):
             self.collisions_after_settle += collisions_curr_tick
         if collisions_curr_tick > 0 and self.envs[0].time_remain <= self.collisions_final_grace_period_steps:
             self.collisions_final_5s += collisions_curr_tick
-
 
         # # Aux: Neighbor Collisions
         self.prev_drone_collisions = curr_drone_collisions
@@ -533,7 +534,8 @@ class QuadrotorEnvMulti(gym.Env):
                 for val in new_quad_collision:
                     dyn1, dyn2 = self.envs[val[0]].dynamics, self.envs[val[1]].dynamics
                     dyn1.vel, dyn1.omega, dyn2.vel, dyn2.omega = perform_collision_between_drones(
-                        pos1=dyn1.pos, vel1=dyn1.vel, omega1=dyn1.omega, pos2=dyn2.pos, vel2=dyn2.vel, omega2=dyn2.omega)
+                        pos1=dyn1.pos, vel1=dyn1.vel, omega1=dyn1.omega,
+                        pos2=dyn2.pos, vel2=dyn2.vel, omega2=dyn2.omega)
 
             # # 3) Obstacles
             if self.use_obstacles:
@@ -574,7 +576,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Concatenate obstacle observations
         if self.use_obstacles:
-            obs = self.obstacles.step(obs=obs, quads_pos=self.pos)
+            obs = self.obstacles.step(obs=obs, quads_pos=self.pos, quads_vel=self.vel)
 
         # 6. Update info for replay buffer
         # Once agent learns how to take off, activate the replay buffer
@@ -748,14 +750,15 @@ class QuadrotorEnvMulti(gym.Env):
         copied_env = cls.__new__(cls)
         memo[id(self)] = copied_env
 
-        # this will actually break the reward shaping functionality in PBT, but we need to fix it in SampleFactory, not here
+        # this will actually break the reward shaping functionality in PBT,
+        # but we need to fix it in SampleFactory, not here
         skip_copying = {"scene", "reward_shaping_interface"}
 
         for k, v in self.__dict__.items():
             if k not in skip_copying:
                 setattr(copied_env, k, deepcopy(v, memo))
 
-        # warning! deep-copied env has its scene uninitialized! We gotta reuse one from the existing env
+        # warning! deep-copied env has its scene uninitialized! We need to reuse one from the existing env
         # to avoid creating tons of windows
         copied_env.scene = None
 

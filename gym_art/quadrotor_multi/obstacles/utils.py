@@ -1,6 +1,7 @@
 import numpy as np
 from numba import njit
 
+
 @njit
 def get_surround_sdfs(quad_poses, obst_poses, quads_sdf_obs, obst_radius, resolution=0.1):
     # Shape of quads_sdf_obs: (quad_num, 9)
@@ -37,26 +38,24 @@ def get_surround_sdfs_radar_2d(quad_poses, obst_poses, quad_vels, obst_radius, s
         scan_range:     scan range, in radians [pi / 2, pi]
         ray_num:        ray number
     """
-    quads_sdf_obs = np.ones(ray_num) * 100.0
+    quads_sdf_obs = 100.0 * np.ones((len(quad_poses), ray_num))
     scan_angle = scan_range / (ray_num - 1)
     scan_angle_arr = np.zeros(ray_num)
     # Get ray angle list
     # If scan_range = 180 deg and ray_num = 4
     # scan_angle_arr = [90, 30, -30, -90]
     start_angle = scan_range / 2.
-    for i in range(ray_num):
-        scan_angle_arr[i] = start_angle
+    for rid in range(ray_num):
+        scan_angle_arr[rid] = start_angle
         start_angle -= scan_angle
 
-    for i in range(len(quad_poses)):
-        q_pos_xy = quad_poses[i]
-        q_vel_xy = quad_vels[i]
+    for q_id in range(len(quad_poses)):
+        q_pos_xy = quad_poses[q_id]
+        q_vel_xy = quad_vels[q_id]
         base_rad = np.arctan2(q_vel_xy[1], q_vel_xy[0])
         for ray_id, rad_shift in enumerate(scan_angle_arr):
             cur_rad = base_rad + rad_shift
             cur_dir = np.array([np.cos(cur_rad), np.sin(cur_rad)])
-            # cur_dir_mag = (cur_dir[0] ** 2 + cur_dir[1] ** 2) ** 0.5
-            # print('cur_dir_mag:      ', cur_dir_mag)
             for o_pos_xy in obst_poses:
                 # Check if the obstacle intersect with the quadrotor
                 rel_obst_quad_xy = o_pos_xy - q_pos_xy
@@ -65,17 +64,17 @@ def get_surround_sdfs_radar_2d(quad_poses, obst_poses, quad_vels, obst_radius, s
                 rel_dot_obst_quad_xy = np.dot(cur_dir, rel_obst_quad_xy)
                 cos_obst_ray_rad = rel_dot_obst_quad_xy / rel_obst_quad_xy_mag
                 if cos_obst_ray_rad == 1.0:
-                    quads_sdf_obs[ray_id] = min(quads_sdf_obs[ray_id], rel_dot_obst_quad_xy - obst_radius)
+                    quads_sdf_obs[q_id][ray_id] = min(quads_sdf_obs[q_id][ray_id], rel_dot_obst_quad_xy - obst_radius)
                 else:
                     obst_ray_rad = np.arccos(cos_obst_ray_rad)
                     if cos_obst_ray_rad <= 0.0:
                         if rel_obst_quad_xy_mag <= obst_radius:
-                            quads_sdf_obs[ray_id] = 0.0
+                            quads_sdf_obs[q_id][ray_id] = 0.0
                         else:
                             continue
                     else:
                         if rel_obst_quad_xy_mag * np.sin(obst_ray_rad) <= obst_radius:
-                            quads_sdf_obs[ray_id] = min(quads_sdf_obs[ray_id], rel_dot_obst_quad_xy)
+                            quads_sdf_obs[q_id][ray_id] = min(quads_sdf_obs[q_id][ray_id], rel_dot_obst_quad_xy)
 
     return quads_sdf_obs
 

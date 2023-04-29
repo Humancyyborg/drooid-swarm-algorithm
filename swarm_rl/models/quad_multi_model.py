@@ -158,7 +158,11 @@ class QuadMultiHeadAttentionEncoder(Encoder):
             fc_layer(fc_encoder_layer, fc_encoder_layer),
             nonlinearity(cfg)
         )
-        self.obstacle_obs_dim = QUADS_OBSTACLE_OBS_TYPE[cfg.quads_obstacle_obs_type]
+        if cfg.quads_obstacle_obs_type == 'radar':
+            self.obstacle_obs_dim = cfg.quads_obstacle_ray_num
+        else:
+            self.obstacle_obs_dim = QUADS_OBSTACLE_OBS_TYPE[cfg.quads_obstacle_obs_type]
+
         self.obstacle_embed_layer = nn.Sequential(
             fc_layer(self.obstacle_obs_dim, fc_encoder_layer),
             nonlinearity(cfg),
@@ -263,7 +267,11 @@ class QuadMultiEncoder(Encoder):
         # Encode Obstacle Obs
         obstacle_encoder_out_size = 0
         if self.use_obstacles:
-            obstacle_obs_dim = QUADS_OBSTACLE_OBS_TYPE[cfg.quads_obstacle_obs_type]
+            if cfg.quads_obstacle_obs_type == 'radar':
+                obstacle_obs_dim = cfg.quads_obstacle_ray_num
+            else:
+                obstacle_obs_dim = QUADS_OBSTACLE_OBS_TYPE[cfg.quads_obstacle_obs_type]
+
             obstacle_hidden_size = cfg.quads_obst_hidden_size
             self.obstacle_encoder = nn.Sequential(
                 fc_layer(obstacle_obs_dim, obstacle_hidden_size),

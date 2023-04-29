@@ -16,7 +16,8 @@ def add_quadrotors_env_args(env, parser):
     p = parser
 
     # Quadrotor features
-    p.add_argument('--quads_num_agents', default=8, type=int, help='Override default value for the number of quadrotors')
+    p.add_argument('--quads_num_agents', default=8, type=int,
+                   help='Override default value for the number of quadrotors')
     p.add_argument('--quads_obs_repr', default='xyz_vxyz_R_omega', type=str,
                    choices=['xyz_vxyz_R_omega', 'xyz_vxyz_R_omega_floor', 'xyz_vxyz_R_omega_wall'],
                    help='obs space for quadrotor self')
@@ -26,9 +27,9 @@ def add_quadrotors_env_args(env, parser):
 
     # Neighbor
     # Neighbor Features
-    p.add_argument('--quads_neighbor_visible_num', default=-1, type=int, help='Number of neighbors to consider. -1=all '
-                                                                          '0=blind agents, '
-                                                                          '0<n<num_agents-1 = nonzero number of agents')
+    p.add_argument('--quads_neighbor_visible_num', default=-1, type=int,
+                   help='Number of neighbors to consider. -1=all, 0=blind agents, 0<n<num_agents-1 = nonzero number '
+                        'of agents')
     p.add_argument('--quads_neighbor_obs_type', default='none', type=str,
                    choices=['none', 'pos_vel'], help='Choose what kind of obs to send to encoder.')
 
@@ -54,7 +55,11 @@ def add_quadrotors_env_args(env, parser):
     # # Obstacle Features
     p.add_argument('--quads_use_obstacles', default=False, type=str2bool, help='Use obstacles or not')
     p.add_argument('--quads_obstacle_obs_type', default='none', type=str,
-                   choices=['none', 'octomap'], help='Choose what kind of obs to send to encoder.')
+                   choices=['none', 'octomap', 'radar'], help='Choose what kind of obs to send to encoder.')
+    p.add_argument('--quads_obstacle_scan_range', default=180, type=float, choices=range(0, 360),
+                   help='Used when quads_obstacle_obs_type=radar; radar scan range')
+    p.add_argument('--quads_obstacle_ray_num', default=4, type=int, choices=range(2, 360),
+                   help='Used when quads_obstacle_obs_type=radar; radar ray number')
     p.add_argument('--quads_obst_density', default=0.2, type=float, help='Obstacle density in the map')
     p.add_argument('--quads_obst_size', default=1.0, type=float, help='The radius of obstacles')
     p.add_argument('--quads_obst_spawn_area', nargs='+', default=[6.0, 6.0], type=float,
@@ -65,7 +70,7 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obst_encoder_type', default='mlp', type=str, help='The type of the obstacle encoder')
 
     # # Obstacle Collision Reward
-    p.add_argument('--quads_obst_collision_reward', default=0.0, type=float,
+    p.add_argument('--quads_obst_collision_reward', default=5.0, type=float,
                    help='Override default value for quadcol_bin_obst reward, which means collisions between quadrotor '
                         'and obstacles')
 
@@ -82,7 +87,8 @@ def add_quadrotors_env_args(env, parser):
                             'ep_lissajous3D', 'ep_rand_bezier', 'swarm_vs_swarm', 'swap_goals', 'dynamic_formations',
                             'mix', 'o_uniform_same_goal_spawn', 'o_random',
                             'o_dynamic_diff_goal', 'o_dynamic_same_goal', 'o_diagonal', 'o_static_same_goal',
-                            'o_static_diff_goal', 'o_swap_goals'], help='Choose which scenario to run. ep = evader pursuit')
+                            'o_static_diff_goal', 'o_swap_goals'],
+                   help='Choose which scenario to run. ep = evader pursuit')
 
     # Room
     p.add_argument('--quads_room_dims', nargs='+', default=[10., 10., 10.], type=float,
@@ -99,8 +105,9 @@ def add_quadrotors_env_args(env, parser):
                                                                              'annealing')
 
     # Rendering
-    p.add_argument('--quads_view_mode', nargs='+', default=['topdown', 'chase', 'global'],
-                   type=str, choices=['topdown', 'chase', 'side', 'global', 'corner0', 'corner1', 'corner2', 'corner3', 'topdownfollow'],
+    p.add_argument('--quads_view_mode', nargs='+', default=['topdown', 'chase', 'global'], type=str,
+                   choices=['topdown', 'chase', 'side', 'global', 'corner0',
+                            'corner1', 'corner2', 'corner3', 'topdownfollow'],
                    help='Choose which kind of view/camera to use')
     p.add_argument('--quads_render', default=False, type=bool, help='Use render or not')
     p.add_argument('--visualize_v_value', action='store_true', help="Visualize v value map")
