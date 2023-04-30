@@ -151,7 +151,7 @@ class ExperienceReplayWrapper(gym.Wrapper):
             env = event.env
             obs = event.obs
             replayed_env = deepcopy(env)
-            replayed_env.scene = self.env.scenes
+            replayed_env.scenes = self.env.scenes
 
             # we want to use these for tensorboard, so reset them to zero to get accurate stats
             replayed_env.collisions_per_episode = replayed_env.collisions_after_settle = 0
