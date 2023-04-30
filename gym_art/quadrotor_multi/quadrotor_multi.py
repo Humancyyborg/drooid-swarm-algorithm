@@ -641,12 +641,12 @@ class QuadrotorEnvMulti(gym.Env):
 
                         infos[i]['episode_extra_stats']['num_collisions_obst_quad_3_5'] = \
                             self.distance_to_goal_3_5
-                        infos[i]['episode_extra_stats'][f'{self.scenario.name()}/num_collisions_obst'] = \
+                        infos[i]['episode_extra_stats'][f'{self.scenario.name()}/num_collisions_obst_quad_3_5'] = \
                             self.distance_to_goal_3_5
 
                         infos[i]['episode_extra_stats']['num_collisions_obst_quad_5'] = \
                             self.distance_to_goal_5
-                        infos[i]['episode_extra_stats'][f'{self.scenario.name()}/num_collisions_obst'] = \
+                        infos[i]['episode_extra_stats'][f'{self.scenario.name()}/num_collisions_obst_quad_5'] = \
                             self.distance_to_goal_5
 
             obs = self.reset()
