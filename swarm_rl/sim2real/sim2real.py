@@ -164,12 +164,6 @@ def generate_c_weights_attention(model: nn.Module, transpose: bool = False):
                 out_bias_names.append(name)
                 out_biases.append(bias)
 
-    # stack everything in the right order
-    layer_names = self_layer_names + nbr_layer_names + obst_layer_names + attn_layer_names + out_layer_names
-    bias_names = self_bias_names + nbr_bias_names + obst_bias_names + attn_bias_names + out_bias_names
-    weights = self_weights + neighbor_weights + obst_weights + attn_weights + out_weights
-    biases = self_biases + neighbor_biases + obst_biases + attn_biases + out_biases
-
     self_layer_names += out_layer_names
     self_bias_names += out_bias_names
     self_weights += out_weights
@@ -179,8 +173,8 @@ def generate_c_weights_attention(model: nn.Module, transpose: bool = False):
             'self': [self_layer_names, self_bias_names, self_weights, self_biases],
             'nbr': [nbr_layer_names, nbr_bias_names, neighbor_weights, neighbor_biases],
             'obst': [obst_layer_names, obst_bias_names, obst_weights, obst_biases],
+            'attn': [attn_layer_names, attn_bias_names, attn_weights, attn_biases],
         },
-        'attn': [attn_layer_names, attn_bias_names, attn_weights, attn_biases],
         'out': [out_layer_names, out_bias_names, out_weights, out_biases],
         'outputs': outputs
     }
@@ -409,6 +403,27 @@ def obstacle_encoder_c_str(prefix: str, weight_names: List[str], bias_names: Lis
     return method
 
 
+def attention_c_str(prefix: str, weight_names: List[str], bias_names: List[str]):
+    method = f'''
+    void multiHeadAttention() {{
+        //reset embeddings accumulator to zero
+        memset(attention_embeds, 0, sizeof(attention_embeds));
+        
+        //concat neighbor and obstacle embeddings together
+        int num_nbr_embeds = nbr_structure[-1][1];
+        for (int i = 0; i < num_nbr_embeds; i++) {{
+            nbr_obst_embeds[i] = neighbor_embeds[i];
+        }}
+        for (int i = 0; i < obst_structure[-1][1]; i++) {{
+            nbr_obst_embeds[i + num_nbr_embeds] = obst_embeds[i]; 
+        }}
+        
+    '''
+
+    for_loops = []
+
+
+
 def generate_c_model_attention(model: nn.Module, output_path: str, output_folder: str, testing=False):
     info = generate_c_weights_attention(model, transpose=True)
     model_state_dict = model.state_dict()
@@ -440,6 +455,9 @@ def generate_c_model_attention(model: nn.Module, output_path: str, output_folder
             method = neighbor_encoder_c_string(enc_name, weight_names, bias_names)
         elif 'obst' in enc_name:
             method = obstacle_encoder_c_str(enc_name, weight_names, bias_names)
+        else:
+            # attention
+            pass
 
         methods += method
 
