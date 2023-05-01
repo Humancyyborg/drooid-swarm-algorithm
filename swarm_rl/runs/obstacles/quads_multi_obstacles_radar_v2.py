@@ -4,7 +4,7 @@ from swarm_rl.runs.obstacles.quad_obstacle_baseline import QUAD_BASELINE_CLI_8
 _params = ParamGrid(
     [
         ("seed", [0000, 1111]),
-        ("quads_obstacle_scan_range", [180]),
+        ("quads_obstacle_scan_range", [90, 120]),
         ("quads_obstacle_ray_num", [7, 13]),
     ]
 )
@@ -17,7 +17,7 @@ OBSTACLE_MODEL_CLI = QUAD_BASELINE_CLI_8 + (
 )
 
 _experiment = Experiment(
-    "restart_refactor_obstacle_multi_radar_v2",
+    "restart_refactor_obstacle_multi_radar_v3",
     OBSTACLE_MODEL_CLI,
     _params.generate_params(randomize=False),
 )
