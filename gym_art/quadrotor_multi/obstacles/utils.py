@@ -69,9 +69,8 @@ def get_surround_sdfs_radar_2d(quad_poses, obst_poses, quad_vels, obst_radius, s
                 if cos_obst_ray_rad == 1.0:
                     quads_sdf_obs[q_id][ray_id] = min(quads_sdf_obs[q_id][ray_id], rel_dot_obst_quad_xy - obst_radius)
                 else:
-                    if cos_obst_ray_rad <= 0.0:
-                        if rel_obst_quad_xy_mag <= obst_radius:
-                            quads_sdf_obs[q_id][ray_id] = 0.0
+                    if rel_obst_quad_xy_mag <= obst_radius:
+                        quads_sdf_obs[q_id][ray_id] = 0.0
                     else:
                         obst_ray_rad = np.arccos(cos_obst_ray_rad)
                         closest_dist = rel_obst_quad_xy_mag * np.sin(obst_ray_rad)
@@ -109,7 +108,7 @@ def get_surround_sdfs_radar_2d(quad_poses, obst_poses, quad_vels, obst_radius, s
         #                     else:
         #                         quads_sdf_obs[q_id][ray_id] = min(quads_sdf_obs[q_id][ray_id],
         #                                                           rel_obst_quad_xy_mag / cos_obst_ray_rad)
-
+    quads_sdf_obs = np.clip(quads_sdf_obs, a_min=0.0, a_max=scan_max_dist)
     return quads_sdf_obs
 
 
