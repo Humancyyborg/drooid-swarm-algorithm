@@ -56,7 +56,7 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_use_obstacles', default=False, type=str2bool, help='Use obstacles or not')
     p.add_argument('--quads_obstacle_obs_type', default='none', type=str,
                    choices=['none', 'octomap', 'radar'], help='Choose what kind of obs to send to encoder.')
-    p.add_argument('--quads_obstacle_scan_range', default=180, type=float, choices=range(0, 360),
+    p.add_argument('--quads_obstacle_scan_range', default=180, type=float, choices=range(0, 361),
                    help='Used when quads_obstacle_obs_type=radar; radar scan range')
     p.add_argument('--quads_obstacle_ray_num', default=4, type=int, choices=range(2, 360),
                    help='Used when quads_obstacle_obs_type=radar; radar ray number')
