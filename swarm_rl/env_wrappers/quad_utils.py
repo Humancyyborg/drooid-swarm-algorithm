@@ -47,7 +47,7 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         use_obstacles=cfg.quads_use_obstacles, obst_density=cfg.quads_obst_density, obst_size=cfg.quads_obst_size,
         obst_spawn_area=cfg.quads_obst_spawn_area, obst_obs_type=cfg.quads_obstacle_obs_type,
         obst_scan_range=obstacle_scan_range, obst_ray_num=cfg.quads_obstacle_ray_num,
-
+        obst_scan_max_dist=cfg.quads_obstacle_scan_max_dist,
         # Aerodynamics
         use_downwash=cfg.quads_use_downwash,
         # Numba Speed Up

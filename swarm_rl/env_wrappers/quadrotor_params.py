@@ -60,6 +60,8 @@ def add_quadrotors_env_args(env, parser):
                    help='Used when quads_obstacle_obs_type=radar; radar scan range')
     p.add_argument('--quads_obstacle_ray_num', default=4, type=int, choices=range(2, 360),
                    help='Used when quads_obstacle_obs_type=radar; radar ray number')
+    p.add_argument('--quads_obstacle_scan_max_dist', default=5.0, type=float,
+                   help='Max distance')
     p.add_argument('--quads_obst_density', default=0.2, type=float, help='Obstacle density in the map')
     p.add_argument('--quads_obst_size', default=1.0, type=float, help='The radius of obstacles')
     p.add_argument('--quads_obst_spawn_area', nargs='+', default=[6.0, 6.0], type=float,

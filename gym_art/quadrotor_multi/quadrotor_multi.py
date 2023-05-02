@@ -26,6 +26,7 @@ class QuadrotorEnvMulti(gym.Env):
 
                  # Obstacle
                  use_obstacles, obst_density, obst_size, obst_spawn_area, obst_obs_type, obst_scan_range, obst_ray_num,
+                 obst_scan_max_dist,
 
                  # Aerodynamics, Numba Speed Up, Scenarios, Room, Replay Buffer, Rendering
                  use_downwash, use_numba, quads_mode, room_dims, use_replay_buffer, quads_view_mode,
@@ -126,7 +127,8 @@ class QuadrotorEnvMulti(gym.Env):
             self.obstacle_size = obst_size
             self.obstacles = MultiObstacles(obstacle_size=self.obstacle_size, quad_radius=self.quad_arm,
                                             obst_obs_type=obst_obs_type, obst_scan_range=obst_scan_range,
-                                            obst_ray_num=obst_ray_num, room_dims=room_dims)
+                                            obst_ray_num=obst_ray_num, room_dims=room_dims,
+                                            obst_scan_max_dist=obst_scan_max_dist)
 
             # Log more info
             self.distance_to_goal_3_5 = 0
