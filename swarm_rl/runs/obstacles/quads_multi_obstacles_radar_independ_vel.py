@@ -17,7 +17,7 @@ OBSTACLE_MODEL_CLI = QUAD_BASELINE_CLI_8 + (
 )
 
 _experiment = Experiment(
-    "restart_refactor_obstacle_multi_radar",
+    "restart_refactor_obstacle_multi_radar_independ_vel",
     OBSTACLE_MODEL_CLI,
     _params.generate_params(randomize=False),
 )
