@@ -13,6 +13,7 @@ class Scenario_o_base(QuadrotorScenario):
         self.quads_mode = quads_mode
         self.obstacle_map = None
         self.free_space = []
+        self.approch_goal_metric = 0.5
 
     def generate_pos(self):
         half_room_length = self.room_dims[0] / 2

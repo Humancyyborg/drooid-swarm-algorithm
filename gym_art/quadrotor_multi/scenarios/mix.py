@@ -52,6 +52,7 @@ class Scenario_mix(QuadrotorScenario):
             raise NotImplementedError("Unknown!")
 
         self.scenario = None
+        self.approch_goal_metric = 0.5
 
     def name(self):
         """
@@ -84,3 +85,4 @@ class Scenario_mix(QuadrotorScenario):
 
         self.goals = self.scenario.goals
         self.formation_size = self.scenario.formation_size
+        self.approch_goal_metric = self.scenario.approch_goal_metric
