@@ -6,6 +6,7 @@ from copy import deepcopy
 import gym
 import numpy as np
 
+from gym_art.quadrotor_multi.aerodynamics.downwash import perform_downwash
 from gym_art.quadrotor_multi.collisions.obstacles import perform_collision_with_obstacle
 from gym_art.quadrotor_multi.collisions.quadrotors import calculate_collision_matrix, \
     calculate_drone_proximity_penalties, perform_collision_between_drones
@@ -596,10 +597,12 @@ class QuadrotorEnvMulti(gym.Env):
         self_state_update_flag = False
 
         # # 1) aerodynamics
-        # if self.use_downwash:
-        #     # TODO: Support self_state_update_flag
-        #     envs_dynamics = [env.dynamics for env in self.envs]
-        #     perform_downwash(drones_dyn=envs_dynamics, dt=self.control_dt)
+        if self.use_downwash:
+            envs_dynamics = [env.dynamics for env in self.envs]
+            applied_downwash_list = perform_downwash(drones_dyn=envs_dynamics, dt=self.control_dt)
+            downwash_agents_list = np.where(applied_downwash_list == 1)[0]
+            if len(downwash_agents_list) > 0:
+                self_state_update_flag = True
 
         # # 2) Drones
         if self.apply_collision_force:
