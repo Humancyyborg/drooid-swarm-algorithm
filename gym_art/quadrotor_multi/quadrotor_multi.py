@@ -196,6 +196,16 @@ class QuadrotorEnvMulti(gym.Env):
         # Log
         self.distance_to_goal = [[] for _ in range(len(self.envs))]
 
+        # # Log vel
+        # self.episode_vel_mean, self.episode_vel_max: consider whole episode, start from step 0
+        self.episode_vel_mean = [[] for _ in range(len(self.envs))]
+        self.episode_vel_max = [0.0 for _ in range(len(self.envs))]
+        # self.episode_vel_no_col_mean, self.episode_vel_no_col_max: consider episode, start from step 150
+        # & no collision drones, drone & obst, drone & wall
+        self.episode_vel_no_col_mean = [[] for _ in range(len(self.envs))]
+        self.episode_vel_no_col_max = [0.0 for _ in range(len(self.envs))]
+
+        # Log metric
         if self.use_obstacles:
             scenario_list = QUADS_MODE_LIST_OBSTACLES
         else:
@@ -434,6 +444,15 @@ class QuadrotorEnvMulti(gym.Env):
         self.agent_col_agent = np.ones(self.num_agents)
         self.agent_col_obst = np.ones(self.num_agents)
 
+        # # Log vel
+        # self.episode_vel_mean, self.episode_vel_max: consider whole episode, start from step 0
+        self.episode_vel_mean = [[] for _ in range(len(self.envs))]
+        self.episode_vel_max = [0.0 for _ in range(len(self.envs))]
+        # self.episode_vel_no_col_mean, self.episode_vel_no_col_max: consider episode, start from step 150
+        # & no collision drones, drone & obst, drone & wall
+        self.episode_vel_no_col_mean = [[] for _ in range(len(self.envs))]
+        self.episode_vel_no_col_max = [0.0 for _ in range(len(self.envs))]
+
         # Rendering
         if self.quads_render:
             self.reset_scene = True
@@ -650,6 +669,17 @@ class QuadrotorEnvMulti(gym.Env):
             self.all_collisions = {'drone': drone_col_matrix, 'ground': ground_collisions,
                                    'obstacle': obst_coll}
 
+        for i in range(self.num_agents):
+            vel_agent_i = np.linalg.norm(self.envs[i].dynamics.vel)
+            self.episode_vel_mean[i].append(vel_agent_i)
+            if vel_agent_i > self.episode_vel_max[i]:
+                self.episode_vel_max[i] = vel_agent_i
+
+            if not (self.agent_col_agent[i] == 0 or self.agent_col_obst[i] == 0 or i in wall_crash_list):
+                self.episode_vel_no_col_mean[i].append(vel_agent_i)
+                if vel_agent_i > self.episode_vel_no_col_max[i]:
+                    self.episode_vel_no_col_max[i] = vel_agent_i
+
         # 7. DONES
         if any(dones):
             scenario_name = self.scenario.name()
@@ -685,7 +715,18 @@ class QuadrotorEnvMulti(gym.Env):
                         f'{scenario_name}/distance_to_goal_3s': (1.0 / self.envs[0].dt) * np.mean(
                             self.distance_to_goal[i, int(-3 * self.control_freq):]),
                         f'{scenario_name}/distance_to_goal_5s': (1.0 / self.envs[0].dt) * np.mean(
-                            self.distance_to_goal[i, int(-5 * self.control_freq):])
+                            self.distance_to_goal[i, int(-5 * self.control_freq):]),
+
+                        # Log vel
+                        'episode_vel_mean': np.mean(self.episode_vel_mean[i]),
+                        f'{scenario_name}/episode_vel_mean': np.mean(self.episode_vel_mean[i]),
+                        'episode_vel_max': self.episode_vel_max[i],
+                        f'{scenario_name}/episode_vel_max': self.episode_vel_max[i],
+
+                        'episode_vel_no_col_mean': np.mean(self.episode_vel_no_col_mean[i]),
+                        f'{scenario_name}/episode_vel_no_col_mean': np.mean(self.episode_vel_no_col_mean[i]),
+                        'episode_vel_no_col_max': self.episode_vel_no_col_max[i],
+                        f'{scenario_name}/episode_vel_no_col_max': self.episode_vel_no_col_max[i],
                     }
 
                     if self.use_obstacles:
