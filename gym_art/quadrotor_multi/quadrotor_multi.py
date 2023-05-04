@@ -131,7 +131,6 @@ class QuadrotorEnvMulti(gym.Env):
             self.distance_to_goal_3_5 = 0
             self.distance_to_goal_5 = 0
 
-
         # Scenarios
         self.quads_mode = quads_mode
         self.scenario = create_scenario(quads_mode=quads_mode, envs=self.envs, num_agents=num_agents,
@@ -506,7 +505,6 @@ class QuadrotorEnvMulti(gym.Env):
         if collisions_curr_tick > 0 and self.envs[0].time_remain <= self.collisions_final_grace_period_steps:
             self.collisions_final_5s += collisions_curr_tick
 
-
         # # Aux: Neighbor Collisions
         self.prev_drone_collisions = curr_drone_collisions
 
@@ -838,7 +836,6 @@ class QuadrotorEnvMulti(gym.Env):
                     infos[i]['episode_extra_stats'][f'{scenario_name}/agent_success_rate'] = \
                         np.mean(self.agent_success_rate_dict[scenario_name])
 
-
             obs = self.reset()
             # terminate the episode for all "sub-envs"
             dones = [True] * len(dones)
@@ -947,7 +944,7 @@ class QuadrotorEnvMulti(gym.Env):
             if k not in skip_copying:
                 setattr(copied_env, k, deepcopy(v, memo))
 
-        # warning! deep-copied env has its scene uninitialized! We gotta reuse one from the existing env
+        # warning! deep-copied env has its scene uninitialized! We need to reuse one from the existing env
         # to avoid creating tons of windows
         copied_env.scene = None
 
