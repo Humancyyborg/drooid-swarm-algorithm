@@ -71,7 +71,7 @@ def add_quadrotors_env_args(env, parser):
 
     # Aerodynamics
     # # Downwash
-    p.add_argument('--quads_use_downwash', default=False, type=bool, help='Apply downwash or not')
+    p.add_argument('--quads_use_downwash', default=False, type=str2bool, help='Apply downwash or not')
 
     # Numba Speed Up
     p.add_argument('--quads_use_numba', default=False, type=str2bool, help='Whether to use numba for jit or not')
