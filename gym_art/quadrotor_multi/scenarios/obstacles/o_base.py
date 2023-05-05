@@ -13,7 +13,7 @@ class Scenario_o_base(QuadrotorScenario):
         self.quads_mode = quads_mode
         self.obstacle_map = None
         self.free_space = []
-        self.approch_goal_metric = 0.5
+        self.approch_goal_metric = 1.0
 
     def generate_pos(self):
         half_room_length = self.room_dims[0] / 2
@@ -47,12 +47,12 @@ class Scenario_o_base(QuadrotorScenario):
         self.standard_reset(formation_center=self.start_point)
 
     def generate_pos_obst_map(self, check_surroundings=False):
-        idx = np.random.choice(a=len(self.free_space), replace=True)
+        idx = np.random.choice(a=len(self.free_space), replace=False)
         x, y = self.free_space[idx][0], self.free_space[idx][1]
         if check_surroundings:
             surroundings_free = self.check_surroundings(x, y)
             while not surroundings_free:
-                idx = np.random.choice(a=len(self.free_space), replace=True)
+                idx = np.random.choice(a=len(self.free_space), replace=False)
                 x, y = self.free_space[idx][0], self.free_space[idx][1]
                 surroundings_free = self.check_surroundings(x, y)
 

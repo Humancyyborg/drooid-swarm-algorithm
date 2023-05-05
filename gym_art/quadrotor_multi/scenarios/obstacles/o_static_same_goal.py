@@ -10,7 +10,7 @@ class Scenario_o_static_same_goal(Scenario_o_base):
         # teleport every [4.0, 6.0] secs
         duration_time = 5.0
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
-        self.approch_goal_metric = 0.5
+        self.approch_goal_metric = 1.0
 
     def step(self):
         tick = self.envs[0].tick

@@ -7,7 +7,7 @@ from gym_art.quadrotor_multi.scenarios.obstacles.o_base import Scenario_o_base
 class Scenario_o_random(Scenario_o_base):
     def __init__(self, quads_mode, envs, num_agents, room_dims):
         super().__init__(quads_mode, envs, num_agents, room_dims)
-        self.approch_goal_metric = 0.3
+        self.approch_goal_metric = 1.0
 
     def update_formation_size(self, new_formation_size):
         pass
