@@ -214,29 +214,30 @@ class QuadrotorEnvMulti(gym.Env):
         # base_no_collision_rate:
         # 1. no collisions b/w drones,
         # 2. no collisions drones & obstacles
-        self.base_no_collision_rate = deque([], maxlen=1000)
+        metric_queue_length = 100
+        self.base_no_collision_rate = deque([], maxlen=metric_queue_length)
 
         # base_success_rate:
         # based on base_no_collision_rate
         # close to the goal: random: <=0.3m, same_goal: <=0.5m
-        self.base_success_rate = deque([], maxlen=1000)
+        self.base_success_rate = deque([], maxlen=metric_queue_length)
 
         # mid_success_rate:
         # based on base_successfully_rate;
         # no collisions with wall & ceiling. (can have collision with floor)
-        self.mid_success_rate = deque([], maxlen=1000)
+        self.mid_success_rate = deque([], maxlen=metric_queue_length)
 
         # full_success_rate:
         # no collision with room box
-        self.full_success_rate = deque([], maxlen=1000)
+        self.full_success_rate = deque([], maxlen=metric_queue_length)
 
         # no_deadlock_rate:
         # close to the goal: random: <=0.3m, same_goal: <=0.5m
-        self.no_deadlock_rate = deque([], maxlen=1000)
+        self.no_deadlock_rate = deque([], maxlen=metric_queue_length)
 
         # agent_success_rate (base_successfully_rate) (GLAS metric)
         # num_agent_success / num_agents
-        self.agent_success_rate = deque([], maxlen=1000)
+        self.agent_success_rate = deque([], maxlen=metric_queue_length)
         self.agent_col_agent = np.ones(self.num_agents)
         self.agent_col_obst = np.ones(self.num_agents)
 
@@ -249,12 +250,12 @@ class QuadrotorEnvMulti(gym.Env):
         self.agent_success_rate_dict = {}
 
         for scenario_name in scenario_list:
-            self.base_no_collision_rate_dict[scenario_name] = deque([], maxlen=1000)
-            self.base_success_rate_dict[scenario_name] = deque([], maxlen=1000)
-            self.mid_success_rate_dict[scenario_name] = deque([], maxlen=1000)
-            self.full_success_rate_dict[scenario_name] = deque([], maxlen=1000)
-            self.no_deadlock_rate_dict[scenario_name] = deque([], maxlen=1000)
-            self.agent_success_rate_dict[scenario_name] = deque([], maxlen=1000)
+            self.base_no_collision_rate_dict[scenario_name] = deque([], maxlen=metric_queue_length)
+            self.base_success_rate_dict[scenario_name] = deque([], maxlen=metric_queue_length)
+            self.mid_success_rate_dict[scenario_name] = deque([], maxlen=metric_queue_length)
+            self.full_success_rate_dict[scenario_name] = deque([], maxlen=metric_queue_length)
+            self.no_deadlock_rate_dict[scenario_name] = deque([], maxlen=metric_queue_length)
+            self.agent_success_rate_dict[scenario_name] = deque([], maxlen=metric_queue_length)
 
         # Others
         self.apply_collision_force = True
