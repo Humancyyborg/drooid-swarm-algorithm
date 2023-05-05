@@ -168,8 +168,7 @@ class QuadMultiHeadAttentionEncoder(Encoder):
 
         num_heads = 4
         # Attention Layer
-        self.attention_layer = MultiHeadAttention(num_heads, cfg.rnn_size, cfg.rnn_size // num_heads,
-                                                  cfg.rnn_size // num_heads)
+        self.attention_layer = MultiHeadAttention(num_heads, cfg.rnn_size, cfg.rnn_size, cfg.rnn_size)
 
         # MLP Layer
         self.feed_forward = nn.Sequential(fc_layer(3 * cfg.rnn_size, 2 * cfg.rnn_size),

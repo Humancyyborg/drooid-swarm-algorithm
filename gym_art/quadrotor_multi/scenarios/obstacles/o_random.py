@@ -25,9 +25,6 @@ class Scenario_o_random(Scenario_o_base):
         return
 
     def reset(self, obst_map, cell_centers):
-        self.start_point = []
-        self.end_point = []
-
         self.obstacle_map = obst_map
         self.cell_centers = cell_centers
         if obst_map is None:
@@ -36,12 +33,16 @@ class Scenario_o_random(Scenario_o_base):
         obst_map_locs = np.where(self.obstacle_map == 0)
         self.free_space = list(zip(*obst_map_locs))
 
-        for i in range(self.num_agents):
-            self.start_point.append(self.generate_pos_obst_map())
-            self.end_point.append(self.generate_pos_obst_map())
-
-        self.start_point = np.array(self.start_point)
-        self.end_point = np.array(self.end_point)
+        # self.start_point = []
+        # self.end_point = []
+        # for i in range(self.num_agents):
+        #     self.start_point.append(self.generate_pos_obst_map())
+        #     self.end_point.append(self.generate_pos_obst_map())
+        #
+        # self.start_point = np.array(self.start_point)
+        # self.end_point = np.array(self.end_point)
+        self.start_point = self.generate_pos_obst_map_2(self.num_agents)
+        self.end_point = self.generate_pos_obst_map_2(self.num_agents)
 
         self.duration_step = int(np.random.uniform(low=2.0, high=4.0) * self.envs[0].control_freq)
         self.update_formation_and_relate_param()
