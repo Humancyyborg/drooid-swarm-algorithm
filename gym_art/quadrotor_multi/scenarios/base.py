@@ -27,6 +27,9 @@ class QuadrotorScenario:
         # Aux variables for scenario: pursuit evasion
         self.interp = None
 
+        # Log metric
+        self.approch_goal_metric = 1.0
+
     def name(self):
         """
         :return: scenario name
