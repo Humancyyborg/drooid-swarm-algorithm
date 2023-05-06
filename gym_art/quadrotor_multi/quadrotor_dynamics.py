@@ -41,7 +41,7 @@ class QuadrotorDynamics:
         self.use_numba = use_numba
 
         # Dynamics
-        self.dynamics_steps_num = dynamics_steps_num
+        self.dynamics_steps_num = int(dynamics_steps_num)
         self.dynamics_simplification = dynamics_simplification
         # cw = 1 ; ccw = -1 [ccw, cw, ccw, cw]
         self.prop_ccw = np.array([-1., 1., -1., 1.])

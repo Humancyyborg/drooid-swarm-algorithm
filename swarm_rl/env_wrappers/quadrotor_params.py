@@ -23,6 +23,8 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_episode_duration', default=15.0, type=float,
                    help='Override default value for episode duration')
     p.add_argument('--quads_encoder_type', default="corl", type=str, help='The type of the neighborhood encoder')
+    p.add_argument('--quads_sim_freq', default=200.0, type=float, help='Simulation frequency')
+    p.add_argument('--quads_sim_steps', default=2, type=int, help='Simulation steps')
 
     # Neighbor
     # Neighbor Features
