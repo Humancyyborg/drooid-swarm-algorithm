@@ -12,7 +12,7 @@ vehicle_params = {
     "Rotor3Direction": -1,
     "Mass": 0.028,
     "ArmLength": 0.045962,
-    "RotorForceConstant": 0.009,  # 3.16e-3
+    "RotorForceConstant": 0.06,  # 3.16e-3
     "RotorMomentConstant": 0.05 # 1.41e-1
 }
 
@@ -103,7 +103,8 @@ class LeeController:
 
         e3 = np.array([0, 0, 1])
 
-        self.acceleration = (np.multiply(position_error, self.controller.position_gain) + np.multiply(velocity_error, self.controller.velocity_gain)) / self.vehicle_params.mass - self.gravity*e3 - self.command_trajectory.acceleration_W
+        self.acceleration = np.array([0.0, 0.0, 1000.0])
+        #self.acceleration = (np.multiply(position_error, self.controller.position_gain) + np.multiply(velocity_error, self.controller.velocity_gain)) / self.vehicle_params.mass - self.gravity*e3 - self.command_trajectory.acceleration_W
 
     def compute_desired_angular_acceleration(self):
         R = self.vehicle_params.rot
@@ -127,4 +128,5 @@ class LeeController:
 
         self.angular_rate_error = self.vehicle_params.omega - np.dot(np.dot(R_des.T, R), angular_rate_des)
 
-        self.angular_acceleration = -1 * np.multiply(self.angle_error, self.normalized_attitude_gain) - np.multiply(self.angular_rate_error, self.normalized_angular_rate_gain) + np.cross(self.vehicle_params.omega, self.vehicle_params.omega)
+        self.angular_acceleration = np.array([0.0, 0.0, 0.0])
+        #self.angular_acceleration = -1 * np.multiply(self.angle_error, self.normalized_attitude_gain) - np.multiply(self.angular_rate_error, self.normalized_angular_rate_gain) + np.cross(self.vehicle_params.omega, self.vehicle_params.omega)

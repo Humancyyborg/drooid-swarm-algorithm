@@ -24,6 +24,7 @@ from gym.utils import seeding
 import gym_art.quadrotor_multi.get_state as get_state
 import gym_art.quadrotor_multi.quadrotor_randomization as quad_rand
 from gym_art.quadrotor_multi.lee_controller import LeeController
+from gym_art.quadrotor_multi.mellinger_controller import MellingerController
 from gym_art.quadrotor_multi.quadrotor_control import *
 from gym_art.quadrotor_multi.quadrotor_dynamics import QuadrotorDynamics
 from gym_art.quadrotor_multi.sensor_noise import SensorNoise
@@ -219,6 +220,9 @@ class QuadrotorSingle:
             self.box = 2.0
         self.box_scale = 1.0
         self.goal = None
+
+        # Mellinger Controller
+        self.use_controller = True
 
         # Neighbor info
         self.num_agents = num_agents
@@ -443,9 +447,8 @@ class QuadrotorSingle:
         self.tick = 0
         self.actions = [np.zeros([4, ]), np.zeros([4, ])]
 
-        ## LEE ##
-        self.lee_controller = LeeController(self.dynamics)
-        self.lee_controller.set_command_trajectory(self.goal)
+        if self.use_controller:
+            self.mellinger_controller = MellingerController(self.dynamics)
 
         state = self.state_vector(self)
         return state
@@ -458,10 +461,6 @@ class QuadrotorSingle:
         raise NotImplementedError()
 
     def step(self, action):
-        ## LEE ##
-        self.lee_controller.update_odometry(self.dynamics)
-        self.lee_controller.set_command_trajectory(self.goal)
-        action = self.lee_controller.calculate_rotor_velocities()
-        #return self._step(np.array([1.0, 1.0, 1.0, 1.0]))
-        print(action)
+        if self.use_controller:
+            action = self.mellinger_controller.step(self.dynamics, self.goal-np.array([0, 0, 0.55]), self.dt)
         return self._step(action)
