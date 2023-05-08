@@ -13,14 +13,14 @@ class Scenario_o_static_same_goal(Scenario_o_base):
         self.approch_goal_metric = 1.0
 
     def step(self):
-        tick = self.envs[0].tick
-
-        if tick <= int(self.duration_time * self.envs[0].control_freq):
-            return
-
-        self.duration_time += self.envs[0].ep_time + 1
-        for i, env in enumerate(self.envs):
-            env.goal = self.end_point
+        # tick = self.envs[0].tick
+        #
+        # if tick <= int(self.duration_time * self.envs[0].control_freq):
+        #     return
+        #
+        # self.duration_time += self.envs[0].ep_time + 1
+        # for i, env in enumerate(self.envs):
+        #     env.goal = self.end_point
 
         return
 
@@ -48,4 +48,4 @@ class Scenario_o_static_same_goal(Scenario_o_base):
 
         # Reassign goals
         self.spawn_points = copy.deepcopy(self.start_point)
-        self.goals = copy.deepcopy(self.end_point)
+        self.goals = np.array([self.end_point for _ in range(self.num_agents)])

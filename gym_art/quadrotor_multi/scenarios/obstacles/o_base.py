@@ -94,6 +94,9 @@ class Scenario_o_base(QuadrotorScenario):
             if col > 0:
                 check_pos_x.append(row - 1)
                 check_pos_y.append(col - 1)
+            if col < length - 1:
+                check_pos_x.append(row - 1)
+                check_pos_y.append(col + 1)
         if row < width - 1:
             check_pos_x.append(row + 1)
             check_pos_y.append(col)
@@ -104,6 +107,9 @@ class Scenario_o_base(QuadrotorScenario):
         if col < length - 1:
             check_pos_x.append(row)
             check_pos_y.append(col + 1)
+            if row > 0:
+                check_pos_x.append(row - 1)
+                check_pos_y.append(col + 1)
             if row < length - 1:
                 check_pos_x.append(row + 1)
                 check_pos_y.append(col + 1)

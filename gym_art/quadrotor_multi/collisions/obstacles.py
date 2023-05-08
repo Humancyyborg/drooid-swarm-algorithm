@@ -46,5 +46,5 @@ def perform_collision_with_obstacle(drone_dyn, obstacle_pos, obstacle_size):
                                         vel_shift=new_vel - drone_dyn.vel + vel_noise)
 
     # Random forces for omega
-    new_omega = compute_new_omega(magn_scale=5.0)
+    new_omega = compute_new_omega(magn_scale=1.0)
     drone_dyn.omega += new_omega

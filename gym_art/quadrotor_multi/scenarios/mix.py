@@ -54,6 +54,8 @@ class Scenario_mix(QuadrotorScenario):
         self.scenario = None
         self.approch_goal_metric = 0.5
 
+        self.spawn_points = None
+
     def name(self):
         """
         :return: the name of the actual scenario used in this episode
@@ -84,5 +86,6 @@ class Scenario_mix(QuadrotorScenario):
             self.scenario.reset()
 
         self.goals = self.scenario.goals
+        self.spawn_points = self.scenario.spawn_points
         self.formation_size = self.scenario.formation_size
         self.approch_goal_metric = self.scenario.approch_goal_metric
