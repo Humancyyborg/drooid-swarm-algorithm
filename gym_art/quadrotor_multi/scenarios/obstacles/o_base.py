@@ -15,6 +15,8 @@ class Scenario_o_base(QuadrotorScenario):
         self.free_space = []
         self.approch_goal_metric = 1.0
 
+        self.spawn_points = None
+
     def generate_pos(self):
         half_room_length = self.room_dims[0] / 2
         half_room_width = self.room_dims[1] / 2
@@ -59,7 +61,7 @@ class Scenario_o_base(QuadrotorScenario):
         width = self.obstacle_map.shape[0]
         index = x + (width * y)
         pos_x, pos_y = self.cell_centers[index]
-        z_list_start = np.random.uniform(low=0.5, high=3.0)
+        z_list_start = np.random.uniform(low=0.75, high=3.0)
         # xy_noise = np.random.uniform(low=-0.2, high=0.2, size=2)
         return np.array([pos_x, pos_y, z_list_start])
 

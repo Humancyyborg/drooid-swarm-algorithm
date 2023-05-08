@@ -407,6 +407,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         for i, e in enumerate(self.envs):
             e.goal = self.scenario.goals[i]
+            e.spawn_point = self.scenario.spawn_points[i]
             e.rew_coeff = self.rew_coeff
 
             observation = e.reset()

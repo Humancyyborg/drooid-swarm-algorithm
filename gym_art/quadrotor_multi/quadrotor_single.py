@@ -218,6 +218,7 @@ class QuadrotorSingle:
             self.box = 2.0
         self.box_scale = 1.0
         self.goal = None
+        self.spawn_point = None
 
         # Neighbor info
         self.num_agents = num_agents
@@ -390,15 +391,15 @@ class QuadrotorSingle:
 
         if self.box < 10:
             self.box = self.box * self.box_scale
-        x, y, z = self.np_random.uniform(-self.box, self.box, size=(3,)) + self.goal
+        x, y, z = self.np_random.uniform(-self.box, self.box, size=(3,)) + self.spawn_point
 
         if self.dim_mode == '1D':
             x, y = self.goal[0], self.goal[1]
         elif self.dim_mode == '2D':
             y = self.goal[1]
         # Since being near the groud means crash we have to start above
-        if z < 0.25:
-            z = 0.25
+        if z < 0.75:
+            z = 0.75
         pos = npa(x, y, z)
 
         # INIT STATE

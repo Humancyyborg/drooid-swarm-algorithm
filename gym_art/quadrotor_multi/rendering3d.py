@@ -123,7 +123,7 @@ class WindowTarget(object):
         display = get_display(display)
         # vsync is set to false to speed up FBO-only renders, we enable before draw
         self.window = pyglet.window.Window(display=display,
-            width=width, height=height, resizable=resizable, style=pyglet.window.Window.WINDOW_STYLE_BORDERLESS,
+            width=width, height=height, resizable=resizable, # style=pyglet.window.Window.WINDOW_STYLE_BORDERLESS,
             visible=True, vsync=False, config=config
         )
         self.window.on_close = self.close

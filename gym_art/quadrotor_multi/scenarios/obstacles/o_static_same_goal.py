@@ -47,4 +47,5 @@ class Scenario_o_static_same_goal(Scenario_o_base):
         self.update_formation_and_relate_param()
 
         # Reassign goals
-        self.goals = copy.deepcopy(self.start_point)
+        self.spawn_points = copy.deepcopy(self.start_point)
+        self.goals = copy.deepcopy(self.end_point)
