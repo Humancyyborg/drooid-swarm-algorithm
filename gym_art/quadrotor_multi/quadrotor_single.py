@@ -148,7 +148,14 @@ class QuadrotorSingle:
         self.room_box = np.array([[-self.room_length / 2., -self.room_width / 2, 0.],
                                   [self.room_length / 2., self.room_width / 2., self.room_height]])
 
-        self.init_random_state = init_random_state
+        ## REMOVE WHEN CONTROLER IS REMOVED
+        self.use_controller = True
+
+        if self.use_controller:
+            self.init_random_state = False
+        else:
+            self.init_random_state = init_random_state
+
 
         # Preset parameters
         self.obs_repr = obs_repr
@@ -220,9 +227,6 @@ class QuadrotorSingle:
             self.box = 2.0
         self.box_scale = 1.0
         self.goal = None
-
-        # Mellinger Controller
-        self.use_controller = True
 
         # Neighbor info
         self.num_agents = num_agents
@@ -432,10 +436,14 @@ class QuadrotorSingle:
             if self.dim_mode == '1D' or self.dim_mode == '2D':
                 rotation = np.eye(3)
             else:
-                # make sure we're sort of pointing towards goal (for mellinger controller)
-                rotation = randyaw()
-                while np.dot(rotation[:, 0], to_xyhat(-pos)) < 0.5:
+                if self.use_controller:
+                    rotation = rotZ(0)[:3, :3]
+                else:
+                    # make sure we're sort of pointing towards goal (for mellinger controller)
                     rotation = randyaw()
+                    while np.dot(rotation[:, 0], to_xyhat(-pos)) < 0.5:
+                        rotation = randyaw()
+
 
         self.init_state = [pos, vel, rotation, omega]
         self.dynamics.set_state(pos, vel, rotation, omega)
