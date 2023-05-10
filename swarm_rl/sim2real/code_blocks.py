@@ -381,3 +381,18 @@ int main(const float *indatav, size_t size, float *outdatav)
 }
 
 """
+
+multi_drone_attn_eval = """
+
+int main(const float *indatav, size_t size, float *obst_outdata)
+{
+    size_t i;
+
+    obstacleEmbedder(indatav); 
+    for (int i = 0; i < D_MODEL; i++) {
+        obst_outdata[i] = obst_output_0[i]; 
+    }
+    return EXIT_SUCCESS; 
+}
+
+"""

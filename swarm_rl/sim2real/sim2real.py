@@ -19,6 +19,7 @@ from swarm_rl.sim2real.code_blocks import (
     sigmoid_activation,
     relu_activation,
     single_drone_eval,
+    multi_drone_attn_eval,
     headers_multi_agent_attention,
     attention_body
 )
@@ -479,7 +480,7 @@ def generate_c_model_attention(model: nn.Module, output_path: str, output_folder
     source += methods
 
     if testing:
-        source += single_drone_eval
+        source += multi_drone_attn_eval
 
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
