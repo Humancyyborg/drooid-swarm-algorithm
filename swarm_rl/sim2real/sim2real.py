@@ -18,7 +18,9 @@ from swarm_rl.sim2real.code_blocks import (
     linear_activation,
     sigmoid_activation,
     relu_activation,
-    single_drone_eval
+    single_drone_eval,
+    headers_multi_agent_attention,
+    attention_body
 )
 from swarm_rl.train import register_swarm_components
 
@@ -68,6 +70,8 @@ def load_sf_model(model_dir: Path, model_type: str):
     # Manually set some values
     args.visualize_v_value = False
     args.quads_encoder_type = 'attention' if model_type == 'attention' else 'corl'
+    args.quads_obstacle_scan_range = 0
+    args.quads_obstacle_ray_num = 0
 
     # Load model
     register_swarm_components()
@@ -118,7 +122,7 @@ def generate_c_weights_attention(model: nn.Module, transpose: bool = False):
     attn_weights, attn_biases, attn_layer_names, attn_bias_names = [], [], [], []
     out_weights, out_biases, out_layer_names, out_bias_names = [], [], [], [],
     outputs = []
-    n_bias = 0
+    n_self, n_nbr, n_obst = 0, 0, 0
     for name, param in model.named_parameters():
         # get the self encoder weights 
         if transpose:
@@ -129,12 +133,18 @@ def generate_c_weights_attention(model: nn.Module, transpose: bool = False):
             if 'self_embed' in c_name:
                 self_layer_names.append(name)
                 self_weights.append(weight)
+                outputs.append('static float output_' + str(n_self) + '[' + str(param.shape[0]) + '];\n')
+                n_self += 1
             elif 'neighbor_embed' in c_name:
                 nbr_layer_names.append(name)
                 neighbor_weights.append(weight)
+                outputs.append('static float nbr_output_' + str(n_nbr) + '[' + str(param.shape[0]) + '];\n')
+                n_nbr += 1
             elif 'obstacle_embed' in c_name:
                 obst_layer_names.append(name)
                 obst_weights.append(weight)
+                outputs.append('static float obst_output_' + str(n_obst) + '[' + str(param.shape[0]) + '];\n')
+                n_obst += 1
             elif 'attention' in c_name or 'layer_norm' in c_name:
                 attn_layer_names.append(name)
                 attn_weights.append(weight)
@@ -142,11 +152,11 @@ def generate_c_weights_attention(model: nn.Module, transpose: bool = False):
                 # output layer
                 out_layer_names.append(name)
                 out_weights.append(weight)
+                # these will be considered part of the self encoder
+                outputs.append('static float output_' + str(n_self) + '[' + str(param.shape[0]) + '];\n')
+                n_self += 1
         if ('bias' in c_name or 'layer_norm' in c_name) and 'critic' not in c_name:
             bias = process_layer(c_name, param, type='bias')
-            output = 'static float output_' + str(n_bias) + '[' + str(param.shape[0]) + '];\n'
-            outputs.append(output)
-            n_bias += 1
             if 'self_embed' in c_name:
                 self_bias_names.append(name)
                 self_biases.append(bias)
@@ -258,9 +268,9 @@ def self_encoder_c_str(prefix: str, weight_names: List[str], bias_names: List[st
     # the last hidden layer which is supposed to have no non-linearity
     n = num_layers - 1
     output_for_loop = f'''
-                for (int i = 0; i < structure[{str(n)}][1]; i++) {{
+                for (int i = 0; i < {prefix}_structure[{str(n)}][1]; i++) {{
                     output_{str(n)}[i] = 0;
-                    for (int j = 0; j < structure[{str(n)}][0]; j++) {{
+                    for (int j = 0; j < {prefix}_structure[{str(n)}][0]; j++) {{
                         output_{str(n)}[i] += output_{str(n - 1)}[j] * {weight_names[n].replace('.', '_')}[j][i];
                     }}
                     output_{str(n)}[i] += {bias_names[n].replace('.', '_')}[i];
@@ -272,12 +282,11 @@ def self_encoder_c_str(prefix: str, weight_names: List[str], bias_names: List[st
         method += code
     if 'self' in prefix:
         # assign network outputs to control
-        # TODO: fix placeholders (42)
         assignment = """
-                    control_n->thrust_0 = output_""" + str(42) + """[0];
-                    control_n->thrust_1 = output_""" + str(42) + """[1];
-                    control_n->thrust_2 = output_""" + str(42) + """[2];
-                    control_n->thrust_3 = output_""" + str(42) + """[3];	
+                    control_n->thrust_0 = output_""" + str(n) + """[0];
+                    control_n->thrust_1 = output_""" + str(n) + """[1];
+                    control_n->thrust_2 = output_""" + str(n) + """[2];
+                    control_n->thrust_3 = output_""" + str(n) + """[3];	
             """
         method += assignment
     # closing bracket
@@ -286,8 +295,7 @@ def self_encoder_c_str(prefix: str, weight_names: List[str], bias_names: List[st
 
 
 def neighbor_encoder_c_string(prefix: str, weight_names: List[str], bias_names: List[str]):
-    method = """
-    void neighborEmbedder(float *neighbor_embeddings, const float neighbor_inputs[NEIGHBORS][NBR_DIM]) {
+    method = """void neighborEmbedder(const float neighbor_inputs[NEIGHBORS][NBR_DIM]) {
         //reset embeddings accumulator to zero
         memset(neighbor_embeds, 0, sizeof(neighbor_embeds));
         
@@ -299,12 +307,12 @@ def neighbor_encoder_c_string(prefix: str, weight_names: List[str], bias_names: 
     for_loops = []
     input_for_loop = f'''
             for (int i = 0; i < {prefix}_structure[0][1]; i++) {{
-                output_2[i] = 0; 
+                {prefix}_output_0[i] = 0; 
                 for (int j = 0; j < {prefix}_structure[2][0]; j++) {{
-                    output_2[i] += neighbor_inputs[n][j] * actor_encoder_neighbor_embed_layer_0_weight[j][i]; 
+                    {prefix}_output_0[i] += neighbor_inputs[n][j] * actor_encoder_neighbor_embed_layer_0_weight[j][i]; 
                 }}
-                output_2[i] += actor_encoder_neighbor_embed_layer_0_bias[i];
-                output_2[i] += tanhf(output_2[i]);
+                {prefix}_output_0[i] += actor_encoder_neighbor_embed_layer_0_bias[i];
+                {prefix}_output_0[i] += tanhf({prefix}_output_0[i]);
             }}
     '''
     for_loops.append(input_for_loop)
@@ -313,7 +321,7 @@ def neighbor_encoder_c_string(prefix: str, weight_names: List[str], bias_names: 
     for n in range(1, num_layers - 1):
         for_loop = f'''
                 for (int i = 0; i < {prefix}_structure[{str(n)}][1]; i++) {{
-                    output_{str(n)}[i] = 0;
+                    {prefix}_output_{str(n)}[i] = 0;
                     for (int j = 0; j < {prefix}_structure[{str(n)}][0]; j++) {{
                         output_{str(n)}[i] += output_{str(n - 1)}[j] * {weight_names[n].replace('.', '_')}[j][i];
                     }}
@@ -325,29 +333,32 @@ def neighbor_encoder_c_string(prefix: str, weight_names: List[str], bias_names: 
 
     # the last hidden layer which is supposed to have no non-linearity
     n = num_layers - 1
-    output_for_loop = f'''
-            for (int i = 0; i < {prefix}_structure[{str(n)}][1]; i++) {{
-                output_{str(n)}[i] = 0;
-                for (int j = 0; j < {prefix}_structure[{str(n)}][0]; j++) {{
-                    output_{str(n)}[i] += output_{str(n - 1)}[j] * {weight_names[n].replace('.', '_')}[j][i];
+    if n > 0:
+        output_for_loop = f'''
+                for (int i = 0; i < {prefix}_structure[{str(n)}][1]; i++) {{
+                    output_{str(n)}[i] = 0;
+                    for (int j = 0; j < {prefix}_structure[{str(n)}][0]; j++) {{
+                        output_{str(n)}[i] += output_{str(n - 1)}[j] * {weight_names[n].replace('.', '_')}[j][i];
+                    }}
+                    output_{str(n)}[i] += {bias_names[n].replace('.', '_')}[i];
+                    neighbor_embeds[i] += output_{str(n)}[i]; 
                 }}
-                output_{str(n)}[i] += {bias_names[n].replace('.', '_')}[i];
-                neighbor_embeds[i] += output_{str(n)}[i]; 
             }}
-        }}
-    '''
-    for_loops.append(output_for_loop)
+        '''
+        for_loops.append(output_for_loop)
 
     for code in for_loops:
         method += code
-    # closing bracket
+
+    # neighbors' loop closing bracket
+    method += """}\n\n"""
+    # method closing bracket
     method += """}\n\n"""
     return method
 
 
 def obstacle_encoder_c_str(prefix: str, weight_names: List[str], bias_names: List[str]):
-    method = f"""
-    void obstacleEmbedder(const float obstacle_inputs[OBST_DIM]) {{
+    method = f"""void obstacleEmbedder(const float obstacle_inputs[OBST_DIM]) {{
         //reset embeddings accumulator to zero
         memset(obstacle_embeds, 0, sizeof(obstacle_embeds));
         
@@ -358,12 +369,12 @@ def obstacle_encoder_c_str(prefix: str, weight_names: List[str], bias_names: Lis
     for_loops = []
     input_for_loop = f'''
         for (int i = 0; i < {prefix}_structure[0][1]; i++) {{
-            output_0[i] = 0;
+            {prefix}_output_0[i] = 0;
             for (int j = 0; j < {prefix}_structure[0][0]; j++) {{
-                output_0[i] += state_array[j] * {weight_names[0].replace('.', '_')}[j][i];
+                {prefix}_output_0[i] += obstacle_inputs[j] * {weight_names[0].replace('.', '_')}[j][i];
             }}
-            output_0[i] += {bias_names[0].replace('.', '_')}[i];
-            output_0[i] = tanhf(output_0[i]);
+            {prefix}_output_0[i] += {bias_names[0].replace('.', '_')}[i];
+            {prefix}_output_0[i] = tanhf({prefix}_output_0[i]);
         }}
     '''
     for_loops.append(input_for_loop)
@@ -384,44 +395,24 @@ def obstacle_encoder_c_str(prefix: str, weight_names: List[str], bias_names: Lis
 
     # the last hidden layer which is supposed to have no non-linearity
     n = num_layers - 1
-    output_for_loop = f'''
-        for (int i = 0; i < structure[{str(n)}][1]; i++) {{
-            output_{str(n)}[i] = 0;
-            for (int j = 0; j < structure[{str(n)}][0]; j++) {{
-                output_{str(n)}[i] += output_{str(n - 1)}[j] * {weight_names[n].replace('.', '_')}[j][i];
+    if n > 0:
+        output_for_loop = f'''
+            for (int i = 0; i < {prefix}_structure[{str(n)}][1]; i++) {{
+                output_{str(n)}[i] = 0;
+                for (int j = 0; j < {prefix}_structure[{str(n)}][0]; j++) {{
+                    output_{str(n)}[i] += output_{str(n - 1)}[j] * {weight_names[n].replace('.', '_')}[j][i];
+                }}
+                output_{str(n)}[i] += {bias_names[n].replace('.', '_')}[i];
+                obstacle_embeds[i] += output_{str(n)}[i];
             }}
-            output_{str(n)}[i] += {bias_names[n].replace('.', '_')}[i];
-            obstacle_embeds[i] += output_{str(n)}[i];
-        }}
-    '''
-    for_loops.append(output_for_loop)
+        '''
+        for_loops.append(output_for_loop)
 
     for code in for_loops:
         method += code
     # closing bracket
     method += """}\n\n"""
     return method
-
-
-def attention_c_str(prefix: str, weight_names: List[str], bias_names: List[str]):
-    method = f'''
-    void multiHeadAttention() {{
-        //reset embeddings accumulator to zero
-        memset(attention_embeds, 0, sizeof(attention_embeds));
-        
-        //concat neighbor and obstacle embeddings together
-        int num_nbr_embeds = nbr_structure[-1][1];
-        for (int i = 0; i < num_nbr_embeds; i++) {{
-            nbr_obst_embeds[i] = neighbor_embeds[i];
-        }}
-        for (int i = 0; i < obst_structure[-1][1]; i++) {{
-            nbr_obst_embeds[i + num_nbr_embeds] = obst_embeds[i]; 
-        }}
-        
-    '''
-
-    for_loops = []
-
 
 
 def generate_c_model_attention(model: nn.Module, output_path: str, output_folder: str, testing=False):
@@ -457,12 +448,13 @@ def generate_c_model_attention(model: nn.Module, output_path: str, output_folder
             method = obstacle_encoder_c_str(enc_name, weight_names, bias_names)
         else:
             # attention
-            pass
+            method = attention_body
 
         methods += method
 
     # headers
     source += headers_network_evaluate if not testing else headers_evaluation
+    source += headers_multi_agent_attention
 
     # helper funcs
     source += linear_activation
@@ -472,13 +464,18 @@ def generate_c_model_attention(model: nn.Module, output_path: str, output_folder
     # network eval func
     source += structures
     outputs = info['outputs']
+    for output in outputs:
+        source += output
 
-    # for output in outputs:
-    #     source += output
-    # for weight in weights:
-    #     source += weight
-    # for bias in biases:
-    #     source += bias
+    encoders = info['encoders']
+
+    for key, vals in encoders.items():
+        weights, biases = vals[-2], vals[-1]
+        for w in weights:
+            source += w
+        for b in biases:
+            source += b
+
     source += methods
 
     if testing:
