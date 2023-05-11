@@ -65,7 +65,6 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         sense_noise=sense_noise, init_random_state=True,
     )
 
-
     if use_replay_buffer:
         env = ExperienceReplayWrapper(env, cfg.replay_buffer_sample_prob)
 
@@ -88,7 +87,8 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
     else:
         annealing = None
 
-    env = QuadsRewardShapingWrapper(env, reward_shaping_scheme=reward_shaping, annealing=annealing)
+    env = QuadsRewardShapingWrapper(env, reward_shaping_scheme=reward_shaping, annealing=annealing,
+                                    with_pbt=cfg.with_pbt)
     env = QuadEnvCompatibility(env, render_mode=render_mode)
 
     if cfg.visualize_v_value:

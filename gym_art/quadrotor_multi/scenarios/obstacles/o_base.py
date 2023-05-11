@@ -13,6 +13,7 @@ class Scenario_o_base(QuadrotorScenario):
         self.quads_mode = quads_mode
         self.obstacle_map = None
         self.free_space = []
+        self.approch_goal_metric = 0.5
 
     def generate_pos(self):
         half_room_length = self.room_dims[0] / 2
@@ -93,6 +94,6 @@ class Scenario_o_base(QuadrotorScenario):
 
         check_pos = ([check_pos_x, check_pos_y])
         # Get the values of the adjacent cells
-        adjacent_cells = obstacle_map[check_pos]
+        adjacent_cells = obstacle_map[tuple(check_pos)]
 
         return np.any(adjacent_cells != 0)

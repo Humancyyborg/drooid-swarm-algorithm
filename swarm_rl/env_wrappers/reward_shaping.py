@@ -2,7 +2,7 @@ import copy
 
 import gym
 import numpy as np
-from sample_factory.envs.env_utils import TrainingInfoInterface
+from sample_factory.envs.env_utils import TrainingInfoInterface, RewardShapingInterface
 
 DEFAULT_QUAD_REWARD_SHAPING_SINGLE = dict(
     quad_rewards=dict(
@@ -12,14 +12,16 @@ DEFAULT_QUAD_REWARD_SHAPING_SINGLE = dict(
 
 DEFAULT_QUAD_REWARD_SHAPING = copy.deepcopy(DEFAULT_QUAD_REWARD_SHAPING_SINGLE)
 DEFAULT_QUAD_REWARD_SHAPING['quad_rewards'].update(dict(
-    quadcol_bin=0.0
+    quadcol_bin=0.0, quadcol_bin_smooth_max=0.0, quadcol_bin_obst=0.0
 ))
 
 
-class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface):
-    def __init__(self, env, reward_shaping_scheme=None, annealing=None):
+class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapingInterface):
+    def __init__(self, env, reward_shaping_scheme=None, annealing=None, with_pbt=False):
         gym.Wrapper.__init__(self, env)
         TrainingInfoInterface.__init__(self)
+        if with_pbt:
+            RewardShapingInterface.__init__(self)
 
         self.reward_shaping_scheme = reward_shaping_scheme
         self.cumulative_rewards = None
@@ -32,13 +34,13 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface):
         self.annealing = annealing
 
     def get_default_reward_shaping(self):
-        return self.reward_shaping_scheme
+        return dict(quad_rewards=dict())
 
     def get_current_reward_shaping(self, agent_idx: int):
-        return self.reward_shaping_scheme
+        return dict(quad_rewards=dict())
 
     def set_reward_shaping(self, reward_shaping, unused_agent_idx):
-        self.reward_shaping_scheme = reward_shaping
+        self.reward_shaping_scheme = dict(quad_rewards=dict())
         self.reward_shaping_updated = True
 
     def reset(self):
