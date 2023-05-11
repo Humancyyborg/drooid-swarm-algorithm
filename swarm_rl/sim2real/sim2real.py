@@ -296,11 +296,7 @@ def self_encoder_c_str(prefix: str, weight_names: List[str], bias_names: List[st
 
 
 def neighbor_encoder_c_string(prefix: str, weight_names: List[str], bias_names: List[str]):
-    method = """void neighborEmbedder(const float neighbor_inputs[NEIGHBORS][NBR_DIM]) {
-        //reset embeddings accumulator to zero
-        memset(neighbor_embeds, 0, sizeof(neighbor_embeds));
-        
-        for (int n = 0; n < NEIGHBORS; n++) {
+    method = """void neighborEmbedder(const float neighbor_inputs[NEIGHBORS * NBR_DIM]) {
     """
     num_layers = len(weight_names)
 
@@ -309,11 +305,11 @@ def neighbor_encoder_c_string(prefix: str, weight_names: List[str], bias_names: 
     input_for_loop = f'''
             for (int i = 0; i < {prefix}_structure[0][1]; i++) {{
                 {prefix}_output_0[i] = 0; 
-                for (int j = 0; j < {prefix}_structure[2][0]; j++) {{
-                    {prefix}_output_0[i] += neighbor_inputs[n][j] * actor_encoder_neighbor_embed_layer_0_weight[j][i]; 
+                for (int j = 0; j < {prefix}_structure[0][0]; j++) {{
+                    {prefix}_output_0[i] += neighbor_inputs[j] * actor_encoder_neighbor_embed_layer_0_weight[j][i]; 
                 }}
                 {prefix}_output_0[i] += actor_encoder_neighbor_embed_layer_0_bias[i];
-                {prefix}_output_0[i] += tanhf({prefix}_output_0[i]);
+                {prefix}_output_0[i] = tanhf({prefix}_output_0[i]);
             }}
     '''
     for_loops.append(input_for_loop)
@@ -350,9 +346,6 @@ def neighbor_encoder_c_string(prefix: str, weight_names: List[str], bias_names: 
 
     for code in for_loops:
         method += code
-
-    # neighbors' loop closing bracket
-    method += """}\n\n"""
     # method closing bracket
     method += """}\n\n"""
     return method
