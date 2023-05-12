@@ -66,7 +66,8 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
     )
 
     if use_replay_buffer:
-        env = ExperienceReplayWrapper(env, cfg.replay_buffer_sample_prob)
+        env = ExperienceReplayWrapper(env, cfg.replay_buffer_sample_prob, cfg.quads_domain_random,
+                                      cfg.quads_obst_density_min, cfg.quads_obst_density_max)
 
     reward_shaping = copy.deepcopy(DEFAULT_QUAD_REWARD_SHAPING)
 
@@ -81,7 +82,8 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         reward_shaping['quad_rewards']['quadcol_bin_obst'] = 0.0
         annealing = [
             AnnealSchedule('quadcol_bin', cfg.quads_collision_reward, cfg.anneal_collision_steps),
-            AnnealSchedule('quadcol_bin_smooth_max', cfg.quads_collision_smooth_max_penalty, cfg.anneal_collision_steps),
+            AnnealSchedule('quadcol_bin_smooth_max', cfg.quads_collision_smooth_max_penalty,
+                           cfg.anneal_collision_steps),
             AnnealSchedule('quadcol_bin_obst', cfg.quads_obst_collision_reward, cfg.anneal_collision_steps),
         ]
     else:

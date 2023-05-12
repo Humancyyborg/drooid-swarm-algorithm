@@ -64,10 +64,13 @@ class ReplayBuffer:
 
 
 class ExperienceReplayWrapper(gym.Wrapper):
-    def __init__(self, env, replay_buffer_sample_prob=0.0):
+    def __init__(self, env, replay_buffer_sample_prob, domain_random=False, obst_density_min=0., obst_density_max=0.):
         super().__init__(env)
         self.replay_buffer = ReplayBuffer(env.envs[0].control_freq)
         self.replay_buffer_sample_prob = replay_buffer_sample_prob
+        self.domain_random = domain_random
+        if self.domain_random:
+            self.obst_densities = np.arange(obst_density_min, obst_density_max, 0.05)
 
         self.max_episode_checkpoints_to_keep = int(3.0 / self.replay_buffer.cp_step_size_sec)  # keep only checkpoints from the last 3 seconds
         self.episode_checkpoints = deque([], maxlen=self.max_episode_checkpoints_to_keep)
@@ -88,7 +91,11 @@ class ExperienceReplayWrapper(gym.Wrapper):
 
     def reset(self):
         """For reset we just use the default implementation."""
-        return self.env.reset()
+        obst_density = None
+        if self.domain_random:
+            obst_density = np.random.choice(self.obst_densities)
+
+        return self.env.reset(obst_density)
 
     def step(self, action):
         obs, rewards, dones, infos = self.env.step(action)
@@ -161,7 +168,13 @@ class ExperienceReplayWrapper(gym.Wrapper):
             self.replay_buffer.cleanup()
 
             return obs
+
         else:
-            obs = self.env.reset()
+            obst_density = None
+            if self.domain_random:
+                obst_density = np.random.choice(self.obst_densities)
+
+            obs = self.env.reset(obst_density)
+
             self.env.saved_in_replay_buffer = False
             return obs
