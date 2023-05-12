@@ -71,6 +71,7 @@ class ExperienceReplayWrapper(gym.Wrapper):
         self.domain_random = domain_random
         if self.domain_random:
             self.obst_densities = np.arange(obst_density_min, obst_density_max, 0.05)
+            self.curr_obst_density = 0.
 
         self.max_episode_checkpoints_to_keep = int(3.0 / self.replay_buffer.cp_step_size_sec)  # keep only checkpoints from the last 3 seconds
         self.episode_checkpoints = deque([], maxlen=self.max_episode_checkpoints_to_keep)
@@ -94,6 +95,7 @@ class ExperienceReplayWrapper(gym.Wrapper):
         obst_density = None
         if self.domain_random:
             obst_density = np.random.choice(self.obst_densities)
+            self.curr_obst_density = obst_density
 
         return self.env.reset(obst_density)
 
@@ -112,6 +114,7 @@ class ExperienceReplayWrapper(gym.Wrapper):
                     f"{tag}/new_episode_rate": (self.episode_counter - self.replayed_events) / self.episode_counter,
                     f"{tag}/replay_buffer_size": len(self.replay_buffer),
                     f"{tag}/avg_replayed": self.replay_buffer.avg_num_replayed(),
+                    f"{tag}/obst_density": self.curr_obst_density,
                 })
 
         else:
@@ -159,6 +162,7 @@ class ExperienceReplayWrapper(gym.Wrapper):
             obs = event.obs
             replayed_env = deepcopy(env)
             replayed_env.scenes = self.env.scenes
+            self.curr_obst_density = replayed_env.obst_density
 
             # we want to use these for tensorboard, so reset them to zero to get accurate stats
             replayed_env.collisions_per_episode = replayed_env.collisions_after_settle = 0
@@ -173,6 +177,7 @@ class ExperienceReplayWrapper(gym.Wrapper):
             obst_density = None
             if self.domain_random:
                 obst_density = np.random.choice(self.obst_densities)
+                self.curr_obst_density = obst_density
 
             obs = self.env.reset(obst_density)
 
