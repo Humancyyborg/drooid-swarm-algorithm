@@ -23,8 +23,6 @@ from gym.utils import seeding
 
 import gym_art.quadrotor_multi.get_state as get_state
 import gym_art.quadrotor_multi.quadrotor_randomization as quad_rand
-from gym_art.quadrotor_multi.lee_controller import LeeController
-from gym_art.quadrotor_multi.mellinger_controller import MellingerController
 from gym_art.quadrotor_multi.quadrotor_control import *
 from gym_art.quadrotor_multi.quadrotor_dynamics import QuadrotorDynamics
 from gym_art.quadrotor_multi.sensor_noise import SensorNoise
@@ -265,6 +263,8 @@ class QuadrotorSingle:
                                           use_numba=self.use_numba, dt=self.dt)
 
         # CONTROL
+        if self.use_controller:
+            self.raw_control = False
         if self.raw_control:
             if self.dim_mode == '1D':  # Z axis only
                 self.controller = VerticalControl(self.dynamics, zero_action_middle=self.raw_control_zero_middle)
@@ -275,7 +275,7 @@ class QuadrotorSingle:
             else:
                 raise ValueError('QuadEnv: Unknown dimensionality mode %s' % self.dim_mode)
         else:
-            self.controller = NonlinearPositionController(self.dynamics, tf_control=self.tf_control)
+            self.controller = MellingerController(self.dynamics)
 
         # ACTIONS
         self.action_space = self.controller.action_space(self.dynamics)
@@ -455,9 +455,6 @@ class QuadrotorSingle:
         self.tick = 0
         self.actions = [np.zeros([4, ]), np.zeros([4, ])]
 
-        if self.use_controller:
-            self.mellinger_controller = MellingerController(self.dynamics)
-
         state = self.state_vector(self)
         return state
 
@@ -469,6 +466,4 @@ class QuadrotorSingle:
         raise NotImplementedError()
 
     def step(self, action):
-        if self.use_controller:
-            action = self.mellinger_controller.step(self.dynamics, self.goal-np.array([0, 0, 0.55]), self.dt)
         return self._step(action)
