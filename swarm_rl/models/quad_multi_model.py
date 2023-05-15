@@ -1,4 +1,5 @@
 import torch
+from swarm_rl.models.weight_recycler import estimate_neuron_score
 from torch import nn
 
 from sample_factory.algo.utils.context import global_model_factory
@@ -194,7 +195,18 @@ class QuadMultiHeadAttentionEncoder(Encoder):
         attn_embed = attn_embed.view(batch_size, -1)
 
         embeddings = torch.cat((self_embed, attn_embed), dim=1)
+
+        # self_embed_score = estimate_neuron_score(self_embed)
+        # neighbor_embed_score = estimate_neuron_score(neighbor_embed)
+        # obstacle_embed_score = estimate_neuron_score(obstacle_embed)
+
+        # print("Self embed dormant neurons:", 1 - torch.count_nonzero(self_embed_score) / self_embed_score.size(0))
+        # print("Neighbor embed dormant neurons:", 1 - torch.count_nonzero(neighbor_embed_score) / neighbor_embed_score.size(0))
+        # print("Obstacle embed dormant neurons:", 1 - torch.count_nonzero(obstacle_embed_score) / obstacle_embed_score.size(0))
+
         out = self.feed_forward(embeddings)
+
+        # final_embed_score = estimate_neuron_score(out)
 
         return out
 
