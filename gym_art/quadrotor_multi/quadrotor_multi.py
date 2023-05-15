@@ -125,8 +125,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.obst_spawn_area = obst_spawn_area
             self.num_obstacles = int(obst_density * obst_spawn_area[0] * obst_spawn_area[1])
             self.obst_map = None
-            self.obstacle_size = obst_size
-            self.obstacles = MultiObstacles(obstacle_size=self.obstacle_size, quad_radius=self.quad_arm)
+            self.obst_size = obst_size
 
             # Log more info
             self.distance_to_goal_3_5 = 0
@@ -389,11 +388,15 @@ class QuadrotorEnvMulti(gym.Env):
                 num_obstacles=self.num_obstacles, scene_index=i
             ))
 
-    def reset(self, obst_density=None):
+    def reset(self, obst_density=None, obst_size=None):
         obs, rewards, dones, infos = [], [], [], []
 
         if obst_density:
             self.obst_density = obst_density
+        if obst_size:
+            self.obst_size = obst_size
+
+        self.obstacles = MultiObstacles(obstacle_size=self.obst_size, quad_radius=self.quad_arm)
 
         # Scenario reset
         if self.use_obstacles:
@@ -626,7 +629,7 @@ class QuadrotorEnvMulti(gym.Env):
                         obstacle_pos = self.obstacles.pos_arr[int(obstacle_id)]
                         perform_collision_with_obstacle(drone_dyn=self.envs[int(val)].dynamics,
                                                         obstacle_pos=obstacle_pos,
-                                                        obstacle_size=self.obstacle_size)
+                                                        obstacle_size=self.obst_size)
 
             # # 4) Room
             if len(wall_crash_list) > 0 or len(ceiling_crash_list) > 0:

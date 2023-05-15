@@ -11,8 +11,10 @@ python -m swarm_rl.train \
 --quads_collision_hitbox_radius=2.0 --quads_collision_falloff_radius=4.0 \
 --quads_neighbor_visible_num=6 --quads_num_agents=8 \
 --quads_collision_reward=5.0 --quads_collision_smooth_max_penalty=10.0 \
---replay_buffer_sample_prob=0 --anneal_collision_steps=300000000 --save_milestones_sec=1800 \
+--replay_buffer_sample_prob=0.75 --anneal_collision_steps=300000000 --save_milestones_sec=1800 \
 --normalize_input=False --normalize_returns=False --reward_clip=10 \
 --quads_use_obstacles=True --quads_obst_collision_reward=5.0 \
 --quads_obst_size=0.6 --quads_obst_density=0.2 --quads_obst_spawn_area 8 8 --quads_obstacle_obs_type=octomap \
---experiment=obstacles_multi_test
+--quads_domain_random=True --quads_obst_density_random=True --quads_obst_density_min=0.05 --quads_obst_density_max=0.2 \
+--quads_obst_size_random=True --quads_obst_size_min=0.3 --quads_obst_size_max=0.6 \
+--experiment=test_domain_random

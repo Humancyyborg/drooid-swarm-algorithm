@@ -60,8 +60,16 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obst_spawn_area', nargs='+', default=[6.0, 6.0], type=float,
                    help='The spawning area of obstacles')
     p.add_argument('--quads_domain_random', default=False, type=str2bool, help='Use domain randomization or not')
-    p.add_argument('--quads_obst_density_min', default=0.05, type=float, help='The minimum of obstacle density when enabling domain randomization')
-    p.add_argument('--quads_obst_density_max', default=0.2, type=float, help='The maximum of obstacle density when enabling domain randomization')
+    p.add_argument('--quads_obst_density_random', default=False, type=str2bool, help='Enable obstacle density randomization or not')
+    p.add_argument('--quads_obst_density_min', default=0.05, type=float,
+                   help='The minimum of obstacle density when enabling domain randomization')
+    p.add_argument('--quads_obst_density_max', default=0.2, type=float,
+                   help='The maximum of obstacle density when enabling domain randomization')
+    p.add_argument('--quads_obst_size_random', default=False, type=str2bool, help='Enable obstacle size randomization or not')
+    p.add_argument('--quads_obst_size_min', default=0.3, type=float,
+                   help='The minimum obstacle size when enabling domain randomization')
+    p.add_argument('--quads_obst_size_max', default=0.6, type=float,
+                   help='The maximum obstacle size when enabling domain randomization')
 
     # # Obstacle Encoder
     p.add_argument('--quads_obst_hidden_size', default=256, type=int, help='The hidden size for the obstacle encoder')
