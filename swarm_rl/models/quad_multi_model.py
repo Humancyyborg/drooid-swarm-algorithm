@@ -8,7 +8,7 @@ from sample_factory.model.model_utils import fc_layer, nonlinearity
 
 from gym_art.quadrotor_multi.quad_utils import QUADS_OBS_REPR, QUADS_NEIGHBOR_OBS_TYPE, QUADS_OBSTACLE_OBS_TYPE
 
-from swarm_rl.models.attention_layer import MultiHeadAttention
+from swarm_rl.models.attention_layer import MultiHeadAttention, OneHeadAttention
 
 
 class QuadNeighborhoodEncoder(nn.Module):
@@ -169,11 +169,14 @@ class QuadMultiHeadAttentionEncoder(Encoder):
         # Attention Layer
         self.attention_layer = MultiHeadAttention(4, cfg.rnn_size, cfg.rnn_size, cfg.rnn_size)
 
+        # # This is for sim2real
+        # self.attention_layer = OneHeadAttention(cfg.rnn_size)
+
         # MLP Layer
-        self.feed_forward = nn.Sequential(fc_layer(3 * cfg.rnn_size, 2 * cfg.rnn_size),
+        self.feed_forward = nn.Sequential(fc_layer(3 * cfg.rnn_size, cfg.rnn_size),
                                           nn.Tanh())
 
-        self.encoder_output_size = 2 * cfg.rnn_size
+        self.encoder_output_size = cfg.rnn_size
 
     def forward(self, obs_dict):
         obs = obs_dict['obs']
