@@ -173,10 +173,11 @@ class QuadMultiHeadAttentionEncoder(Encoder):
         # self.attention_layer = OneHeadAttention(cfg.rnn_size)
 
         # MLP Layer
-        self.feed_forward = nn.Sequential(fc_layer(3 * cfg.rnn_size, cfg.rnn_size),
+        self.encoder_output_size = 2 * cfg.rnn_size
+        self.feed_forward = nn.Sequential(fc_layer(3 * cfg.rnn_size, self.encoder_output_size),
                                           nn.Tanh())
 
-        self.encoder_output_size = cfg.rnn_size
+
 
     def forward(self, obs_dict):
         obs = obs_dict['obs']
