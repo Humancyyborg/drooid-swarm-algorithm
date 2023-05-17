@@ -75,3 +75,42 @@ class ScaledDotProductAttention(nn.Module):
         output = torch.matmul(attn, v)
 
         return output, attn
+
+
+class OneHeadAttention(nn.Module):
+    """ One-Head Attention module """
+
+    def __init__(self, d_model):
+        super().__init__()
+
+        self.w_qs = nn.Linear(d_model, d_model, bias=False)
+        self.w_ks = nn.Linear(d_model, d_model, bias=False)
+        self.w_vs = nn.Linear(d_model, d_model, bias=False)
+
+        self.fc = nn.Linear(d_model, d_model, bias=False)
+
+        self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
+
+        self.d_model = d_model
+
+    def forward(self, q, k, v):
+        residual = q
+
+        # Pass through the pre-attention projection: b x lq x (n*dv)
+        # Separate different heads: b x lq x n x dv
+        q = self.w_qs(q)
+        k = self.w_ks(k)
+        v = self.w_vs(v)
+
+        # Compute attention weights using queries and keys
+        attn = torch.matmul(q / (self.d_model ** 0.5), k.transpose(-1, -2))
+        # attn /= torch.sqrt(self.d_model)
+        attn = F.softmax(attn, dim=-1)
+        q = torch.matmul(attn, v)
+
+        q = self.fc(q)
+        q += residual
+
+        q = self.layer_norm(q)
+
+        return q, attn
