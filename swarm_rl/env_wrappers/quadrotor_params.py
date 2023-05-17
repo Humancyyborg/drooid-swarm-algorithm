@@ -115,3 +115,6 @@ def add_quadrotors_env_args(env, parser):
                    help='Choose which kind of view/camera to use')
     p.add_argument('--quads_render', default=False, type=bool, help='Use render or not')
     p.add_argument('--visualize_v_value', action='store_true', help="Visualize v value map")
+
+    # Sim2Real
+    p.add_argument('--quads_sim2real', default=False, type=str2bool, help='Whether to use sim2real or not')

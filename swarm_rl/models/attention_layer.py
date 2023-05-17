@@ -54,6 +54,25 @@ class MultiHeadAttention(nn.Module):
         return q, attn
 
 
+class ScaledDotProductAttention(nn.Module):
+    """ Scaled Dot-Product Attention """
+
+    def __init__(self, temperature):
+        super().__init__()
+        self.temperature = temperature
+
+    def forward(self, q, k, v, mask=None):
+        attn = torch.matmul(q / self.temperature, k.transpose(2, 3))
+
+        if mask is not None:
+            attn = attn.masked_fill(mask == 0, -1e9)
+
+        attn = F.softmax(attn, dim=-1)
+        output = torch.matmul(attn, v)
+
+        return output, attn
+
+
 class OneHeadAttention(nn.Module):
     """ One-Head Attention module """
 
@@ -73,7 +92,8 @@ class OneHeadAttention(nn.Module):
     def forward(self, q, k, v):
         residual = q
 
-        # Pass through the pre-attention projection: b x lq x dv
+        # Pass through the pre-attention projection: b x lq x (n*dv)
+        # Separate different heads: b x lq x n x dv
         q = self.w_qs(q)
         k = self.w_ks(k)
         v = self.w_vs(v)
@@ -91,21 +111,3 @@ class OneHeadAttention(nn.Module):
 
         return q, attn
 
-
-class ScaledDotProductAttention(nn.Module):
-    """ Scaled Dot-Product Attention """
-
-    def __init__(self, temperature):
-        super().__init__()
-        self.temperature = temperature
-
-    def forward(self, q, k, v, mask=None):
-        attn = torch.matmul(q / self.temperature, k.transpose(2, 3))
-
-        if mask is not None:
-            attn = attn.masked_fill(mask == 0, -1e9)
-
-        attn = F.softmax(attn, dim=-1)
-        output = torch.matmul(attn, v)
-
-        return output, attn
