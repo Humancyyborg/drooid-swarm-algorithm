@@ -73,6 +73,7 @@ def load_sf_model(model_dir: Path, model_type: str):
     args.quads_encoder_type = 'attention' if model_type == 'attention' else 'corl'
     args.quads_obstacle_scan_range = 0
     args.quads_obstacle_ray_num = 0
+    args.quads_sim2real = True
 
     # Load model
     register_swarm_components()
