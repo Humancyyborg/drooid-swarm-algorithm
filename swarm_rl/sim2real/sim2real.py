@@ -522,7 +522,12 @@ def generate_c_model_attention(model: nn.Module, output_path: str, output_folder
         methods += method
 
     # headers
-    source += headers_network_evaluate if not testing else headers_evaluation
+    if not testing:
+        source += headers_network_evaluate
+    else:
+        source += headers_evaluation
+        source += f'static const int D_MODEL = {model.actor_encoder.encoder_output_size};'
+
     source += headers_multi_agent_attention
 
     # helper funcs

@@ -15,11 +15,9 @@ headers_network_evaluate = """
 
 headers_multi_agent_attention = """
 // attention stuff
-static const int D_MODEL = 16;
 static float f_d_model = (float)D_MODEL;
-float sqrtf_d_model = sqrtf((float)D_MODEL);
-static const int NUM_TOKENS = 2;
-static const float EPS = 0.000001; // 1e-6
+static float sqrtf_d_model = sqrtf((float)D_MODEL);
+static const float EPS = 0.000001f; // 1e-6
 
 static float tokens[NUM_TOKENS][D_MODEL];
 static float q_outputs[NUM_TOKENS][D_MODEL];
@@ -36,12 +34,9 @@ static float last_layer_means[NUM_TOKENS];
 static float last_layer_variances[NUM_TOKENS];
 static float attn_embeds[NUM_TOKENS][D_MODEL];
 
-static float neighbor_embeds[NBR_OBS_DIM];
-static float obstacle_embeds[OBST_OBS_DIM];
 static float output_embeds[3 * D_MODEL];
 
-float base;
-float exponent;
+static float base;
 """
 
 
@@ -67,6 +62,8 @@ static const int NBR_OBS_DIM = 6;
 
 static const int NUM_OBSTACLES = 2; 
 static const int OBST_OBS_DIM = 9;
+
+static const int NUM_TOKENS = 2;
 
 """
 
@@ -174,7 +171,7 @@ void singleHeadAttention() {
         // compute attention weights and parts of softmax
         for (i = 0; i < NUM_TOKENS; i++) {
             softmax_sums[i] = 0;
-            for (int j = 0; j < NUM_TOKENS; j++) {
+            for (j = 0; j < NUM_TOKENS; j++) {
                 attn_weights[i][j] = 0;
                 for (k = 0; k < D_MODEL; k++) {
                     attn_weights[i][j] += (q_outputs[i][k] / sqrtf_d_model) * k_outputs[j][k];
