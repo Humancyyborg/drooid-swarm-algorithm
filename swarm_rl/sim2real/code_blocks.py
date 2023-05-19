@@ -10,12 +10,14 @@ headers_controller_nn = """
 
 headers_network_evaluate = """
 #include "network_evaluate.h"
-
+#include <string.h>
 """
 
 headers_multi_agent_attention = """
 // attention stuff
 static const int D_MODEL = 16;
+static float f_d_model = (float)D_MODEL;
+float sqrtf_d_model = sqrtf((float)D_MODEL);
 static const int NUM_TOKENS = 2;
 static const float EPS = 0.000001; // 1e-6
 
@@ -34,8 +36,8 @@ static float last_layer_means[NUM_TOKENS];
 static float last_layer_variances[NUM_TOKENS];
 static float attn_embeds[NUM_TOKENS][D_MODEL];
 
-static float neighbor_embeds[NBR_DIM];
-static float obstacle_embeds[OBST_DIM];
+static float neighbor_embeds[NBR_OBS_DIM];
+static float obstacle_embeds[OBST_OBS_DIM];
 static float output_embeds[3 * D_MODEL];
 
 float base;
@@ -61,10 +63,10 @@ typedef struct control_t_n {
 void networkEvaluate(control_t_n* control_n, const float* state_array);
 
 static const int NEIGHBORS = 6;
-static const int NBR_DIM = 6; 
+static const int NBR_OBS_DIM = 6; 
 
 static const int NUM_OBSTACLES = 2; 
-static const int OBST_DIM = 9;
+static const int OBST_OBS_DIM = 9;
 
 """
 
@@ -175,16 +177,16 @@ void singleHeadAttention() {
             for (int j = 0; j < NUM_TOKENS; j++) {
                 attn_weights[i][j] = 0;
                 for (k = 0; k < D_MODEL; k++) {
-                    attn_weights[i][j] += (q_outputs[i][k] / sqrt((float)D_MODEL)) * k_outputs[j][k];
+                    attn_weights[i][j] += (q_outputs[i][k] / sqrtf_d_model) * k_outputs[j][k];
                 }
-                softmax_sums[i] += exp(attn_weights[i][j]);
+                softmax_sums[i] += expf(attn_weights[i][j]);
             }
         }
         
         // softmax
         for (i = 0; i < NUM_TOKENS; i++) {
             for (j = 0; j < NUM_TOKENS; j++) {
-                attn_weights[i][j] = exp(attn_weights[i][j]) / softmax_sums[i];
+                attn_weights[i][j] = expf(attn_weights[i][j]) / softmax_sums[i];
             }
         }
 
@@ -216,7 +218,7 @@ void singleHeadAttention() {
             for (j = 0; j < D_MODEL; j++) {
                 last_layer_means[i] +=  query_embeds[i][j];
             }
-            last_layer_means[i] = last_layer_means[i] / (float)D_MODEL;
+            last_layer_means[i] = last_layer_means[i] / f_d_model;
         }
         
         // calculate per-token variance
@@ -224,16 +226,15 @@ void singleHeadAttention() {
             last_layer_variances[i] = 0;
             for (j = 0; j < D_MODEL; j++) {
                 base = query_embeds[i][j] - last_layer_means[i];
-                exponent = pow(base, 2);
-                last_layer_variances[i] += exponent;
+                last_layer_variances[i] += base * base;
             }
-            last_layer_variances[i] = last_layer_variances[i] / (float)(D_MODEL);
+            last_layer_variances[i] = last_layer_variances[i] / f_d_model;
         }
         
         // perform layer norm (2x16) x (16)
         for (i = 0; i < NUM_TOKENS; i++) {
             for (j = 0; j < D_MODEL; j++) {
-                attn_embeds[i][j] = (query_embeds[i][j] - last_layer_means[i]) / (sqrt(last_layer_variances[i] + EPS)) * actor_encoder_attention_layer_layer_norm_weight[j]; 
+                attn_embeds[i][j] = (query_embeds[i][j] - last_layer_means[i]) / (sqrtf(last_layer_variances[i] + EPS)) * actor_encoder_attention_layer_layer_norm_weight[j]; 
                 attn_embeds[i][j] += actor_encoder_attention_layer_layer_norm_bias[j]; 
             }
         }

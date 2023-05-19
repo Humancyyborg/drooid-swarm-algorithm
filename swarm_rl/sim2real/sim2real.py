@@ -374,7 +374,7 @@ def self_encoder_attn_c_str(prefix: str, weight_names: List[str], bias_names: Li
 
 
 def neighbor_encoder_c_string(prefix: str, weight_names: List[str], bias_names: List[str]):
-    method = """void neighborEmbedder(const float neighbor_inputs[NEIGHBORS * NBR_DIM]) {
+    method = """void neighborEmbedder(const float neighbor_inputs[NEIGHBORS * NBR_OBS_DIM]) {
     """
     num_layers = len(weight_names)
 
@@ -430,10 +430,7 @@ def neighbor_encoder_c_string(prefix: str, weight_names: List[str], bias_names: 
 
 
 def obstacle_encoder_c_str(prefix: str, weight_names: List[str], bias_names: List[str]):
-    method = f"""void obstacleEmbedder(const float obstacle_inputs[OBST_DIM]) {{
-        //reset embeddings accumulator to zero
-        memset(obstacle_embeds, 0, sizeof(obstacle_embeds));
-        
+    method = f"""void obstacleEmbedder(const float obstacle_inputs[OBST_OBS_DIM]) {{
     """
     num_layers = len(weight_names)
 
