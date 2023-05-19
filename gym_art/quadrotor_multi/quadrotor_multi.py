@@ -27,7 +27,7 @@ class QuadrotorEnvMulti(gym.Env):
                  neighbor_visible_num, neighbor_obs_type, collision_hitbox_radius, collision_falloff_radius,
 
                  # Obstacle
-                 use_obstacles, obst_density, obst_size, obst_spawn_area, obst_min_gap,
+                 use_obstacles, obst_density, obst_size, obst_spawn_area, use_obst_min_gap, obst_min_gap,
 
                  # Aerodynamics, Numba Speed Up, Scenarios, Room, Replay Buffer, Rendering
                  use_downwash, use_numba, quads_mode, room_dims, use_replay_buffer, quads_view_mode,
@@ -126,6 +126,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.num_obstacles = int(obst_density * obst_spawn_area[0] * obst_spawn_area[1])
             self.obst_map = None
             self.obst_size = obst_size
+            self.use_obst_min_gap = use_obst_min_gap
             self.obst_min_gap = obst_min_gap
 
             # Log more info
@@ -431,8 +432,10 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Scenario reset
         if self.use_obstacles:
-            # self.obst_map, obst_pos_arr, cell_centers = self.obst_generation_given_density()
-            self.obst_map, obst_pos_arr, cell_centers = self.generate_obst_with_min_gap()
+            if self.use_obst_min_gap:
+                self.obst_map, obst_pos_arr, cell_centers = self.generate_obst_with_min_gap()
+            else:
+                self.obst_map, obst_pos_arr, cell_centers = self.obst_generation_given_density()
             self.scenario.reset(obst_map=self.obst_map, cell_centers=cell_centers)
         else:
             self.scenario.reset()
