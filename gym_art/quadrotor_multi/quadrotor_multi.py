@@ -27,7 +27,7 @@ class QuadrotorEnvMulti(gym.Env):
                  neighbor_visible_num, neighbor_obs_type, collision_hitbox_radius, collision_falloff_radius,
 
                  # Obstacle
-                 use_obstacles, obst_density, obst_size, obst_spawn_area,
+                 use_obstacles, obst_density, obst_size, obst_spawn_area, obst_min_gap,
 
                  # Aerodynamics, Numba Speed Up, Scenarios, Room, Replay Buffer, Rendering
                  use_downwash, use_numba, quads_mode, room_dims, use_replay_buffer, quads_view_mode,
@@ -126,6 +126,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.num_obstacles = int(obst_density * obst_spawn_area[0] * obst_spawn_area[1])
             self.obst_map = None
             self.obst_size = obst_size
+            self.obst_min_gap = obst_min_gap
 
             # Log more info
             self.distance_to_goal_3_5 = 0
@@ -366,7 +367,6 @@ class QuadrotorEnvMulti(gym.Env):
         obst_index = np.random.choice(a=room_map, size=int(num_room_grids * self.obst_density), replace=False)
 
         obst_pos_arr = []
-        # 0: No Obst, 1: Obst
         obst_map = np.zeros([obst_area_length, obst_area_width])
         for obst_id in obst_index:
             rid, cid = obst_id // obst_area_width, obst_id - (obst_id // obst_area_width) * obst_area_width
@@ -375,6 +375,36 @@ class QuadrotorEnvMulti(gym.Env):
             obst_item.append(self.room_dims[2] / 2.)
             obst_pos_arr.append(obst_item)
 
+        return obst_map, obst_pos_arr, cell_centers
+
+    def generate_obst_with_min_gap(self, grid_size=1.0):
+        obst_area_length, obst_area_width = int(self.obst_spawn_area[0]), int(self.obst_spawn_area[1])
+        num_room_grids = obst_area_length * obst_area_width
+        room_grids_idx = np.arange(num_room_grids)
+        np.random.shuffle(room_grids_idx)
+
+        cell_centers = get_cell_centers(obst_area_length=obst_area_length, obst_area_width=obst_area_width,
+                                        grid_size=grid_size)
+
+        obst_pos_arr = []
+        obst_map = np.zeros([obst_area_length, obst_area_width])
+        # Iterate over the points
+        for idx in room_grids_idx:
+            rid, cid = idx // obst_area_width, idx - (idx // obst_area_width) * obst_area_width
+            obst_item = cell_centers[rid + int(obst_area_length / grid_size) * cid]
+            obst_item = np.append(obst_item, self.room_dims[2] / 2.)
+            # If the distance between the point and any point in the subset is less than the threshold, then skip the point.
+            if any(distance - self.obst_size< self.obst_min_gap for distance in [np.linalg.norm(obst_item - other) for other in obst_pos_arr]):
+                continue
+
+            # Otherwise, add the point to the subset.
+            obst_map[rid, cid] = 1
+            obst_pos_arr.append(obst_item)
+
+            if len(obst_pos_arr) >= self.num_obstacles:
+                break
+
+        print("Obst Num:", len(obst_pos_arr))
         return obst_map, obst_pos_arr, cell_centers
 
     def init_scene_multi(self):
@@ -401,7 +431,8 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Scenario reset
         if self.use_obstacles:
-            self.obst_map, obst_pos_arr, cell_centers = self.obst_generation_given_density()
+            # self.obst_map, obst_pos_arr, cell_centers = self.obst_generation_given_density()
+            self.obst_map, obst_pos_arr, cell_centers = self.generate_obst_with_min_gap()
             self.scenario.reset(obst_map=self.obst_map, cell_centers=cell_centers)
         else:
             self.scenario.reset()

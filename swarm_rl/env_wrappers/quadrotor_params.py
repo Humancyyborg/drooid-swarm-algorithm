@@ -70,6 +70,7 @@ def add_quadrotors_env_args(env, parser):
                    help='The minimum obstacle size when enabling domain randomization')
     p.add_argument('--quads_obst_size_max', default=0.6, type=float,
                    help='The maximum obstacle size when enabling domain randomization')
+    p.add_argument('--quads_obst_min_gap', default=0.5, type=float, help='The minimum gap between obstacles')
 
     # # Obstacle Encoder
     p.add_argument('--quads_obst_hidden_size', default=256, type=int, help='The hidden size for the obstacle encoder')

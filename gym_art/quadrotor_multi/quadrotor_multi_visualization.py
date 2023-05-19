@@ -320,10 +320,6 @@ class Quadrotor3DSceneMulti:
 
             self.obstacle_transforms[i].set_transform_and_color(r3d.translate(pos_update), (1.0, 0.0, 0.0, 0.1))
 
-    #def create_arrows(self, envs):
-    #
-    #    self.
-
     def create_goals(self):
         import gym_art.quadrotor_multi.rendering3d as r3d
 
