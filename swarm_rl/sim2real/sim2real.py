@@ -76,6 +76,8 @@ def load_sf_model(model_dir: Path, model_type: str):
     args.quads_sim2real = True
     args.quads_domain_random, args.quads_obst_density_random, args.quads_obst_size_random = False, False, False
     args.quads_obst_density_min, args.quads_obst_density_max, args.quads_obst_size_min, args.quads_obst_size_max = 0, 0, 0, 0
+    args.quads_obst_min_gap = 0.
+    args.quads_use_obst_min_gap = False
 
     # Load model
     register_swarm_components()
