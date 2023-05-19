@@ -167,13 +167,12 @@ class QuadMultiHeadAttentionEncoder(Encoder):
             nonlinearity(cfg)
         )
 
+        # Attention Layer
         num_heads = 4
-        # # Attention Layer
         self.attention_layer = MultiHeadAttention(num_heads, cfg.rnn_size, cfg.rnn_size, cfg.rnn_size)
-        # self.attention_layer = OneHeadAttention(cfg.rnn_size)
 
         # MLP Layer
-        self.encoder_output_size = 2 * cfg.rnn_size
+        self.encoder_output_size = cfg.quads_encoder_output_size
         self.feed_forward = nn.Sequential(fc_layer(3 * cfg.rnn_size, self.encoder_output_size),
                                           nn.Tanh())
 
@@ -256,7 +255,7 @@ class QuadMultiHeadAttentionEncoder_Sim2Real(QuadMultiHeadAttentionEncoder):
         self.attention_layer = OneHeadAttention(cfg.rnn_size)
 
         # MLP Layer
-        self.encoder_output_size = cfg.rnn_size
+        self.encoder_output_size = cfg.quads_encoder_output_size
         self.feed_forward = nn.Sequential(fc_layer(3 * cfg.rnn_size, self.encoder_output_size),
                                           nn.Tanh())
 
