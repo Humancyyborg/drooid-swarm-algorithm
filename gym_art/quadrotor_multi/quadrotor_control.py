@@ -374,7 +374,7 @@ class MellingerController(object):
                     acc_des = self.sbc_last_safe_acc
                 # print("sbc failed")
 
-        acc_des += + np.array([0, 0, GRAV])
+        acc_des += np.array([0, 0, GRAV])
         # I don't need to control yaw
         # if goal_dist > 2.0 * dynamics.arm:
         #     # point towards goal
