@@ -17,7 +17,7 @@ class ReplayBuffer:
     def __init__(self, control_frequency, cp_step_size=0.5, buffer_size=20):
         self.control_frequency = control_frequency
         self.cp_step_size_sec = cp_step_size  # how often (seconds) a checkpoint is saved
-        self.cp_step_size_freq = self.cp_step_size_sec * self.control_frequency
+        self.cp_step_size_freq = int(self.cp_step_size_sec * self.control_frequency)
         self.buffer_idx = 0
         self.buffer = deque([], maxlen=buffer_size)
 

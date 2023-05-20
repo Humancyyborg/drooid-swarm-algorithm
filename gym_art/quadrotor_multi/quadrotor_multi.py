@@ -22,7 +22,7 @@ from gym_art.quadrotor_multi.scenarios.utils import QUADS_MODE_LIST, QUADS_MODE_
 
 
 class QuadrotorEnvMulti(gym.Env):
-    def __init__(self, num_agents, ep_time, rew_coeff, obs_repr,
+    def __init__(self, num_agents, ep_time, rew_coeff, obs_repr, sim_freq, sim_steps,
                  # Neighbor
                  neighbor_visible_num, neighbor_obs_type, collision_hitbox_radius, collision_falloff_radius,
 
@@ -62,7 +62,7 @@ class QuadrotorEnvMulti(gym.Env):
                 dynamics_randomize_every=dynamics_randomize_every, dyn_sampler_1=dyn_sampler_1,
                 raw_control=raw_control, raw_control_zero_middle=raw_control_zero_middle, sense_noise=sense_noise,
                 init_random_state=init_random_state, obs_repr=obs_repr, ep_time=ep_time, room_dims=room_dims,
-                use_numba=use_numba,
+                use_numba=use_numba, sim_freq=sim_freq, sim_steps=sim_steps,
                 # Neighbor
                 num_agents=num_agents,
                 neighbor_obs_type=neighbor_obs_type, num_use_neighbor_obs=self.num_use_neighbor_obs,
@@ -78,6 +78,7 @@ class QuadrotorEnvMulti(gym.Env):
         # Aux variables
         self.quad_arm = self.envs[0].dynamics.arm
         self.control_freq = self.envs[0].control_freq
+        self.sim_steps = sim_steps
         self.control_dt = 1.0 / self.control_freq
         self.pos = np.zeros([self.num_agents, 3])
         self.vel = np.zeros([self.num_agents, 3])
@@ -338,7 +339,7 @@ class QuadrotorEnvMulti(gym.Env):
         Here we count the average number of collisions with the walls and ground in the last N episodes
         Returns: True if drones are considered proficient at flying
         """
-        res = abs(np.mean(self.crashes_in_recent_episodes)) < 1 and len(self.crashes_in_recent_episodes) >= 10
+        res = abs(np.mean(self.crashes_in_recent_episodes)) < 1 and len(self.crashes_in_recent_episodes) >= 5 * self.sim_steps
         return res
 
     def calculate_room_collision(self):

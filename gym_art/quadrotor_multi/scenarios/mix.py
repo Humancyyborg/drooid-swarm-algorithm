@@ -52,7 +52,7 @@ class Scenario_mix(QuadrotorScenario):
             raise NotImplementedError("Unknown!")
 
         self.scenario = None
-        self.approch_goal_metric = 0.5
+        self.approch_goal_metric = 1.0
 
         self.spawn_points = None
 
