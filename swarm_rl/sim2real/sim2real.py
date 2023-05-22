@@ -46,7 +46,7 @@ def parse_args():
 
 def torch_to_c_model(args):
     model_dir = Path(args.torch_model_dir)
-    model = load_sf_model(model_dir, args.model_type)
+    model, _ = load_sf_model(model_dir, args.model_type)
 
     output_dir = Path(args.output_dir)
     output_path = output_dir.joinpath(args.model_type, args.output_model_name)
@@ -78,6 +78,8 @@ def load_sf_model(model_dir: Path, model_type: str):
     args.quads_obst_density_min, args.quads_obst_density_max, args.quads_obst_size_min, args.quads_obst_size_max = 0, 0, 0, 0
     args.quads_obst_min_gap = 0.
     args.quads_use_obst_min_gap = False
+    args.quads_sim_freq = 200
+    args.quads_sim_steps = 2
 
     # Load model
     register_swarm_components()
@@ -87,7 +89,7 @@ def load_sf_model(model_dir: Path, model_type: str):
     model_path = list(model_dir.glob('*.pth'))[0]
     model.load_state_dict(torch.load(model_path)['model'])
 
-    return model
+    return model, args
 
 
 def process_layer(name: str, param: nn.Parameter, type: str):
@@ -526,7 +528,7 @@ def generate_c_model_attention(model: nn.Module, output_path: str, output_folder
         source += headers_network_evaluate
     else:
         source += headers_evaluation
-        source += f'static const int D_MODEL = {model.actor_encoder.encoder_output_size};'
+        source += f'static const int D_MODEL = {model.actor_encoder.hidden_size};'
 
     source += headers_multi_agent_attention
 

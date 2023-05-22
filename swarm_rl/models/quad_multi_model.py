@@ -257,6 +257,8 @@ class QuadMultiHeadAttentionEncoder_Sim2Real(QuadMultiHeadAttentionEncoder):
         # Attention Layer
         self.attention_layer = OneHeadAttention(cfg.rnn_size)
 
+        self.hidden_size = cfg.rnn_size
+
         # MLP Layer
         if 'quads_encoder_output_size' in cfg:
             self.encoder_output_size = cfg.quads_encoder_output_size
