@@ -1,13 +1,81 @@
 from numpy.linalg import norm
 from gym import spaces
 from gym_art.quadrotor_multi.quad_utils import *
+import qpsolvers
+import math
+import time
 
 GRAV = 9.81
 
 
+class NominalSBC:
+    class State:
+        def __init__(self, position, velocity):
+            self.position = position
+            self.velocity = velocity
+
+    class ObjectDescription:
+        def __init__(self, state, radius, maximum_linf_acceleration_lower_bound):
+            self.state = state
+            self.radius = radius
+            self.maximum_linf_acceleration_lower_bound = maximum_linf_acceleration_lower_bound
+
+    def __init__(self, maximum_linf_acceleration, aggressiveness, radius):
+        self.maximum_linf_acceleration = maximum_linf_acceleration
+        self.aggressiveness = aggressiveness
+        self.radius = radius
+
+    def plan(self, self_state, object_descriptions, desired_acceleration):
+        P = 2.0 * np.eye(3)
+        q = -2.0 * desired_acceleration
+        G = np.ndarray((0, 3), np.float64)
+        h = np.array([])
+        A = np.ndarray((0, 3), np.float64)
+        b = np.array([])
+        lb = np.array([-self.maximum_linf_acceleration]*3)
+        ub = np.array([self.maximum_linf_acceleration]*3)
+
+        for object_description in object_descriptions:
+            relative_position = self_state.position - object_description.state.position
+            relative_position_norm = np.linalg.norm(relative_position)
+            if (abs(relative_position_norm) < 1e-10):
+                return None
+
+            safety_distance = self.radius + object_description.radius
+
+            if (relative_position_norm < safety_distance):
+                return None
+
+            relative_velocity = self_state.velocity - object_description.state.velocity
+            relative_position_dot_relative_velocity = np.dot(
+                relative_position, relative_velocity)
+
+            hij = math.sqrt(2.0 * (self.maximum_linf_acceleration + object_description.maximum_linf_acceleration_lower_bound) * (
+                relative_position_norm - safety_distance)) + (relative_position_dot_relative_velocity / relative_position_norm)
+
+            bij = -relative_position_dot_relative_velocity * \
+                np.dot(relative_position, self_state.velocity) / \
+                (relative_position_norm * relative_position_norm) + np.dot(relative_velocity, self_state.velocity) + \
+                (self.maximum_linf_acceleration / (self.maximum_linf_acceleration +
+                 object_description.maximum_linf_acceleration_lower_bound)) * \
+                (self.aggressiveness * hij * hij * hij * relative_position_norm
+                 + (math.sqrt(self.maximum_linf_acceleration +
+                              object_description.maximum_linf_acceleration_lower_bound) *
+                    relative_position_dot_relative_velocity) /
+                 (math.sqrt(2.0 * (relative_position_norm - safety_distance))))
+
+            G = np.append(G, [-1.0 * relative_position], axis=0)
+            h = np.append(h, bij)
+
+        x = qpsolvers.solve_qp(P, q, G, h, A, b, lb, ub, solver="osqp")
+
+        return x
+
 # import line_profiler
 # like raw motor control, but shifted such that a zero action
 # corresponds to the amount of thrust needed to hover.
+
+
 class ShiftedMotorControl(object):
     def __init__(self, dynamics):
         pass
@@ -75,7 +143,8 @@ class VerticalControl(object):
         elif self.dim_mode == '3D':
             self.step = self.step3D
         else:
-            raise ValueError('QuadEnv: Unknown dimensionality mode %s' % self.dim_mode)
+            raise ValueError(
+                'QuadEnv: Unknown dimensionality mode %s' % self.dim_mode)
         self.step_func = self.step
 
     def action_space(self, dynamics):
@@ -119,7 +188,8 @@ class VertPlaneControl(object):
         elif self.dim_mode == '3D':
             self.step = self.step3D
         else:
-            raise ValueError('QuadEnv: Unknown dimensionality mode %s' % self.dim_mode)
+            raise ValueError(
+                'QuadEnv: Unknown dimensionality mode %s' % self.dim_mode)
         self.step_func = self.step
 
     def action_space(self, dynamics):
@@ -142,7 +212,8 @@ class VertPlaneControl(object):
         # print('action: ', action)
         action = self.scale * (action + self.bias)
         action = np.clip(action, a_min=self.low, a_max=self.high)
-        dynamics.step(np.array([action[0], action[0], action[1], action[1]]), dt)
+        dynamics.step(
+            np.array([action[0], action[0], action[1], action[1]]), dt)
 
     # modifies the dynamics in place.
     # @profile
@@ -240,7 +311,8 @@ class VelocityYawControl(object):
         dw_des = -kp_a * e_R - kd_a * e_w
         # we want this acceleration, but we can only accelerate in one direction!
         # thrust_mag = np.dot(acc_des, dynamics.rot[:,2])
-        thrust_mag = get_blas_funcs("thrust_mag", [acc_des, dynamics.rot[:, 2]])
+        thrust_mag = get_blas_funcs(
+            "thrust_mag", [acc_des, dynamics.rot[:, 2]])
 
         des = np.append(thrust_mag, dw_des)
         thrusts = np.matmul(self.Jinv, des)
@@ -255,7 +327,7 @@ class MellingerController(object):
     def __init__(self, dynamics):
         jacobian = quadrotor_jacobian(dynamics)
         self.Jinv = np.linalg.inv(jacobian)
-        ## Jacobian inverse for our quadrotor
+        # Jacobian inverse for our quadrotor
         # Jinv = np.array([[0.0509684, 0.0043685, -0.0043685, 0.02038736],
         #                 [0.0509684, -0.0043685, -0.0043685, -0.02038736],
         #                 [0.0509684, -0.0043685,  0.0043685,  0.02038736],
@@ -267,6 +339,11 @@ class MellingerController(object):
 
         self.rot_des = np.eye(3)
 
+        self.enable_sbc = True
+        self.sbc = NominalSBC(maximum_linf_acceleration=2.0,
+                              aggressiveness=0.1, radius=0.15)
+        self.sbc_last_safe_acc = None
+
         self.step_func = self.step
 
     # modifies the dynamics in place.
@@ -274,13 +351,30 @@ class MellingerController(object):
     def step(self, dynamics, goal, dt, action=None, observation=None):
         to_goal = goal - dynamics.pos
         # goal_dist = np.sqrt(np.cumsum(np.square(to_goal)))[2]
-        goal_dist = (to_goal[0] ** 2 + to_goal[1] ** 2 + to_goal[2] ** 2) ** 0.5
-        ##goal_dist = norm(to_goal)
+        goal_dist = (to_goal[0] ** 2 + to_goal[1]
+                     ** 2 + to_goal[2] ** 2) ** 0.5
+        # goal_dist = norm(to_goal)
         e_p = -clamp_norm(to_goal, 4.0)
         e_v = dynamics.vel
         # print('Mellinger: ', e_p, e_v, type(e_p), type(e_v))
-        acc_des = -self.kp_p * e_p - self.kd_p * e_v + np.array([0, 0, GRAV])
+        acc_des = -self.kp_p * e_p - self.kd_p * e_v
+        if self.enable_sbc and observation is not None:
+            st = time.time()
+            new_acc = self.sbc.plan(observation["self_state"],
+                                    observation["neighbor_descriptions"], acc_des)
+            et = time.time()
+            elapsed_time = et - st
+            # print('SBC Execution time:', elapsed_time, 'seconds')
+            if new_acc is not None:
+                # print("acc_des:", acc_des, "new_acc:", new_acc)
+                self.sbc_last_safe_acc = new_acc
+                acc_des = new_acc
+            else:
+                if self.sbc_last_safe_acc is not None:
+                    acc_des = self.sbc_last_safe_acc
+                # print("sbc failed")
 
+        acc_des += np.array([0, 0, GRAV])
         # I don't need to control yaw
         # if goal_dist > 2.0 * dynamics.arm:
         #     # point towards goal
@@ -290,6 +384,7 @@ class MellingerController(object):
         #     xc_des = to_xyhat(dynamics.rot[:,0])
 
         xc_des = self.rot_des[:, 0]
+
         # xc_des = np.array([1.0, 0.0, 0.0])
 
         # rotation towards the ideal thrust direction
