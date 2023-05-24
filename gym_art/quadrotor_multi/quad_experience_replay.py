@@ -52,6 +52,8 @@ class ReplayBuffer:
                 new_buffer.append(event)
 
         self.buffer = new_buffer
+        if len(self.buffer) < self.buffer.maxlen:
+            self.buffer_idx = len(self.buffer)
 
     def avg_num_replayed(self):
         replayed_stats = [e.num_replayed for e in self.buffer]
@@ -121,6 +123,10 @@ class ExperienceReplayWrapper(gym.Wrapper):
         obs, rewards, dones, infos = self.env.step(action)
 
         if any(dones):
+            # Cleanup replay buffer after each episode ends
+            self.replay_buffer.cleanup()
+
+            # Sample from replay buffer
             obs = self.new_episode()
             for i in range(len(infos)):
                 if not infos[i]["episode_extra_stats"]:
@@ -187,8 +193,6 @@ class ExperienceReplayWrapper(gym.Wrapper):
             replayed_env.collisions_per_episode = replayed_env.collisions_after_settle = 0
             replayed_env.obst_quad_collisions_per_episode = replayed_env.obst_quad_collisions_after_settle = 0
             self.env = replayed_env
-
-            self.replay_buffer.cleanup()
 
             return obs
 
