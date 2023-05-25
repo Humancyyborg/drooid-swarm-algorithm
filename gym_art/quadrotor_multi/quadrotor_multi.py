@@ -58,6 +58,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.room_dims = room_dims
         self.quads_view_mode = quads_view_mode
 
+        self.use_sbc = use_sbc
         use_controller = True if self.use_sbc else False
 
         # Generate All Quadrotors
