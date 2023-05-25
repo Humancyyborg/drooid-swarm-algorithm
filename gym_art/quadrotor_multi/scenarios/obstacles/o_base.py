@@ -37,6 +37,7 @@ class Scenario_o_base(QuadrotorScenario):
 
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
+            env.reached_goal = False
 
         return
 

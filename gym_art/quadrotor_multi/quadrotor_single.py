@@ -226,6 +226,7 @@ class QuadrotorSingle:
             self.box = 2.0
         self.box_scale = 1.0
         self.goal = None
+        self.reached_goal = False
 
         # Neighbor info
         self.num_agents = num_agents
@@ -427,6 +428,7 @@ class QuadrotorSingle:
         if z < 0.25:
             z = 0.25
         pos = npa(x, y, z)
+        self.reached_goal = False
 
         # INIT STATE
         # Initializing rotation and velocities

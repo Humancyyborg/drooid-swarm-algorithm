@@ -340,7 +340,7 @@ class MellingerController(object):
         self.rot_des = np.eye(3)
 
         self.enable_sbc = True
-        self.sbc = NominalSBC(maximum_linf_acceleration=2.0,
+        self.sbc = NominalSBC(maximum_linf_acceleration=5.0,
                               aggressiveness=0.1, radius=0.15)
         self.sbc_last_safe_acc = None
 

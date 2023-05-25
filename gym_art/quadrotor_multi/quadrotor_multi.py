@@ -179,6 +179,9 @@ class QuadrotorEnvMulti(gym.Env):
         # Numba
         self.use_numba = use_numba
 
+        # SBC
+        self.use_sbc = True
+
         # Aerodynamics
         self.use_downwash = use_downwash
 
@@ -198,6 +201,10 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Log
         self.distance_to_goal = [[] for _ in range(len(self.envs))]
+        self.flying_time = [[] for _ in range(len(self.envs))]
+        self.reached_goal = [False for _ in range(len(self.envs))]
+        self.flying_trajectory = [[] for _ in range(len(self.envs))]
+        self.prev_pos = [[] for _ in range(len(self.envs))]
 
         # # Log vel
         # self.episode_vel_mean, self.episode_vel_max: consider whole episode, start from step 0
@@ -472,6 +479,10 @@ class QuadrotorEnvMulti(gym.Env):
         self.distance_to_goal = [[] for _ in range(len(self.envs))]
         self.agent_col_agent = np.ones(self.num_agents)
         self.agent_col_obst = np.ones(self.num_agents)
+        self.flying_time = [[] for _ in range(len(self.envs))]
+        self.reached_goal = [False for _ in range(len(self.envs))]
+        self.flying_trajectory = [[] for _ in range(len(self.envs))]
+        self.prev_pos = [self.envs[_].dynamics.pos for _ in range(len(self.envs))]
 
         # # Log vel
         # self.episode_vel_mean, self.episode_vel_max: consider whole episode, start from step 0
@@ -495,53 +506,57 @@ class QuadrotorEnvMulti(gym.Env):
         obs, rewards, dones, infos = [], [], [], []
 
         for i, a in enumerate(actions):
-            self_state = NominalSBC.State(
-                position=self.envs[i].dynamics.pos, velocity=self.envs[i].dynamics.vel)
-            neighbor_descriptions = []
+            if self.use_sbc:
+                self_state = NominalSBC.State(
+                    position=self.envs[i].dynamics.pos, velocity=self.envs[i].dynamics.vel)
+                neighbor_descriptions = []
 
-            # Add neighbor robot descriptions
-            for j in range(len(actions)):
-                if i == j:
-                    continue
+                # Add neighbor robot descriptions
+                for j in range(len(actions)):
+                    if i == j:
+                        continue
 
-                if (np.linalg.norm(self_state.position - self.envs[j].dynamics.pos) < 5.0):
-                    neighbor_descriptions.append(
-                        NominalSBC.ObjectDescription(
-                            state=NominalSBC.State(
-                                position=self.envs[j].dynamics.pos,
-                                velocity=self.envs[j].dynamics.vel
-                            ),
-                            radius=self.envs[j].controller.sbc.radius,
-                            maximum_linf_acceleration_lower_bound=self.envs[
-                                j].controller.sbc.maximum_linf_acceleration
+                    if (np.linalg.norm(self_state.position - self.envs[j].dynamics.pos) < 5.0):
+                        neighbor_descriptions.append(
+                            NominalSBC.ObjectDescription(
+                                state=NominalSBC.State(
+                                    position=self.envs[j].dynamics.pos,
+                                    velocity=self.envs[j].dynamics.vel
+                                ),
+                                radius=self.envs[j].controller.sbc.radius,
+                                maximum_linf_acceleration_lower_bound=self.envs[
+                                    j].controller.sbc.maximum_linf_acceleration
+                            )
                         )
-                    )
 
-            # Add neighbor obstacle descriptions
-            if self.use_obstacles:
-                for obst_pose in self.obst_pos_arr:
-                    x, y = obst_pose[0], obst_pose[1]
-                    if (np.linalg.norm(np.array([x, y]) - np.array([self_state.position[0], self_state.position[1]])) < 3.0):
-                        z = 0.0
-                        while z < self.room_dims[2]:
-                            if (np.linalg.norm(np.array([x, y, z]) - self_state.position) < 3.0):
-                                neighbor_descriptions.append(
-                                    NominalSBC.ObjectDescription(
-                                        state=NominalSBC.State(
-                                            position=np.array([x, y, z]),
-                                            velocity=np.zeros(3)
-                                        ),
-                                        radius=self.obstacle_size*0.5,
-                                        maximum_linf_acceleration_lower_bound=0.0
+                # Add neighbor obstacle descriptions
+                if self.use_obstacles:
+                    for obst_pose in self.obst_pos_arr:
+                        x, y = obst_pose[0], obst_pose[1]
+                        if (np.linalg.norm(np.array([x, y]) - np.array([self_state.position[0], self_state.position[1]])) < 3.0):
+                            z = 0.0
+                            while z < self.room_dims[2]:
+                                if (np.linalg.norm(np.array([x, y, z]) - self_state.position) < 3.0):
+                                    neighbor_descriptions.append(
+                                        NominalSBC.ObjectDescription(
+                                            state=NominalSBC.State(
+                                                position=np.array([x, y, z]),
+                                                velocity=np.zeros(3)
+                                            ),
+                                            radius=self.obstacle_size*0.5,
+                                            maximum_linf_acceleration_lower_bound=0.0
+                                        )
                                     )
-                                )
-                            z += self.obstacle_size * 0.5
+                                z += self.obstacle_size * 0.5
 
             self.envs[i].rew_coeff = self.rew_coeff
 
-            observation, reward, done, info = self.envs[i].step(
-                a, {"self_state": self_state,
-                    "neighbor_descriptions": neighbor_descriptions})
+            if self.use_sbc:
+                observation, reward, done, info = self.envs[i].step(
+                    a, {"self_state": self_state,
+                        "neighbor_descriptions": neighbor_descriptions})
+            else:
+                observation, reward, done, info = self.envs[i].step(a)
             # print("num neighbors: ", len(neighbor_descriptions))
             obs.append(observation)
             rewards.append(reward)
@@ -678,6 +693,17 @@ class QuadrotorEnvMulti(gym.Env):
                 self.distance_to_goal[i].append(-infos[i]
                                                 ["rewards"]["rewraw_pos"])
 
+            if -infos[i]["rewards"]["rewraw_pos"]/self.envs[0].dt < self.scenario.approch_goal_metric and not self.envs[i].reached_goal:
+                self.envs[i].reached_goal = True
+                if len(self.flying_time[i]) > 0:
+                    self.reached_goal[i] = True
+                    self.flying_time[i].append(self.envs[i].tick*self.envs[i].dt-self.flying_time[i][-1])
+                else:
+                    self.flying_time[i].append(self.envs[i].tick * self.envs[i].dt)
+
+            self.flying_trajectory[i].append(np.linalg.norm(self.prev_pos[i]-self.envs[i].dynamics.pos))
+            self.prev_pos[i] = self.envs[i].dynamics.pos
+
         # 3. Applying random forces: 1) aerodynamics 2) between drones 3) obstacles 4) room
         self_state_update_flag = False
 
@@ -775,6 +801,16 @@ class QuadrotorEnvMulti(gym.Env):
         # 7. DONES
         if any(dones):
             scenario_name = self.scenario.name()[9:]
+            self.distance_to_goal = np.array(self.distance_to_goal)
+            self.flying_trajectory = np.array(self.flying_trajectory)
+            self.reached_goal = np.array(self.reached_goal)
+            padded_flying_time = np.zeros(
+                [len(self.flying_time), max(len(max(self.flying_time, key=lambda x: len(x))), 2)])
+            for j, k in enumerate(self.flying_time):
+                padded_flying_time[j][0:len(k)] = k
+            self.flying_time = padded_flying_time[:, 1:]
+            if not np.any(self.reached_goal):
+                self.reached_goal[0] = True
             for i in range(len(infos)):
                 if self.saved_in_replay_buffer:
                     infos[i]['episode_extra_stats'] = {
@@ -782,7 +818,6 @@ class QuadrotorEnvMulti(gym.Env):
                         'num_collisions_obst_replay': self.obst_quad_collisions_per_episode,
                     }
                 else:
-                    self.distance_to_goal = np.array(self.distance_to_goal)
                     infos[i]['episode_extra_stats'] = {
                         'num_collisions': self.collisions_per_episode,
                         'num_collisions_with_room': self.collisions_room_per_episode,
@@ -794,6 +829,12 @@ class QuadrotorEnvMulti(gym.Env):
 
                         'num_collisions_final_5_s': self.collisions_final_5s,
                         f'{scenario_name}/num_collisions_final_5_s': self.collisions_final_5s,
+
+                        'flying_trajectory': (1.0 / self.envs[0].dt) * np.mean(self.flying_trajectory[i]),
+                        f'{scenario_name}/flying_trajectory': (1.0 / self.envs[0].dt) * np.mean(self.flying_trajectory[i]),
+
+                        'flying_time': np.mean(self.flying_time[self.reached_goal]),
+                        f'{scenario_name}/flying_time': np.mean(self.flying_time[self.reached_goal]),
 
                         'distance_to_goal_1s': (1.0 / self.envs[0].dt) * np.mean(
                             self.distance_to_goal[i, int(-1 * self.control_freq):]),

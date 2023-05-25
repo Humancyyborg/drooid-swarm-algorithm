@@ -26,6 +26,7 @@ class Scenario_dynamic_same_goal(QuadrotorScenario):
                                              layer_dist=0.0)
             for i, env in enumerate(self.envs):
                 env.goal = self.goals[i]
+                env.reached_goal = False
 
         return
 
