@@ -17,6 +17,7 @@ class Scenario_dynamic_formations(QuadrotorScenario):
         self.goals = self.generate_goals(self.num_agents, self.formation_center, layer_dist=self.layer_dist)
         for env, goal in zip(self.envs, self.goals):
             env.goal = goal
+            env.reached_goal = False
 
     def step(self):
         if self.formation_size <= -self.highest_formation_size:

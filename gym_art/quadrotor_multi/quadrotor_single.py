@@ -50,7 +50,8 @@ def compute_reward_weighted(dynamics, goal, action, dt, time_remain, rew_coeff, 
     cost_orient = rew_coeff["orient"] * cost_orient_raw
 
     # Loss for constant uncontrolled rotation around vertical axis
-    cost_spin_raw = (dynamics.omega[0] ** 2 + dynamics.omega[1] ** 2 + dynamics.omega[2] ** 2) ** 0.5
+    cost_spin_raw = (
+        dynamics.omega[0] ** 2 + dynamics.omega[1] ** 2 + dynamics.omega[2] ** 2) ** 0.5
     cost_spin = rew_coeff["spin"] * cost_spin_raw
 
     # Loss crash for staying on the floor
@@ -98,11 +99,13 @@ def compute_reward_weighted(dynamics, goal, action, dt, time_remain, rew_coeff, 
 class QuadrotorSingle:
     def __init__(self, dynamics_params="DefaultQuad", dynamics_change=None,
                  dynamics_randomize_every=None, dyn_sampler_1=None, dyn_sampler_2=None,
-                 raw_control=True, raw_control_zero_middle=True, dim_mode='3D', tf_control=False, sim_freq=200.,
+                 raw_control=True, raw_control_zero_middle=True, dim_mode='3D', tf_control=False, sim_freq=50.,
                  sim_steps=2, obs_repr="xyz_vxyz_R_omega", ep_time=7, room_dims=(10.0, 10.0, 10.0),
                  init_random_state=False, sense_noise=None, verbose=False, gravity=GRAV,
                  t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False,
-                 neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0, use_obstacles=False):
+                 neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0, use_obstacles=False,
+                 use_controller=False
+                 ):
         np.seterr(under='ignore')
         """
         Args:
@@ -146,7 +149,13 @@ class QuadrotorSingle:
         self.room_box = np.array([[-self.room_length / 2., -self.room_width / 2, 0.],
                                   [self.room_length / 2., self.room_width / 2., self.room_height]])
 
-        self.init_random_state = init_random_state
+        # REMOVE WHEN CONTROLER IS REMOVED
+        self.use_controller = False
+
+        if self.use_controller:
+            self.init_random_state = False
+        else:
+            self.init_random_state = init_random_state
 
         # Preset parameters
         self.obs_repr = obs_repr
@@ -211,14 +220,18 @@ class QuadrotorSingle:
         self.resample_dynamics()
 
         # Self info
-        self.state_vector = self.state_vector = getattr(get_state, "state_" + self.obs_repr)
+        self.state_vector = self.state_vector = getattr(
+            get_state, "state_" + self.obs_repr)
         if use_obstacles:
             self.box = 0.1
         else:
             self.box = 2.0
         self.box_scale = 1.0
         self.goal = None
+
         self.spawn_point = None
+        self.reached_goal = False
+
 
         # Neighbor info
         self.num_agents = num_agents
@@ -238,13 +251,16 @@ class QuadrotorSingle:
             self.sense_noise = SensorNoise(**sense_noise)
         elif isinstance(sense_noise, str):
             if sense_noise == "default":
-                self.sense_noise = SensorNoise(bypass=False, use_numba=self.use_numba)
+                self.sense_noise = SensorNoise(
+                    bypass=False, use_numba=self.use_numba)
             else:
-                ValueError("ERROR: QuadEnv: sense_noise parameter is of unknown type: " + str(sense_noise))
+                ValueError(
+                    "ERROR: QuadEnv: sense_noise parameter is of unknown type: " + str(sense_noise))
         elif sense_noise is None:
             self.sense_noise = SensorNoise(bypass=True)
         else:
-            raise ValueError("ERROR: QuadEnv: sense_noise parameter is of unknown type: " + str(sense_noise))
+            raise ValueError(
+                "ERROR: QuadEnv: sense_noise parameter is of unknown type: " + str(sense_noise))
 
     def update_dynamics(self, dynamics_params):
         # DYNAMICS
@@ -257,17 +273,23 @@ class QuadrotorSingle:
                                           use_numba=self.use_numba, dt=self.dt)
 
         # CONTROL
+        if self.use_controller:
+            self.raw_control = False
         if self.raw_control:
             if self.dim_mode == '1D':  # Z axis only
-                self.controller = VerticalControl(self.dynamics, zero_action_middle=self.raw_control_zero_middle)
+                self.controller = VerticalControl(
+                    self.dynamics, zero_action_middle=self.raw_control_zero_middle)
             elif self.dim_mode == '2D':  # X and Z axes only
-                self.controller = VertPlaneControl(self.dynamics, zero_action_middle=self.raw_control_zero_middle)
+                self.controller = VertPlaneControl(
+                    self.dynamics, zero_action_middle=self.raw_control_zero_middle)
             elif self.dim_mode == '3D':
-                self.controller = RawControl(self.dynamics, zero_action_middle=self.raw_control_zero_middle)
+                self.controller = RawControl(
+                    self.dynamics, zero_action_middle=self.raw_control_zero_middle)
             else:
-                raise ValueError('QuadEnv: Unknown dimensionality mode %s' % self.dim_mode)
+                raise ValueError(
+                    'QuadEnv: Unknown dimensionality mode %s' % self.dim_mode)
         else:
-            self.controller = NonlinearPositionController(self.dynamics, tf_control=self.tf_control)
+            self.controller = MellingerController(self.dynamics)
 
         # ACTIONS
         self.action_space = self.controller.action_space(self.dynamics)
@@ -291,13 +313,16 @@ class QuadrotorSingle:
             "act": [np.zeros(4), np.ones(4)],
             "quat": [-np.ones(4), np.ones(4)],
             "euler": [-np.pi * np.ones(3), np.pi * np.ones(3)],
-            "rxyz": [-room_range, room_range],  # rxyz stands for relative pos between quadrotors
+            # rxyz stands for relative pos between quadrotors
+            "rxyz": [-room_range, room_range],
             "rvxyz": [-2.0 * self.dynamics.vxyz_max * np.ones(3), 2.0 * self.dynamics.vxyz_max * np.ones(3)],
             # rvxyz stands for relative velocity between quadrotors
-            "roxyz": [-room_range, room_range],  # roxyz stands for relative pos between quadrotor and obstacle
+            # roxyz stands for relative pos between quadrotor and obstacle
+            "roxyz": [-room_range, room_range],
             "rovxyz": [-20.0 * np.ones(3), 20.0 * np.ones(3)],
             # rovxyz stands for relative velocity between quadrotor and obstacle
-            "osize": [np.zeros(3), 20.0 * np.ones(3)],  # obstacle size, [[0., 0., 0.], [20., 20., 20.]]
+            # obstacle size, [[0., 0., 0.], [20., 20., 20.]]
+            "osize": [np.zeros(3), 20.0 * np.ones(3)],
             "otype": [np.zeros(1), 20.0 * np.ones(1)],
             # obstacle type, [[0.], [20.]], which means we can support 21 types of obstacles
             "goal": [-room_range, room_range],
@@ -306,11 +331,13 @@ class QuadrotorSingle:
             "octmap": [-10 * np.ones(9), 10 * np.ones(9)],
         }
         self.obs_comp_names = list(self.obs_space_low_high.keys())
-        self.obs_comp_sizes = [self.obs_space_low_high[name][1].size for name in self.obs_comp_names]
+        self.obs_comp_sizes = [self.obs_space_low_high[name]
+                               [1].size for name in self.obs_comp_names]
 
         obs_comps = self.obs_repr.split("_")
         if self.neighbor_obs_type == 'pos_vel' and self.num_use_neighbor_obs > 0:
-            obs_comps = obs_comps + (['rxyz'] + ['rvxyz']) * self.num_use_neighbor_obs
+            obs_comps = obs_comps + \
+                (['rxyz'] + ['rvxyz']) * self.num_use_neighbor_obs
 
         if self.use_obstacles:
             obs_comps = obs_comps + ["octmap"]
@@ -331,18 +358,20 @@ class QuadrotorSingle:
             self.obs_space_comp_indx[obs_name] = obs_i
             self.obs_comp_end.append(end_indx)
 
-        self.observation_space = spaces.Box(obs_low, obs_high, dtype=np.float32)
+        self.observation_space = spaces.Box(
+            obs_low, obs_high, dtype=np.float32)
         return self.observation_space
 
     def _seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def _step(self, action):
+    def _step(self, action, sbc_data=None):
         self.actions[1] = copy.deepcopy(self.actions[0])
         self.actions[0] = copy.deepcopy(action)
 
-        self.controller.step_func(dynamics=self.dynamics, action=action, goal=self.goal, dt=self.dt, observation=None)
+        self.controller.step_func(
+            dynamics=self.dynamics, action=action, goal=self.goal, dt=self.dt, observation=sbc_data)
 
         self.time_remain = self.ep_len - self.tick
         reward, rew_info = compute_reward_weighted(
@@ -372,11 +401,13 @@ class QuadrotorSingle:
 
         # Applying sampler 1
         if self.dyn_sampler_1 is not None:
-            self.dynamics_params = self.dyn_sampler_1.sample(self.dynamics_params)
+            self.dynamics_params = self.dyn_sampler_1.sample(
+                self.dynamics_params)
 
         # Applying sampler 2
         if self.dyn_sampler_2 is not None:
-            self.dynamics_params = self.dyn_sampler_2.sample(self.dynamics_params)
+            self.dynamics_params = self.dyn_sampler_2.sample(
+                self.dynamics_params)
 
         # Checking that quad params make sense
         quad_rand.check_quad_param_limits(self.dynamics_params)
@@ -401,6 +432,7 @@ class QuadrotorSingle:
         if z < 0.75:
             z = 0.75
         pos = npa(x, y, z)
+        self.reached_goal = False
 
         # INIT STATE
         # Initializing rotation and velocities
@@ -418,20 +450,25 @@ class QuadrotorSingle:
             else:
                 # It already sets the state internally
                 _, vel, rotation, omega = self.dynamics.random_state(
-                    box=(self.room_length, self.room_width, self.room_height), vel_max=self.max_init_vel,
+                    box=(self.room_length, self.room_width,
+                         self.room_height), vel_max=self.max_init_vel,
                     omega_max=self.max_init_omega
                 )
         else:
             # INIT HORIZONTALLY WITH 0 VEL and OMEGA
-            vel, omega = np.zeros(3, dtype=np.float64), np.zeros(3, dtype=np.float64)
+            vel, omega = np.zeros(3, dtype=np.float64), np.zeros(
+                3, dtype=np.float64)
 
             if self.dim_mode == '1D' or self.dim_mode == '2D':
                 rotation = np.eye(3)
             else:
-                # make sure we're sort of pointing towards goal (for mellinger controller)
-                rotation = randyaw()
-                while np.dot(rotation[:, 0], to_xyhat(-pos)) < 0.5:
+                if self.use_controller:
+                    rotation = rotZ(0)[:3, :3]
+                else:
+                    # make sure we're sort of pointing towards goal (for mellinger controller)
                     rotation = randyaw()
+                    while np.dot(rotation[:, 0], to_xyhat(-pos)) < 0.5:
+                        rotation = randyaw()
 
         self.init_state = [pos, vel, rotation, omega]
         self.dynamics.set_state(pos, vel, rotation, omega)
@@ -453,5 +490,5 @@ class QuadrotorSingle:
         """This class is only meant to be used as a component of QuadMultiEnv."""
         raise NotImplementedError()
 
-    def step(self, action):
-        return self._step(action)
+    def step(self, action, sbc_data=None):
+        return self._step(action, sbc_data)

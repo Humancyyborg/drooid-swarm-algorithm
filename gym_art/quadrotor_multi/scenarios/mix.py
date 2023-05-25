@@ -82,6 +82,7 @@ class Scenario_mix(QuadrotorScenario):
 
         if obst_map is not None:
             self.scenario.reset(obst_map, cell_centers)
+            self.duration_step = self.scenario.duration_step
         else:
             self.scenario.reset()
 
