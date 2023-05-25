@@ -161,6 +161,8 @@ class Quadrotor3DSceneMulti:
             self.chase_cam = TopDownFollowCamera(view_dist=2.5)
         elif self.viewpoint[:-1] == 'corner':
             self.chase_cam = CornerCamera(view_dist=4.0, room_dims=self.room_dims, corner_index=int(self.viewpoint[-1]))
+        else:
+            self.chase_cam = ChaseCamera(view_dist=self.diameter * 15)
 
         self.fpv_lookat = None
 

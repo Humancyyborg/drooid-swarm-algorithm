@@ -36,6 +36,7 @@ class Scenario_dynamic_diff_goal(QuadrotorScenario):
             # Update goals to envs
             for i, env in enumerate(self.envs):
                 env.goal = self.goals[i]
+                env.reached_goal = False
 
         return
 

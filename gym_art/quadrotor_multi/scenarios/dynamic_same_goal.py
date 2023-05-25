@@ -9,6 +9,7 @@ class Scenario_dynamic_same_goal(QuadrotorScenario):
 
         duration_time = 5.0
         self.control_step_for_sec = int(duration_time * self.envs[0].control_freq)
+        self.approch_goal_metric = 0.5
 
     def update_formation_size(self, new_formation_size):
         pass
@@ -25,6 +26,7 @@ class Scenario_dynamic_same_goal(QuadrotorScenario):
                                              layer_dist=0.0)
             for i, env in enumerate(self.envs):
                 env.goal = self.goals[i]
+                env.reached_goal = False
 
         return
 
