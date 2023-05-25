@@ -37,7 +37,11 @@ class QuadrotorEnvMulti(gym.Env):
                  # Quadrotor Specific (Do Not Change)
                  dynamics_params, raw_control, raw_control_zero_middle,
                  dynamics_randomize_every, dynamics_change, dyn_sampler_1,
-                 sense_noise, init_random_state):
+                 sense_noise, init_random_state,
+
+                 # Baselines
+                 use_sbc,
+                 ):
         super().__init__()
 
         # Predefined Parameters
@@ -54,6 +58,8 @@ class QuadrotorEnvMulti(gym.Env):
         self.room_dims = room_dims
         self.quads_view_mode = quads_view_mode
 
+        use_controller = True if self.use_sbc else False
+
         # Generate All Quadrotors
         self.envs = []
         for i in range(self.num_agents):
@@ -69,6 +75,8 @@ class QuadrotorEnvMulti(gym.Env):
                 neighbor_obs_type=neighbor_obs_type, num_use_neighbor_obs=self.num_use_neighbor_obs,
                 # Obstacle
                 use_obstacles=use_obstacles,
+                # Controller
+                use_controller=use_controller,
             )
             self.envs.append(e)
 
@@ -181,7 +189,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.use_numba = use_numba
 
         # SBC
-        self.use_sbc = True
+        self.use_sbc = use_sbc
 
         # Aerodynamics
         self.use_downwash = use_downwash
@@ -466,6 +474,7 @@ class QuadrotorEnvMulti(gym.Env):
                 self.obst_map, obst_pos_arr, cell_centers = self.generate_obst_with_min_gap()
             else:
                 self.obst_map, obst_pos_arr, cell_centers = self.obst_generation_given_density()
+            self.obst_pos_arr = obst_pos_arr
             self.scenario.reset(obst_map=self.obst_map, cell_centers=cell_centers)
         else:
             self.scenario.reset()
@@ -580,11 +589,11 @@ class QuadrotorEnvMulti(gym.Env):
                                                 position=np.array([x, y, z]),
                                                 velocity=np.zeros(3)
                                             ),
-                                            radius=self.obstacle_size*0.5,
+                                            radius=self.obst_size*0.5,
                                             maximum_linf_acceleration_lower_bound=0.0
                                         )
                                     )
-                                z += self.obstacle_size * 0.5
+                                z += self.obst_size * 0.5
 
             self.envs[i].rew_coeff = self.rew_coeff
 

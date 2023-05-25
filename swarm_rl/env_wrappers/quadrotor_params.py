@@ -123,3 +123,6 @@ def add_quadrotors_env_args(env, parser):
 
     # Sim2Real
     p.add_argument('--quads_sim2real', default=False, type=str2bool, help='Whether to use sim2real or not')
+
+    # Baselines
+    p.add_argument('--quads_use_sbc', default=False, type=str2bool, help="Whether to use SBC or not")

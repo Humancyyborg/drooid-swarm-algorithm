@@ -103,7 +103,9 @@ class QuadrotorSingle:
                  sim_steps=2, obs_repr="xyz_vxyz_R_omega", ep_time=7, room_dims=(10.0, 10.0, 10.0),
                  init_random_state=False, sense_noise=None, verbose=False, gravity=GRAV,
                  t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False,
-                 neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0, use_obstacles=False):
+                 neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0, use_obstacles=False,
+                 use_controller=False
+                 ):
         np.seterr(under='ignore')
         """
         Args:
@@ -148,7 +150,7 @@ class QuadrotorSingle:
                                   [self.room_length / 2., self.room_width / 2., self.room_height]])
 
         # REMOVE WHEN CONTROLER IS REMOVED
-        self.use_controller = True
+        self.use_controller = False
 
         if self.use_controller:
             self.init_random_state = False
