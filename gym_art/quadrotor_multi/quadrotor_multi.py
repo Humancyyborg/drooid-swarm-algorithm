@@ -268,6 +268,20 @@ class QuadrotorEnvMulti(gym.Env):
         # agent_obst_col_rate
         self.agent_obst_col_rate = deque([], maxlen=metric_queue_length)
 
+        # roll, pitch, yaw rate (to show the agility)
+        # roll
+        self.roll_rate = [[] for _ in range(self.num_agents)]
+        self.roll_rate_max = np.zeros(self.num_agents)
+        # pitch
+        self.pitch_rate = [[] for _ in range(self.num_agents)]
+        self.pitch_rate_max = np.zeros(self.num_agents)
+        # yaw
+        self.yaw_rate = [[] for _ in range(self.num_agents)]
+        self.yaw_rate_max = np.zeros(self.num_agents)
+        # bodyrate
+        self.body_rate = [[] for _ in range(self.num_agents)]
+        self.body_rate_max = np.zeros(self.num_agents)
+
         # # Consider all scenarios
         self.base_success_rate_dict = {}
         self.base_no_collision_rate_dict = {}
@@ -546,6 +560,19 @@ class QuadrotorEnvMulti(gym.Env):
         self.reached_goal = [False for _ in range(len(self.envs))]
         self.flying_trajectory = [[] for _ in range(len(self.envs))]
         self.prev_pos = [self.envs[_].dynamics.pos for _ in range(len(self.envs))]
+        # roll, pitch, yaw rate (to show the agility)
+        # roll
+        self.roll_rate = [[] for _ in range(self.num_agents)]
+        self.roll_rate_max = np.zeros(self.num_agents)
+        # pitch
+        self.pitch_rate = [[] for _ in range(self.num_agents)]
+        self.pitch_rate_max = np.zeros(self.num_agents)
+        # yaw
+        self.yaw_rate = [[] for _ in range(self.num_agents)]
+        self.yaw_rate_max = np.zeros(self.num_agents)
+        # bodyrate
+        self.body_rate = [[] for _ in range(self.num_agents)]
+        self.body_rate_max = np.zeros(self.num_agents)
 
         # # Log vel
         # self.episode_vel_mean, self.episode_vel_max: consider whole episode, start from step 0
@@ -861,6 +888,24 @@ class QuadrotorEnvMulti(gym.Env):
                 if vel_agent_i > self.episode_vel_no_col_max[i]:
                     self.episode_vel_no_col_max[i] = vel_agent_i
 
+                # roll, pitch, yaw
+                tmp_roll_i, tmp_pitch_i, tmp_yaw_i = np.array(self.envs[i].dynamics.omega)
+                self.roll_rate[i].append(tmp_roll_i)
+                self.pitch_rate[i].append(tmp_pitch_i)
+                self.yaw_rate[i].append(tmp_yaw_i)
+                # body rate
+                omega_agent_i = np.linalg.norm(self.envs[i].dynamics.omega)
+                self.body_rate[i].append(omega_agent_i)
+
+                if tmp_roll_i > self.roll_rate_max[i]:
+                    self.roll_rate_max[i] = tmp_roll_i
+                if tmp_pitch_i > self.pitch_rate_max[i]:
+                    self.pitch_rate_max[i] = tmp_pitch_i
+                if tmp_yaw_i > self.yaw_rate_max[i]:
+                    self.yaw_rate_max[i] = tmp_yaw_i
+                if omega_agent_i > self.body_rate_max[i]:
+                    self.body_rate_max[i] = omega_agent_i
+
         # 7. DONES
         if any(dones):
             scenario_name = self.scenario.name()[9:]
@@ -923,6 +968,27 @@ class QuadrotorEnvMulti(gym.Env):
                         f'{scenario_name}/episode_vel_no_col_mean': np.mean(self.episode_vel_no_col_mean[i]),
                         'episode_vel_no_col_max': self.episode_vel_no_col_max[i],
                         f'{scenario_name}/episode_vel_no_col_max': self.episode_vel_no_col_max[i],
+
+                        # Log roll, pitch, yaw
+                        'roll_mean': np.mean(self.roll_rate[i]),
+                        f'{scenario_name}/roll_mean': np.mean(self.roll_rate[i]),
+                        'roll_rate_max': self.roll_rate_max[i],
+                        f'{scenario_name}/roll_rate_max': self.roll_rate_max[i],
+
+                        'pitch_mean': np.mean(self.pitch_rate[i]),
+                        f'{scenario_name}/pitch_mean': np.mean(self.pitch_rate[i]),
+                        'pitch_rate_max': self.pitch_rate_max[i],
+                        f'{scenario_name}/pitch_rate_max': self.pitch_rate_max[i],
+
+                        'yaw_mean': np.mean(self.yaw_rate[i]),
+                        f'{scenario_name}/yaw_mean': np.mean(self.yaw_rate[i]),
+                        'yaw_rate_max': self.yaw_rate_max[i],
+                        f'{scenario_name}/yaw_rate_max': self.yaw_rate_max[i],
+
+                        'body_rate_mean': np.mean(self.body_rate[i]),
+                        f'{scenario_name}/body_rate_mean': np.mean(self.body_rate[i]),
+                        'body_rate_max': self.body_rate_max[i],
+                        f'{scenario_name}/body_rate_max': self.body_rate_max[i],
                     }
 
                     if self.use_obstacles:
