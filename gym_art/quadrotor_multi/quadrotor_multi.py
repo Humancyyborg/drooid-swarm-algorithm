@@ -251,9 +251,9 @@ class QuadrotorEnvMulti(gym.Env):
         # no collision with room box
         self.full_success_rate = deque([], maxlen=metric_queue_length)
 
-        # no_deadlock_rate:
+        # agent_deadlock_rate:
         # close to the goal: random: <=0.3m, same_goal: <=0.5m
-        self.no_deadlock_rate = deque([], maxlen=metric_queue_length)
+        self.agent_deadlock_rate = deque([], maxlen=metric_queue_length)
 
         # agent_success_rate (base_successfully_rate) (GLAS metric)
         # num_agent_success / num_agents
@@ -261,13 +261,23 @@ class QuadrotorEnvMulti(gym.Env):
         self.agent_col_agent = np.ones(self.num_agents)
         self.agent_col_obst = np.ones(self.num_agents)
 
+        # agent_col_rate
+        self.agent_col_rate = deque([], maxlen=metric_queue_length)
+        # agent_nei_col_rate
+        self.agent_nei_col_rate = deque([], maxlen=metric_queue_length)
+        # agent_obst_col_rate
+        self.agent_obst_col_rate = deque([], maxlen=metric_queue_length)
+
         # # Consider all scenarios
         self.base_success_rate_dict = {}
         self.base_no_collision_rate_dict = {}
         self.mid_success_rate_dict = {}
         self.full_success_rate_dict = {}
-        self.no_deadlock_rate_dict = {}
+        self.agent_deadlock_rate_dict = {}
         self.agent_success_rate_dict = {}
+        self.agent_col_rate_dict = {}
+        self.agent_nei_col_rate_dict = {}
+        self.agent_obst_col_rate_dict = {}
 
         for scenario_name in scenario_list:
             self.base_no_collision_rate_dict[scenario_name] = deque(
@@ -278,9 +288,15 @@ class QuadrotorEnvMulti(gym.Env):
                 [], maxlen=metric_queue_length)
             self.full_success_rate_dict[scenario_name] = deque(
                 [], maxlen=metric_queue_length)
-            self.no_deadlock_rate_dict[scenario_name] = deque(
+            self.agent_deadlock_rate_dict[scenario_name] = deque(
                 [], maxlen=metric_queue_length)
             self.agent_success_rate_dict[scenario_name] = deque(
+                [], maxlen=metric_queue_length)
+            self.agent_col_rate_dict[scenario_name] = deque(
+                [], maxlen=metric_queue_length)
+            self.agent_nei_col_rate_dict[scenario_name] = deque(
+                [], maxlen=metric_queue_length)
+            self.agent_obst_col_rate_dict[scenario_name] = deque(
                 [], maxlen=metric_queue_length)
 
         # Others
@@ -985,11 +1001,6 @@ class QuadrotorEnvMulti(gym.Env):
                 self.full_success_rate_dict[scenario_name].append(
                     float(full_success_flag))
 
-                # deadlock_rate
-                self.no_deadlock_rate.append(float(approach_goal_flag))
-                self.no_deadlock_rate_dict[scenario_name].append(
-                    float(approach_goal_flag))
-
                 # agent_success_rate: base_success_rate, based on per agent
                 # 0: collision; 1: no collision
                 agent_col_flag_list = np.logical_and(
@@ -1002,6 +1013,29 @@ class QuadrotorEnvMulti(gym.Env):
                 self.agent_success_rate.append(agent_success_ratio)
                 self.agent_success_rate_dict[scenario_name].append(
                     agent_success_ratio)
+
+                # agent_deadlock_rate
+                # Doesn't approach to the goal while no collisions with other objects
+                agent_deadlock_list = np.logical_and(agent_col_flag_list, 1 - np.array(approach_goal_list))
+                agent_deadlock_ratio = 1.0 * np.sum(agent_deadlock_list) / self.num_agents
+
+                self.agent_deadlock_rate.append(agent_deadlock_ratio)
+                self.agent_deadlock_rate_dict[scenario_name].append(agent_deadlock_ratio)
+
+                # agent_col_rate
+                # Collide with other drones and obstacles
+                agent_col_ratio = 1.0 - np.sum(agent_col_flag_list) / self.num_agents
+                self.agent_col_rate.append(agent_col_ratio)
+                self.agent_col_rate_dict[scenario_name].append(agent_col_ratio)
+
+                # agent_nei_col_rate
+                agent_nei_col_ratio = 1.0 - np.sum(self.agent_col_agent) / self.num_agents
+                self.agent_nei_col_rate.append(agent_nei_col_ratio)
+                self.agent_nei_col_rate_dict[scenario_name].append(agent_nei_col_ratio)
+                # agent_obst_col_rate
+                agent_obst_col_ratio = 1.0 - np.sum(self.agent_col_obst) / self.num_agents
+                self.agent_obst_col_rate.append(agent_obst_col_ratio)
+                self.agent_obst_col_rate_dict[scenario_name].append(agent_obst_col_ratio)
 
                 for i in range(len(infos)):
                     # base_no_collision_rate
@@ -1025,16 +1059,31 @@ class QuadrotorEnvMulti(gym.Env):
                         self.full_success_rate)
                     infos[i]['episode_extra_stats'][f'{scenario_name}/full_success_rate'] = \
                         np.mean(self.full_success_rate_dict[scenario_name])
-                    # no_deadlock_rate
-                    infos[i]['episode_extra_stats']['metric/no_deadlock_rate'] = np.mean(
-                        self.no_deadlock_rate)
-                    infos[i]['episode_extra_stats'][f'{scenario_name}/no_deadlock_rate'] = \
-                        np.mean(self.no_deadlock_rate_dict[scenario_name])
+                    # agent_deadlock_rate
+                    infos[i]['episode_extra_stats']['metric/agent_deadlock_rate'] = np.mean(
+                        self.agent_deadlock_rate)
+                    infos[i]['episode_extra_stats'][f'{scenario_name}/agent_deadlock_rate'] = \
+                        np.mean(self.agent_deadlock_rate_dict[scenario_name])
                     # agent_success_rate
                     infos[i]['episode_extra_stats']['metric/agent_success_rate'] = np.mean(
                         self.agent_success_rate)
                     infos[i]['episode_extra_stats'][f'{scenario_name}/agent_success_rate'] = \
                         np.mean(self.agent_success_rate_dict[scenario_name])
+                    # agent_col_rate
+                    infos[i]['episode_extra_stats']['metric/agent_col_rate'] = np.mean(
+                        self.agent_col_rate)
+                    infos[i]['episode_extra_stats'][f'{scenario_name}/agent_col_rate'] = \
+                        np.mean(self.agent_col_rate_dict[scenario_name])
+                    # agent_nei_col_rate
+                    infos[i]['episode_extra_stats']['metric/agent_nei_col_rate'] = np.mean(
+                        self.agent_nei_col_rate)
+                    infos[i]['episode_extra_stats'][f'{scenario_name}/agent_nei_col_rate'] = \
+                        np.mean(self.agent_nei_col_rate_dict[scenario_name])
+                    # agent_obst_col_rate
+                    infos[i]['episode_extra_stats']['metric/agent_obst_col_rate'] = np.mean(
+                        self.agent_obst_col_rate)
+                    infos[i]['episode_extra_stats'][f'{scenario_name}/agent_obst_col_rate'] = \
+                        np.mean(self.agent_obst_col_rate_dict[scenario_name])
 
             obs = self.reset()
             # terminate the episode for all "sub-envs"
