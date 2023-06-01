@@ -214,7 +214,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.flying_time = [[] for _ in range(len(self.envs))]
         self.reached_goal = [False for _ in range(len(self.envs))]
         self.flying_trajectory = [[] for _ in range(len(self.envs))]
-        self.prev_pos = [[] for _ in range(len(self.envs))]
+        self.prev_pos = [np.zeros(3) for _ in range(len(self.envs))]
 
         # # Log vel
         # self.episode_vel_mean, self.episode_vel_max: consider whole episode, start from step 0
@@ -490,7 +490,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.flying_time = [[] for _ in range(len(self.envs))]
         self.reached_goal = [False for _ in range(len(self.envs))]
         self.flying_trajectory = [[] for _ in range(len(self.envs))]
-        self.prev_pos = [self.envs[_].dynamics.pos for _ in range(len(self.envs))]
+        self.prev_pos = [np.zeros(3) for _ in range(len(self.envs))]
         # roll, pitch, yaw rate (to show the agility)
         # roll
         self.roll_rate = [[] for _ in range(self.num_agents)]
@@ -717,7 +717,8 @@ class QuadrotorEnvMulti(gym.Env):
                     and not self.envs[i].reached_goal:
                 self.reached_goal[i] = True
                 self.envs[i].reached_goal = True
-                self.flying_time[i] = self.envs[i].tick * self.envs[i].dt
+                # tick is calculated by control_dt, not dt
+                self.flying_time[i] = self.envs[i].tick * self.control_dt
 
             self.flying_trajectory[i].append(np.linalg.norm(self.prev_pos[i] - self.envs[i].dynamics.pos))
             self.prev_pos[i] = self.envs[i].dynamics.pos
