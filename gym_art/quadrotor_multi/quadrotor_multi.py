@@ -211,7 +211,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Log
         self.distance_to_goal = [[] for _ in range(len(self.envs))]
-        self.flying_time = [[] for _ in range(len(self.envs))]
+        self.flying_time = [0.0 for _ in range(len(self.envs))]
         self.reached_goal = [False for _ in range(len(self.envs))]
         self.flying_trajectory = [[] for _ in range(len(self.envs))]
         self.prev_pos = [np.zeros(3) for _ in range(len(self.envs))]
@@ -484,7 +484,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.distance_to_goal = [[] for _ in range(len(self.envs))]
         self.agent_col_agent = np.ones(self.num_agents)
         self.agent_col_obst = np.ones(self.num_agents)
-        self.flying_time = [[] for _ in range(len(self.envs))]
+        self.flying_time = [0.0 for _ in range(len(self.envs))]
         self.reached_goal = [False for _ in range(len(self.envs))]
         self.flying_trajectory = [[] for _ in range(len(self.envs))]
         self.prev_pos = [self.envs[i].dynamics.pos for i in range(len(self.envs))]
@@ -828,9 +828,24 @@ class QuadrotorEnvMulti(gym.Env):
         if any(dones):
             scenario_name = self.scenario.name()[9:]
             self.distance_to_goal = np.array(self.distance_to_goal)
-            self.flying_trajectory = np.array(self.flying_trajectory)
             self.flying_time = np.array(self.flying_time)
             self.reached_goal = np.array(self.reached_goal)
+            # With different length, need to specify with dtype=object
+            self.flying_trajectory = np.array(self.flying_trajectory, dtype=object)
+            self.episode_vel_no_col_mean = np.array(self.episode_vel_no_col_mean, dtype=object)
+            self.episode_vel_no_col_max = np.array(self.episode_vel_no_col_max)
+
+            self.roll_rate = np.array(self.roll_rate, dtype=object)
+            self.roll_rate_max = np.array(self.roll_rate_max)
+
+            self.pitch_rate = np.array(self.pitch_rate, dtype=object)
+            self.pitch_rate_max = np.array(self.pitch_rate_max)
+
+            self.yaw_rate = np.array(self.yaw_rate, dtype=object)
+            self.yaw_rate_max = np.array(self.yaw_rate_max)
+
+            self.body_rate = np.array(self.body_rate, dtype=object)
+            self.body_rate_max = np.array(self.body_rate_max)
 
             for i in range(len(infos)):
                 if self.saved_in_replay_buffer:
