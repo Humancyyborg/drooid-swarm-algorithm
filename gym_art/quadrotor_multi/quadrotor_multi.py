@@ -711,6 +711,30 @@ class QuadrotorEnvMulti(gym.Env):
                 self.flying_trajectory[i].append(np.linalg.norm(self.prev_pos[i] - self.envs[i].dynamics.pos))
                 self.prev_pos[i] = self.envs[i].dynamics.pos
 
+                # vel
+                vel_agent_i = np.linalg.norm(self.envs[i].dynamics.vel)
+                self.episode_vel_no_col_mean[i].append(vel_agent_i)
+                if vel_agent_i > self.episode_vel_no_col_max[i]:
+                    self.episode_vel_no_col_max[i] = vel_agent_i
+
+                # roll, pitch, yaw
+                tmp_roll_i, tmp_pitch_i, tmp_yaw_i = np.array(self.envs[i].dynamics.omega)
+                self.roll_rate[i].append(tmp_roll_i)
+                self.pitch_rate[i].append(tmp_pitch_i)
+                self.yaw_rate[i].append(tmp_yaw_i)
+                # body rate
+                omega_agent_i = np.linalg.norm(self.envs[i].dynamics.omega)
+                self.body_rate[i].append(omega_agent_i)
+
+                if tmp_roll_i > self.roll_rate_max[i]:
+                    self.roll_rate_max[i] = tmp_roll_i
+                if tmp_pitch_i > self.pitch_rate_max[i]:
+                    self.pitch_rate_max[i] = tmp_pitch_i
+                if tmp_yaw_i > self.yaw_rate_max[i]:
+                    self.yaw_rate_max[i] = tmp_yaw_i
+                if omega_agent_i > self.body_rate_max[i]:
+                    self.body_rate_max[i] = omega_agent_i
+
             if len(self.distance_to_goal[i]) >= 5 and np.mean(self.distance_to_goal[i][-5:]) / self.envs[0].dt < self.scenario.approch_goal_metric \
                     and not self.reached_goal[i]:
                 self.reached_goal[i] = True
@@ -799,30 +823,6 @@ class QuadrotorEnvMulti(gym.Env):
                 obst_coll = [0.0 for _ in range(self.num_agents)]
             self.all_collisions = {'drone': drone_col_matrix, 'ground': ground_collisions,
                                    'obstacle': obst_coll}
-
-        for i in range(self.num_agents):
-            vel_agent_i = np.linalg.norm(self.envs[i].dynamics.vel)
-            self.episode_vel_no_col_mean[i].append(vel_agent_i)
-            if vel_agent_i > self.episode_vel_no_col_max[i]:
-                self.episode_vel_no_col_max[i] = vel_agent_i
-
-            # roll, pitch, yaw
-            tmp_roll_i, tmp_pitch_i, tmp_yaw_i = np.array(self.envs[i].dynamics.omega)
-            self.roll_rate[i].append(tmp_roll_i)
-            self.pitch_rate[i].append(tmp_pitch_i)
-            self.yaw_rate[i].append(tmp_yaw_i)
-            # body rate
-            omega_agent_i = np.linalg.norm(self.envs[i].dynamics.omega)
-            self.body_rate[i].append(omega_agent_i)
-
-            if tmp_roll_i > self.roll_rate_max[i]:
-                self.roll_rate_max[i] = tmp_roll_i
-            if tmp_pitch_i > self.pitch_rate_max[i]:
-                self.pitch_rate_max[i] = tmp_pitch_i
-            if tmp_yaw_i > self.yaw_rate_max[i]:
-                self.yaw_rate_max[i] = tmp_yaw_i
-            if omega_agent_i > self.body_rate_max[i]:
-                self.body_rate_max[i] = omega_agent_i
 
         # 7. DONES
         if any(dones):
