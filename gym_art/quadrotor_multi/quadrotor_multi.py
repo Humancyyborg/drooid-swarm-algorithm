@@ -376,7 +376,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         return obst_map, obst_pos_arr, cell_centers
 
-    def generate_obst_with_min_gap(self, grid_size=1.0):
+    def generate_obst_with_min_gap(self, grid_size=1.0, debug=False):
         obst_area_length, obst_area_width = int(self.obst_spawn_area[0]), int(self.obst_spawn_area[1])
         num_room_grids = obst_area_length * obst_area_width
         room_grids_idx = np.arange(num_room_grids)
@@ -403,7 +403,9 @@ class QuadrotorEnvMulti(gym.Env):
             if len(obst_pos_arr) >= self.num_obstacles:
                 break
 
-        print("Obst Num:", len(obst_pos_arr))
+        if debug:
+            print("Obst Num:", len(obst_pos_arr))
+
         return obst_map, obst_pos_arr, cell_centers
 
     def init_scene_multi(self):
@@ -708,19 +710,16 @@ class QuadrotorEnvMulti(gym.Env):
                 infos[i]["rewards"]["rew_quadcol_obstacle"] = rew_collisions_obst_quad[i]
                 infos[i]["rewards"]["rewraw_quadcol_obstacle"] = rew_obst_quad_collisions_raw[i]
 
-            if self.envs[i].time_remain < 5 * self.control_freq:
-                self.distance_to_goal[i].append(-infos[i]
-                                                ["rewards"]["rewraw_pos"])
+            # if self.envs[i].time_remain < 5 * self.control_freq:
+            self.distance_to_goal[i].append(-infos[i]["rewards"]["rewraw_pos"])
 
-            if -infos[i]["rewards"]["rewraw_pos"]/self.envs[0].dt < self.scenario.approch_goal_metric and not self.envs[i].reached_goal:
+            if len(self.distance_to_goal[i]) >= 5 and np.mean(self.distance_to_goal[i][-5:]) / self.envs[0].dt < self.scenario.approch_goal_metric \
+                    and not self.envs[i].reached_goal:
+                self.reached_goal[i] = True
                 self.envs[i].reached_goal = True
-                if len(self.flying_time[i]) > 0:
-                    self.reached_goal[i] = True
-                    self.flying_time[i].append(self.envs[i].tick*self.envs[i].dt-self.flying_time[i][-1])
-                else:
-                    self.flying_time[i].append(self.envs[i].tick * self.envs[i].dt)
+                self.flying_time[i] = self.envs[i].tick * self.envs[i].dt
 
-            self.flying_trajectory[i].append(np.linalg.norm(self.prev_pos[i]-self.envs[i].dynamics.pos))
+            self.flying_trajectory[i].append(np.linalg.norm(self.prev_pos[i] - self.envs[i].dynamics.pos))
             self.prev_pos[i] = self.envs[i].dynamics.pos
 
         # 3. Applying random forces: 1) aerodynamics 2) between drones 3) obstacles 4) room
@@ -840,14 +839,11 @@ class QuadrotorEnvMulti(gym.Env):
             scenario_name = self.scenario.name()[9:]
             self.distance_to_goal = np.array(self.distance_to_goal)
             self.flying_trajectory = np.array(self.flying_trajectory)
+            self.flying_time = np.array(self.flying_time)
             self.reached_goal = np.array(self.reached_goal)
-            padded_flying_time = np.zeros(
-                [len(self.flying_time), max(len(max(self.flying_time, key=lambda x: len(x))), 2)])
-            for j, k in enumerate(self.flying_time):
-                padded_flying_time[j][0:len(k)] = k
-            self.flying_time = padded_flying_time[:, 1:]
             if not np.any(self.reached_goal):
                 self.reached_goal[0] = True
+
             for i in range(len(infos)):
                 if self.saved_in_replay_buffer:
                     infos[i]['episode_extra_stats'] = {
@@ -866,12 +862,6 @@ class QuadrotorEnvMulti(gym.Env):
 
                         'num_collisions_final_5_s': self.collisions_final_5s,
                         f'{scenario_name}/num_collisions_final_5_s': self.collisions_final_5s,
-
-                        'flying_trajectory': (1.0 / self.envs[0].dt) * np.mean(self.flying_trajectory[i]),
-                        f'{scenario_name}/flying_trajectory': (1.0 / self.envs[0].dt) * np.mean(self.flying_trajectory[i]),
-
-                        'flying_time': np.mean(self.flying_time[self.reached_goal]),
-                        f'{scenario_name}/flying_time': np.mean(self.flying_time[self.reached_goal]),
 
                         'distance_to_goal_1s': (1.0 / self.envs[0].dt) * np.mean(
                             self.distance_to_goal[i, int(-1 * self.control_freq):]),
@@ -1007,34 +997,56 @@ class QuadrotorEnvMulti(gym.Env):
                 # agent_obst_col_rate
                 agent_obst_col_ratio = 1.0 - np.sum(self.agent_col_obst) / self.num_agents
 
+                # agent flying trajectory and time
+                agent_success_flying_trajectories = self.flying_trajectory[agent_success_flag_list]
+                agent_success_traj_mean = np.mean(np.sum(agent_success_flying_trajectories, axis=-1))
+                agent_success_flying_time_mean = np.mean(self.flying_time[agent_success_flag_list])
+
                 for i in range(len(infos)):
                     # base_no_collision_rate
                     infos[i]['episode_extra_stats']['metric/base_no_collision_rate'] = float(base_no_collision_flag)
                     infos[i]['episode_extra_stats'][f'{scenario_name}/base_no_collision_rate'] = float(base_no_collision_flag)
+
                     # base_success_rate
                     infos[i]['episode_extra_stats']['metric/base_success_rate'] = float(base_success_flag)
                     infos[i]['episode_extra_stats'][f'{scenario_name}/base_success_rate'] = float(base_success_flag)
+
                     # mid_success_rate
                     infos[i]['episode_extra_stats']['metric/mid_success_rate'] = float(mid_success_flag)
                     infos[i]['episode_extra_stats'][f'{scenario_name}/mid_success_rate'] = float(mid_success_flag)
+
                     # full_success_rate
                     infos[i]['episode_extra_stats']['metric/full_success_rate'] = float(full_success_flag)
                     infos[i]['episode_extra_stats'][f'{scenario_name}/full_success_rate'] = float(full_success_flag)
+
                     # agent_deadlock_rate
                     infos[i]['episode_extra_stats']['metric/agent_deadlock_rate'] = agent_deadlock_ratio
                     infos[i]['episode_extra_stats'][f'{scenario_name}/agent_deadlock_rate'] = agent_deadlock_ratio
+
                     # agent_success_rate
                     infos[i]['episode_extra_stats']['metric/agent_success_rate'] = agent_success_ratio
                     infos[i]['episode_extra_stats'][f'{scenario_name}/agent_success_rate'] = agent_success_ratio
+
                     # agent_col_rate
                     infos[i]['episode_extra_stats']['metric/agent_col_rate'] = agent_col_ratio
                     infos[i]['episode_extra_stats'][f'{scenario_name}/agent_col_rate'] = agent_col_ratio
+
                     # agent_nei_col_rate
                     infos[i]['episode_extra_stats']['metric/agent_nei_col_rate'] = agent_nei_col_ratio
                     infos[i]['episode_extra_stats'][f'{scenario_name}/agent_nei_col_rate'] = agent_nei_col_ratio
+
                     # agent_obst_col_rate
                     infos[i]['episode_extra_stats']['metric/agent_obst_col_rate'] = agent_obst_col_ratio
                     infos[i]['episode_extra_stats'][f'{scenario_name}/agent_obst_col_rate'] = agent_obst_col_ratio
+
+                    # agent flying trajectories
+
+                    infos[i]['episode_extra_stats']['flying_trajectory'] = agent_success_traj_mean
+                    infos[i]['episode_extra_stats'][f'{scenario_name}/flying_trajectory'] = agent_success_traj_mean
+
+                    # agent flying time
+                    infos[i]['episode_extra_stats']['flying_time'] = agent_success_flying_time_mean,
+                    infos[i]['episode_extra_stats'][f'{scenario_name}/flying_time'] = agent_success_flying_time_mean,
 
             obs = self.reset()
             # terminate the episode for all "sub-envs"
