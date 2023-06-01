@@ -22,8 +22,6 @@ class Scenario_run_away(QuadrotorScenario):
             self.goals[1] = self.goals[g_index[1]]
             self.envs[0].goal = self.goals[0]
             self.envs[1].goal = self.goals[1]
-            self.envs[0].reached_goal = False
-            self.envs[1].reached_goal = False
 
         return
 

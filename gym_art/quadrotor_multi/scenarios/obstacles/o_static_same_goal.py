@@ -21,7 +21,6 @@ class Scenario_o_static_same_goal(Scenario_o_base):
         self.duration_time += self.envs[0].ep_time + 1
         for i, env in enumerate(self.envs):
             env.goal = self.end_point
-            env.reached_goal = False
 
         return
 

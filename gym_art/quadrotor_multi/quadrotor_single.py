@@ -230,7 +230,6 @@ class QuadrotorSingle:
         self.goal = None
 
         self.spawn_point = None
-        self.reached_goal = False
 
 
         # Neighbor info
@@ -432,7 +431,6 @@ class QuadrotorSingle:
         if z < 0.75:
             z = 0.75
         pos = npa(x, y, z)
-        self.reached_goal = False
 
         # INIT STATE
         # Initializing rotation and velocities

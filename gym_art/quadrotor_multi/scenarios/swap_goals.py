@@ -14,7 +14,6 @@ class Scenario_swap_goals(QuadrotorScenario):
         np.random.shuffle(self.goals)
         for env, goal in zip(self.envs, self.goals):
             env.goal = goal
-            env.reached_goal = False
 
     def step(self):
         tick = self.envs[0].tick

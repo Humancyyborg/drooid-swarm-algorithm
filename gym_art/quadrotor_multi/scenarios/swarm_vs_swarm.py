@@ -70,7 +70,6 @@ class Scenario_swarm_vs_swarm(QuadrotorScenario):
         self.goals = np.concatenate([self.goals_1, self.goals_2])
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
-            env.reached_goal = False
 
     def step(self):
         tick = self.envs[0].tick

@@ -714,9 +714,8 @@ class QuadrotorEnvMulti(gym.Env):
             self.distance_to_goal[i].append(-infos[i]["rewards"]["rewraw_pos"])
 
             if len(self.distance_to_goal[i]) >= 5 and np.mean(self.distance_to_goal[i][-5:]) / self.envs[0].dt < self.scenario.approch_goal_metric \
-                    and not self.envs[i].reached_goal:
+                    and not self.reached_goal[i]:
                 self.reached_goal[i] = True
-                self.envs[i].reached_goal = True
                 # tick is calculated by control_dt, not dt
                 self.flying_time[i] = self.envs[i].tick * self.control_dt
 
@@ -842,8 +841,6 @@ class QuadrotorEnvMulti(gym.Env):
             self.flying_trajectory = np.array(self.flying_trajectory)
             self.flying_time = np.array(self.flying_time)
             self.reached_goal = np.array(self.reached_goal)
-            if not np.any(self.reached_goal):
-                self.reached_goal[0] = True
 
             for i in range(len(infos)):
                 if self.saved_in_replay_buffer:
@@ -1046,8 +1043,8 @@ class QuadrotorEnvMulti(gym.Env):
                     infos[i]['episode_extra_stats'][f'{scenario_name}/flying_trajectory'] = agent_success_traj_mean
 
                     # agent flying time
-                    infos[i]['episode_extra_stats']['flying_time'] = agent_success_flying_time_mean,
-                    infos[i]['episode_extra_stats'][f'{scenario_name}/flying_time'] = agent_success_flying_time_mean,
+                    infos[i]['episode_extra_stats']['flying_time'] = agent_success_flying_time_mean
+                    infos[i]['episode_extra_stats'][f'{scenario_name}/flying_time'] = agent_success_flying_time_mean
 
             obs = self.reset()
             # terminate the episode for all "sub-envs"

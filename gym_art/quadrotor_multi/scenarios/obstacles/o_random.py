@@ -21,7 +21,6 @@ class Scenario_o_random(Scenario_o_base):
         self.duration_step += int(self.envs[0].ep_time * self.envs[0].control_freq)
         for i, env in enumerate(self.envs):
             env.goal = self.end_point[i]
-            env.reached_goal = False
 
         return
 

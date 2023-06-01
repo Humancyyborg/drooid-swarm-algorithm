@@ -22,7 +22,6 @@ class Scenario_ep_lissajous3D(QuadrotorScenario):
 
         for i, env in enumerate(self.envs):
             env.goal = self.goals[i]
-            env.reached_goal = False
 
         return
 
