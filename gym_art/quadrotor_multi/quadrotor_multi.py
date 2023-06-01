@@ -490,7 +490,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.flying_time = [[] for _ in range(len(self.envs))]
         self.reached_goal = [False for _ in range(len(self.envs))]
         self.flying_trajectory = [[] for _ in range(len(self.envs))]
-        self.prev_pos = [np.zeros(3) for _ in range(len(self.envs))]
+        self.prev_pos = [self.envs[i].dynamics.pos for i in range(len(self.envs))]
         # roll, pitch, yaw rate (to show the agility)
         # roll
         self.roll_rate = [[] for _ in range(self.num_agents)]
@@ -713,14 +713,15 @@ class QuadrotorEnvMulti(gym.Env):
             # if self.envs[i].time_remain < 5 * self.control_freq:
             self.distance_to_goal[i].append(-infos[i]["rewards"]["rewraw_pos"])
 
+            if not self.reached_goal[i]:
+                self.flying_trajectory[i].append(np.linalg.norm(self.prev_pos[i] - self.envs[i].dynamics.pos))
+                self.prev_pos[i] = self.envs[i].dynamics.pos
+
             if len(self.distance_to_goal[i]) >= 5 and np.mean(self.distance_to_goal[i][-5:]) / self.envs[0].dt < self.scenario.approch_goal_metric \
                     and not self.reached_goal[i]:
                 self.reached_goal[i] = True
                 # tick is calculated by control_dt, not dt
                 self.flying_time[i] = self.envs[i].tick * self.control_dt
-
-            self.flying_trajectory[i].append(np.linalg.norm(self.prev_pos[i] - self.envs[i].dynamics.pos))
-            self.prev_pos[i] = self.envs[i].dynamics.pos
 
         # 3. Applying random forces: 1) aerodynamics 2) between drones 3) obstacles 4) room
         self_state_update_flag = False
@@ -938,18 +939,8 @@ class QuadrotorEnvMulti(gym.Env):
                     if self.obst_quad_collisions_after_settle > 0:
                         base_no_collision_flag = False
 
-                # base_success_flag = base_no_collision_flag & approach_goal_flag
-                approch_goal_metric = self.scenario.approch_goal_metric
-                approach_goal_list = []
-                for i in range(len(infos)):
-                    final_1s = (1.0 / self.envs[0].dt) * np.mean(
-                        self.distance_to_goal[i, int(-1 * self.control_freq):])
-                    if final_1s <= approch_goal_metric:
-                        approach_goal_list.append(True)
-                    else:
-                        approach_goal_list.append(False)
-
-                if all(approach_goal_list):
+                # base_success_flag = base_no_collision_flag & reached_goal
+                if all(self.reached_goal):
                     approach_goal_flag = True
                 else:
                     approach_goal_flag = False
@@ -974,16 +965,13 @@ class QuadrotorEnvMulti(gym.Env):
 
                 # agent_success_rate: base_success_rate, based on per agent
                 # 0: collision; 1: no collision
-                agent_col_flag_list = np.logical_and(
-                    self.agent_col_agent, self.agent_col_obst)
-                agent_success_flag_list = np.logical_and(
-                    agent_col_flag_list, approach_goal_list)
-                agent_success_ratio = 1.0 * \
-                    np.sum(agent_success_flag_list) / self.num_agents
+                agent_col_flag_list = np.logical_and(self.agent_col_agent, self.agent_col_obst)
+                agent_success_flag_list = np.logical_and(agent_col_flag_list, self.reached_goal)
+                agent_success_ratio = 1.0 * np.sum(agent_success_flag_list) / self.num_agents
 
                 # agent_deadlock_rate
                 # Doesn't approach to the goal while no collisions with other objects
-                agent_deadlock_list = np.logical_and(agent_col_flag_list, 1 - np.array(approach_goal_list))
+                agent_deadlock_list = np.logical_and(agent_col_flag_list, 1 - self.reached_goal)
                 agent_deadlock_ratio = 1.0 * np.sum(agent_deadlock_list) / self.num_agents
 
                 # agent_col_rate
@@ -996,9 +984,10 @@ class QuadrotorEnvMulti(gym.Env):
                 agent_obst_col_ratio = 1.0 - np.sum(self.agent_col_obst) / self.num_agents
 
                 # agent flying trajectory and time
-                agent_success_flying_trajectories = self.flying_trajectory[agent_success_flag_list]
-                agent_success_traj_mean = np.mean(np.sum(agent_success_flying_trajectories, axis=-1))
-                agent_success_flying_time_mean = np.mean(self.flying_time[agent_success_flag_list])
+                if agent_success_ratio > 0:
+                    agent_success_flying_trajectories = self.flying_trajectory[agent_success_flag_list]
+                    agent_success_traj_mean = np.mean(np.sum(agent_success_flying_trajectories, axis=-1))
+                    agent_success_flying_time_mean = np.mean(self.flying_time[agent_success_flag_list])
 
                 for i in range(len(infos)):
                     # base_no_collision_rate
@@ -1038,13 +1027,13 @@ class QuadrotorEnvMulti(gym.Env):
                     infos[i]['episode_extra_stats'][f'{scenario_name}/agent_obst_col_rate'] = agent_obst_col_ratio
 
                     # agent flying trajectories
+                    if agent_success_ratio > 0:
+                        infos[i]['episode_extra_stats']['flying_trajectory'] = agent_success_traj_mean
+                        infos[i]['episode_extra_stats'][f'{scenario_name}/flying_trajectory'] = agent_success_traj_mean
 
-                    infos[i]['episode_extra_stats']['flying_trajectory'] = agent_success_traj_mean
-                    infos[i]['episode_extra_stats'][f'{scenario_name}/flying_trajectory'] = agent_success_traj_mean
-
-                    # agent flying time
-                    infos[i]['episode_extra_stats']['flying_time'] = agent_success_flying_time_mean
-                    infos[i]['episode_extra_stats'][f'{scenario_name}/flying_time'] = agent_success_flying_time_mean
+                        # agent flying time
+                        infos[i]['episode_extra_stats']['flying_time'] = agent_success_flying_time_mean
+                        infos[i]['episode_extra_stats'][f'{scenario_name}/flying_time'] = agent_success_flying_time_mean
 
             obs = self.reset()
             # terminate the episode for all "sub-envs"
