@@ -820,6 +820,20 @@ class QuadrotorEnvMulti(gym.Env):
                 self.agent_success_rate.append(agent_success_ratio)
                 self.agent_success_rate_dict[scenario_name].append(agent_success_ratio)
 
+                # agent_deadlock_rate
+                # Doesn't approach to the goal while no collisions with other objects
+                agent_deadlock_list = np.logical_and(agent_col_flag_list, 1 - np.array(approach_goal_list))
+                agent_deadlock_ratio = 1.0 * np.sum(agent_deadlock_list) / self.num_agents
+
+                # agent_col_rate
+                # Collide with other drones and obstacles
+                agent_col_ratio = 1.0 - np.sum(agent_col_flag_list) / self.num_agents
+
+                # agent_neighbor_col_rate
+                agent_neighbor_col_ratio = 1.0 - np.sum(self.agent_col_agent) / self.num_agents
+                # agent_obst_col_rate
+                agent_obst_col_ratio = 1.0 - np.sum(self.agent_col_obst) / self.num_agents
+
                 for i in range(len(infos)):
                     # base_no_collision_rate
                     infos[i]['episode_extra_stats']['metric/base_no_collision_rate'] = np.mean(self.base_no_collision_rate)
@@ -842,9 +856,20 @@ class QuadrotorEnvMulti(gym.Env):
                     infos[i]['episode_extra_stats'][f'{scenario_name}/no_deadlock_rate'] = \
                         np.mean(self.no_deadlock_rate_dict[scenario_name])
                     # agent_success_rate
-                    infos[i]['episode_extra_stats']['metric/agent_success_rate'] = np.mean(self.agent_success_rate)
-                    infos[i]['episode_extra_stats'][f'{scenario_name}/agent_success_rate'] = \
-                        np.mean(self.agent_success_rate_dict[scenario_name])
+                    infos[i]['episode_extra_stats']['metric/agent_success_rate'] = agent_success_ratio
+                    infos[i]['episode_extra_stats'][f'{scenario_name}/agent_success_rate'] = agent_success_ratio
+                    # agent_deadlock_rate
+                    infos[i]['episode_extra_stats']['metric/agent_deadlock_rate'] = agent_deadlock_ratio
+                    infos[i]['episode_extra_stats'][f'{scenario_name}/agent_deadlock_rate'] = agent_deadlock_ratio
+                    # agent_col_rate
+                    infos[i]['episode_extra_stats']['metric/agent_col_rate'] = agent_col_ratio
+                    infos[i]['episode_extra_stats'][f'{scenario_name}/agent_col_rate'] = agent_col_ratio
+                    # agent_neighbor_col_rate
+                    infos[i]['episode_extra_stats']['metric/agent_neighbor_col_rate'] = agent_neighbor_col_ratio
+                    infos[i]['episode_extra_stats'][f'{scenario_name}/agent_neighbor_col_rate'] = agent_neighbor_col_ratio
+                    # agent_obst_col_rate
+                    infos[i]['episode_extra_stats']['metric/agent_obst_col_rate'] = agent_obst_col_ratio
+                    infos[i]['episode_extra_stats'][f'{scenario_name}/agent_obst_col_rate'] = agent_obst_col_ratio
 
             obs = self.reset()
             # terminate the episode for all "sub-envs"
