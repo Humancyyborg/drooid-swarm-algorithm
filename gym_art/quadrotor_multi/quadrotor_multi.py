@@ -579,33 +579,29 @@ class QuadrotorEnvMulti(gym.Env):
 
             self.distance_to_goal[i].append(-infos[i]["rewards"]["rewraw_pos"])
 
+            vel_agent_i = np.linalg.norm(self.envs[i].dynamics.vel)
+            tmp_roll_i, tmp_pitch_i, tmp_yaw_i = np.abs(np.array(self.envs[i].dynamics.omega))
+            omega_agent_i = np.linalg.norm(self.envs[i].dynamics.omega)
             if not self.reached_goal[i]:
-                self.flying_trajectory[i].append(np.linalg.norm(self.prev_pos[i] - self.envs[i].dynamics.pos))
-                self.prev_pos[i] = self.envs[i].dynamics.pos
-
                 # vel
-                vel_agent_i = np.linalg.norm(self.envs[i].dynamics.vel)
                 self.episode_vel[i].append(vel_agent_i)
-                if vel_agent_i > self.episode_vel_max[i]:
-                    self.episode_vel_max[i] = vel_agent_i
-
                 # roll, pitch, yaw
-                tmp_roll_i, tmp_pitch_i, tmp_yaw_i = np.array(self.envs[i].dynamics.omega)
                 self.roll_rate[i].append(tmp_roll_i)
                 self.pitch_rate[i].append(tmp_pitch_i)
                 self.yaw_rate[i].append(tmp_yaw_i)
                 # body rate
-                omega_agent_i = np.linalg.norm(self.envs[i].dynamics.omega)
                 self.body_rate[i].append(omega_agent_i)
 
-                if tmp_roll_i > self.roll_rate_max[i]:
-                    self.roll_rate_max[i] = tmp_roll_i
-                if tmp_pitch_i > self.pitch_rate_max[i]:
-                    self.pitch_rate_max[i] = tmp_pitch_i
-                if tmp_yaw_i > self.yaw_rate_max[i]:
-                    self.yaw_rate_max[i] = tmp_yaw_i
-                if omega_agent_i > self.body_rate_max[i]:
-                    self.body_rate_max[i] = omega_agent_i
+            if vel_agent_i > self.episode_vel_max[i]:
+                self.episode_vel_max[i] = vel_agent_i
+            if tmp_roll_i > self.roll_rate_max[i]:
+                self.roll_rate_max[i] = tmp_roll_i
+            if tmp_pitch_i > self.pitch_rate_max[i]:
+                self.pitch_rate_max[i] = tmp_pitch_i
+            if tmp_yaw_i > self.yaw_rate_max[i]:
+                self.yaw_rate_max[i] = tmp_yaw_i
+            if omega_agent_i > self.body_rate_max[i]:
+                self.body_rate_max[i] = omega_agent_i
 
             if len(self.distance_to_goal[i]) >= 5 and np.mean(self.distance_to_goal[i][-5:]) / self.envs[0].dt < self.scenario.approch_goal_metric \
                     and not self.reached_goal[i]:
@@ -613,6 +609,8 @@ class QuadrotorEnvMulti(gym.Env):
                 # tick is calculated by control_dt, not dt
                 self.flying_time[i] = self.envs[i].tick * self.control_dt
 
+            self.flying_trajectory[i].append(np.linalg.norm(self.prev_pos[i] - self.envs[i].dynamics.pos))
+            self.prev_pos[i] = self.envs[i].dynamics.pos
         # 3. Applying random forces: 1) aerodynamics 2) between drones 3) obstacles 4) room
         self_state_update_flag = False
 
@@ -699,7 +697,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.reached_goal = np.array(self.reached_goal)
 
             # With different length, need to specify with dtype=object
-            self.flying_trajectory = np.array(self.flying_trajectory, dtype=object)
+            self.flying_trajectory = np.array(self.flying_trajectory)
             self.episode_vel = np.array(self.episode_vel, dtype=object)
             self.episode_vel_max = np.array(self.episode_vel_max)
 
@@ -833,23 +831,23 @@ class QuadrotorEnvMulti(gym.Env):
                     # Vel
                     agent_success_vel_arr = self.episode_vel[agent_success_flag_list]
                     agent_success_vel_mean = np.mean(np.sum(agent_success_vel_arr, axis=-1))
-                    agent_success_vel_max = np.mean(self.episode_vel_max[agent_success_flag_list])
+                    agent_success_vel_max = np.max(self.episode_vel_max[agent_success_flag_list])
                     # Roll
                     agent_success_roll_arr = self.roll_rate[agent_success_flag_list]
                     agent_success_roll_mean = np.mean(np.sum(agent_success_roll_arr, axis=-1))
-                    agent_success_roll_max = np.mean(self.roll_rate_max[agent_success_flag_list])
+                    agent_success_roll_max = np.max(self.roll_rate_max[agent_success_flag_list])
                     # Pitch
                     agent_success_pitch_arr = self.pitch_rate[agent_success_flag_list]
                     agent_success_pitch_mean = np.mean(np.sum(agent_success_pitch_arr, axis=-1))
-                    agent_success_pitch_max = np.mean(self.pitch_rate_max[agent_success_flag_list])
+                    agent_success_pitch_max = np.max(self.pitch_rate_max[agent_success_flag_list])
                     # Yaw
                     agent_success_yaw_arr = self.yaw_rate[agent_success_flag_list]
                     agent_success_yaw_mean = np.mean(np.sum(agent_success_yaw_arr, axis=-1))
-                    agent_success_yaw_max = np.mean(self.yaw_rate_max[agent_success_flag_list])
+                    agent_success_yaw_max = np.max(self.yaw_rate_max[agent_success_flag_list])
                     # Body rate
                     agent_success_body_rate_arr = self.body_rate[agent_success_flag_list]
                     agent_success_body_rate_mean = np.mean(np.sum(agent_success_body_rate_arr, axis=-1))
-                    agent_success_body_rate_max = np.mean(self.body_rate_max[agent_success_flag_list])
+                    agent_success_body_rate_max = np.max(self.body_rate_max[agent_success_flag_list])
 
                 for i in range(len(infos)):
                     # base_no_collision_rate
