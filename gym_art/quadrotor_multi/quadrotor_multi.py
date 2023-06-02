@@ -836,25 +836,25 @@ class QuadrotorEnvMulti(gym.Env):
 
                 for i in range(len(infos)):
                     # base_no_collision_rate
-                    infos[i]['episode_extra_stats']['metric/base_no_collision_rate'] = np.mean(self.base_no_collision_rate)
-                    infos[i]['episode_extra_stats'][f'{scenario_name}/base_no_collision_rate'] = \
-                        np.mean(self.base_no_collision_rate_dict[scenario_name])
+                    # infos[i]['episode_extra_stats']['metric/base_no_collision_rate'] = np.mean(self.base_no_collision_rate)
+                    # infos[i]['episode_extra_stats'][f'{scenario_name}/base_no_collision_rate'] = \
+                    #     np.mean(self.base_no_collision_rate_dict[scenario_name])
                     # base_success_rate
-                    infos[i]['episode_extra_stats']['metric/base_success_rate'] = np.mean(self.base_success_rate)
-                    infos[i]['episode_extra_stats'][f'{scenario_name}/base_success_rate'] = \
-                        np.mean(self.base_success_rate_dict[scenario_name])
+                    # infos[i]['episode_extra_stats']['metric/base_success_rate'] = np.mean(self.base_success_rate)
+                    # infos[i]['episode_extra_stats'][f'{scenario_name}/base_success_rate'] = \
+                    #     np.mean(self.base_success_rate_dict[scenario_name])
                     # mid_success_rate
-                    infos[i]['episode_extra_stats']['metric/mid_success_rate'] = np.mean(self.mid_success_rate)
-                    infos[i]['episode_extra_stats'][f'{scenario_name}/mid_success_rate'] = \
-                        np.mean(self.mid_success_rate_dict[scenario_name])
+                    # infos[i]['episode_extra_stats']['metric/mid_success_rate'] = np.mean(self.mid_success_rate)
+                    # infos[i]['episode_extra_stats'][f'{scenario_name}/mid_success_rate'] = \
+                    #     np.mean(self.mid_success_rate_dict[scenario_name])
                     # full_success_rate
-                    infos[i]['episode_extra_stats']['metric/full_success_rate'] = np.mean(self.full_success_rate)
-                    infos[i]['episode_extra_stats'][f'{scenario_name}/full_success_rate'] = \
-                        np.mean(self.full_success_rate_dict[scenario_name])
+                    # infos[i]['episode_extra_stats']['metric/full_success_rate'] = np.mean(self.full_success_rate)
+                    # infos[i]['episode_extra_stats'][f'{scenario_name}/full_success_rate'] = \
+                    #     np.mean(self.full_success_rate_dict[scenario_name])
                     # no_deadlock_rate
-                    infos[i]['episode_extra_stats']['metric/no_deadlock_rate'] = np.mean(self.no_deadlock_rate)
-                    infos[i]['episode_extra_stats'][f'{scenario_name}/no_deadlock_rate'] = \
-                        np.mean(self.no_deadlock_rate_dict[scenario_name])
+                    # infos[i]['episode_extra_stats']['metric/no_deadlock_rate'] = np.mean(self.no_deadlock_rate)
+                    # infos[i]['episode_extra_stats'][f'{scenario_name}/no_deadlock_rate'] = \
+                    #     np.mean(self.no_deadlock_rate_dict[scenario_name])
                     # agent_success_rate
                     infos[i]['episode_extra_stats']['metric/agent_success_rate'] = agent_success_ratio
                     infos[i]['episode_extra_stats'][f'{scenario_name}/agent_success_rate'] = agent_success_ratio
