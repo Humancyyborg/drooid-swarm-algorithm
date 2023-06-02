@@ -161,6 +161,8 @@ class Quadrotor3DSceneMulti:
             self.chase_cam = TopDownFollowCamera(view_dist=2.5)
         elif self.viewpoint[:-1] == 'corner':
             self.chase_cam = CornerCamera(view_dist=4.0, room_dims=self.room_dims, corner_index=int(self.viewpoint[-1]))
+        else:
+            self.chase_cam = ChaseCamera(view_dist=self.diameter * 15)
 
         self.fpv_lookat = None
 
@@ -319,10 +321,6 @@ class Quadrotor3DSceneMulti:
             pos_update = [g[0], g[1], g[2] - self.room_dims[2] / 2]
 
             self.obstacle_transforms[i].set_transform_and_color(r3d.translate(pos_update), (1.0, 0.0, 0.0, 0.1))
-
-    #def create_arrows(self, envs):
-    #
-    #    self.
 
     def create_goals(self):
         import gym_art.quadrotor_multi.rendering3d as r3d
