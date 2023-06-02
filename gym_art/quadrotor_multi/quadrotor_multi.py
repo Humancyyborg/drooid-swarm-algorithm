@@ -828,25 +828,36 @@ class QuadrotorEnvMulti(gym.Env):
                     agent_success_traj_mean = np.mean(np.sum(agent_success_flying_trajectories, axis=-1))
                     # Flying time
                     agent_success_flying_time_mean = np.mean(self.flying_time[agent_success_flag_list])
+                    tmp_success_flying_time = self.flying_time[agent_success_flag_list] / self.control_dt
                     # Vel
                     agent_success_vel_arr = self.episode_vel[agent_success_flag_list]
-                    agent_success_vel_mean = np.mean(np.sum(agent_success_vel_arr, axis=-1))
+                    agent_success_vel_arr_sum = [np.sum(vel_arr_item) / tmp_success_flying_time[i] for i, vel_arr_item in enumerate(agent_success_vel_arr)]
+                    agent_success_vel_mean = np.mean(agent_success_vel_arr_sum)
+
                     agent_success_vel_max = np.max(self.episode_vel_max[agent_success_flag_list])
                     # Roll
                     agent_success_roll_arr = self.roll_rate[agent_success_flag_list]
-                    agent_success_roll_mean = np.mean(np.sum(agent_success_roll_arr, axis=-1))
+                    agent_success_roll_arr_sum = [np.sum(roll_arr_item) / tmp_success_flying_time[i] for i, roll_arr_item in enumerate(agent_success_roll_arr)]
+                    agent_success_roll_mean = np.mean(agent_success_roll_arr_sum)
+
                     agent_success_roll_max = np.max(self.roll_rate_max[agent_success_flag_list])
                     # Pitch
                     agent_success_pitch_arr = self.pitch_rate[agent_success_flag_list]
-                    agent_success_pitch_mean = np.mean(np.sum(agent_success_pitch_arr, axis=-1))
+                    agent_success_pitch_arr_sum = [np.sum(pitch_arr_item) / tmp_success_flying_time[i] for i, pitch_arr_item in enumerate(agent_success_pitch_arr)]
+                    agent_success_pitch_mean = np.mean(agent_success_pitch_arr_sum)
+
                     agent_success_pitch_max = np.max(self.pitch_rate_max[agent_success_flag_list])
                     # Yaw
                     agent_success_yaw_arr = self.yaw_rate[agent_success_flag_list]
-                    agent_success_yaw_mean = np.mean(np.sum(agent_success_yaw_arr, axis=-1))
+                    agent_success_yaw_arr_sum = [np.sum(yaw_arr_item) / tmp_success_flying_time[i] for i, yaw_arr_item in enumerate(agent_success_yaw_arr)]
+                    agent_success_yaw_mean = np.mean(agent_success_yaw_arr_sum)
+
                     agent_success_yaw_max = np.max(self.yaw_rate_max[agent_success_flag_list])
                     # Body rate
                     agent_success_body_rate_arr = self.body_rate[agent_success_flag_list]
-                    agent_success_body_rate_mean = np.mean(np.sum(agent_success_body_rate_arr, axis=-1))
+                    agent_success_body_rate_arr_sum = [np.sum(body_rate_arr_item) / tmp_success_flying_time[i] for i, body_rate_arr_item in enumerate(agent_success_body_rate_arr)]
+                    agent_success_body_rate_mean = np.mean(agent_success_body_rate_arr_sum)
+
                     agent_success_body_rate_max = np.max(self.body_rate_max[agent_success_flag_list])
 
                 for i in range(len(infos)):
