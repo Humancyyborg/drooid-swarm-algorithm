@@ -85,7 +85,7 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapin
                         true_reward = 2.0 * info['episode_extra_stats']['distance_to_goal_1s'] + \
                                          info['episode_extra_stats']['num_collisions_after_settle'] + \
                                          info['episode_extra_stats']['num_collisions_obst_quad_after_settle']
-                        info['true_reward'] = -1.0 * true_reward
+                        info['episode_extra_stats']['true_reward'] = -1.0 * true_reward
 
                 if 'episode_extra_stats' not in info:
                     info['episode_extra_stats'] = dict()
