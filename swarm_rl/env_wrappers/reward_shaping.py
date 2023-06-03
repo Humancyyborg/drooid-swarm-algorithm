@@ -34,13 +34,13 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapin
         self.annealing = annealing
 
     def get_default_reward_shaping(self):
-        return dict(quad_rewards=dict())
+        return self.reward_shaping_scheme
 
     def get_current_reward_shaping(self, agent_idx: int):
-        return dict(quad_rewards=dict())
+        return self.reward_shaping_scheme
 
     def set_reward_shaping(self, reward_shaping, unused_agent_idx):
-        self.reward_shaping_scheme = dict(quad_rewards=dict())
+        self.reward_shaping_scheme = reward_shaping
         self.reward_shaping_updated = True
 
     def reset(self):
@@ -76,14 +76,13 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapin
                     self.cumulative_rewards[i][key] += value
 
             if dones_multi[i]:
-                true_reward = self.cumulative_rewards[i]['rewraw_main']
-                true_reward_consider_collisions = True
-                if true_reward_consider_collisions:
-                    # we ideally want zero collisions, so collisions between quads are given very high weight
-                    true_reward += 1000 * self.cumulative_rewards[i].get('rewraw_quadcol', 0)
+                in_replay_buffer = info['episode_extra_stats'].get('num_collisions_replay', -1)
+                if in_replay_buffer == -1:
+                    true_objective = 2.0 * info['episode_extra_stats']['distance_to_goal_1s'] + \
+                                     info['episode_extra_stats']['num_collisions_after_settle'] + \
+                                     info['episode_extra_stats']['num_collisions_obst_quad_after_settle']
+                    info['true_objective'] = true_objective
 
-                info['true_reward'] = true_reward
-                self.cumulative_rewards[i]['rewraw_main'] = true_reward
                 if 'episode_extra_stats' not in info:
                     info['episode_extra_stats'] = dict()
                 extra_stats = info['episode_extra_stats']
