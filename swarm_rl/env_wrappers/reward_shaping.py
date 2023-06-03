@@ -78,10 +78,14 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapin
             if dones_multi[i]:
                 in_replay_buffer = info['episode_extra_stats'].get('num_collisions_replay', -1)
                 if in_replay_buffer == -1:
-                    true_objective = 2.0 * info['episode_extra_stats']['distance_to_goal_1s'] + \
-                                     info['episode_extra_stats']['num_collisions_after_settle'] + \
-                                     info['episode_extra_stats']['num_collisions_obst_quad_after_settle']
-                    info['true_objective'] = true_objective
+                    dist_1s_flag = info['episode_extra_stats'].get('distance_to_goal_1s', -1)
+                    col_nei_flag = info['episode_extra_stats'].get('num_collisions_after_settle', -1)
+                    col_obst_flag = info['episode_extra_stats'].get('num_collisions_obst_quad_after_settle', -1)
+                    if dist_1s_flag >= 0 and col_nei_flag >= 0 and col_obst_flag >= 0:
+                        true_objective = 2.0 * info['episode_extra_stats']['distance_to_goal_1s'] + \
+                                         info['episode_extra_stats']['num_collisions_after_settle'] + \
+                                         info['episode_extra_stats']['num_collisions_obst_quad_after_settle']
+                        info['true_objective'] = -1.0 * true_objective
 
                 if 'episode_extra_stats' not in info:
                     info['episode_extra_stats'] = dict()
