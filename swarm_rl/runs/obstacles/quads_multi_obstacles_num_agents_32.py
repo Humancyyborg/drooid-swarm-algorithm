@@ -11,9 +11,9 @@ _params = ParamGrid(
 )
 
 OBSTACLE_MODEL_CLI = QUAD_BASELINE_CLI_8 + (
-    ' --quads_neighbor_visible_num=6 --quads_neighbor_obs_type=pos_vel --quads_encoder_type=attention '
+    ' --quads_neighbor_visible_num=2 --quads_neighbor_obs_type=pos_vel --quads_encoder_type=attention '
     '--with_wandb=True --wandb_project=Quad-Swarm-RL --wandb_user=multi-drones '
-    '--wandb_group=final_search_num_agents'
+    '--wandb_group=paper_search_num_agents'
 )
 
 _experiment = Experiment(
