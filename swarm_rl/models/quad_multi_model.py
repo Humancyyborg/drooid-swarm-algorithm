@@ -162,12 +162,19 @@ class QuadMultiHeadAttentionEncoder(Encoder):
             fc_layer(fc_encoder_layer, fc_encoder_layer),
             nonlinearity(cfg)
         )
-        self.neighbor_embed_layer = nn.Sequential(
-            fc_layer(self.all_neighbor_obs_dim, fc_encoder_layer),
-            nonlinearity(cfg),
-            fc_layer(fc_encoder_layer, fc_encoder_layer),
-            nonlinearity(cfg)
-        )
+        self.quads_neighbor_encoder_type = cfg.quads_neighbor_encoder_type
+        if cfg.quads_neighbor_encoder_type == 'mlp':
+            self.neighbor_embed_layer = nn.Sequential(
+                fc_layer(self.all_neighbor_obs_dim, fc_encoder_layer),
+                nonlinearity(cfg),
+                fc_layer(fc_encoder_layer, fc_encoder_layer),
+                nonlinearity(cfg)
+            )
+        else:
+            self.neighbor_embed_layer = QuadNeighborhoodEncoderAttention(
+                cfg=cfg, neighbor_obs_dim=self.neighbor_obs_dim, neighbor_hidden_size=self.neighbor_hidden_size,
+                self_obs_dim=self.self_obs_dim, num_use_neighbor_obs=self.num_use_neighbor_obs)
+
         self.obstacle_obs_dim = QUADS_OBSTACLE_OBS_TYPE[cfg.quads_obstacle_obs_type]
         self.obstacle_embed_layer = nn.Sequential(
             fc_layer(self.obstacle_obs_dim, fc_encoder_layer),
@@ -194,7 +201,12 @@ class QuadMultiHeadAttentionEncoder(Encoder):
         obs_obstacle = obs[:, self.self_obs_dim + self.all_neighbor_obs_dim:]
 
         self_embed = self.self_embed_layer(obs_self)
-        neighbor_embed = self.neighbor_embed_layer(obs_neighbor)
+
+        if self.quads_neighbor_encoder_type == 'mlp':
+            neighbor_embed = self.neighbor_embed_layer(obs_neighbor)
+        else:
+            neighbor_embed = self.neighbor_embed_layer(obs_self, obs, self.all_neighbor_obs_dim, batch_size)
+
         obstacle_embed = self.obstacle_embed_layer(obs_obstacle)
         neighbor_embed = neighbor_embed.view(batch_size, 1, -1)
         obstacle_embed = obstacle_embed.view(batch_size, 1, -1)
