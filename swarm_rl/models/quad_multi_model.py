@@ -333,6 +333,8 @@ class QuadMultiEncoder(Encoder):
         # Encode Obstacle Obs
         obstacle_encoder_out_size = 0
         if self.use_obstacles:
+            self.quads_obstacle_obs_type = cfg.quads_obstacle_obs_type
+            self.quads_obst_encoder_type = cfg.quads_obst_encoder_type
             if cfg.quads_obstacle_obs_type == 'octomap':
                 obstacle_obs_dim = QUADS_OBSTACLE_OBS_TYPE[cfg.quads_obstacle_obs_type]
             else:
@@ -343,9 +345,17 @@ class QuadMultiEncoder(Encoder):
 
             obstacle_hidden_size = cfg.quads_obst_hidden_size
 
-            self.obstacle_encoder = QuadObstacleEncoderAttention(
-                cfg=cfg, obst_obs_dim=obstacle_obs_dim, obst_hidden_size=obstacle_hidden_size,
-                self_obs_dim=self.self_obs_dim, num_use_obst_obs=cfg.quads_obstacle_visible_num)
+            if cfg.quads_obstacle_obs_type == 'octomap' or cfg.quads_obst_encoder_type == 'mlp':
+                self.obstacle_encoder = nn.Sequential(
+                    fc_layer(obstacle_obs_dim, obstacle_hidden_size),
+                    nonlinearity(cfg),
+                    fc_layer(obstacle_hidden_size, obstacle_hidden_size),
+                    nonlinearity(cfg),
+                )
+            else:
+                self.obstacle_encoder = QuadObstacleEncoderAttention(
+                    cfg=cfg, obst_obs_dim=obstacle_obs_dim, obst_hidden_size=obstacle_hidden_size,
+                    self_obs_dim=self.self_obs_dim, num_use_obst_obs=cfg.quads_obstacle_visible_num)
 
             obstacle_encoder_out_size = obstacle_hidden_size
 
@@ -372,11 +382,13 @@ class QuadMultiEncoder(Encoder):
             embeddings = torch.cat((embeddings, neighborhood_embedding), dim=1)
 
         if self.use_obstacles:
-            # obs_obstacles = obs[:, self.self_obs_dim + self.all_neighbor_obs_size:]
-            # obstacle_embeds = self.obstacle_encoder(obs_obstacles)
-            obstacle_embeds = self.obstacle_encoder(self_obs=obs_self, obs=obs,
-                                                    all_neighbor_obs_size=self.all_neighbor_obs_size,
-                                                    batch_size=batch_size)
+            if self.quads_obstacle_obs_type == 'octomap' or self.quads_obst_encoder_type == 'mlp':
+                obs_obstacles = obs[:, self.self_obs_dim + self.all_neighbor_obs_size:]
+                obstacle_embeds = self.obstacle_encoder(obs_obstacles)
+            else:
+                obstacle_embeds = self.obstacle_encoder(self_obs=obs_self, obs=obs,
+                                                        all_neighbor_obs_size=self.all_neighbor_obs_size,
+                                                        batch_size=batch_size)
             embeddings = torch.cat((embeddings, obstacle_embeds), dim=1)
 
         out = self.feed_forward(embeddings)
