@@ -21,6 +21,16 @@ class QuadNeighborhoodEncoder(nn.Module):
         self.num_use_neighbor_obs = num_use_neighbor_obs
 
 
+class QuadObstEncoder(nn.Module):
+    def __init__(self, cfg, self_obs_dim, obst_obs_dim, obst_hidden_size, num_use_obst_obs):
+        super().__init__()
+        self.cfg = cfg
+        self.self_obs_dim = self_obs_dim
+        self.obst_obs_dim = obst_obs_dim
+        self.obst_hidden_size = obst_hidden_size
+        self.num_use_obst_obs = num_use_obst_obs
+
+
 class QuadNeighborhoodEncoderDeepsets(QuadNeighborhoodEncoder):
     def __init__(self, cfg, neighbor_obs_dim, neighbor_hidden_size, self_obs_dim, num_use_neighbor_obs):
         super().__init__(cfg, self_obs_dim, neighbor_obs_dim, neighbor_hidden_size, num_use_neighbor_obs)
@@ -202,6 +212,65 @@ class QuadMultiHeadAttentionEncoder(Encoder):
         return self.encoder_output_size
 
 
+class QuadObstacleEncoderAttention(QuadObstEncoder):
+    def __init__(self, cfg, obst_obs_dim, obst_hidden_size, self_obs_dim, num_use_obst_obs):
+        super().__init__(cfg, self_obs_dim, obst_obs_dim, obst_hidden_size, num_use_obst_obs)
+        self.self_obs_dim = self_obs_dim
+
+        # outputs e_i from the paper
+        self.embedding_mlp = nn.Sequential(
+            fc_layer(self_obs_dim + obst_obs_dim, obst_hidden_size),
+            nonlinearity(cfg),
+            fc_layer(obst_hidden_size, obst_hidden_size),
+            nonlinearity(cfg)
+        )
+
+        #  outputs h_i from the paper
+        self.obst_value_mlp = nn.Sequential(
+            fc_layer(obst_hidden_size, obst_hidden_size),
+            nonlinearity(cfg),
+            fc_layer(obst_hidden_size, obst_hidden_size),
+            nonlinearity(cfg),
+        )
+
+        # outputs scalar score alpha_i for each obst i
+        self.attention_mlp = nn.Sequential(
+            fc_layer(obst_hidden_size * 2, obst_hidden_size),
+            # obst_hidden_size * 2 because we concat e_i and e_m
+            nonlinearity(cfg),
+            fc_layer(obst_hidden_size, obst_hidden_size),
+            nonlinearity(cfg),
+            fc_layer(obst_hidden_size, 1),
+        )
+
+    def forward(self, self_obs, obs, all_neighbor_obs_size, batch_size):
+        obs_obst = obs[:, self.self_obs_dim + all_neighbor_obs_size:]
+        obs_obst = obs_obst.reshape(-1, self.obst_obs_dim)
+
+        # concatenate self observation with obst observation
+
+        self_obs_repeat = self_obs.repeat(self.num_use_obst_obs, 1)
+        mlp_input = torch.cat((self_obs_repeat, obs_obst), dim=1)
+        obst_embeddings = self.embedding_mlp(mlp_input)  # e_i in the paper https://arxiv.org/pdf/1809.08835.pdf
+
+        obst_values = self.obst_value_mlp(obst_embeddings)  # h_i in the paper
+
+        obst_embeddings_mean_input = obst_embeddings.reshape(batch_size, -1, self.obst_hidden_size)
+        obst_embeddings_mean = torch.mean(obst_embeddings_mean_input, dim=1)  # e_m in the paper
+        obst_embeddings_mean_repeat = obst_embeddings_mean.repeat(self.num_use_obst_obs, 1)
+
+        attention_mlp_input = torch.cat((obst_embeddings, obst_embeddings_mean_repeat), dim=1)
+        attention_weights = self.attention_mlp(attention_mlp_input).view(batch_size, -1)  # alpha_i in the paper
+        attention_weights_softmax = torch.nn.functional.softmax(attention_weights, dim=1)
+        attention_weights_softmax = attention_weights_softmax.view(-1, 1)
+
+        final_obst_embedding = attention_weights_softmax * obst_values
+        final_obst_embedding = final_obst_embedding.view(batch_size, -1, self.obst_hidden_size)
+        final_obst_embedding = torch.sum(final_obst_embedding, dim=1)
+
+        return final_obst_embedding
+
+
 class QuadMultiEncoder(Encoder):
     # Mean embedding encoder based on the DeepRL for Swarms Paper
     def __init__(self, cfg, obs_space):
@@ -267,15 +336,18 @@ class QuadMultiEncoder(Encoder):
             if cfg.quads_obstacle_obs_type == 'octomap':
                 obstacle_obs_dim = QUADS_OBSTACLE_OBS_TYPE[cfg.quads_obstacle_obs_type]
             else:
-                obstacle_obs_dim = QUADS_OBSTACLE_OBS_TYPE[cfg.quads_obstacle_obs_type] * cfg.quads_obstacle_visible_num
+                if cfg.quads_obst_encoder_type == 'mlp':
+                    obstacle_obs_dim = QUADS_OBSTACLE_OBS_TYPE[cfg.quads_obstacle_obs_type] * cfg.quads_obstacle_visible_num
+                else:
+                    obstacle_obs_dim = QUADS_OBSTACLE_OBS_TYPE[cfg.quads_obstacle_obs_type]
+
             obstacle_hidden_size = cfg.quads_obst_hidden_size
-            self.obstacle_encoder = nn.Sequential(
-                fc_layer(obstacle_obs_dim, obstacle_hidden_size),
-                nonlinearity(cfg),
-                fc_layer(obstacle_hidden_size, obstacle_hidden_size),
-                nonlinearity(cfg),
-            )
-            obstacle_encoder_out_size = calc_num_elements(self.obstacle_encoder, (obstacle_obs_dim,))
+
+            self.obstacle_encoder = QuadObstacleEncoderAttention(
+                cfg=cfg, obst_obs_dim=obstacle_obs_dim, obst_hidden_size=obstacle_hidden_size,
+                self_obs_dim=self.self_obs_dim, num_use_obst_obs=cfg.quads_obstacle_visible_num)
+
+            obstacle_encoder_out_size = obstacle_hidden_size
 
         total_encoder_out_size = self_encoder_out_size + neighbor_encoder_out_size + obstacle_encoder_out_size
 
@@ -300,8 +372,11 @@ class QuadMultiEncoder(Encoder):
             embeddings = torch.cat((embeddings, neighborhood_embedding), dim=1)
 
         if self.use_obstacles:
-            obs_obstacles = obs[:, self.self_obs_dim + self.all_neighbor_obs_size:]
-            obstacle_embeds = self.obstacle_encoder(obs_obstacles)
+            # obs_obstacles = obs[:, self.self_obs_dim + self.all_neighbor_obs_size:]
+            # obstacle_embeds = self.obstacle_encoder(obs_obstacles)
+            obstacle_embeds = self.obstacle_encoder(self_obs=obs_self, obs=obs,
+                                                    all_neighbor_obs_size=self.all_neighbor_obs_size,
+                                                    batch_size=batch_size)
             embeddings = torch.cat((embeddings, obstacle_embeds), dim=1)
 
         out = self.feed_forward(embeddings)
