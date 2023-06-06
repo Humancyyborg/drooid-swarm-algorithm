@@ -1,6 +1,7 @@
 import numpy as np
 from numba import njit
 
+
 @njit
 def get_surround_sdfs(quad_poses, obst_poses, quads_sdf_obs, obst_radius, resolution=0.1):
     # Shape of quads_sdf_obs: (quad_num, 9)
@@ -25,6 +26,28 @@ def get_surround_sdfs(quad_poses, obst_poses, quads_sdf_obs, obst_radius, resolu
                 quads_sdf_obs[i, g_id] = min_dist - obst_radius
 
     return quads_sdf_obs
+
+
+def get_pos_xy_size_obs(quad_poses, obst_poses, obst_radius, obst_visible_num, quad_radius):
+    quads_pos_xy_size_obs = np.zeros((len(quad_poses), obst_visible_num * 2))
+
+    for i, quad_pos in enumerate(quad_poses):
+        rel_obst_pos = obst_poses - quad_pos
+        rel_obst_dist = np.linalg.norm(rel_obst_pos, axis=1)
+
+        rel_obst_dist = np.maximum(rel_obst_dist, 1e-6)
+        rel_pos_unit = rel_obst_pos / rel_obst_dist[:, None]
+        rel_obst_pos -= rel_pos_unit * (obst_radius + quad_radius)
+
+        rel_obst_dist = np.linalg.norm(rel_obst_pos, axis=1)
+        rel_pos_index = rel_obst_dist.argsort()
+        rel_pos_index = rel_pos_index[:obst_visible_num]
+
+        for j in range(obst_visible_num):
+            quads_pos_xy_size_obs[i][2 * j + 0] = rel_obst_pos[rel_pos_index[j]][0]
+            quads_pos_xy_size_obs[i][2 * j + 1] = rel_obst_pos[rel_pos_index[j]][1]
+
+    return quads_pos_xy_size_obs
 
 
 @njit
@@ -63,5 +86,14 @@ if __name__ == "__main__":
     from gym_art.quadrotor_multi.obstacles.test.speed_test import speed_test
 
     # Unit Test
-    unit_test()
-    speed_test()
+    # unit_test()
+    # speed_test()
+    quad_poses = np.array([[0., 0.], [3., 3.]])
+    obst_poses = np.array([[-1., -1.], [4., 3.], [2., 2.]])
+    test_res = get_pos_xy_size_obs(quad_poses, obst_poses, obst_radius=0.3, obst_visible_num=2, quad_radius=0.05)
+    rad_dist = 0.35 * np.sqrt(2) / 2
+    true_res = np.array([[-1 + rad_dist, -1 + rad_dist, 2 - rad_dist, 2 - rad_dist], [1-0.35, 0., -1 + rad_dist, -1 + rad_dist]])
+    assert test_res.all() == true_res.all()
+    print("pass")
+
+

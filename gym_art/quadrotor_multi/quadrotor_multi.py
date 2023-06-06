@@ -26,7 +26,7 @@ class QuadrotorEnvMulti(gym.Env):
                  neighbor_visible_num, neighbor_obs_type, collision_hitbox_radius, collision_falloff_radius,
 
                  # Obstacle
-                 use_obstacles, obst_density, obst_size, obst_spawn_area,
+                 use_obstacles, obst_density, obst_size, obst_spawn_area, obst_obs_type, obst_visible_num,
 
                  # Aerodynamics, Numba Speed Up, Scenarios, Room, Replay Buffer, Rendering
                  use_downwash, use_numba, quads_mode, room_dims, use_replay_buffer, quads_view_mode,
@@ -66,7 +66,7 @@ class QuadrotorEnvMulti(gym.Env):
                 num_agents=num_agents,
                 neighbor_obs_type=neighbor_obs_type, num_use_neighbor_obs=self.num_use_neighbor_obs,
                 # Obstacle
-                use_obstacles=use_obstacles,
+                use_obstacles=use_obstacles, obst_obs_type=obst_obs_type, obst_visible_num=obst_visible_num,
             )
             self.envs.append(e)
 
@@ -129,6 +129,8 @@ class QuadrotorEnvMulti(gym.Env):
             # Log more info
             self.distance_to_goal_3_5 = 0
             self.distance_to_goal_5 = 0
+            self.obst_obs_type = obst_obs_type
+            self.obst_visible_num = obst_visible_num
 
         # Scenarios
         self.quads_mode = quads_mode
@@ -340,7 +342,8 @@ class QuadrotorEnvMulti(gym.Env):
         if obst_size:
             self.obst_size = obst_size
 
-        self.obstacles = MultiObstacles(obstacle_size=self.obst_size, quad_radius=self.quad_arm)
+        self.obstacles = MultiObstacles(obstacle_size=self.obst_size, quad_radius=self.quad_arm,
+                                        obst_obs_type=self.obst_obs_type, obst_visible_num=self.obst_visible_num)
 
         # Scenario reset
         if self.use_obstacles:

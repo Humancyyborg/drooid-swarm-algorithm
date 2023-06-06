@@ -264,7 +264,10 @@ class QuadMultiEncoder(Encoder):
         # Encode Obstacle Obs
         obstacle_encoder_out_size = 0
         if self.use_obstacles:
-            obstacle_obs_dim = QUADS_OBSTACLE_OBS_TYPE[cfg.quads_obstacle_obs_type]
+            if cfg.quads_obstacle_obs_type == 'octomap':
+                obstacle_obs_dim = QUADS_OBSTACLE_OBS_TYPE[cfg.quads_obstacle_obs_type]
+            else:
+                obstacle_obs_dim = QUADS_OBSTACLE_OBS_TYPE[cfg.quads_obstacle_obs_type] * cfg.quads_obstacle_visible_num
             obstacle_hidden_size = cfg.quads_obst_hidden_size
             self.obstacle_encoder = nn.Sequential(
                 fc_layer(obstacle_obs_dim, obstacle_hidden_size),

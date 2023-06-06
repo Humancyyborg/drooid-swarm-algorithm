@@ -102,7 +102,8 @@ class QuadrotorSingle:
                  sim_steps=2, obs_repr="xyz_vxyz_R_omega", ep_time=7, room_dims=(10.0, 10.0, 10.0),
                  init_random_state=False, sense_noise=None, verbose=False, gravity=GRAV,
                  t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False,
-                 neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0, use_obstacles=False):
+                 neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0, use_obstacles=False,
+                 obst_obs_type='octomap', obst_visible_num=2):
         np.seterr(under='ignore')
         """
         Args:
@@ -227,6 +228,8 @@ class QuadrotorSingle:
 
         # Obstacles info
         self.use_obstacles = use_obstacles
+        self.obst_obs_type = obst_obs_type
+        self.obst_visible_num = obst_visible_num
 
         # Make observation space
         self.observation_space = self.make_observation_space()
@@ -294,6 +297,7 @@ class QuadrotorSingle:
             "rxyz": [-room_range, room_range],  # rxyz stands for relative pos between quadrotors
             "rvxyz": [-2.0 * self.dynamics.vxyz_max * np.ones(3), 2.0 * self.dynamics.vxyz_max * np.ones(3)],
             # rvxyz stands for relative velocity between quadrotors
+            "roxy": [-room_range[:2], room_range[:2]],
             "roxyz": [-room_range, room_range],  # roxyz stands for relative pos between quadrotor and obstacle
             "rovxyz": [-20.0 * np.ones(3), 20.0 * np.ones(3)],
             # rovxyz stands for relative velocity between quadrotor and obstacle
@@ -313,7 +317,10 @@ class QuadrotorSingle:
             obs_comps = obs_comps + (['rxyz'] + ['rvxyz']) * self.num_use_neighbor_obs
 
         if self.use_obstacles:
-            obs_comps = obs_comps + ["octmap"]
+            if self.obst_obs_type == 'octmap':
+                obs_comps = obs_comps + ["octmap"]
+            else:
+                obs_comps = obs_comps + (["roxy"]) * self.obst_visible_num
 
         print("Observation components:", obs_comps)
         obs_low, obs_high = [], []
