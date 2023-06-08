@@ -220,7 +220,7 @@ class Quadrotor3DSceneMulti:
         self.obstacle_transforms, self.vec_cyl_transforms, self.vec_cone_transforms = [], [], []
         self.path_transforms = [[] for _ in range(self.num_agents)]
 
-        # shadow_circle = r3d.circle(0.75 * self.diameter, 32)
+        shadow_circle = r3d.circle(0.75 * self.diameter, 32)
         collision_sphere = r3d.sphere(0.75 * self.diameter, 32)
 
         arrow_cylinder = r3d.cylinder(0.005, 0.12, 16)
@@ -234,9 +234,9 @@ class Quadrotor3DSceneMulti:
                 quad_transform = quadrotor_simple_3dmodel(self.diameter)
             self.quad_transforms.append(quad_transform)
 
-            # self.shadow_transforms.append(
-            #     r3d.transform_and_color(np.eye(4), (0, 0, 0, 0.4), shadow_circle)
-            # )
+            self.shadow_transforms.append(
+                r3d.transform_and_color(np.eye(4), (0, 0, 0, 0.0), shadow_circle)
+            )
             self.collision_transforms.append(
                 r3d.transform_and_color(np.eye(4), (0, 0, 0, 0.0), collision_sphere)
             )
@@ -268,7 +268,7 @@ class Quadrotor3DSceneMulti:
 
         self.create_goals()
 
-        bodies = []
+        bodies = [r3d.BackToFront([floor, st]) for st in self.shadow_transforms]
         bodies.extend(self.goal_transforms)
         bodies.extend(self.quad_transforms)
         bodies.extend(self.vec_cyl_transforms)
