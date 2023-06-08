@@ -118,7 +118,7 @@ class Quadrotor3DSceneMulti:
             self, w, h,
             quad_arm=None, models=None, walls_visible=True, resizable=True, goal_diameter=None,
             viewpoint='chase', obs_hw=None, room_dims=(10, 10, 10), num_agents=8, obstacles=None,
-            render_speed=1.0, formation_size=-1.0, vis_vel_arrows=True, vis_acc_arrows=True, viz_traces=False, viz_trace_nth_step=1,
+            render_speed=1.0, formation_size=-1.0, vis_vel_arrows=True, vis_acc_arrows=True, viz_traces=100, viz_trace_nth_step=1,
             num_obstacles=0, scene_index=0
     ):
         self.pygl_window = __import__('pyglet.window', fromlist=['key'])
@@ -188,7 +188,7 @@ class Quadrotor3DSceneMulti:
         self.formation_size = formation_size
         self.vis_vel_arrows = vis_vel_arrows
         self.vis_acc_arrows = vis_acc_arrows
-        self.viz_traces = viz_traces
+        self.viz_traces = 50
         self.viz_trace_nth_step = viz_trace_nth_step
         self.vector_array = [[] for _ in range(num_agents)]
         self.store_path_every_n = 1
@@ -220,7 +220,7 @@ class Quadrotor3DSceneMulti:
         self.obstacle_transforms, self.vec_cyl_transforms, self.vec_cone_transforms = [], [], []
         self.path_transforms = [[] for _ in range(self.num_agents)]
 
-        shadow_circle = r3d.circle(0.75 * self.diameter, 32)
+        # shadow_circle = r3d.circle(0.75 * self.diameter, 32)
         collision_sphere = r3d.sphere(0.75 * self.diameter, 32)
 
         arrow_cylinder = r3d.cylinder(0.005, 0.12, 16)
@@ -234,9 +234,9 @@ class Quadrotor3DSceneMulti:
                 quad_transform = quadrotor_simple_3dmodel(self.diameter)
             self.quad_transforms.append(quad_transform)
 
-            self.shadow_transforms.append(
-                r3d.transform_and_color(np.eye(4), (0, 0, 0, 0.4), shadow_circle)
-            )
+            # self.shadow_transforms.append(
+            #     r3d.transform_and_color(np.eye(4), (0, 0, 0, 0.4), shadow_circle)
+            # )
             self.collision_transforms.append(
                 r3d.transform_and_color(np.eye(4), (0, 0, 0, 0.0), collision_sphere)
             )
@@ -268,7 +268,7 @@ class Quadrotor3DSceneMulti:
 
         self.create_goals()
 
-        bodies = [r3d.BackToFront([floor, st]) for st in self.shadow_transforms]
+        bodies = []
         bodies.extend(self.goal_transforms)
         bodies.extend(self.quad_transforms)
         bodies.extend(self.vec_cyl_transforms)
@@ -301,7 +301,7 @@ class Quadrotor3DSceneMulti:
     def create_obstacles(self):
         import gym_art.quadrotor_multi.rendering3d as r3d
         for item in self.obstacles.pos_arr:
-            color = QUAD_COLOR[14]
+            color = OBST_COLOR_3
             obst_height = self.room_dims[2]
             obstacle_transform = r3d.transform_and_color(np.eye(4), color, r3d.cylinder(
                 radius=self.obstacles.size / 2.0, height=obst_height, sections=64))
@@ -318,7 +318,8 @@ class Quadrotor3DSceneMulti:
             # self.obstacle_transforms[i].set_transform(r3d.translate(g.pos))
             pos_update = [g[0], g[1], g[2] - self.room_dims[2] / 2]
 
-            self.obstacle_transforms[i].set_transform_and_color(r3d.translate(pos_update), (1.0, 0.0, 0.0, 0.1))
+            # color = QUAD_COLOR
+            self.obstacle_transforms[i].set_transform_and_color(r3d.translate(pos_update), OBST_COLOR_4)
 
     #def create_arrows(self, envs):
     #
@@ -327,7 +328,7 @@ class Quadrotor3DSceneMulti:
     def create_goals(self):
         import gym_art.quadrotor_multi.rendering3d as r3d
 
-        goal_sphere = r3d.sphere(self.goal_diameter / 2, 18)
+        goal_sphere = r3d.sphere(0.2 / 2, 18)
         for i in range(len(self.models)):
             color = QUAD_COLOR[i % len(QUAD_COLOR)]
             goal_transform = r3d.transform_and_color(np.eye(4), color, goal_sphere)
@@ -410,10 +411,10 @@ class Quadrotor3DSceneMulti:
                         transformation = self.path_store[i][k] @ r3d.scale(scale)
                         self.path_transforms[i][k].set_transform_and_color(transformation, color_rgba)
 
-                shadow_pos = 0 + dyn.pos
-                shadow_pos[2] = 0.001  # avoid z-fighting
-                matrix = r3d.translate(shadow_pos)
-                self.shadow_transforms[i].set_transform_nocollide(matrix)
+                # shadow_pos = 0 + dyn.pos
+                # shadow_pos[2] = 0.001  # avoid z-fighting
+                # matrix = r3d.translate(shadow_pos)
+                # self.shadow_transforms[i].set_transform_nocollide(matrix)
 
                 if self.vis_vel_arrows:
                     if len(self.vector_array[i]) > 10:
