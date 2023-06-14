@@ -1,9 +1,7 @@
 from sample_factory.launcher.run_description import RunDescription, Experiment, ParamGrid
 from swarm_rl.runs.quad_multi_mix_baseline import QUAD_BASELINE_CLI_8
-from swarm_rl.utils import generate_seeds, timeStamped
 
 _params = ParamGrid([
-    ('quads_neighbor_encoder_type', ['attention']),
     ('seed', [0000, 1111, 2222, 3333]),
 ])
 
@@ -15,13 +13,6 @@ _experiment = Experiment(
 
 RUN_DESCRIPTION = RunDescription('paper_quads_multi_mix_baseline_8a_attn_v116', experiments=[_experiment])
 
-# On Brain server, when you use num_workers = 72, if the system reports: Resource temporarily unavailable,
-# then, try to use two commands below
-# export OMP_NUM_THREADS=1
-# export USE_SIMPLE_THREADED_LEVEL3=1
-
-# Command to use this script on server:
-# xvfb-run python -m launcher.run --run=quad_multi_mix_baseline --runner=processes --max_parallel=3 --pause_between=1 --experiments_per_gpu=1 --num_gpus=3
-# Command to use this script on local machine:
-# Please change num_workers to the physical cores of your local machine
-# python -m launcher.run --run=quad_multi_mix_baseline --runner=processes --max_parallel=3 --pause_between=1 --experiments_per_gpu=1 --num_gpus=3
+# For scale, need to change
+# num_workers / num_envs_per_worker && quads_num_agents
+# num_workers * num_envs_per_worker * quads_num_agents should not change
