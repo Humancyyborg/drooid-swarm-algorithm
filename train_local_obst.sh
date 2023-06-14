@@ -9,7 +9,7 @@ python -m swarm_rl.train \
 --replay_buffer_sample_prob=0.75 \
 --quads_mode=mix --quads_episode_duration=15.0 \
 --quads_obs_repr=xyz_vxyz_R_omega_floor \
---quads_neighbor_hidden_size=256 --quads_neighbor_obs_type=none --quads_collision_hitbox_radius=2.0 \
+--quads_neighbor_hidden_size=256 --quads_neighbor_obs_type=pos_vel --quads_collision_hitbox_radius=2.0 \
 --quads_collision_falloff_radius=4.0 --quads_collision_reward=5.0 --quads_collision_smooth_max_penalty=4.0 \
 --quads_neighbor_encoder_type=no_encoder --quads_neighbor_visible_num=2 \
 --quads_use_obstacles=True --quads_obst_spawn_area 8 8 --quads_obst_density=0.2 --quads_obst_size=0.6 \
