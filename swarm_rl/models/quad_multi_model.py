@@ -161,7 +161,7 @@ class QuadMultiHeadAttentionEncoder(Encoder):
                 nonlinearity(cfg)
             )
         elif cfg.quads_neighbor_encoder_type == 'mean_embed':
-            self.neighbor_encoder = QuadNeighborhoodEncoderDeepsets(
+            self.neighbor_embed_layer = QuadNeighborhoodEncoderDeepsets(
                 cfg=cfg, neighbor_obs_dim=self.neighbor_obs_dim, neighbor_hidden_size=self.neighbor_hidden_size,
                 self_obs_dim=self.self_obs_dim, num_use_neighbor_obs=self.num_use_neighbor_obs)
         elif cfg.quads_neighbor_encoder_type == 'attention':
