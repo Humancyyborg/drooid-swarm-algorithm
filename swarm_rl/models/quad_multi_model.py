@@ -203,9 +203,9 @@ class QuadMultiHeadAttentionEncoder(Encoder):
 
         self_embed = self.self_embed_layer(obs_self)
 
-        if self.quads_neighbor_encoder_type in ['mlp', 'mean_embed']:
+        if self.quads_neighbor_encoder_type == 'mlp':
             neighbor_embed = self.neighbor_embed_layer(obs_neighbor)
-        elif self.quads_neighbor_encoder_type == 'attention':
+        elif self.quads_neighbor_encoder_type in ['mean_embed', 'attention']:
             neighbor_embed = self.neighbor_embed_layer(obs_self, obs, self.all_neighbor_obs_dim, batch_size)
         else:
             neighbor_embed = self.neighbor_embed_layer(obs_neighbor)
