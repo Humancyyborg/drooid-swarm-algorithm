@@ -26,6 +26,9 @@ class QuadrotorScenario:
 
         # Aux variables for scenario: pursuit evasion
         self.interp = None
+        # Aux variables used in scenarios with obstacles
+        self.spawn_points = None
+        self.approch_goal_metric = 0.5
 
     def name(self):
         """
