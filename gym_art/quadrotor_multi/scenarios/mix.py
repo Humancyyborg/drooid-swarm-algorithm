@@ -86,6 +86,9 @@ class Scenario_mix(QuadrotorScenario):
             self.scenario.reset()
 
         self.goals = self.scenario.goals
-        self.spawn_points = self.scenario.spawn_points
+        if self.scenario.spawn_points is None:
+            self.spawn_points = self.goals
+        else:
+            self.spawn_points = self.scenario.spawn_points
         self.formation_size = self.scenario.formation_size
         self.approch_goal_metric = self.scenario.approch_goal_metric

@@ -340,10 +340,9 @@ class QuadrotorEnvMulti(gym.Env):
         if obst_size:
             self.obst_size = obst_size
 
-        self.obstacles = MultiObstacles(obstacle_size=self.obst_size, quad_radius=self.quad_arm)
-
         # Scenario reset
         if self.use_obstacles:
+            self.obstacles = MultiObstacles(obstacle_size=self.obst_size, quad_radius=self.quad_arm)
             self.obst_map, obst_pos_arr, cell_centers = self.obst_generation_given_density()
             self.scenario.reset(obst_map=self.obst_map, cell_centers=cell_centers)
         else:
@@ -357,7 +356,10 @@ class QuadrotorEnvMulti(gym.Env):
 
         for i, e in enumerate(self.envs):
             e.goal = self.scenario.goals[i]
-            e.spawn_point = self.scenario.spawn_points[i]
+            if self.scenario.spawn_points is None:
+                e.spawn_point = self.scenario.goals[i]
+            else:
+                e.spawn_point = self.scenario.spawn_points[i]
             e.rew_coeff = self.rew_coeff
 
             observation = e.reset()
