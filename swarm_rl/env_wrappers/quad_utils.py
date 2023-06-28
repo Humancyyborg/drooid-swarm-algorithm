@@ -1,15 +1,12 @@
 import copy
 
+import torch
 from sample_factory.algo.learning.learner import Learner
 from sample_factory.model.actor_critic import create_actor_critic
-import torch
 
 from gym_art.quadrotor_multi.quad_experience_replay import ExperienceReplayWrapper
-from swarm_rl.env_wrappers.additional_input import QuadsAdditionalInputWrapper
-from swarm_rl.env_wrappers.discrete_actions import QuadsDiscreteActionsWrapper
-from swarm_rl.env_wrappers.reward_shaping import DEFAULT_QUAD_REWARD_SHAPING, QuadsRewardShapingWrapper, \
-    DEFAULT_QUAD_REWARD_SHAPING_SINGLE
 from swarm_rl.env_wrappers.compatibility import QuadEnvCompatibility
+from swarm_rl.env_wrappers.reward_shaping import DEFAULT_QUAD_REWARD_SHAPING, QuadsRewardShapingWrapper
 from swarm_rl.env_wrappers.v_value_map import V_ValueMapWrapper
 
 
