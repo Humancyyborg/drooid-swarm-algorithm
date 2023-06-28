@@ -2,7 +2,7 @@ import random
 from collections import deque
 from copy import deepcopy
 
-import gym
+import gymnasium as gym
 import numpy as np
 
 

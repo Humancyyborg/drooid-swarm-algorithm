@@ -1,8 +1,8 @@
 from typing import Any, Dict, Optional, Tuple
 
-import gym
-from gym.core import ObsType
-from gym.utils.step_api_compatibility import convert_to_terminated_truncated_step_api
+import gymnasium as gym
+from gymnasium.core import ObsType
+from gymnasium.utils.step_api_compatibility import convert_to_terminated_truncated_step_api
 
 # Wrapper for compatibility with gym 0.26
 # Mostly copied from gym.EnvCompatability

@@ -19,7 +19,7 @@ References:
 """
 import copy
 
-from gym.utils import seeding
+from gymnasium.utils import seeding
 
 import gym_art.quadrotor_multi.get_state as get_state
 import gym_art.quadrotor_multi.quadrotor_randomization as quad_rand

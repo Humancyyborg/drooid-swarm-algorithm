@@ -1,7 +1,7 @@
 from copy import deepcopy
 
 import numpy as np
-from gym import spaces
+from gymnasium import spaces
 from numba import njit
 
 from gym_art.quadrotor_multi.inertia import QuadLink, QuadLinkSimplified

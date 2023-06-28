@@ -1,5 +1,5 @@
 from numpy.linalg import norm
-from gym import spaces
+from gymnasium import spaces
 from gym_art.quadrotor_multi.quad_utils import *
 
 GRAV = 9.81

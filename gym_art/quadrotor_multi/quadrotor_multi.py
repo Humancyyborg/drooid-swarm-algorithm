@@ -3,7 +3,7 @@ import time
 from collections import deque
 from copy import deepcopy
 
-import gym
+import gymnasium as gym
 import numpy as np
 
 from gym_art.quadrotor_multi.aerodynamics.downwash import perform_downwash
