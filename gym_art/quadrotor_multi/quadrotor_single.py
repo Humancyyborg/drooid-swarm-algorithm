@@ -47,7 +47,7 @@ def compute_reward_weighted(dynamics, goal, action, dt, time_remain, rew_coeff, 
     else:
         cost_orient_raw = -dynamics.rot[2, 2]
 
-    cost_orient = rew_coeff["orient"] * cost_orient_raw
+    cost_orient = 0.0 * rew_coeff["orient"] * cost_orient_raw
 
     # Loss for constant uncontrolled rotation around vertical axis
     cost_spin_raw = (dynamics.omega[0] ** 2 + dynamics.omega[1] ** 2 + dynamics.omega[2] ** 2) ** 0.5
