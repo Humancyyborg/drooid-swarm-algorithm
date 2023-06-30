@@ -17,6 +17,7 @@ from gym_art.quadrotor_multi.quad_utils import QUADS_OBS_REPR, QUADS_NEIGHBOR_OB
 from gym_art.quadrotor_multi.obstacles.obstacles import MultiObstacles
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
 from gym_art.quadrotor_multi.quadrotor_single import QuadrotorSingle
+from gym_art.quadrotor_multi.quadrotor_control import NominalSBC
 from gym_art.quadrotor_multi.scenarios.mix import create_scenario
 
 
@@ -35,7 +36,10 @@ class QuadrotorEnvMulti(gym.Env):
                  # Quadrotor Specific (Do Not Change)
                  dynamics_params, raw_control, raw_control_zero_middle,
                  dynamics_randomize_every, dynamics_change, dyn_sampler_1,
-                 sense_noise, init_random_state):
+                 sense_noise, init_random_state,
+                 # Baselines
+                 use_sbc,
+                 ):
         super().__init__()
 
         # Predefined Parameters
@@ -52,9 +56,12 @@ class QuadrotorEnvMulti(gym.Env):
         self.room_dims = room_dims
         self.quads_view_mode = quads_view_mode
 
+        self.use_sbc = use_sbc
+        use_controller = True if self.use_sbc else False
+
         # Generate All Quadrotors
         self.envs = []
-        for i in range(self.num_agents):
+        for _ in range(self.num_agents):
             e = QuadrotorSingle(
                 # Quad Parameters
                 dynamics_params=dynamics_params, dynamics_change=dynamics_change,
@@ -67,6 +74,8 @@ class QuadrotorEnvMulti(gym.Env):
                 neighbor_obs_type=neighbor_obs_type, num_use_neighbor_obs=self.num_use_neighbor_obs,
                 # Obstacle
                 use_obstacles=use_obstacles,
+                # Controller
+                use_controller=use_controller,
             )
             self.envs.append(e)
 
@@ -173,6 +182,10 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Numba
         self.use_numba = use_numba
+
+        # SBC
+        self.use_sbc = False
+        self.compute_time = 0
 
         # Aerodynamics
         self.use_downwash = use_downwash
@@ -410,9 +423,59 @@ class QuadrotorEnvMulti(gym.Env):
         obs, rewards, dones, infos = [], [], [], []
 
         for i, a in enumerate(actions):
+            if self.use_sbc:
+                t = time.time()
+                self_state = NominalSBC.State(position=self.envs[i].dynamics.pos, velocity=self.envs[i].dynamics.vel)
+                neighbor_descriptions = []
+
+                # Add neighbor robot descriptions
+                for j in range(len(actions)):
+                    if i == j:
+                        continue
+
+                    if np.linalg.norm(self_state.position - self.envs[j].dynamics.pos) < 5.0:
+                        neighbor_descriptions.append(
+                            NominalSBC.ObjectDescription(
+                                state=NominalSBC.State(
+                                    position=self.envs[j].dynamics.pos,
+                                    velocity=self.envs[j].dynamics.vel
+                                ),
+                                radius=self.envs[j].controller.sbc.radius,
+                                maximum_linf_acceleration_lower_bound=self.envs[
+                                    j].controller.sbc.maximum_linf_acceleration
+                            )
+                        )
+
+                # Add neighbor obstacle descriptions
+                if self.use_obstacles:
+                    for obst_pose in self.obst_pos_arr:
+                        x, y = obst_pose[0], obst_pose[1]
+                        if np.linalg.norm(np.array([x, y]) - np.array([self_state.position[0], self_state.position[1]])) < 3.0:
+                            z = 0.0
+                            while z < self.room_dims[2]:
+                                if np.linalg.norm(np.array([x, y, z]) - self_state.position) < 3.0:
+                                    neighbor_descriptions.append(
+                                        NominalSBC.ObjectDescription(
+                                            state=NominalSBC.State(
+                                                position=np.array([x, y, z]),
+                                                velocity=np.zeros(3)
+                                            ),
+                                            radius=self.obst_size*0.5,
+                                            maximum_linf_acceleration_lower_bound=0.0
+                                        )
+                                    )
+                                z += self.obst_size * 0.5
+                self.compute_time += time.time() - t
+
             self.envs[i].rew_coeff = self.rew_coeff
 
-            observation, reward, done, info = self.envs[i].step(a)
+            if self.use_sbc:
+                observation, reward, done, info, t = self.envs[i].step(
+                    a, {"self_state": self_state, "neighbor_descriptions": neighbor_descriptions})
+                self.compute_time += t
+            else:
+                observation, reward, done, info = self.envs[i].step(a)
+            # print("num neighbors: ", len(neighbor_descriptions))
             obs.append(observation)
             rewards.append(reward)
             dones.append(done)

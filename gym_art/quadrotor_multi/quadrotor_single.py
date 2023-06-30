@@ -102,7 +102,9 @@ class QuadrotorSingle:
                  sim_steps=2, obs_repr="xyz_vxyz_R_omega", ep_time=7, room_dims=(10.0, 10.0, 10.0),
                  init_random_state=False, sense_noise=None, verbose=False, gravity=GRAV,
                  t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False,
-                 neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0, use_obstacles=False):
+                 neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0, use_obstacles=False,
+                 use_controller=False
+                 ):
         np.seterr(under='ignore')
         """
         Args:
@@ -146,7 +148,13 @@ class QuadrotorSingle:
         self.room_box = np.array([[-self.room_length / 2., -self.room_width / 2, 0.],
                                   [self.room_length / 2., self.room_width / 2., self.room_height]])
 
-        self.init_random_state = init_random_state
+        # REMOVE WHEN CONTROLER IS REMOVED
+        self.use_controller = use_controller
+
+        if self.use_controller:
+            self.init_random_state = False
+        else:
+            self.init_random_state = init_random_state
 
         # Preset parameters
         self.obs_repr = obs_repr
@@ -257,6 +265,8 @@ class QuadrotorSingle:
                                           use_numba=self.use_numba, dt=self.dt)
 
         # CONTROL
+        if self.use_controller:
+            self.raw_control = False
         if self.raw_control:
             if self.dim_mode == '1D':  # Z axis only
                 self.controller = VerticalControl(self.dynamics, zero_action_middle=self.raw_control_zero_middle)
@@ -267,7 +277,7 @@ class QuadrotorSingle:
             else:
                 raise ValueError('QuadEnv: Unknown dimensionality mode %s' % self.dim_mode)
         else:
-            self.controller = NonlinearPositionController(self.dynamics, tf_control=self.tf_control)
+            self.controller = MellingerController(self.dynamics)
 
         # ACTIONS
         self.action_space = self.controller.action_space(self.dynamics)
@@ -338,11 +348,11 @@ class QuadrotorSingle:
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def _step(self, action):
+    def _step(self, action, sbc_data=None):
         self.actions[1] = copy.deepcopy(self.actions[0])
         self.actions[0] = copy.deepcopy(action)
 
-        self.controller.step_func(dynamics=self.dynamics, action=action, goal=self.goal, dt=self.dt, observation=None)
+        self.controller.step_func(dynamics=self.dynamics, action=action, goal=self.goal, dt=self.dt, observation=sbc_data)
 
         self.time_remain = self.ep_len - self.tick
         reward, rew_info = compute_reward_weighted(
@@ -428,10 +438,13 @@ class QuadrotorSingle:
             if self.dim_mode == '1D' or self.dim_mode == '2D':
                 rotation = np.eye(3)
             else:
-                # make sure we're sort of pointing towards goal (for mellinger controller)
-                rotation = randyaw()
-                while np.dot(rotation[:, 0], to_xyhat(-pos)) < 0.5:
+                if self.use_controller:
+                    rotation = rotZ(0)[:3, :3]
+                else:
+                    # make sure we're sort of pointing towards goal (for mellinger controller)
                     rotation = randyaw()
+                    while np.dot(rotation[:, 0], to_xyhat(-pos)) < 0.5:
+                        rotation = randyaw()
 
         self.init_state = [pos, vel, rotation, omega]
         self.dynamics.set_state(pos, vel, rotation, omega)
@@ -453,5 +466,5 @@ class QuadrotorSingle:
         """This class is only meant to be used as a component of QuadMultiEnv."""
         raise NotImplementedError()
 
-    def step(self, action):
-        return self._step(action)
+    def step(self, action, sbc_data=None):
+        return self._step(action, sbc_data)

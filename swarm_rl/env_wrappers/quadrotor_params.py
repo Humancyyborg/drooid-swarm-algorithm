@@ -115,3 +115,6 @@ def add_quadrotors_env_args(env, parser):
                    help='Choose which kind of view/camera to use')
     p.add_argument('--quads_render', default=False, type=bool, help='Use render or not')
     p.add_argument('--visualize_v_value', action='store_true', help="Visualize v value map")
+
+    # Baselines
+    p.add_argument('--quads_use_sbc', default=False, type=str2bool, help="Whether to use SBC or not")
