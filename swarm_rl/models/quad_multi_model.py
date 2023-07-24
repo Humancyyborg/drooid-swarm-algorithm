@@ -33,7 +33,11 @@ class QuadNeighborhoodEncoderDeepsets(QuadNeighborhoodEncoder):
         )
 
     def forward(self, self_obs, obs, all_neighbor_obs_size, batch_size):
+        # obs_neighbors: [batch, value]
         obs_neighbors = obs[:, self.self_obs_dim:self.self_obs_dim + all_neighbor_obs_size]
+        neighbor_loc = (obs_neighbors <= -100).nonzero(as_tuple=False)[:, 0]
+        obs_neighbors = obs_neighbors[:, neighbor_loc]
+
         obs_neighbors = obs_neighbors.reshape(-1, self.neighbor_obs_dim)
         neighbor_embeds = self.embedding_mlp(obs_neighbors)
         neighbor_embeds = neighbor_embeds.reshape(batch_size, -1, self.neighbor_hidden_size)
@@ -135,7 +139,7 @@ class QuadMultiHeadAttentionEncoder(Encoder):
         self.neighbor_hidden_size = cfg.quads_neighbor_hidden_size
         self.use_obstacles = cfg.quads_use_obstacles
 
-        if cfg.quads_neighbor_visible_num == -1:
+        if cfg.quads_neighbor_visible_num == -1 or cfg.quads_neighbor_obs_type == 'range':
             self.num_use_neighbor_obs = cfg.quads_num_agents - 1
         else:
             self.num_use_neighbor_obs = cfg.quads_neighbor_visible_num

@@ -36,6 +36,7 @@ QUADS_OBS_REPR = {
 QUADS_NEIGHBOR_OBS_TYPE = {
     'none': 0,
     'pos_vel': 6,
+    'range': 6, # 6 means pos_vel, should also x (num_agents - 1)
 }
 
 QUADS_OBSTACLE_OBS_TYPE = {

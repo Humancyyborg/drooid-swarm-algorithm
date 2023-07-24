@@ -30,7 +30,10 @@ def add_quadrotors_env_args(env, parser):
                                                                           '0=blind agents, '
                                                                           '0<n<num_agents-1 = nonzero number of agents')
     p.add_argument('--quads_neighbor_obs_type', default='none', type=str,
-                   choices=['none', 'pos_vel'], help='Choose what kind of obs to send to encoder.')
+                   choices=['none', 'pos_vel', 'range'], help='Choose what kind of obs to send to encoder.')
+    p.add_argument('--quads_neighbor_range', default=0.5, type=float,
+                   help='If --quads_neighbor_obs_type==range, all neighbor agents whose distance <= this range '
+                        'will be considered.')
 
     # # Neighbor Encoder
     p.add_argument('--quads_neighbor_hidden_size', default=256, type=int,
