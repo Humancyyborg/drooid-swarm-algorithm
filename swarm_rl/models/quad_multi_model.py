@@ -76,9 +76,7 @@ class QuadNeighborhoodEncoderDeepsets(QuadNeighborhoodEncoder):
             tensor_obs_neighbor = obs_neighbors.reshape(-1, self.neighbor_obs_dim)
             # neighbor_embeds: (all groups, hidden_size)
             neighbor_embeds = self.embedding_mlp(tensor_obs_neighbor)
-            neighbor_embeds = neighbor_embeds.reshape(batch_size,
-                                                      int(torch.unique(neighbor_loc).item() / self.neighbor_obs_dim),
-                                                      self.neighbor_hidden_size)
+            neighbor_embeds = neighbor_embeds.reshape(batch_size, -1, self.neighbor_hidden_size)
             mean_embed = torch.mean(neighbor_embeds, dim=1)
 
         return mean_embed
