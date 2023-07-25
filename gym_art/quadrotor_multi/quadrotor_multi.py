@@ -42,7 +42,7 @@ class QuadrotorEnvMulti(gym.Env):
         # Predefined Parameters
         self.num_agents = num_agents
         obs_self_size = QUADS_OBS_REPR[obs_repr]
-        if neighbor_visible_num == -1:
+        if neighbor_visible_num == -1 or neighbor_obs_type == 'range':
             self.num_use_neighbor_obs = self.num_agents - 1
         else:
             self.num_use_neighbor_obs = neighbor_visible_num
@@ -105,8 +105,6 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Neighbors
         neighbor_obs_size = QUADS_NEIGHBOR_OBS_TYPE[neighbor_obs_type]
-        if neighbor_obs_type == 'range':
-            neighbor_obs_size = (num_agents - 1) * neighbor_obs_size
 
         self.neighbor_obs_type = neighbor_obs_type
         self.neighbor_range = neighbor_range
@@ -233,22 +231,25 @@ class QuadrotorEnvMulti(gym.Env):
         return obs_neighbor_rel
 
     def extend_obs_space(self, obs, closest_drones):
+        obs_neighbors = []
         if self.neighbor_obs_type == 'range':
-            obs_neighbors = -100 * np.ones((self.num_agents - 1, self.neighbor_obs_size))
+            obs_neighbors = -100 * np.ones((self.num_agents, self.neighbor_obs_size * (self.num_agents - 1)))
+            obs_neighbors[:, :self.neighbor_obs_size] = -10
+
             for i in range(len(self.envs)):
-                obs_neighbor_rel = self.get_obs_neighbor_rel(env_id=i, closest_drones=closest_drones).reshape(-1)
-                obs_neighbors[i, :len(obs_neighbor_rel)] = obs_neighbor_rel
+                if len(closest_drones[i]) > 0:
+                    obs_neighbor_rel = self.get_obs_neighbor_rel(env_id=i, closest_drones=closest_drones).reshape(-1)
+                    obs_neighbors[i, :len(obs_neighbor_rel)] = obs_neighbor_rel
         else:
-            obs_neighbors = []
             for i in range(len(self.envs)):
                 obs_neighbor_rel = self.get_obs_neighbor_rel(env_id=i, closest_drones=closest_drones)
                 obs_neighbors.append(obs_neighbor_rel.reshape(-1))
             obs_neighbors = np.stack(obs_neighbors)
+            # clip observation space of neighborhoods
+            obs_neighbors = np.clip(
+                obs_neighbors, a_min=self.clip_neighbor_space_min_box, a_max=self.clip_neighbor_space_max_box,
+            )
 
-        # clip observation space of neighborhoods
-        obs_neighbors = np.clip(
-            obs_neighbors, a_min=self.clip_neighbor_space_min_box, a_max=self.clip_neighbor_space_max_box,
-        )
         obs_ext = np.concatenate((obs, obs_neighbors), axis=1)
         return obs_ext
 
@@ -265,14 +266,9 @@ class QuadrotorEnvMulti(gym.Env):
                 rel_pos, rel_vel = self.get_rel_pos_vel_item(env_id=i, indices=indices[i])
                 rel_dist = np.linalg.norm(rel_pos, axis=1)
                 rel_dist = np.maximum(rel_dist, 0.01)
-
-                tmp_neighbor_indices = []
-                for j in range(len(rel_dist)):
-                    if rel_dist[j] > self.neighbor_range:
-                        continue
-                    tmp_neighbor_indices.append(j)
-
-                neighbor_indices.append(tmp_neighbor_indices)
+                # Get neighbor indices in range
+                neighbor_in_range_indices = np.where(rel_dist <= self.neighbor_range)[0]
+                neighbor_indices.append(indices[i][neighbor_in_range_indices])
 
             return neighbor_indices
         else:
@@ -284,8 +280,6 @@ class QuadrotorEnvMulti(gym.Env):
                 for i in range(self.num_agents):
                     rel_pos, rel_vel = self.get_rel_pos_vel_item(env_id=i, indices=indices[i])
                     rel_dist = np.linalg.norm(rel_pos, axis=1)
-
-
 
                     rel_dist = np.maximum(rel_dist, 0.01)
                     rel_pos_unit = rel_pos / rel_dist[:, None]

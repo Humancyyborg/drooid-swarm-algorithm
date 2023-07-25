@@ -33,12 +33,13 @@ class QuadNeighborhoodEncoderDeepsets(QuadNeighborhoodEncoder):
         )
 
     def forward(self, self_obs, obs, all_neighbor_obs_size, batch_size):
-        # obs_neighbors: [batch, value]
+        # obs_neighbors: [batch, -1, neighbor_item_dim]
         obs_neighbors = obs[:, self.self_obs_dim:self.self_obs_dim + all_neighbor_obs_size]
-        neighbor_loc = (obs_neighbors <= -100).nonzero(as_tuple=False)[:, 0]
+        # obs_neighbors = obs_neighbors.reshape(batch_size, -1)
+
+        neighbor_loc = torch.argmin(obs_neighbors, dim=1)
         obs_neighbors = obs_neighbors[:, neighbor_loc]
 
-        obs_neighbors = obs_neighbors.reshape(-1, self.neighbor_obs_dim)
         neighbor_embeds = self.embedding_mlp(obs_neighbors)
         neighbor_embeds = neighbor_embeds.reshape(batch_size, -1, self.neighbor_hidden_size)
         mean_embed = torch.mean(neighbor_embeds, dim=1)
