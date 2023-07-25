@@ -36,8 +36,16 @@ class QuadNeighborhoodEncoderDeepsets(QuadNeighborhoodEncoder):
         # obs_neighbors: [batch, all_neighbor_item_dim]
         obs_neighbors = obs[:, self.self_obs_dim:self.self_obs_dim + all_neighbor_obs_size]
         neighbor_loc = torch.argmin(obs_neighbors, dim=1)
-        neighbor_loc_unique_len = len(torch.unique(neighbor_loc))
+        neighbor_loc_int = torch.div(neighbor_loc, self.neighbor_obs_dim, rounding_mode='floor')
+        neighbor_loc_float = torch.div(neighbor_loc, self.neighbor_obs_dim)
+        # In case considered all neighbors
+        check_equal_neighbor_loc = torch.equal(neighbor_loc_int, neighbor_loc_float)
+        if not check_equal_neighbor_loc:
+            no_equal_index = torch.eq(neighbor_loc_int, neighbor_loc_float)
+            use_all_neighbor_obs = torch.nonzero(no_equal_index==False, as_tuple=False).flatten()
+            neighbor_loc[use_all_neighbor_obs] = all_neighbor_obs_size
 
+        neighbor_loc_unique_len = len(torch.unique(neighbor_loc))
         if neighbor_loc_unique_len > 1:
             clipped_obs_neighbor = []
             for i, obs_neighbor_item in enumerate(obs_neighbors):
@@ -68,7 +76,9 @@ class QuadNeighborhoodEncoderDeepsets(QuadNeighborhoodEncoder):
             tensor_obs_neighbor = obs_neighbors.reshape(-1, self.neighbor_obs_dim)
             # neighbor_embeds: (all groups, hidden_size)
             neighbor_embeds = self.embedding_mlp(tensor_obs_neighbor)
-            neighbor_embeds = neighbor_embeds.reshape(batch_size, neighbor_loc_unique_len, self.neighbor_hidden_size)
+            neighbor_embeds = neighbor_embeds.reshape(batch_size,
+                                                      int(torch.unique(neighbor_loc).item() / self.neighbor_obs_dim),
+                                                      self.neighbor_hidden_size)
             mean_embed = torch.mean(neighbor_embeds, dim=1)
 
         return mean_embed
