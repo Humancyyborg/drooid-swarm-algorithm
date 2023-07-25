@@ -239,6 +239,7 @@ class QuadrotorEnvMulti(gym.Env):
             for i in range(len(self.envs)):
                 if len(closest_drones[i]) > 0:
                     obs_neighbor_rel = self.get_obs_neighbor_rel(env_id=i, closest_drones=closest_drones).reshape(-1)
+                    obs_neighbor_rel = np.clip(obs_neighbor_rel, a_min=-9.9, a_max=9.9)
                     obs_neighbors[i, :len(obs_neighbor_rel)] = obs_neighbor_rel
         else:
             for i in range(len(self.envs)):
