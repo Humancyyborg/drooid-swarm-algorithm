@@ -33,16 +33,44 @@ class QuadNeighborhoodEncoderDeepsets(QuadNeighborhoodEncoder):
         )
 
     def forward(self, self_obs, obs, all_neighbor_obs_size, batch_size):
-        # obs_neighbors: [batch, -1, neighbor_item_dim]
+        # obs_neighbors: [batch, all_neighbor_item_dim]
         obs_neighbors = obs[:, self.self_obs_dim:self.self_obs_dim + all_neighbor_obs_size]
-        # obs_neighbors = obs_neighbors.reshape(batch_size, -1)
-
         neighbor_loc = torch.argmin(obs_neighbors, dim=1)
-        obs_neighbors = obs_neighbors[:, neighbor_loc]
+        neighbor_loc_unique_len = len(torch.unique(neighbor_loc))
 
-        neighbor_embeds = self.embedding_mlp(obs_neighbors)
-        neighbor_embeds = neighbor_embeds.reshape(batch_size, -1, self.neighbor_hidden_size)
-        mean_embed = torch.mean(neighbor_embeds, dim=1)
+        if neighbor_loc_unique_len > 1:
+            clipped_obs_neighbor = []
+            for i, obs_neighbor_item in enumerate(obs_neighbors):
+                clipped_obs_neighbor.append(obs_neighbor_item[:neighbor_loc[i].item()])
+            # clipped_obs_neighbor: (all groups * self.neighbor_obs_dim)
+            tensor_obs_neighbor = torch.cat(clipped_obs_neighbor, dim=0)
+            # tensor_obs_neighbor: (all groups, self.neighbor_obs_dim)
+            tensor_obs_neighbor = tensor_obs_neighbor.reshape(-1, self.neighbor_obs_dim)
+
+            # neighbor_embeds: (all groups, hidden_size)
+            neighbor_embeds = self.embedding_mlp(tensor_obs_neighbor)
+
+            mean_embed = []
+            item_num_tensor = neighbor_loc / self.neighbor_obs_dim
+            cur_id = 0
+            for i in range(batch_size):
+                tmp_neighbor_embeds = neighbor_embeds[cur_id: cur_id + int(item_num_tensor[i].item()), :]
+                tmp_mean_embed = torch.mean(tmp_neighbor_embeds, dim=0)
+                mean_embed.append(tmp_mean_embed)
+                cur_id += int(item_num_tensor[i].item())
+
+            mean_embed = torch.stack(mean_embed, dim=0)
+        else:
+            tmp_neighbor_obs_dim = torch.unique(neighbor_loc).item()
+            # obs_neighbors: [batch, clipped_dim]
+            obs_neighbors = obs_neighbors[:, :tmp_neighbor_obs_dim]
+            # tensor_obs_neighbor: (-1, self.neighbor_obs_dim)
+            tensor_obs_neighbor = obs_neighbors.reshape(-1, self.neighbor_obs_dim)
+            # neighbor_embeds: (all groups, hidden_size)
+            neighbor_embeds = self.embedding_mlp(tensor_obs_neighbor)
+            neighbor_embeds = neighbor_embeds.reshape(batch_size, neighbor_loc_unique_len, self.neighbor_hidden_size)
+            mean_embed = torch.mean(neighbor_embeds, dim=1)
+
         return mean_embed
 
 
