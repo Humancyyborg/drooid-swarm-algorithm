@@ -233,8 +233,8 @@ class QuadrotorEnvMulti(gym.Env):
     def extend_obs_space(self, obs, closest_drones):
         obs_neighbors = []
         if self.neighbor_obs_type == 'range':
-            obs_neighbors = -20.0 * np.ones((self.num_agents, self.neighbor_obs_size * (self.num_agents - 1)))
-            obs_neighbors[:, :self.neighbor_obs_size] = np.array([self.neighbor_range, 0., 0., 0., 0., 0.])
+            obs_neighbors = -10.0 * np.ones((self.num_agents, self.neighbor_obs_size * (self.num_agents - 1)))
+            # obs_neighbors[:, :self.neighbor_obs_size] = np.array([self.neighbor_range, 0., 0., 0., 0., 0.])
 
             for i in range(len(self.envs)):
                 if len(closest_drones[i]) > 0:
