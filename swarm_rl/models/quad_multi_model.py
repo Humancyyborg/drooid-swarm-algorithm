@@ -32,6 +32,13 @@ class QuadNeighborhoodEncoderDeepsets(QuadNeighborhoodEncoder):
             nonlinearity(cfg)
         )
 
+        self.invalid_weights_mlp = nn.Sequential(
+            fc_layer(neighbor_obs_dim, neighbor_hidden_size),
+            nonlinearity(cfg),
+            fc_layer(neighbor_hidden_size, neighbor_hidden_size),
+            nonlinearity(cfg)
+        )
+
     def forward(self, self_obs, obs, all_neighbor_obs_size, batch_size):
         # obs_neighbors: [batch, all_neighbor_item_dim]
         obs_neighbors = obs[:, self.self_obs_dim:self.self_obs_dim + all_neighbor_obs_size]
@@ -71,10 +78,13 @@ class QuadNeighborhoodEncoderDeepsets(QuadNeighborhoodEncoder):
                     mean_embed.append(tmp_mean_embed)
                     cur_id += cur_tensor_num
                 else:
-                    mean_embed.append(torch.zeros(self.neighbor_hidden_size, device=obs_device))
+                    invalid_obs = torch.zeros(self.neighbor_obs_dim, device=obs_device)
+                    tmp_latent = self.invalid_weights_mlp(invalid_obs)
+                    mean_embed.append(tmp_latent)
             mean_embed = torch.stack(mean_embed, dim=0)
         else:
-            mean_embed = torch.zeros((batch_size, self.neighbor_hidden_size), device=obs_device)
+            invalid_obs = torch.zeros((batch_size, self.neighbor_obs_dim), device=obs_device)
+            mean_embed = self.invalid_weights_mlp(invalid_obs)
 
         # else:
         #     tmp_neighbor_obs_dim = torch.unique(neighbor_loc).item()
