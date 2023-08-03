@@ -19,6 +19,7 @@ References:
 """
 import copy
 
+import numpy as np
 from gymnasium.utils import seeding
 
 import gym_art.quadrotor_multi.get_state as get_state
@@ -31,54 +32,26 @@ GRAV = 9.81  # default gravitational constant
 
 
 # reasonable reward function for hovering at a goal and not flying too high
-def compute_reward_weighted(dynamics, goal, action, dt, time_remain, rew_coeff, action_prev, on_floor=False):
-    # Distance to the goal
-    dist = np.linalg.norm(goal - dynamics.pos)
-    cost_pos_raw = dist
-    cost_pos = rew_coeff["pos"] * cost_pos_raw
+def compute_reward_weighted(rl_acc, acc_sbc, mellinger_acc, dt, rew_coeff):
+    # Difference between acc_rl & acc_sbc
+    cost_rl_sbc_raw = np.linspace.norm(acc_sbc - rl_acc)
+    cost_rl_sbc = rew_coeff["rl_sbc"] * cost_rl_sbc_raw
 
-    # Penalize amount of control effort
-    cost_effort_raw = np.linalg.norm(action)
-    cost_effort = rew_coeff["effort"] * cost_effort_raw
-
-    # Loss orientation
-    if on_floor:
-        cost_orient_raw = 1.0
-    else:
-        cost_orient_raw = -dynamics.rot[2, 2]
-
-    cost_orient = rew_coeff["orient"] * cost_orient_raw
-
-    # Loss for constant uncontrolled rotation around vertical axis
-    cost_spin_raw = (dynamics.omega[0] ** 2 + dynamics.omega[1] ** 2 + dynamics.omega[2] ** 2) ** 0.5
-    cost_spin = rew_coeff["spin"] * cost_spin_raw
-
-    # Loss crash for staying on the floor
-    cost_crash_raw = float(on_floor)
-    cost_crash = rew_coeff["crash"] * cost_crash_raw
+    # Difference between acc_sbc & acc_mellinger
+    cost_sbc_mellinger_raw = np.linspace.norm(mellinger_acc - acc_sbc)
+    cost_sbc_mellinger = rew_coeff["sbc_mellinger"] * cost_sbc_mellinger_raw
 
     reward = -dt * np.sum([
-        cost_pos,
-        cost_effort,
-        cost_crash,
-        cost_orient,
-        cost_spin,
+        cost_rl_sbc,
+        cost_sbc_mellinger,
     ])
 
     rew_info = {
-        "rew_main": -cost_pos,
-        'rew_pos': -cost_pos,
-        'rew_action': -cost_effort,
-        'rew_crash': -cost_crash,
-        "rew_orient": -cost_orient,
-        "rew_spin": -cost_spin,
+        "rew_rl_sbc": -cost_rl_sbc,
+        'rew_sbc_mellinger': -cost_sbc_mellinger,
 
-        "rewraw_main": -cost_pos_raw,
-        'rewraw_pos': -cost_pos_raw,
-        'rewraw_action': -cost_effort_raw,
-        'rewraw_crash': -cost_crash_raw,
-        "rewraw_orient": -cost_orient_raw,
-        "rewraw_spin": -cost_spin_raw,
+        "rewraw_rl_sbc": -cost_rl_sbc_raw,
+        'rewraw_sbc_mellinger': -cost_sbc_mellinger_raw,
     }
 
     for k, v in rew_info.items():
@@ -155,6 +128,7 @@ class QuadrotorSingle:
         self.ep_time = ep_time  # In seconds
         self.sim_steps = sim_steps
         self.dt = 1.0 / sim_freq
+        self.time_remain = 0
         self.ep_len = int(self.ep_time / (self.dt * self.sim_steps))
         self.tick = 0
         self.control_freq = sim_freq / sim_steps
@@ -257,20 +231,12 @@ class QuadrotorSingle:
                                           use_numba=self.use_numba, dt=self.dt)
 
         # CONTROL
-        if self.raw_control:
-            if self.dim_mode == '1D':  # Z axis only
-                self.controller = VerticalControl(self.dynamics, zero_action_middle=self.raw_control_zero_middle)
-            elif self.dim_mode == '2D':  # X and Z axes only
-                self.controller = VertPlaneControl(self.dynamics, zero_action_middle=self.raw_control_zero_middle)
-            elif self.dim_mode == '3D':
-                self.controller = RawControl(self.dynamics, zero_action_middle=self.raw_control_zero_middle)
-            else:
-                raise ValueError('QuadEnv: Unknown dimensionality mode %s' % self.dim_mode)
-        else:
-            self.controller = NonlinearPositionController(self.dynamics, tf_control=self.tf_control)
+        self.controller = MellingerController(self.dynamics)
 
         # ACTIONS
-        self.action_space = self.controller.action_space(self.dynamics)
+        self.action_space = spaces.Box(low=-self.dynamics.acc_max * np.ones(3),
+                                       high=self.dynamics.acc_max * np.ones(3),
+                                       dtype=np.float32)
 
         # STATE VECTOR FUNCTION
         self.state_vector = getattr(get_state, "state_" + self.obs_repr)
@@ -338,16 +304,15 @@ class QuadrotorSingle:
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def _step(self, action):
+    def _step(self, action, sbc_data):
         self.actions[1] = copy.deepcopy(self.actions[0])
         self.actions[0] = copy.deepcopy(action)
 
-        self.controller.step_func(dynamics=self.dynamics, action=action, goal=self.goal, dt=self.dt, observation=None)
+        _, acc_sbc = self.controller.step_func(dynamics=self.dynamics, acc_des=action, dt=self.dt, observation=sbc_data)
 
         self.time_remain = self.ep_len - self.tick
         reward, rew_info = compute_reward_weighted(
-            dynamics=self.dynamics, goal=self.goal, action=action, dt=self.dt, time_remain=self.time_remain,
-            rew_coeff=self.rew_coeff, action_prev=self.actions[1], on_floor=self.dynamics.on_floor)
+            rl_acc=action, acc_sbc=acc_sbc, mellinger_acc=self.dynamics.acc, dt=self.dt, rew_coeff=self.rew_coeff)
 
         self.tick += 1
         done = self.tick > self.ep_len
@@ -386,8 +351,8 @@ class QuadrotorSingle:
 
     def _reset(self):
         # DYNAMICS RANDOMIZATION AND UPDATE
-        if self.dynamics_randomize_every is not None and (self.traj_count + 1) % self.dynamics_randomize_every == 0:
-            self.resample_dynamics()
+        # if self.dynamics_randomize_every is not None and (self.traj_count + 1) % self.dynamics_randomize_every == 0:
+        #     self.resample_dynamics()
 
         if self.box < 10:
             self.box = self.box * self.box_scale
@@ -428,10 +393,7 @@ class QuadrotorSingle:
             if self.dim_mode == '1D' or self.dim_mode == '2D':
                 rotation = np.eye(3)
             else:
-                # make sure we're sort of pointing towards goal (for mellinger controller)
-                rotation = randyaw()
-                while np.dot(rotation[:, 0], to_xyhat(-pos)) < 0.5:
-                    rotation = randyaw()
+                rotation = rotZ(0)[:3, :3]
 
         self.init_state = [pos, vel, rotation, omega]
         self.dynamics.set_state(pos, vel, rotation, omega)
@@ -441,7 +403,7 @@ class QuadrotorSingle:
 
         # Reseting some internal state (counters, etc)
         self.tick = 0
-        self.actions = [np.zeros([4, ]), np.zeros([4, ])]
+        self.actions = [np.zeros([3, ]), np.zeros([3, ])]
 
         state = self.state_vector(self)
         return state
@@ -453,5 +415,5 @@ class QuadrotorSingle:
         """This class is only meant to be used as a component of QuadMultiEnv."""
         raise NotImplementedError()
 
-    def step(self, action):
-        return self._step(action)
+    def step(self, action, sbc_data):
+        return self._step(action, sbc_data)

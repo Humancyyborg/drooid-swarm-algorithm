@@ -115,3 +115,9 @@ def add_quadrotors_env_args(env, parser):
                    help='Choose which kind of view/camera to use')
     p.add_argument('--quads_render', default=False, type=bool, help='Use render or not')
     p.add_argument('--visualize_v_value', action='store_true', help="Visualize v value map")
+
+    # Controller
+    p.add_argument('--quads_cost_rl_sbc', default=1.0, type=float,
+                   help='cost coeff of the difference between rl acc outputs and sbc acc outputs')
+    p.add_argument('--quads_cost_sbc_mellinger', default=1.0, type=float,
+                   help='cost coeff of the difference between sbc acc outputs and mellinger acc outputs')

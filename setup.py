@@ -69,6 +69,6 @@ setup(
     install_requires=[
         'pytest', 'numpy>1.15', 'pyglet<=1.5.23', 'matplotlib>3', 'gym>=0.17', 'transforms3d', 'noise', 'tqdm',
         'bezier<=2020.5.19', 'numba', 'scipy', 'sample-factory', 'plotly<=5.13.0', 'attrdict==2.0.1',
-        'pandas==2.0.1', 'gymnasium==0.28.1'
+        'pandas==2.0.1', 'gymnasium==0.28.1', 'qpsolvers'
     ],
 )

@@ -17,6 +17,7 @@ from gym_art.quadrotor_multi.quad_utils import QUADS_OBS_REPR, QUADS_NEIGHBOR_OB
 from gym_art.quadrotor_multi.obstacles.obstacles import MultiObstacles
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
 from gym_art.quadrotor_multi.quadrotor_single import QuadrotorSingle
+from gym_art.quadrotor_multi.quadrotor_control import NominalSBC
 from gym_art.quadrotor_multi.scenarios.mix import create_scenario
 
 
@@ -54,7 +55,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Generate All Quadrotors
         self.envs = []
-        for i in range(self.num_agents):
+        for _ in range(self.num_agents):
             e = QuadrotorSingle(
                 # Quad Parameters
                 dynamics_params=dynamics_params, dynamics_change=dynamics_change,
@@ -125,6 +126,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.num_obstacles = int(obst_density * obst_spawn_area[0] * obst_spawn_area[1])
             self.obst_map = None
             self.obst_size = obst_size
+            self.obst_pos_arr = None
 
             # Log more info
             self.distance_to_goal_3_5 = 0
@@ -343,7 +345,7 @@ class QuadrotorEnvMulti(gym.Env):
         # Scenario reset
         if self.use_obstacles:
             self.obstacles = MultiObstacles(obstacle_size=self.obst_size, quad_radius=self.quad_arm)
-            self.obst_map, obst_pos_arr, cell_centers = self.obst_generation_given_density()
+            self.obst_map, self.obst_pos_arr, cell_centers = self.obst_generation_given_density()
             self.scenario.reset(obst_map=self.obst_map, cell_centers=cell_centers)
         else:
             self.scenario.reset()
@@ -373,7 +375,7 @@ class QuadrotorEnvMulti(gym.Env):
         # Obstacles
         if self.use_obstacles:
             quads_pos = np.array([e.dynamics.pos for e in self.envs])
-            obs = self.obstacles.reset(obs=obs, quads_pos=quads_pos, pos_arr=obst_pos_arr)
+            obs = self.obstacles.reset(obs=obs, quads_pos=quads_pos, pos_arr=self.obst_pos_arr)
             self.obst_quad_collisions_per_episode = self.obst_quad_collisions_after_settle = 0
             self.prev_obst_quad_collisions = []
             self.distance_to_goal_3_5 = 0
@@ -412,7 +414,48 @@ class QuadrotorEnvMulti(gym.Env):
         for i, a in enumerate(actions):
             self.envs[i].rew_coeff = self.rew_coeff
 
-            observation, reward, done, info = self.envs[i].step(a)
+            # Output is acc, not thrusts
+            self_state = NominalSBC.State(position=self.envs[i].dynamics.pos, velocity=self.envs[i].dynamics.vel)
+            neighbor_descriptions = []
+
+            # Add neighbor robot descriptions
+            for j in range(len(actions)):
+                if i == j:
+                    continue
+
+                if np.linalg.norm(self_state.position - self.envs[j].dynamics.pos) < 5.0:
+                    neighbor_descriptions.append(NominalSBC.ObjectDescription(
+                            state=NominalSBC.State(
+                                position=self.envs[j].dynamics.pos,
+                                velocity=self.envs[j].dynamics.vel
+                            ),
+                            radius=self.envs[j].controller.sbc.radius,
+                            maximum_linf_acceleration_lower_bound=self.envs[j].controller.sbc.maximum_linf_acceleration
+                        )
+                    )
+
+            # Add neighbor obstacle descriptions
+            for obst_pose in self.obst_pos_arr:
+                x, y = obst_pose[0], obst_pose[1]
+                if np.linalg.norm(np.array([x, y]) - np.array([self_state.position[0], self_state.position[1]])) < 3.0:
+                    z = 0.0
+                    while z < self.room_dims[2]:
+                        if np.linalg.norm(np.array([x, y, z]) - self_state.position) < 3.0:
+                            neighbor_descriptions.append(
+                                NominalSBC.ObjectDescription(
+                                    state=NominalSBC.State(
+                                        position=np.array([x, y, z]),
+                                        velocity=np.zeros(3)
+                                    ),
+                                    radius=self.obst_size*0.5,
+                                    maximum_linf_acceleration_lower_bound=0.0
+                                )
+                            )
+                        z += self.obst_size * 0.5
+
+            observation, reward, done, info, t = self.envs[i].step(
+                action=a, sbc_data={"self_state": self_state, "neighbor_descriptions": neighbor_descriptions})
+
             obs.append(observation)
             rewards.append(reward)
             dones.append(done)
