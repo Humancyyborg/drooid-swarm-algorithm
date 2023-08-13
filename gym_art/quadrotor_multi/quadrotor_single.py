@@ -32,24 +32,41 @@ GRAV = 9.81  # default gravitational constant
 
 
 # reasonable reward function for hovering at a goal and not flying too high
-def compute_reward_weighted(rl_acc, acc_sbc, mellinger_acc, dt, rew_coeff):
+def compute_reward_weighted(goal, cur_pos, rl_acc, acc_sbc, mellinger_acc, dt, rew_coeff, on_floor):
+    # Distance to the goal
+    dist = np.linalg.norm(goal - cur_pos)
+    cost_pos_raw = dist
+    cost_pos = rew_coeff["pos"] * cost_pos_raw
+
+    # Loss crash for staying on the floor
+    cost_crash_raw = float(on_floor)
+    cost_crash = rew_coeff["crash"] * cost_crash_raw
+
     # Difference between acc_rl & acc_sbc
-    cost_rl_sbc_raw = np.linspace.norm(acc_sbc - rl_acc)
+    cost_rl_sbc_raw = np.linalg.norm(acc_sbc - rl_acc)
     cost_rl_sbc = rew_coeff["rl_sbc"] * cost_rl_sbc_raw
 
     # Difference between acc_sbc & acc_mellinger
-    cost_sbc_mellinger_raw = np.linspace.norm(mellinger_acc - acc_sbc)
+    cost_sbc_mellinger_raw = np.linalg.norm(mellinger_acc - acc_sbc)
     cost_sbc_mellinger = rew_coeff["sbc_mellinger"] * cost_sbc_mellinger_raw
 
     reward = -dt * np.sum([
+        cost_pos,
+        cost_crash,
         cost_rl_sbc,
         cost_sbc_mellinger,
     ])
 
     rew_info = {
+        "rew_main": -cost_pos,
+        'rew_pos': -cost_pos,
+        'rew_crash': -cost_crash,
         "rew_rl_sbc": -cost_rl_sbc,
         'rew_sbc_mellinger': -cost_sbc_mellinger,
 
+        "rewraw_main": -cost_pos_raw,
+        'rewraw_pos': -cost_pos_raw,
+        'rewraw_crash': -cost_crash_raw,
         "rewraw_rl_sbc": -cost_rl_sbc_raw,
         'rewraw_sbc_mellinger': -cost_sbc_mellinger_raw,
     }
@@ -312,7 +329,8 @@ class QuadrotorSingle:
 
         self.time_remain = self.ep_len - self.tick
         reward, rew_info = compute_reward_weighted(
-            rl_acc=action, acc_sbc=acc_sbc, mellinger_acc=self.dynamics.acc, dt=self.dt, rew_coeff=self.rew_coeff)
+            goal=self.goal, cur_pos=self.dynamics.pos, rl_acc=action, acc_sbc=acc_sbc, mellinger_acc=self.dynamics.acc,
+            dt=self.dt, rew_coeff=self.rew_coeff, on_floor=self.dynamics.on_floor)
 
         self.tick += 1
         done = self.tick > self.ep_len

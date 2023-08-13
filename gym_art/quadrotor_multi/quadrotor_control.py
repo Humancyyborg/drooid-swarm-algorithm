@@ -366,7 +366,7 @@ class MellingerController(object):
 
         dynamics.step(thrusts, dt)
         self.action = thrusts.copy()
-        return self.action, new_acc
+        return self.action, acc_des  # TODO: Check with Baskin, originally, it was new_acc
 
     # def action_space(self, dynamics):
     #     circle_per_sec = 2 * np.pi

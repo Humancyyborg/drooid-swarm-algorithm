@@ -204,6 +204,10 @@ class QuadrotorEnvMulti(gym.Env):
         # Others
         self.apply_collision_force = True
 
+        # Action space
+        self.action_min = -1.0 * self.envs[0].dynamics.acc_max
+        self.action_max = self.envs[0].dynamics.acc_max
+
     def all_dynamics(self):
         return tuple(e.dynamics for e in self.envs)
 
@@ -409,6 +413,8 @@ class QuadrotorEnvMulti(gym.Env):
         return obs
 
     def step(self, actions):
+        actions = np.clip(actions, a_min=self.action_min, a_max=self.action_max)
+
         obs, rewards, dones, infos = [], [], [], []
 
         for i, a in enumerate(actions):
@@ -453,7 +459,7 @@ class QuadrotorEnvMulti(gym.Env):
                             )
                         z += self.obst_size * 0.5
 
-            observation, reward, done, info, t = self.envs[i].step(
+            observation, reward, done, info = self.envs[i].step(
                 action=a, sbc_data={"self_state": self_state, "neighbor_descriptions": neighbor_descriptions})
 
             obs.append(observation)
