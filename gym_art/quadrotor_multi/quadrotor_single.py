@@ -148,6 +148,7 @@ class QuadrotorSingle:
         self.ep_len = int(self.ep_time / (self.dt * self.sim_steps))
         self.tick = 0
         self.control_freq = sim_freq / sim_steps
+        self.control_dt = 1.0 / self.control_freq
         self.traj_count = 0
 
         # Self dynamics
@@ -330,7 +331,7 @@ class QuadrotorSingle:
         reward, rew_info = compute_reward_weighted(
             goal=self.goal, cur_pos=self.dynamics.pos, rl_acc=action, acc_sbc=acc_sbc,
             mellinger_acc=self.dynamics.acc + np.array((0., 0., GRAV)),
-            dt=self.control_freq, rew_coeff=self.rew_coeff, on_floor=self.dynamics.on_floor)
+            dt=self.control_dt, rew_coeff=self.rew_coeff, on_floor=self.dynamics.on_floor)
 
         self.tick += 1
         done = self.tick > self.ep_len
