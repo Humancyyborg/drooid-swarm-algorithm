@@ -75,6 +75,7 @@ class NominalSBC:
 
         return x
 
+
 class RawControl(object):
     def __init__(self, dynamics, zero_action_middle=True):
         self.zero_action_middle = zero_action_middle
@@ -306,7 +307,7 @@ class MellingerController(object):
     def __init__(self, dynamics):
         jacobian = quadrotor_jacobian(dynamics)
         self.Jinv = np.linalg.inv(jacobian)
-        ## Jacobian inverse for our quadrotor
+        # Jacobian inverse for our quadrotor
         # Jinv = np.array([[0.0509684, 0.0043685, -0.0043685, 0.02038736],
         #                 [0.0509684, -0.0043685, -0.0043685, -0.02038736],
         #                 [0.0509684, -0.0043685,  0.0043685,  0.02038736],
@@ -345,7 +346,7 @@ class MellingerController(object):
                     acc_des = self.sbc_last_safe_acc
 
         # Question: Why do we need to do this???
-        acc_des_without_grav = acc_des
+        acc_des_without_grav = np.array(acc_des)
         acc_des += np.array([0, 0, GRAV])
         xc_des = self.rot_des[:, 0]
 
