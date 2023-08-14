@@ -19,7 +19,6 @@ References:
 """
 import copy
 
-import numpy as np
 from gymnasium.utils import seeding
 
 import gym_art.quadrotor_multi.get_state as get_state

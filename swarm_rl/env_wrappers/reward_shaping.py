@@ -6,7 +6,7 @@ from sample_factory.envs.env_utils import TrainingInfoInterface, RewardShapingIn
 
 DEFAULT_QUAD_REWARD_SHAPING_SINGLE = dict(
     quad_rewards=dict(
-        pos=1.0, effort=0.05, spin=0.1, vel=0.0, crash=1.0, orient=1.0, yaw=0.0
+        pos=1.0, crash=1.0
     ),
 )
 
@@ -94,7 +94,7 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapin
 
                 if hasattr(self.env.unwrapped, 'scenario') and self.env.unwrapped.scenario:
                     scenario_name = self.env.unwrapped.scenario.name()
-                    for rew_key in ['rew_pos', 'rew_crash']:
+                    for rew_key in ['rew_pos', 'rew_crash', 'rew_rl_sbc', 'rew_sbc_mellinger']:
                         extra_stats[f'{scenario_name}/{rew_key}'] = self.cumulative_rewards[i][rew_key]
 
                 episode_actions = np.array(self.episode_actions)
