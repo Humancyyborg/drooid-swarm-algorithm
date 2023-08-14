@@ -3,6 +3,7 @@ from gymnasium import spaces
 from gym_art.quadrotor_multi.quad_utils import *
 import qpsolvers
 import math
+from scipy.sparse import csc_matrix
 
 GRAV = 9.81
 
@@ -64,6 +65,12 @@ class NominalSBC:
             G = np.append(G, [-1.0 * relative_position], axis=0)
             h = np.append(h, bij)
 
+        P = csc_matrix(P)
+        G = csc_matrix(G)
+        A = csc_matrix(A)
+
+        # This is the bottleneck
+        # TODO: find a better QP solver
         x = qpsolvers.solve_qp(P, q, G, h, A, b, lb, ub, solver="osqp")
 
         return x
@@ -312,7 +319,8 @@ class MellingerController(object):
         self.rot_des = np.eye(3)
 
         self.enable_sbc = True
-        self.sbc = NominalSBC(maximum_linf_acceleration=5.0,
+        # maximum_linf_acceleration, max_acc in any dimension
+        self.sbc = NominalSBC(maximum_linf_acceleration=2.0,
                               aggressiveness=0.1, radius=0.15)
         self.sbc_last_safe_acc = None
 
@@ -337,6 +345,7 @@ class MellingerController(object):
                     acc_des = self.sbc_last_safe_acc
 
         # Question: Why do we need to do this???
+        acc_des_without_grav = acc_des
         acc_des += np.array([0, 0, GRAV])
         xc_des = self.rot_des[:, 0]
 
@@ -366,7 +375,7 @@ class MellingerController(object):
 
         dynamics.step(thrusts, dt)
         self.action = thrusts.copy()
-        return self.action, acc_des  # TODO: Check with Baskin, originally, it was new_acc
+        return self.action, acc_des_without_grav  # TODO: Check with Baskin, originally, it was new_acc
 
     # def action_space(self, dynamics):
     #     circle_per_sec = 2 * np.pi

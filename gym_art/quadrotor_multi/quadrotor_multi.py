@@ -205,8 +205,8 @@ class QuadrotorEnvMulti(gym.Env):
         self.apply_collision_force = True
 
         # Action space
-        self.action_min = -1.0 * self.envs[0].dynamics.acc_max
-        self.action_max = self.envs[0].dynamics.acc_max
+        # self.action_min = -1.0 * self.envs[0].dynamics.acc_max
+        self.action_max = 2.0
 
     def all_dynamics(self):
         return tuple(e.dynamics for e in self.envs)
@@ -413,7 +413,9 @@ class QuadrotorEnvMulti(gym.Env):
         return obs
 
     def step(self, actions):
-        actions = np.clip(actions, a_min=self.action_min, a_max=self.action_max)
+        actions = np.clip(actions, a_min=-1.0, a_max=1.0)
+        # TODO: Maybe need to normalize actions, since the overall maximum acc is ~ 2.0
+        actions = actions * self.action_max
 
         obs, rewards, dones, infos = [], [], [], []
 
@@ -441,6 +443,7 @@ class QuadrotorEnvMulti(gym.Env):
                     )
 
             # Add neighbor obstacle descriptions
+            # TODO: Can we optimize this part?
             for obst_pose in self.obst_pos_arr:
                 x, y = obst_pose[0], obst_pose[1]
                 if np.linalg.norm(np.array([x, y]) - np.array([self_state.position[0], self_state.position[1]])) < 3.0:
