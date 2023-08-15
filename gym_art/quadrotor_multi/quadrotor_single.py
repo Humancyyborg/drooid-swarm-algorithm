@@ -329,8 +329,7 @@ class QuadrotorSingle:
 
         self.time_remain = self.ep_len - self.tick
         reward, rew_info = compute_reward_weighted(
-            goal=self.goal, cur_pos=self.dynamics.pos, rl_acc=action, acc_sbc=acc_sbc,
-            mellinger_acc=self.dynamics.acc + np.array((0., 0., GRAV)),
+            goal=self.goal, cur_pos=self.dynamics.pos, rl_acc=action, acc_sbc=acc_sbc, mellinger_acc=self.dynamics.acc,
             dt=self.control_dt, rew_coeff=self.rew_coeff, on_floor=self.dynamics.on_floor)
 
         self.tick += 1
