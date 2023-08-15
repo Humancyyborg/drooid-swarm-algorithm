@@ -69,6 +69,9 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
 
     reward_shaping = copy.deepcopy(DEFAULT_QUAD_REWARD_SHAPING)
 
+    reward_shaping['quad_rewards']['pos'] = cfg.quads_cost_pos
+    reward_shaping['quad_rewards']['crash'] = cfg.quads_cost_crash
+
     reward_shaping['quad_rewards']['quadcol_bin'] = cfg.quads_collision_reward
     reward_shaping['quad_rewards']['quadcol_bin_smooth_max'] = cfg.quads_collision_smooth_max_penalty
     reward_shaping['quad_rewards']['quadcol_bin_obst'] = cfg.quads_obst_collision_reward
@@ -81,11 +84,18 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         reward_shaping['quad_rewards']['quadcol_bin'] = 0.0
         reward_shaping['quad_rewards']['quadcol_bin_smooth_max'] = 0.0
         reward_shaping['quad_rewards']['quadcol_bin_obst'] = 0.0
+
+        # rl_sbc & sbc_mellinger
+        reward_shaping['quad_rewards']['rl_sbc'] = 0.0
+        reward_shaping['quad_rewards']['sbc_mellinger'] = 0.0
+
         annealing = [
             AnnealSchedule('quadcol_bin', cfg.quads_collision_reward, cfg.anneal_collision_steps),
             AnnealSchedule('quadcol_bin_smooth_max', cfg.quads_collision_smooth_max_penalty,
                            cfg.anneal_collision_steps),
             AnnealSchedule('quadcol_bin_obst', cfg.quads_obst_collision_reward, cfg.anneal_collision_steps),
+            AnnealSchedule('rl_sbc', cfg.quads_cost_rl_sbc, cfg.anneal_collision_steps),
+            AnnealSchedule('sbc_mellinger', cfg.quads_cost_sbc_mellinger, cfg.anneal_collision_steps),
         ]
     else:
         annealing = None
