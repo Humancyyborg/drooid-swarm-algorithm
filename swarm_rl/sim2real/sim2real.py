@@ -32,7 +32,7 @@ def parse_args():
                         help='Whether or not to save the c model in testing mode. Enable this if you want to run the '
                              'unit test to make sure the output of the c model is the same as the pytorch model. Set '
                              'to False if you want to output a c model that will be actually used for sim2real')
-    parser.add_argument('--model_type', type=str, choices=['single'],
+    parser.add_argument('--model_type', type=str, choices=['single'], default='single',
                         help='What kind of model we are working with. '
                              'Currently only single drone models are supported.')
     args = parser.parse_args()
