@@ -5,7 +5,7 @@ _params = ParamGrid(
     [
         ("seed", [0000, 3333]),
         ("quads_anneal_safe_start_steps", [50000000]),
-        ("quads_anneal_safe_start_steps", [100000000, 200000000]),
+        ("quads_anneal_safe_total_steps", [100000000, 200000000]),
     ]
 )
 
