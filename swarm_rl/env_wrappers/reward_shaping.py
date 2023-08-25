@@ -18,7 +18,7 @@ DEFAULT_QUAD_REWARD_SHAPING['quad_rewards'].update(dict(
 
 
 class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapingInterface):
-    def __init__(self, env, reward_shaping_scheme=None, annealing=None, with_pbt=False):
+    def __init__(self, env, reward_shaping_scheme=None, annealing=None, safe_annealing=None, with_pbt=False):
         gym.Wrapper.__init__(self, env)
         TrainingInfoInterface.__init__(self)
         if with_pbt:
@@ -33,6 +33,7 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapin
         self.reward_shaping_updated = True
 
         self.annealing = annealing
+        self.safe_annealing = safe_annealing
 
     def get_default_reward_shaping(self):
         return dict(quad_rewards=dict())
@@ -116,6 +117,22 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapin
                         final_value = anneal_schedule.final_value
                         anneal_steps = anneal_schedule.anneal_env_steps
                         env_reward_shaping[coeff_name] = min(final_value * approx_total_training_steps / anneal_steps, final_value)
+                        extra_stats[f'z_anneal_{coeff_name}'] = env_reward_shaping[coeff_name]
+
+                if self.safe_annealing:
+                    env_reward_shaping = self.env.unwrapped.rew_coeff
+                    # annealing from 0.0 to final value
+                    for anneal_schedule in self.safe_annealing:
+                        coeff_name = anneal_schedule.coeff_name
+                        final_value = anneal_schedule.final_value
+                        start_steps = anneal_schedule.start_steps
+                        total_steps = anneal_schedule.total_steps
+                        if approx_total_training_steps <= start_steps:
+                            env_reward_shaping[coeff_name] = 0.0
+                        else:
+                            env_reward_shaping[coeff_name] = final_value * min(
+                                (approx_total_training_steps - start_steps) / total_steps,
+                                1.0)
                         extra_stats[f'z_anneal_{coeff_name}'] = env_reward_shaping[coeff_name]
 
         if any(dones_multi):

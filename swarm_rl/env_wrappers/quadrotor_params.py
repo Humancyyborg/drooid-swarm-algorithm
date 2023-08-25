@@ -125,3 +125,7 @@ def add_quadrotors_env_args(env, parser):
                    help='cost coeff of the position cost')
     p.add_argument('--quads_cost_crash', default=1.0, type=float,
                    help='cost coeff of the crash cost')
+    p.add_argument('--quads_anneal_safe_start_steps', default=0.0, type=float,
+                   help='Start annealing')
+    p.add_argument('--quads_anneal_safe_total_steps', default=0.0, type=float,
+                   help='Total annealing steps')

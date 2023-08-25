@@ -17,6 +17,14 @@ class AnnealSchedule:
         self.anneal_env_steps = anneal_env_steps
 
 
+class TwoStageAnnealSchedule:
+    def __init__(self, coeff_name, final_value, start_steps, total_steps):
+        self.coeff_name = coeff_name
+        self.final_value = final_value
+        self.start_steps = start_steps
+        self.total_steps = total_steps
+
+
 def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
     from gym_art.quadrotor_multi.quadrotor_multi import QuadrotorEnvMulti
     quad = 'Crazyflie'
@@ -85,23 +93,34 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         reward_shaping['quad_rewards']['quadcol_bin_smooth_max'] = 0.0
         reward_shaping['quad_rewards']['quadcol_bin_obst'] = 0.0
 
-        # rl_sbc & sbc_mellinger
-        reward_shaping['quad_rewards']['rl_sbc'] = 0.0
-        reward_shaping['quad_rewards']['sbc_mellinger'] = 0.0
-
         annealing = [
             AnnealSchedule('quadcol_bin', cfg.quads_collision_reward, cfg.anneal_collision_steps),
             AnnealSchedule('quadcol_bin_smooth_max', cfg.quads_collision_smooth_max_penalty,
                            cfg.anneal_collision_steps),
             AnnealSchedule('quadcol_bin_obst', cfg.quads_obst_collision_reward, cfg.anneal_collision_steps),
-            AnnealSchedule('rl_sbc', cfg.quads_cost_rl_sbc, cfg.anneal_collision_steps),
-            AnnealSchedule('sbc_mellinger', cfg.quads_cost_sbc_mellinger, cfg.anneal_collision_steps),
         ]
     else:
         annealing = None
 
+    # this is annealed by the reward shaping wrapper
+    if cfg.quads_anneal_safe_steps > 0:
+        # rl_sbc & sbc_mellinger
+        reward_shaping['quad_rewards']['rl_sbc'] = 0.0
+        reward_shaping['quad_rewards']['sbc_mellinger'] = 0.0
+
+        safe_annealing = [
+            TwoStageAnnealSchedule(
+                coeff_name='rl_sbc', final_value=cfg.quads_cost_rl_sbc, start_steps=cfg.quads_anneal_safe_start_steps,
+                total_steps=cfg.quads_anneal_safe_total_steps),
+            TwoStageAnnealSchedule(
+                coeff_name='sbc_mellinger', final_value=cfg.quads_cost_sbc_mellinger,
+                start_steps=cfg.quads_anneal_safe_start_steps, total_steps=cfg.quads_anneal_safe_total_steps),
+        ]
+    else:
+        safe_annealing = None
+
     env = QuadsRewardShapingWrapper(env, reward_shaping_scheme=reward_shaping, annealing=annealing,
-                                    with_pbt=cfg.with_pbt)
+                                    safe_annealing=safe_annealing, with_pbt=cfg.with_pbt)
     env = QuadEnvCompatibility(env, render_mode=render_mode)
 
     if cfg.visualize_v_value:
