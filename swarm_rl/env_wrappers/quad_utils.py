@@ -103,7 +103,7 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         annealing = None
 
     # this is annealed by the reward shaping wrapper
-    if cfg.quads_anneal_safe_steps > 0:
+    if cfg.quads_anneal_safe_total_steps > 0:
         # rl_sbc & sbc_mellinger
         reward_shaping['quad_rewards']['rl_sbc'] = 0.0
         reward_shaping['quad_rewards']['sbc_mellinger'] = 0.0
