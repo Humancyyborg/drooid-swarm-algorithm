@@ -36,7 +36,10 @@ class QuadrotorEnvMulti(gym.Env):
                  # Quadrotor Specific (Do Not Change)
                  dynamics_params, raw_control, raw_control_zero_middle,
                  dynamics_randomize_every, dynamics_change, dyn_sampler_1,
-                 sense_noise, init_random_state):
+                 sense_noise, init_random_state,
+
+                 # extra controller
+                 use_sbc):
         super().__init__()
 
         # Predefined Parameters
@@ -46,6 +49,9 @@ class QuadrotorEnvMulti(gym.Env):
             self.num_use_neighbor_obs = self.num_agents - 1
         else:
             self.num_use_neighbor_obs = neighbor_visible_num
+
+        # # extra controller
+        self.use_sbc = use_sbc
 
         # Set to True means that sample_factory will treat it as a multi-agent vectorized environment even with
         # num_agents=1. More info, please look at sample-factory: envs/quadrotors/wrappers/reward_shaping.py
@@ -68,6 +74,8 @@ class QuadrotorEnvMulti(gym.Env):
                 neighbor_obs_type=neighbor_obs_type, num_use_neighbor_obs=self.num_use_neighbor_obs,
                 # Obstacle
                 use_obstacles=use_obstacles,
+                # extra controller,
+                use_sbc=use_sbc,
             )
             self.envs.append(e)
 
@@ -413,48 +421,51 @@ class QuadrotorEnvMulti(gym.Env):
         for i, a in enumerate(actions):
             self.envs[i].rew_coeff = self.rew_coeff
 
-            # Output is acc, not thrusts
-            self_state = NominalSBC.State(position=self.envs[i].dynamics.pos, velocity=self.envs[i].dynamics.vel)
-            neighbor_descriptions = []
+            if self.use_sbc:
+                # Output is acc, not thrusts
+                self_state = NominalSBC.State(position=self.envs[i].dynamics.pos, velocity=self.envs[i].dynamics.vel)
+                neighbor_descriptions = []
+                # Add neighbor robot descriptions
+                for j in range(len(actions)):
+                    if i == j:
+                        continue
 
-            # Add neighbor robot descriptions
-            for j in range(len(actions)):
-                if i == j:
-                    continue
-
-                if np.linalg.norm(self_state.position - self.envs[j].dynamics.pos) < 5.0:
-                    neighbor_descriptions.append(NominalSBC.ObjectDescription(
-                            state=NominalSBC.State(
-                                position=self.envs[j].dynamics.pos,
-                                velocity=self.envs[j].dynamics.vel
-                            ),
-                            radius=self.envs[j].controller.sbc.radius,
-                            maximum_linf_acceleration_lower_bound=self.envs[j].controller.sbc.maximum_linf_acceleration
-                        )
-                    )
-
-            # Add neighbor obstacle descriptions
-            # TODO: Can we optimize this part?
-            for obst_pose in self.obst_pos_arr:
-                x, y = obst_pose[0], obst_pose[1]
-                if np.linalg.norm(np.array([x, y]) - np.array([self_state.position[0], self_state.position[1]])) < 3.0:
-                    z = 0.0
-                    while z < self.room_dims[2]:
-                        if np.linalg.norm(np.array([x, y, z]) - self_state.position) < 3.0:
-                            neighbor_descriptions.append(
-                                NominalSBC.ObjectDescription(
-                                    state=NominalSBC.State(
-                                        position=np.array([x, y, z]),
-                                        velocity=np.zeros(3)
-                                    ),
-                                    radius=self.obst_size*0.5,
-                                    maximum_linf_acceleration_lower_bound=0.0
-                                )
+                    if np.linalg.norm(self_state.position - self.envs[j].dynamics.pos) < 5.0:
+                        neighbor_descriptions.append(
+                            NominalSBC.ObjectDescription(
+                                state=NominalSBC.State(
+                                    position=self.envs[j].dynamics.pos,
+                                    velocity=self.envs[j].dynamics.vel
+                                ),
+                                radius=self.envs[j].controller.sbc.radius,
+                                maximum_linf_acceleration_lower_bound=self.envs[j].controller.sbc.maximum_linf_acceleration
                             )
-                        z += self.obst_size * 0.5
+                        )
 
-            observation, reward, done, info = self.envs[i].step(
-                action=a, sbc_data={"self_state": self_state, "neighbor_descriptions": neighbor_descriptions})
+                # Add neighbor obstacle descriptions
+                # TODO: Can we optimize this part?
+                for obst_pose in self.obst_pos_arr:
+                    x, y = obst_pose[0], obst_pose[1]
+                    if np.linalg.norm(np.array([x, y]) - np.array([self_state.position[0], self_state.position[1]])) < 3.0:
+                        z = 0.0
+                        while z < self.room_dims[2]:
+                            if np.linalg.norm(np.array([x, y, z]) - self_state.position) < 3.0:
+                                neighbor_descriptions.append(
+                                    NominalSBC.ObjectDescription(
+                                        state=NominalSBC.State(
+                                            position=np.array([x, y, z]),
+                                            velocity=np.zeros(3)
+                                        ),
+                                        radius=self.obst_size * 0.5,
+                                        maximum_linf_acceleration_lower_bound=0.0
+                                    )
+                                )
+                            z += self.obst_size * 0.5
+
+                observation, reward, done, info = self.envs[i].step(
+                    action=a, sbc_data={"self_state": self_state, "neighbor_descriptions": neighbor_descriptions})
+            else:
+                observation, reward, done, info = self.envs[i].step(action=a, sbc_data=None)
 
             obs.append(observation)
             rewards.append(reward)
@@ -733,7 +744,8 @@ class QuadrotorEnvMulti(gym.Env):
                     infos[i]['episode_extra_stats'][f'{scenario_name}/agent_col_rate'] = agent_col_ratio
                     # agent_neighbor_col_rate
                     infos[i]['episode_extra_stats']['metric/agent_neighbor_col_rate'] = agent_neighbor_col_ratio
-                    infos[i]['episode_extra_stats'][f'{scenario_name}/agent_neighbor_col_rate'] = agent_neighbor_col_ratio
+                    infos[i]['episode_extra_stats'][
+                        f'{scenario_name}/agent_neighbor_col_rate'] = agent_neighbor_col_ratio
                     # agent_obst_col_rate
                     infos[i]['episode_extra_stats']['metric/agent_obst_col_rate'] = agent_obst_col_ratio
                     infos[i]['episode_extra_stats'][f'{scenario_name}/agent_obst_col_rate'] = agent_obst_col_ratio

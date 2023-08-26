@@ -304,7 +304,7 @@ class VelocityYawControl(object):
 # using the controller from Mellinger et al. 2011
 class MellingerController(object):
     # @profile
-    def __init__(self, dynamics):
+    def __init__(self, dynamics, enable_sbc):
         jacobian = quadrotor_jacobian(dynamics)
         self.Jinv = np.linalg.inv(jacobian)
         # Jacobian inverse for our quadrotor
@@ -319,11 +319,11 @@ class MellingerController(object):
 
         self.rot_des = np.eye(3)
 
-        self.enable_sbc = True
-        # maximum_linf_acceleration, max_acc in any dimension
-        self.sbc = NominalSBC(maximum_linf_acceleration=2.0,
-                              aggressiveness=0.1, radius=0.15)
-        self.sbc_last_safe_acc = None
+        self.enable_sbc = enable_sbc
+        if enable_sbc:
+            # maximum_linf_acceleration, max_acc in any dimension
+            self.sbc = NominalSBC(maximum_linf_acceleration=2.0, aggressiveness=0.1, radius=0.15)
+            self.sbc_last_safe_acc = None
 
         self.step_func = self.step
 

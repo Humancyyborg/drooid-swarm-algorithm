@@ -31,7 +31,7 @@ GRAV = 9.81  # default gravitational constant
 
 
 # reasonable reward function for hovering at a goal and not flying too high
-def compute_reward_weighted(goal, cur_pos, rl_acc, acc_sbc, mellinger_acc, dt, rew_coeff, on_floor):
+def compute_reward_weighted(goal, cur_pos, rl_acc, acc_sbc, mellinger_acc, dt, rew_coeff, on_floor, use_sbc):
     # Distance to the goal
     dist = np.linalg.norm(goal - cur_pos)
     cost_pos_raw = dist
@@ -42,8 +42,12 @@ def compute_reward_weighted(goal, cur_pos, rl_acc, acc_sbc, mellinger_acc, dt, r
     cost_crash = rew_coeff["crash"] * cost_crash_raw
 
     # Difference between acc_rl & acc_sbc
-    cost_rl_sbc_raw = np.linalg.norm(acc_sbc - rl_acc)
-    cost_rl_sbc = rew_coeff["rl_sbc"] * cost_rl_sbc_raw
+    if use_sbc:
+        cost_rl_sbc_raw = np.linalg.norm(acc_sbc - rl_acc)
+        cost_rl_sbc = rew_coeff["rl_sbc"] * cost_rl_sbc_raw
+    else:
+        cost_rl_sbc_raw = 0.0
+        cost_rl_sbc = 0.0
 
     # Difference between acc_sbc & acc_mellinger
     cost_sbc_mellinger_raw = np.linalg.norm(mellinger_acc - acc_sbc)
@@ -91,7 +95,7 @@ class QuadrotorSingle:
                  sim_steps=2, obs_repr="xyz_vxyz_R_omega", ep_time=7, room_dims=(10.0, 10.0, 10.0),
                  init_random_state=False, sense_noise=None, verbose=False, gravity=GRAV,
                  t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False,
-                 neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0, use_obstacles=False):
+                 neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0, use_obstacles=False, use_sbc=False):
         np.seterr(under='ignore')
         """
         Args:
@@ -127,6 +131,9 @@ class QuadrotorSingle:
         """
         # Numba Speed Up
         self.use_numba = use_numba
+
+        # Extra controller
+        self.use_sbc = use_sbc
 
         # Room
         self.room_length = room_dims[0]
@@ -248,7 +255,7 @@ class QuadrotorSingle:
                                           use_numba=self.use_numba, dt=self.dt)
 
         # CONTROL
-        self.controller = MellingerController(self.dynamics)
+        self.controller = MellingerController(self.dynamics, enable_sbc=self.use_sbc)
 
         # ACTIONS
         self.action_space = spaces.Box(low=-self.dynamics.acc_max * np.ones(3),
@@ -331,7 +338,7 @@ class QuadrotorSingle:
         reward, rew_info = compute_reward_weighted(
             goal=self.goal, cur_pos=self.dynamics.pos, rl_acc=action, acc_sbc=acc_sbc,
             mellinger_acc=self.dynamics.acc,
-            dt=self.control_dt, rew_coeff=self.rew_coeff, on_floor=self.dynamics.on_floor)
+            dt=self.control_dt, rew_coeff=self.rew_coeff, on_floor=self.dynamics.on_floor, use_sbc=self.use_sbc)
 
         self.tick += 1
         done = self.tick > self.ep_len
