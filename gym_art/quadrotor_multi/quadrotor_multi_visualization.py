@@ -197,9 +197,9 @@ class Quadrotor3DSceneMulti:
 
     def update_goal_diameter(self):
         if self.quad_arm is not None:
-            self.diameter = 2 * self.quad_arm
+            self.diameter = self.quad_arm
         else:
-            self.diameter = 2 * np.linalg.norm(self.models[0].params['motor_pos']['xyz'][:2])
+            self.diameter = np.linalg.norm(self.models[0].params['motor_pos']['xyz'][:2])
 
         if self.goal_forced_diameter:
             self.goal_diameter = self.goal_forced_diameter
@@ -328,7 +328,7 @@ class Quadrotor3DSceneMulti:
     def create_goals(self):
         import gym_art.quadrotor_multi.rendering3d as r3d
 
-        goal_sphere = r3d.sphere(0.2 / 2, 18)
+        goal_sphere = r3d.sphere(0.1 / 2, 18)
         for i in range(len(self.models)):
             color = QUAD_COLOR[i % len(QUAD_COLOR)]
             goal_transform = r3d.transform_and_color(np.eye(4), color, goal_sphere)

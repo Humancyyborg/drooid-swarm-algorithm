@@ -430,7 +430,7 @@ class QuadrotorSingle:
     def reset(self):
         return self._reset()
 
-    def render(self, mode='human', **kwargs):
+    def render(self, **kwargs):
         """This class is only meant to be used as a component of QuadMultiEnv."""
         raise NotImplementedError()
 
