@@ -320,12 +320,16 @@ class MellingerController(object):
         self.rot_des = np.eye(3)
 
         self.enable_sbc = enable_sbc
+        self.sbc = None
+        self.sbc_last_safe_acc = None
+        self.init_sbc(enable_sbc)
+        self.step_func = self.step
+
+    def init_sbc(self, enable_sbc):
         if enable_sbc:
             # maximum_linf_acceleration, max_acc in any dimension
             self.sbc = NominalSBC(maximum_linf_acceleration=2.0, aggressiveness=0.1, radius=0.15)
             self.sbc_last_safe_acc = None
-
-        self.step_func = self.step
 
     # modifies the dynamics in place.
     # @profile

@@ -122,7 +122,8 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         safe_annealing = None
 
     env = QuadsRewardShapingWrapper(env, reward_shaping_scheme=reward_shaping, annealing=annealing,
-                                    safe_annealing=safe_annealing, with_pbt=cfg.with_pbt)
+                                    safe_annealing=safe_annealing, with_pbt=cfg.with_pbt,
+                                    enable_finetune=cfg.quads_enable_finetune)
     env = QuadEnvCompatibility(env, render_mode=render_mode)
 
     if cfg.visualize_v_value:

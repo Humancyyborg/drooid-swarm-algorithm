@@ -126,3 +126,6 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_anneal_safe_start_steps', default=0.0, type=float, help='Start annealing')
     p.add_argument('--quads_anneal_safe_total_steps', default=0.0, type=float, help='Total annealing steps')
     p.add_argument('--quads_use_sbc', default=False, type=str2bool, help='Apply sbc or not')
+    p.add_argument('--quads_enable_finetune', default=False, type=str2bool,
+                   help='Two stage of training, the first stage, does not consider SBC, '
+                        'but the second stage, introduce SBC.')

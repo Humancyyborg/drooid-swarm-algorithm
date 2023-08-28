@@ -18,7 +18,8 @@ DEFAULT_QUAD_REWARD_SHAPING['quad_rewards'].update(dict(
 
 
 class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapingInterface):
-    def __init__(self, env, reward_shaping_scheme=None, annealing=None, safe_annealing=None, with_pbt=False):
+    def __init__(self, env, reward_shaping_scheme=None, annealing=None, safe_annealing=None, with_pbt=False,
+                 enable_finetune=False):
         gym.Wrapper.__init__(self, env)
         TrainingInfoInterface.__init__(self)
         if with_pbt:
@@ -34,6 +35,8 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapin
 
         self.annealing = annealing
         self.safe_annealing = safe_annealing
+        self.enable_finetune = enable_finetune
+        self.start_finetune = False
 
     def get_default_reward_shaping(self):
         return dict(quad_rewards=dict())
@@ -130,6 +133,14 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapin
                         if approx_total_training_steps <= start_steps:
                             env_reward_shaping[coeff_name] = 0.0
                         else:
+                            if not self.start_finetune and self.enable_finetune:
+                                self.start_finetune = True
+                                self.env.unwrapped.use_sbc=True
+                                for single_env in self.env.unwrapped.envs:
+                                    single_env.use_sbc = True
+                                    single_env.controller.enable_sbc=True
+                                    single_env.controller.init_sbc(enable_sbc=True)
+
                             env_reward_shaping[coeff_name] = final_value * min(
                                 (approx_total_training_steps - start_steps) / total_steps,
                                 1.0)
