@@ -32,28 +32,6 @@ def run_multi_quadrotor_env(env_name, cfg):
 
 
 class TestQuads(TestCase):
-    def test_quad_env(self):
-        register_swarm_components()
-        # quadrotor_single test currently failing (didn't use in sf2)
-        env_name = 'quadrotor_single'
-        experiment_name = 'test_single'
-        cfg = parse_swarm_cfg(argv=["--algo=APPO", f"--env={env_name}", f"--experiment={experiment_name}"])
-        self.assertIsNotNone(create_env(env_name, cfg=cfg))
-
-        env = create_env(env_name, cfg=cfg)
-        obs = env.reset()
-
-        n_frames = 4000
-
-        timing = Timing()
-        with timing.timeit('step'):
-            for i in range(n_frames):
-                obs, r, term, trunc, info = env.step(env.action_space.sample())
-                if term:
-                    env.reset()
-
-        log.debug('Time %s, FPS %.1f', timing, n_frames / timing.step)
-
     def test_quad_multi_env(self):
         register_swarm_components()
 

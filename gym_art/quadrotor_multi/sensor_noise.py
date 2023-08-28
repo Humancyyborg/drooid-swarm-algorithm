@@ -2,7 +2,6 @@
 import numpy as np
 from numpy.random import normal
 from numpy.random import uniform
-import matplotlib.pyplot as plt
 from math import exp
 from numba import njit
 

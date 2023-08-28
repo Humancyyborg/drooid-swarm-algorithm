@@ -1,28 +1,27 @@
 import copy
 
-import gym
+import gymnasium as gym
 import numpy as np
-
-from sample_factory.envs.env_utils import RewardShapingInterface, TrainingInfoInterface
-
+from sample_factory.envs.env_utils import TrainingInfoInterface, RewardShapingInterface
 
 DEFAULT_QUAD_REWARD_SHAPING_SINGLE = dict(
     quad_rewards=dict(
-        pos=1.0, effort=0.05, spin=0.1, vel=0.0, crash=1.0, orient=1.0, yaw=0.0,
+        pos=1.0, effort=0.05, spin=0.1, vel=0.0, crash=1.0, orient=1.0, yaw=0.0
     ),
 )
 
 DEFAULT_QUAD_REWARD_SHAPING = copy.deepcopy(DEFAULT_QUAD_REWARD_SHAPING_SINGLE)
 DEFAULT_QUAD_REWARD_SHAPING['quad_rewards'].update(dict(
-    quadcol_bin=0.0, quadcol_bin_obst=0.0, quadsettle=0.0,
+    quadcol_bin=0.0, quadcol_bin_smooth_max=0.0, quadcol_bin_obst=0.0
 ))
 
 
-class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface):
-    def __init__(self, env, reward_shaping_scheme=None, annealing=None):
+class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapingInterface):
+    def __init__(self, env, reward_shaping_scheme=None, annealing=None, with_pbt=False):
         gym.Wrapper.__init__(self, env)
-        # RewardShapingInterface.__init__(self)
         TrainingInfoInterface.__init__(self)
+        if with_pbt:
+            RewardShapingInterface.__init__(self)
 
         self.reward_shaping_scheme = reward_shaping_scheme
         self.cumulative_rewards = None
@@ -35,13 +34,13 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface):
         self.annealing = annealing
 
     def get_default_reward_shaping(self):
-        return self.reward_shaping_scheme
+        return dict(quad_rewards=dict())
 
     def get_current_reward_shaping(self, agent_idx: int):
-        return self.reward_shaping_scheme
+        return dict(quad_rewards=dict())
 
     def set_reward_shaping(self, reward_shaping, unused_agent_idx):
-        self.reward_shaping_scheme = reward_shaping
+        self.reward_shaping_scheme = dict(quad_rewards=dict())
         self.reward_shaping_updated = True
 
     def reset(self):
@@ -84,6 +83,7 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface):
                     true_reward += 1000 * self.cumulative_rewards[i].get('rewraw_quadcol', 0)
 
                 info['true_reward'] = true_reward
+                self.cumulative_rewards[i]['rewraw_main'] = true_reward
                 if 'episode_extra_stats' not in info:
                     info['episode_extra_stats'] = dict()
                 extra_stats = info['episode_extra_stats']
@@ -94,8 +94,8 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface):
 
                 if hasattr(self.env.unwrapped, 'scenario') and self.env.unwrapped.scenario:
                     scenario_name = self.env.unwrapped.scenario.name()
-                    for rew_key in ['rew_pos', 'rewraw_pos', 'rew_crash', 'rewraw_crash']:
-                        extra_stats[f'{rew_key}_{scenario_name}'] = self.cumulative_rewards[i][rew_key]
+                    for rew_key in ['rew_pos', 'rew_crash']:
+                        extra_stats[f'{scenario_name}/{rew_key}'] = self.cumulative_rewards[i][rew_key]
 
                 episode_actions = np.array(self.episode_actions)
                 episode_actions = episode_actions.transpose()

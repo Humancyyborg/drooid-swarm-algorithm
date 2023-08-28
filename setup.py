@@ -12,11 +12,11 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 # Fields marked as "Optional" may be commented out.
 
 setup(
-    name='gym_art_swarm_rl',  # Required
+    name='swarm_rl',  # Required
 
-    version='0.1.0',  # Required
+    version='1.0.0',  # Required
 
-    description='Quadrotor gym envs',  # Optional
+    description='Quadrotor Gym Envs',  # Optional
 
     long_description=long_description,  # Optional
 
@@ -26,21 +26,21 @@ setup(
     #
     # This field corresponds to the "Home-Page" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#home-page-optional
-    url='https://github.com/amolchanov86/gym_art',  # Optional
+    url='https://github.com/Zhehui-Huang',  # Optional
 
     # This should be your name or the name of the organization which owns the
     # project.
-    author='Artem Molchanov',  # Optional
+    author='Zhehui Huang',  # Optional
 
     # This should be a valid email address corresponding to the author listed
     # above.
-    author_email='a.molchanov86@gmail.com',  # Optional
+    author_email='zhehuihu@usc.edu',  # Optional
 
     # This field adds keywords for your project which will appear on the
     # project page. What does your project relate to?
     #
     # Note that this is a string of words separated by whitespace, not a list.
-    keywords='reinforcement learning drones quadrotors',  # Optional
+    keywords='Reinforcement Learning for Quadrotors',  # Optional
 
     # You can just specify package directories manually here if your project is
     # simple. Or you can use find_packages().
@@ -58,7 +58,7 @@ setup(
     # and refuse to install the project if the version does not match. If you
     # do not support Python 2, you can simplify this to '>=3.5' or similar, see
     # https://packaging.python.org/guides/distributing-packages-using-setuptools/#python-requires
-    python_requires='>=3.6.6',
+    python_requires='>=3.8.6',
 
     # This field lists other packages that your project depends on to run.
     # Any package you put here will be installed by pip when your project is
@@ -67,7 +67,8 @@ setup(
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
-        'pytest', 'numpy>1.15', 'matplotlib>3', 'gym>=0.17', 'transforms3d', 'noise', 'tqdm', 'bezier<=2020.5.19', 'numba', 'scipy',
-        'sample-factory>=1.121.0', 'pyglet<=1.5.23',
+        'pytest', 'numpy>1.15', 'pyglet<=1.5.23', 'matplotlib>3', 'gym>=0.17', 'transforms3d', 'noise', 'tqdm',
+        'bezier<=2020.5.19', 'numba', 'scipy', 'sample-factory', 'plotly<=5.13.0', 'attrdict==2.0.1',
+        'pandas==2.0.1', 'gymnasium==0.28.1'
     ],
 )
