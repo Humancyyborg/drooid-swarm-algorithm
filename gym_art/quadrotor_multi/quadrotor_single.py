@@ -31,11 +31,28 @@ GRAV = 9.81  # default gravitational constant
 
 
 # reasonable reward function for hovering at a goal and not flying too high
-def compute_reward_weighted(goal, cur_pos, rl_acc, acc_sbc, mellinger_acc, dt, rew_coeff, on_floor, use_sbc):
+def compute_reward_weighted(goal, cur_pos, rl_acc, acc_sbc, mellinger_acc, action, rot, omega, dt, rew_coeff, on_floor,
+                            use_sbc):
     # Distance to the goal
     dist = np.linalg.norm(goal - cur_pos)
     cost_pos_raw = dist
     cost_pos = rew_coeff["pos"] * cost_pos_raw
+
+    # Penalize amount of control effort
+    cost_effort_raw = np.linalg.norm(action)
+    cost_effort = rew_coeff["effort"] * cost_effort_raw
+
+    # Loss orientation
+    if on_floor:
+        cost_orient_raw = 1.0
+    else:
+        cost_orient_raw = -rot[2, 2]
+
+    cost_orient = rew_coeff["orient"] * cost_orient_raw
+
+    # Loss for constant uncontrolled rotation around vertical axis
+    cost_spin_raw = (omega[0] ** 2 + omega[1] ** 2 + omega[2] ** 2) ** 0.5
+    cost_spin = rew_coeff["spin"] * cost_spin_raw
 
     # Loss crash for staying on the floor
     cost_crash_raw = float(on_floor)
@@ -55,6 +72,9 @@ def compute_reward_weighted(goal, cur_pos, rl_acc, acc_sbc, mellinger_acc, dt, r
 
     reward = -dt * np.sum([
         cost_pos,
+        cost_effort,
+        cost_orient,
+        cost_spin,
         cost_crash,
         cost_rl_sbc,
         cost_sbc_mellinger,
@@ -63,13 +83,19 @@ def compute_reward_weighted(goal, cur_pos, rl_acc, acc_sbc, mellinger_acc, dt, r
     rew_info = {
         "rew_main": -cost_pos,
         'rew_pos': -cost_pos,
+        'rew_action': -cost_effort,
         'rew_crash': -cost_crash,
+        "rew_orient": -cost_orient,
+        "rew_spin": -cost_spin,
         "rew_rl_sbc": -cost_rl_sbc,
         'rew_sbc_mellinger': -cost_sbc_mellinger,
 
         "rewraw_main": -cost_pos_raw,
         'rewraw_pos': -cost_pos_raw,
+        'rewraw_action': -cost_effort_raw,
         'rewraw_crash': -cost_crash_raw,
+        "rewraw_orient": -cost_orient_raw,
+        "rewraw_spin": -cost_spin_raw,
         "rewraw_rl_sbc": -cost_rl_sbc_raw,
         'rewraw_sbc_mellinger': -cost_sbc_mellinger_raw,
     }
@@ -332,12 +358,12 @@ class QuadrotorSingle:
         self.actions[1] = copy.deepcopy(self.actions[0])
         self.actions[0] = copy.deepcopy(action)
 
-        _, acc_sbc = self.controller.step_func(dynamics=self.dynamics, acc_des=action, dt=self.dt, observation=sbc_data)
+        final_thrusts, acc_sbc = self.controller.step_func(dynamics=self.dynamics, acc_des=action, dt=self.dt, observation=sbc_data)
 
         self.time_remain = self.ep_len - self.tick
         reward, rew_info = compute_reward_weighted(
             goal=self.goal, cur_pos=self.dynamics.pos, rl_acc=action, acc_sbc=acc_sbc,
-            mellinger_acc=self.dynamics.acc,
+            mellinger_acc=self.dynamics.acc, action=final_thrusts, rot=self.dynamics.rot, omega=self.dynamics.omega,
             dt=self.control_dt, rew_coeff=self.rew_coeff, on_floor=self.dynamics.on_floor, use_sbc=self.use_sbc)
 
         self.tick += 1
