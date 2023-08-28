@@ -38,7 +38,9 @@ class QuadrotorEnvMulti(gym.Env):
                  dynamics_randomize_every, dynamics_change, dyn_sampler_1,
                  sense_noise, init_random_state,
                  # Rendering
-                 render_mode='human'
+                 render_mode='human',
+                 # SBC specific
+                 sbc_radius=0.1, sbc_aggressive=0.1
                  ):
         super().__init__()
 
@@ -71,6 +73,8 @@ class QuadrotorEnvMulti(gym.Env):
                 neighbor_obs_type=neighbor_obs_type, num_use_neighbor_obs=self.num_use_neighbor_obs,
                 # Obstacle
                 use_obstacles=use_obstacles,
+                # SBC specific,
+                sbc_radius=sbc_radius, sbc_aggressive=sbc_aggressive
             )
             self.envs.append(e)
 

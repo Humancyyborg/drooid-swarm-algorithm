@@ -121,11 +121,9 @@ def add_quadrotors_env_args(env, parser):
                    help='cost coeff of the difference between rl acc outputs and sbc acc outputs')
     p.add_argument('--quads_cost_sbc_mellinger', default=1.0, type=float,
                    help='cost coeff of the difference between sbc acc outputs and mellinger acc outputs')
-    p.add_argument('--quads_cost_pos', default=1.0, type=float,
-                   help='cost coeff of the position cost')
-    p.add_argument('--quads_cost_crash', default=1.0, type=float,
-                   help='cost coeff of the crash cost')
-    p.add_argument('--quads_anneal_safe_start_steps', default=0.0, type=float,
-                   help='Start annealing')
-    p.add_argument('--quads_anneal_safe_total_steps', default=0.0, type=float,
-                   help='Total annealing steps')
+    p.add_argument('--quads_cost_pos', default=1.0, type=float, help='cost coeff of the position cost')
+    p.add_argument('--quads_cost_crash', default=1.0, type=float, help='cost coeff of the crash cost')
+    p.add_argument('--quads_anneal_safe_start_steps', default=0.0, type=float, help='Start annealing')
+    p.add_argument('--quads_anneal_safe_total_steps', default=0.0, type=float, help='Total annealing steps')
+    p.add_argument('--quads_sbc_radius', default=0.1, type=float, help='sbc sensing radius')
+    p.add_argument('--quads_sbc_aggressive', default=0.1, type=float, help='sbc aggressiveness')

@@ -91,7 +91,8 @@ class QuadrotorSingle:
                  sim_steps=2, obs_repr="xyz_vxyz_R_omega", ep_time=7, room_dims=(10.0, 10.0, 10.0),
                  init_random_state=False, sense_noise=None, verbose=False, gravity=GRAV,
                  t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False,
-                 neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0, use_obstacles=False):
+                 neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0, use_obstacles=False, sbc_radius=0.1,
+                 sbc_aggressive=0.1):
         np.seterr(under='ignore')
         """
         Args:
@@ -127,7 +128,9 @@ class QuadrotorSingle:
         """
         # Numba Speed Up
         self.use_numba = use_numba
-
+        # # SBC specific
+        self.sbc_radius = sbc_radius
+        self.sbc_aggressive = sbc_aggressive
         # Room
         self.room_length = room_dims[0]
         self.room_width = room_dims[1]
@@ -248,7 +251,8 @@ class QuadrotorSingle:
                                           use_numba=self.use_numba, dt=self.dt)
 
         # CONTROL
-        self.controller = MellingerController(self.dynamics)
+        self.controller = MellingerController(dynamics=self.dynamics, sbc_radius=self.sbc_radius,
+                                              sbc_aggressive=self.sbc_aggressive)
 
         # ACTIONS
         self.action_space = spaces.Box(low=-self.dynamics.acc_max * np.ones(3),
