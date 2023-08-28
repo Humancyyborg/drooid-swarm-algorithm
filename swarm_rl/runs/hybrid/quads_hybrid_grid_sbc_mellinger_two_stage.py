@@ -4,7 +4,7 @@ from swarm_rl.runs.hybrid.baseline import QUAD_BASELINE_CLI_8
 _params = ParamGrid(
     [
         ("seed", [0000, 3333]),
-        ("quads_cost_rl_sbc", [0.0, 0.5, 1.0]),
+        ("quads_cost_rl_sbc", [0.0, 0.5]),
         ("quads_use_sbc", [False]),
         ("quads_enable_finetune", [True]),
     ]
