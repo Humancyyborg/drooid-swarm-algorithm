@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 
 from gym_art.quadrotor_multi.scenarios.obstacles.o_base import Scenario_o_base
 
@@ -39,7 +40,10 @@ class Scenario_o_swap_goals(Scenario_o_base):
         # Reset formation and related parameters
         self.update_formation_and_relate_param()
 
-        self.formation_center = self.generate_pos_obst_map()
+        self.start_point = self.generate_pos_obst_map_2(num_agents=self.num_agents)
+        self.spawn_points = copy.deepcopy(self.start_point)
+
+        self.formation_center = self.max_square_area_center()
 
         # Regenerate goals, we don't have to assign goals to the envs,
         # the reset function in quadrotor_multi.py would do that
