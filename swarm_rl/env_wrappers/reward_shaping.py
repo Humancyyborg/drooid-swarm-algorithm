@@ -133,7 +133,7 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapin
                         if approx_total_training_steps <= start_steps:
                             env_reward_shaping[coeff_name] = 0.0
                         else:
-                            if not self.start_finetune and self.enable_finetune:
+                            if self.enable_finetune:
                                 self.start_finetune = True
                                 self.env.unwrapped.use_sbc=True
                                 for single_env in self.env.unwrapped.envs:
