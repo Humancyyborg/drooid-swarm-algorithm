@@ -427,8 +427,8 @@ def main():
 
     # TO CHANGE
     subpaths = sorted(os.listdir(path))
-    subpaths = ['1_default_posxy', '2_change_obs_octomap', '3_add_multi_head', '4_add_replay_buffer']
-    legend_name = sorted(['1. Default', '2. Change obstacle obs', '3. Introduce self attention', '4. Introduce replay'])
+    subpaths = ['1_Ours', '2_W_O_Replay_Buffer', '3_W_O_Multi_Head_Attention', '4_W_O_SDF_Obs']
+    legend_name = sorted(['1. Ours', '2. W/O replay buffer', '3. W/O multi-head attention', '4. W/O SDF-based obstacle obs (base policy)'])
     all_experiment_dirs = {}
     for subpath in subpaths:
         if subpath not in all_experiment_dirs:
