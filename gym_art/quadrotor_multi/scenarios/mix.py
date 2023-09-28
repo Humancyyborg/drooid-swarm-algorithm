@@ -20,7 +20,9 @@ from gym_art.quadrotor_multi.scenarios.swarm_vs_swarm import Scenario_swarm_vs_s
 # Obstacles
 from gym_art.quadrotor_multi.scenarios.obstacles.o_random import Scenario_o_random
 from gym_art.quadrotor_multi.scenarios.obstacles.o_static_same_goal import Scenario_o_static_same_goal
+from gym_art.quadrotor_multi.scenarios.obstacles.o_dynamic_same_goal import Scenario_o_dynamic_same_goal
 from gym_art.quadrotor_multi.scenarios.obstacles.o_swap_goals import Scenario_o_swap_goals
+from gym_art.quadrotor_multi.scenarios.obstacles.o_ep_rand_bezier import Scenario_o_ep_rand_bezier
 
 # Test Scenarios
 from gym_art.quadrotor_multi.scenarios.test.o_test import Scenario_o_test
@@ -86,9 +88,6 @@ class Scenario_mix(QuadrotorScenario):
             self.scenario.reset()
 
         self.goals = self.scenario.goals
-        if self.scenario.spawn_points is None:
-            self.spawn_points = self.goals
-        else:
-            self.spawn_points = self.scenario.spawn_points
+        self.spawn_points = self.scenario.spawn_points
         self.formation_size = self.scenario.formation_size
         self.approch_goal_metric = self.scenario.approch_goal_metric

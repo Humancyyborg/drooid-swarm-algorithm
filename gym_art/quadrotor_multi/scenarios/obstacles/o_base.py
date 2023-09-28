@@ -16,6 +16,7 @@ class Scenario_o_base(QuadrotorScenario):
         self.approch_goal_metric = 1.0
 
         self.spawn_points = None
+        self.cell_centers = None
 
     def generate_pos(self):
         half_room_length = self.room_dims[0] / 2
@@ -119,3 +120,34 @@ class Scenario_o_base(QuadrotorScenario):
         adjacent_cells = obstacle_map[tuple(check_pos)]
 
         return np.any(adjacent_cells != 0)
+
+    def max_square_area_center(self):
+        """
+        Finds the maximum square area of 0 in a 2D matrix and returns the coordinates
+        of the center element of the largest square area.
+        """
+        n, m = self.obstacle_map.shape
+        # Initialize a 2D numpy array to store the maximum size of square submatrices
+        # that end at each element of the matrix.
+        dp = np.zeros((n, m), dtype=int)
+        # Initialize the first row and first column of the dp array
+        dp[0] = self.obstacle_map[0]
+        dp[:, 0] = self.obstacle_map[:, 0]
+        # Initialize variables to store the maximum square area and its center coordinates
+        max_size = 0
+        center_x = 0
+        center_y = 0
+        # Fill the remaining entries of the dp array
+        for i in range(1, n):
+            for j in range(1, m):
+                if self.obstacle_map[i][j] == 0:
+                    dp[i][j] = min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]) + 1
+                    if dp[i][j] > max_size:
+                        max_size = dp[i][j]
+                        center_x = i - (max_size - 1) // 2
+                        center_y = j - (max_size - 1) // 2
+        # Return the center coordinates of the largest square area as a tuple
+        index = center_x + (m * center_y)
+        pos_x, pos_y = self.cell_centers[index]
+        z_list_start = np.random.uniform(low=1.5, high=3.0)
+        return np.array([pos_x, pos_y, z_list_start])
