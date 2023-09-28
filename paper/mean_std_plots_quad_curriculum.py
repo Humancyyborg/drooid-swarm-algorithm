@@ -19,6 +19,8 @@ FULL_PAGE_WIDTH = 1.4 * PAGE_WIDTH_INCHES
 HALF_PAGE_WIDTH = FULL_PAGE_WIDTH / 2
 
 plt.rcParams['figure.figsize'] = (FULL_PAGE_WIDTH, 2.5)  # (2.5, 2.0) 7.5， 4
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 
 NUM_AGENTS = 8
 EPISODE_DURATION = 16  # seconds
@@ -31,17 +33,17 @@ COLLISIONS_OBST_SCALE = ((
 CRASH_GROUND_SCALE = (-1.0 / EPISODE_DURATION)
 
 PLOTS = [
-    dict(key='metric/agent_success_rate', name='Agent success rate', label='Average rate'),
+    dict(key='metric/agent_success_rate', name='Success rate', label='Average rate'),
     # dict(key='policy_stats/avg_distance_to_goal_1s', name='Avg. distance to the goal', label='Avg. distance(m)', clip_min=0.1, y_scale_formater=[0.1, 0.5, 1.0, 2.0]),
     # dict(key='metric/agent_deadlock_rate', name='Agent deadlock rate', label='Deadlock Rate'),
-    dict(key='metric/agent_col_rate', name='Agent collision rate', label='Average rate'),
+    dict(key='metric/agent_col_rate', name='Collision rate', label='Average rate'),
     # dict(key='metric/agent_obst_col_rate', name='Agent collision w/ obstacles rate'),
     dict(key='o_random/distance_to_goal_1s', name='Distance to goal (random)', label='Distance (m)'),
     dict(key='o_static_same_goal/distance_to_goal_1s', name='Distance to goal (same goal)', label='Distance (m)'),
 ]
 
 PLOT_STEP = int(5e6)
-TOTAL_STEP = int(2e9 + 10000)
+TOTAL_STEP = int(1e9 + 10000)
 
 # 'blue': '#1F77B4', 'orange': '#FF7F0E', 'green': '#2CA02C', 'red': '#d70000'
 # COLOR = ['#1F77B4', '#FF7F0E', '#2CA02C', '#d70000']
@@ -319,7 +321,7 @@ def plot(index, interpolated_key, ax, set_xlabel, legend_name, group_id, set_y_s
     y_np = [smooth(yi, 1) for yi in y_np]
     y_np = np.stack(y_np)
 
-    logscale = params.get('logscale', False)
+    logscale = params.get('logscale', True)
     if logscale:
         ax.set_yscale('log', base=2)
         ax.yaxis.set_minor_locator(ticker.NullLocator())  # no minor ticks
@@ -332,7 +334,7 @@ def plot(index, interpolated_key, ax, set_xlabel, legend_name, group_id, set_y_s
     scientific_formatter = FuncFormatter(scientific)
     ax.yaxis.set_major_formatter(scientific_formatter)
     # TO CHANGE
-    ax.set_ylim(-0.02, 1.02)
+
     # if np.max(y_np) < 0.6:
     #     ax.set_ylim(-0.02, 0.62)
     # elif np.max(y_np) < 0.8:
@@ -401,7 +403,7 @@ def plot(index, interpolated_key, ax, set_xlabel, legend_name, group_id, set_y_s
 
     lw = 1.4
 
-    ax.plot(x, y_mean, color=COLOR[group_id], label=str(float(legend_name)), linewidth=lw, antialiased=True)
+    ax.plot(x, y_mean, color=COLOR[group_id], label=str(legend_name), linewidth=lw, antialiased=True)
     ax.fill_between(x, y_minus_std, y_plus_std, color=COLOR[group_id], alpha=0.25)
     # ax.legend(prop={'size': 6}, loc='lower right')
 
@@ -427,8 +429,8 @@ def main():
 
     # TO CHANGE
     # subpaths = sorted(os.listdir(path))
-    subpaths = ['32_80_0_6', '32_80_0_7', '32_80_0_8', '32_80_0_85']
-    legend_name = sorted(['0.6', '0.7', '0.8', '0.85'])
+    subpaths = ['1_Ours', '2_PLR']
+    legend_name = sorted(['Ours', 'PLR'])
     all_experiment_dirs = {}
     for subpath in subpaths:
         if subpath not in all_experiment_dirs:
@@ -445,13 +447,18 @@ def main():
     fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4)
     ax = (ax1, ax2, ax3, ax4)
 
+    ax1.set_ylim(0.4, 1.02)
+    ax2.set_ylim(0.01, 1.0)
+    ax3.set_ylim(0.1, 0.65)
+    ax4.set_ylim(0.2, 1.0)
+
 
     for i in range(len(all_experiment_dirs)):
         aggregate(path, subpaths[i], all_experiment_dirs[subpaths[i]], ax, legend_name[i], i)
 
     handles, labels = ax[0].get_legend_handles_labels()
     # TO CHANGE
-    lgd = fig.legend(handles, labels, loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.07), fontsize=10)
+    lgd = fig.legend(handles, labels, loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.07), fontsize=10)
     lgd.set_in_layout(True)
 
     plt.tight_layout(pad=1.0)
@@ -462,7 +469,7 @@ def main():
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    figname = 'scale_obst_size.pdf'
+    figname = 'curriculum.pdf'
     plt.savefig(os.path.join(save_dir, figname), format='pdf', bbox_inches='tight', pad_inches=0.01)
 
     return 0

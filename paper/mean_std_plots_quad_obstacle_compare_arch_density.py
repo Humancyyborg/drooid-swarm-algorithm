@@ -19,6 +19,8 @@ FULL_PAGE_WIDTH = 1.4 * PAGE_WIDTH_INCHES
 HALF_PAGE_WIDTH = FULL_PAGE_WIDTH / 2
 
 plt.rcParams['figure.figsize'] = (FULL_PAGE_WIDTH, 2.5)  # (2.5, 2.0) 7.5， 4
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 
 NUM_AGENTS = 8
 EPISODE_DURATION = 16  # seconds
@@ -423,8 +425,8 @@ def main():
         raise argparse.ArgumentTypeError('Parameter {} is not a valid path'.format(path))
 
     # TO CHANGE
-    subpaths = sorted(os.listdir(path))
-    # subpaths = ['20%', '40%', '60%', '80%']
+    # subpaths = sorted(os.listdir(path))
+    subpaths = ['20%', '40%', '60%', '80%']
     legend_name = sorted(['20%', '40%', '60%', '80%'])
     # legend_name = sorted(['1', '2', '6', '16', '31'])
     all_experiment_dirs = {}

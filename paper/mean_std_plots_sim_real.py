@@ -18,7 +18,7 @@ PAGE_WIDTH_INCHES = 8.2
 FULL_PAGE_WIDTH = 1.4 * PAGE_WIDTH_INCHES
 HALF_PAGE_WIDTH = FULL_PAGE_WIDTH / 2
 
-plt.rcParams['figure.figsize'] = (FULL_PAGE_WIDTH, 2.5)  # (2.5, 2.0) 7.5， 4
+plt.rcParams['figure.figsize'] = (HALF_PAGE_WIDTH, 2.5)  # (2.5, 2.0) 7.5， 4
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 
@@ -33,13 +33,13 @@ COLLISIONS_OBST_SCALE = ((
 CRASH_GROUND_SCALE = (-1.0 / EPISODE_DURATION)
 
 PLOTS = [
-    dict(key='metric/agent_success_rate', name='Agent success rate', label='Average rate'),
+    # dict(key='metric/agent_success_rate', name='Agent success rate', label='Average rate'),
     # dict(key='policy_stats/avg_distance_to_goal_1s', name='Avg. distance to the goal', label='Avg. distance(m)', clip_min=0.1, y_scale_formater=[0.1, 0.5, 1.0, 2.0]),
     # dict(key='metric/agent_deadlock_rate', name='Agent deadlock rate', label='Deadlock Rate'),
     dict(key='metric/agent_col_rate', name='Agent collision rate', label='Average rate'),
     # dict(key='metric/agent_obst_col_rate', name='Agent collision w/ obstacles rate'),
     dict(key='o_random/distance_to_goal_1s', name='Distance to goal (random)', label='Distance (m)'),
-    dict(key='o_static_same_goal/distance_to_goal_1s', name='Distance to goal (same goal)', label='Distance (m)'),
+    # dict(key='o_static_same_goal/distance_to_goal_1s', name='Distance to goal (same goal)', label='Distance (m)'),
 ]
 
 PLOT_STEP = int(5e6)
@@ -403,7 +403,7 @@ def plot(index, interpolated_key, ax, set_xlabel, legend_name, group_id, set_y_s
 
     lw = 1.4
 
-    ax.plot(x, y_mean, color=COLOR[group_id], label=str(int(legend_name)), linewidth=lw, antialiased=True)
+    ax.plot(x, y_mean, color=COLOR[group_id], label=str(legend_name), linewidth=lw, antialiased=True)
     ax.fill_between(x, y_minus_std, y_plus_std, color=COLOR[group_id], alpha=0.25)
     # ax.legend(prop={'size': 6}, loc='lower right')
 
@@ -429,8 +429,8 @@ def main():
 
     # TO CHANGE
     # subpaths = sorted(os.listdir(path))
-    subpaths = ['8_2', '16_2', '32_2']
-    legend_name = sorted(['08', '16', '32'])
+    subpaths = ['small', 'big']
+    legend_name = ['Physical deployment', 'Simulation']
     all_experiment_dirs = {}
     for subpath in subpaths:
         if subpath not in all_experiment_dirs:
@@ -444,8 +444,8 @@ def main():
         raise argparse.ArgumentTypeError("Parameter {} is not summary or csv".format(args.output))
 
     # TO CHANGE
-    fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4)
-    ax = (ax1, ax2, ax3, ax4)
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    ax = (ax1, ax2)
 
 
     for i in range(len(all_experiment_dirs)):
@@ -453,7 +453,7 @@ def main():
 
     handles, labels = ax[0].get_legend_handles_labels()
     # TO CHANGE
-    lgd = fig.legend(handles, labels, loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.07), fontsize=10)
+    lgd = fig.legend(handles, labels, loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.07), fontsize=10)
     lgd.set_in_layout(True)
 
     plt.tight_layout(pad=1.0)
@@ -464,7 +464,7 @@ def main():
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    figname = 'scale_num_agents.pdf'
+    figname = 'physical_deploy.pdf'
     plt.savefig(os.path.join(save_dir, figname), format='pdf', bbox_inches='tight', pad_inches=0.01)
 
     return 0

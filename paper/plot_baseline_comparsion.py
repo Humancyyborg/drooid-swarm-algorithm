@@ -1,7 +1,10 @@
 import matplotlib.pyplot as plt
 import scienceplots
+import matplotlib
 
 plt.style.use(['science', 'ieee', 'bright', 'grid', 'no-latex'])
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 
 x = [i for i in range(4)]
 x_labels = [20, 40, 60, 80]

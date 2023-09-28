@@ -43,7 +43,7 @@ PLOTS = [
 ]
 
 PLOT_STEP = int(5e6)
-TOTAL_STEP = int(1e9 + 10000)
+TOTAL_STEP = int(2e9 + 10000)
 
 # 'blue': '#1F77B4', 'orange': '#FF7F0E', 'green': '#2CA02C', 'red': '#d70000'
 # COLOR = ['#1F77B4', '#FF7F0E', '#2CA02C', '#d70000']
@@ -403,7 +403,7 @@ def plot(index, interpolated_key, ax, set_xlabel, legend_name, group_id, set_y_s
 
     lw = 1.4
 
-    ax.plot(x, y_mean, color=COLOR[group_id], label=str(int(legend_name)), linewidth=lw, antialiased=True)
+    ax.plot(x, y_mean, color=COLOR[group_id], label=str(float(legend_name)), linewidth=lw, antialiased=True)
     ax.fill_between(x, y_minus_std, y_plus_std, color=COLOR[group_id], alpha=0.25)
     # ax.legend(prop={'size': 6}, loc='lower right')
 
@@ -429,8 +429,8 @@ def main():
 
     # TO CHANGE
     # subpaths = sorted(os.listdir(path))
-    subpaths = ['8_2', '16_2', '32_2']
-    legend_name = sorted(['08', '16', '32'])
+    subpaths = ['32_80_0_6', '32_80_0_7', '32_80_0_8', '32_80_0_85']
+    legend_name = sorted(['0.6', '0.7', '0.8', '0.85'])
     all_experiment_dirs = {}
     for subpath in subpaths:
         if subpath not in all_experiment_dirs:
@@ -453,7 +453,7 @@ def main():
 
     handles, labels = ax[0].get_legend_handles_labels()
     # TO CHANGE
-    lgd = fig.legend(handles, labels, loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.07), fontsize=10)
+    lgd = fig.legend(handles, labels, loc='upper center', ncol=4, bbox_to_anchor=(0.5, 1.07), fontsize=10)
     lgd.set_in_layout(True)
 
     plt.tight_layout(pad=1.0)
@@ -464,7 +464,7 @@ def main():
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    figname = 'scale_num_agents.pdf'
+    figname = 'scale_obst_size.pdf'
     plt.savefig(os.path.join(save_dir, figname), format='pdf', bbox_inches='tight', pad_inches=0.01)
 
     return 0
