@@ -2,7 +2,7 @@ from sample_factory.launcher.run_description import RunDescription, Experiment, 
 from swarm_rl.runs.single_quad.baseline import QUAD_BASELINE_CLI
 
 _params = ParamGrid([
-    ('seed', [0000, 3333]),
+    ('seed', [0000, 1111, 2222, 3333]),
 ])
 
 SINGLE_CLI = QUAD_BASELINE_CLI + (
