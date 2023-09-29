@@ -50,10 +50,10 @@ class RawControl(object):
 
     # modifies the dynamics in place.
     # @profile
-    def step(self, dynamics, action, goal, dt, observation=None):
+    def step(self, dynamics, action, goal, dt, observation, extra_force):
         action = np.clip(action, a_min=self.low, a_max=self.high)
         action = self.scale * (action + self.bias)
-        dynamics.step(action, dt)
+        dynamics.step(action, dt, extra_force)
         self.action = action.copy()
 
     # @profile

@@ -19,6 +19,7 @@ References:
 """
 import copy
 
+import numpy as np
 from gymnasium.utils import seeding
 
 import gym_art.quadrotor_multi.get_state as get_state
@@ -233,6 +234,14 @@ class QuadrotorSingle:
 
         self._seed()
 
+        # Touch related
+        self.start_tick = np.random.uniform(low=3.0, high=5.0)
+        self.end_tick = (self.start_tick + np.random.uniform(low=3.0, high=5.0))
+        self.start_tick *= self.control_freq
+        self.end_tick *= self.control_freq
+        self.pre_extra_force_mag = 0.0
+        self.extra_force_alpha = 0.5
+
     def update_sense_noise(self, sense_noise):
         if isinstance(sense_noise, dict):
             self.sense_noise = SensorNoise(**sense_noise)
@@ -342,7 +351,27 @@ class QuadrotorSingle:
         self.actions[1] = copy.deepcopy(self.actions[0])
         self.actions[0] = copy.deepcopy(action)
 
-        self.controller.step_func(dynamics=self.dynamics, action=action, goal=self.goal, dt=self.dt, observation=None)
+        if self.start_tick <= self.tick <= self.end_tick:
+            extra_force_mag = (self.extra_force_alpha * self.pre_extra_force_mag +
+                               (1 - self.extra_force_alpha) * np.random.uniform(low=0.1, high=0.5))
+            extra_force_mag = np.clip(extra_force_mag, a_min=0.1, a_max=0.5)
+
+            # force direction
+            extra_force_dir_x = np.random.normal(loc=0.0, scale=0.2)
+            extra_force_dir_y = np.random.normal(loc=0.0, scale=0.2)
+            extra_force_dir_z = np.random.uniform(low=-1.0, high=-0.5)
+            extra_force_dir = np.array([extra_force_dir_x, extra_force_dir_y, extra_force_dir_z])
+            extra_force_dir_mag = np.linalg.norm(extra_force_dir)
+            extra_force_dir = extra_force_dir / (extra_force_dir_mag + EPS if extra_force_dir_mag == 0.0 else extra_force_dir_mag)
+
+            extra_force = extra_force_mag * extra_force_dir
+            self.pre_extra_force_mag = extra_force_mag
+        else:
+            extra_force = np.zeros(3)
+            self.pre_extra_force_mag = 0.0
+
+        self.controller.step_func(dynamics=self.dynamics, action=action, goal=self.goal, dt=self.dt, observation=None,
+                                  extra_force=extra_force)
 
         self.time_remain = self.ep_len - self.tick
         reward, rew_info = compute_reward_weighted(
@@ -444,6 +473,13 @@ class QuadrotorSingle:
         self.actions = [np.zeros([4, ]), np.zeros([4, ])]
 
         state = self.state_vector(self)
+
+        # Touch related
+        self.start_tick = np.random.uniform(low=3.0, high=5.0)
+        self.end_tick = (self.start_tick + np.random.uniform(low=3.0, high=5.0))
+        self.start_tick *= self.control_freq
+        self.end_tick *= self.control_freq
+
         return state
 
     def reset(self):
