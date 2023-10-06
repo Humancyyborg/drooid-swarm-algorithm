@@ -205,13 +205,13 @@ class QuadrotorDynamics:
         rot = rand_uniform_rot3d()
         return pos, vel, rot, omega
 
-    def step(self, thrust_cmds, dt):
+    def step(self, thrust_cmds, dt, extra_force):
         thrust_noise = self.thrust_noise.noise()
 
         if self.use_numba:
-            [self.step1_numba(thrust_cmds, dt, thrust_noise) for _ in range(self.dynamics_steps_num)]
+            [self.step1_numba(thrust_cmds, dt, thrust_noise, extra_force) for _ in range(self.dynamics_steps_num)]
         else:
-            [self.step1(thrust_cmds, dt, thrust_noise) for _ in range(self.dynamics_steps_num)]
+            [self.step1(thrust_cmds, dt, thrust_noise, extra_force) for _ in range(self.dynamics_steps_num)]
 
     # Step function integrates based on current derivative values (best fits affine dynamics model)
     # thrust_cmds is motor thrusts given in normalized range [0, 1].
@@ -222,7 +222,7 @@ class QuadrotorDynamics:
     # rot - global
     # omega - body frame
     # goal_pos - global
-    def step1(self, thrust_cmds, dt, thrust_noise):
+    def step1(self, thrust_cmds, dt, thrust_noise, extra_force):
         thrust_cmds = np.clip(thrust_cmds, a_min=0., a_max=1.)
 
         # Filtering the thruster and adding noise
@@ -336,7 +336,7 @@ class QuadrotorDynamics:
         self.crashed_ceiling = self.pos_before_clip[2] > self.pos[2]
 
         sum_thr_drag = thrust + rotor_drag_force
-        self.floor_interaction(sum_thr_drag=sum_thr_drag)
+        self.floor_interaction(sum_thr_drag=sum_thr_drag, extra_force=extra_force)
 
         # Computing velocities
         self.vel = (1.0 - self.vel_damp) * self.vel + dt * self.acc
@@ -345,7 +345,7 @@ class QuadrotorDynamics:
         # that includes gravity with the opposite sign
         self.accelerometer = np.matmul(self.rot.T, self.acc + [0, 0, self.gravity])
 
-    def step1_numba(self, thrust_cmds, dt, thrust_noise):
+    def step1_numba(self, thrust_cmds, dt, thrust_noise, extra_force):
         self.thrust_rot_damp, self.thrust_cmds_damp, self.torques, self.torque, self.rot, self.since_last_svd, \
             self.omega_dot, self.omega, self.pos, thrust, rotor_drag_force, self.vel = \
             calculate_torque_integrate_rotations_and_update_omega(
@@ -375,7 +375,7 @@ class QuadrotorDynamics:
             self.on_floor, self.crashed_floor = floor_interaction_numba(
                 pos=self.pos, vel=self.vel, rot=self.rot, omega=self.omega, mu=self.mu, mass=self.mass,
                 sum_thr_drag=sum_thr_drag, thrust_cmds_damp=self.thrust_cmds_damp, thrust_rot_damp=self.thrust_rot_damp,
-                floor_threshold=self.arm, on_floor=self.on_floor)
+                floor_threshold=self.arm, on_floor=self.on_floor, extra_force=extra_force)
 
         # compute_velocity_and_acceleration(vel, vel_damp, dt, rot_tpose, grav_arr, acc):
         self.vel, self.accelerometer = compute_velocity_and_acceleration(vel=self.vel, vel_damp=self.vel_damp, dt=dt,
@@ -386,7 +386,7 @@ class QuadrotorDynamics:
         self.thrust_cmds_damp = np.zeros([4])
         self.thrust_rot_damp = np.zeros([4])
 
-    def floor_interaction(self, sum_thr_drag):
+    def floor_interaction(self, sum_thr_drag, extra_force):
         # Change pos, omega, rot, acc
         self.crashed_floor = False
         if self.pos[2] <= self.floor_threshold:
@@ -453,7 +453,7 @@ class QuadrotorDynamics:
                 self.on_floor = False
 
             # Computing accelerations
-            force = np.matmul(self.rot, sum_thr_drag)
+            force = np.matmul(self.rot, sum_thr_drag) + extra_force
             self.acc = [0., 0., -GRAV] + (1.0 / self.mass) * force
 
     def look_at(self):
@@ -568,7 +568,7 @@ def calculate_torque_integrate_rotations_and_update_omega(
 
 @njit
 def floor_interaction_numba(pos, vel, rot, omega, mu, mass, sum_thr_drag, thrust_cmds_damp, thrust_rot_damp,
-                            floor_threshold, on_floor):
+                            floor_threshold, on_floor, extra_force):
     # Change pos, omega, rot, acc
     crashed_floor = False
     if pos[2] <= floor_threshold:
@@ -633,7 +633,7 @@ def floor_interaction_numba(pos, vel, rot, omega, mu, mass, sum_thr_drag, thrust
             on_floor = False
 
         # Computing accelerations
-        force = rot @ sum_thr_drag
+        force = rot @ sum_thr_drag + extra_force
         acc = np.array((0., 0., -GRAV)) + (1.0 / mass) * force
 
     return pos, vel, acc, omega, rot, thrust_cmds_damp, thrust_rot_damp, on_floor, crashed_floor
