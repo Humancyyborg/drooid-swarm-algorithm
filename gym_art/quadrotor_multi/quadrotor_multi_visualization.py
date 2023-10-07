@@ -191,6 +191,7 @@ class Quadrotor3DSceneMulti:
         self.viz_traces = 50
         self.viz_trace_nth_step = viz_trace_nth_step
         self.vector_array = [[] for _ in range(num_agents)]
+        self.extra_force_array = [[] for _ in range(num_agents)]
         self.store_path_every_n = 1
         self.store_path_count = 0
         self.path_store = [[] for _ in range(num_agents)]
@@ -218,6 +219,7 @@ class Quadrotor3DSceneMulti:
 
         self.quad_transforms, self.shadow_transforms, self.goal_transforms, self.collision_transforms = [], [], [], []
         self.obstacle_transforms, self.vec_cyl_transforms, self.vec_cone_transforms = [], [], []
+        self.extra_force_cyl_transforms, self.extra_force_cone_transforms = [], []
         self.path_transforms = [[] for _ in range(self.num_agents)]
 
         shadow_circle = r3d.circle(0.75 * self.diameter, 32)
@@ -239,6 +241,12 @@ class Quadrotor3DSceneMulti:
             )
             self.collision_transforms.append(
                 r3d.transform_and_color(np.eye(4), (0, 0, 0, 0.0), collision_sphere)
+            )
+            self.extra_force_cyl_transforms.append(
+                r3d.transform_and_color(np.eye(4), (1, 1, 1), arrow_cylinder)
+            )
+            self.extra_force_cone_transforms.append(
+                r3d.transform_and_color(np.eye(4), (1, 1, 1), arrow_cone)
             )
             if self.vis_vel_arrows:
                 self.vec_cyl_transforms.append(
@@ -273,6 +281,8 @@ class Quadrotor3DSceneMulti:
         bodies.extend(self.quad_transforms)
         bodies.extend(self.vec_cyl_transforms)
         bodies.extend(self.vec_cone_transforms)
+        bodies.extend(self.extra_force_cyl_transforms)
+        bodies.extend(self.extra_force_cone_transforms)
         for path in self.path_transforms:
             bodies.extend(path)
         # visualize walls of the room if True
@@ -356,6 +366,7 @@ class Quadrotor3DSceneMulti:
         self.goals = goals
         self.dynamics = dynamics
         self.vector_array = [[] for _ in range(self.num_agents)]
+        self.extra_force_array = [[] for _ in range(self.num_agents)]
         self.path_store = [[] for _ in range(self.num_agents)]
 
         if self.viewpoint == 'global':
@@ -415,6 +426,34 @@ class Quadrotor3DSceneMulti:
                 # shadow_pos[2] = 0.001  # avoid z-fighting
                 # matrix = r3d.translate(shadow_pos)
                 # self.shadow_transforms[i].set_transform_nocollide(matrix)
+
+                dirturbance = True
+                if dirturbance:
+                    if len(self.extra_force_array[i]) > 10:
+                        self.extra_force_array[i].pop(0)
+
+                    self.extra_force_array[i].append(dyn.extra_force)
+
+                    # Get average of the vectors
+                    avg_of_vecs = np.mean(self.extra_force_array[i], axis=0)
+
+                    # Calculate direction
+                    extra_force_dir = np.diag(np.sign(avg_of_vecs))
+
+                    # Calculate magnitude and divide by 3 (for aesthetics)
+                    extra_force_mag = np.linalg.norm(avg_of_vecs) / 3
+
+                    s = np.diag([1.0, 1.0, extra_force_mag, 1.0])
+
+                    cone_trans = np.eye(4)
+                    cone_trans[:3, 3] = [0.0, 0.0, 0.12 * extra_force_mag]
+
+                    cyl_mat = r3d.trans_and_rot(dyn.pos, extra_force_dir @ dyn.rot) @ s
+
+                    cone_mat = r3d.trans_and_rot(dyn.pos, extra_force_dir @ dyn.rot) @ cone_trans
+
+                    self.extra_force_cyl_transforms[i].set_transform_and_color(cyl_mat, QUAD_COLOR[(i+3) % len(QUAD_COLOR)] + (1.0,))
+                    self.extra_force_cone_transforms[i].set_transform_and_color(cone_mat, QUAD_COLOR[(i+3) % len(QUAD_COLOR)] + (1.0,))
 
                 if self.vis_vel_arrows:
                     if len(self.vector_array[i]) > 10:

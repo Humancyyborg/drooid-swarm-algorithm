@@ -91,6 +91,9 @@ class QuadrotorDynamics:
         else:
             raise ValueError('QuadEnv: Unknown dimensionality mode %s' % self.dim_mode)
 
+        # Disturbance
+        self.extra_force = np.zeros(3)
+
     @staticmethod
     def angvel2thrust(w, linearity=0.424):
         """
@@ -207,6 +210,7 @@ class QuadrotorDynamics:
 
     def step(self, thrust_cmds, dt, extra_force):
         thrust_noise = self.thrust_noise.noise()
+        self.extra_force = extra_force
 
         if self.use_numba:
             [self.step1_numba(thrust_cmds, dt, thrust_noise, extra_force) for _ in range(self.dynamics_steps_num)]
