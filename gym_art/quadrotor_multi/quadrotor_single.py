@@ -19,6 +19,7 @@ References:
 """
 import copy
 
+import numpy as np
 from gymnasium.utils import seeding
 
 import gym_art.quadrotor_multi.get_state as get_state
@@ -255,6 +256,9 @@ class QuadrotorSingle:
         # Make observation space
         self.observation_space = self.make_observation_space()
 
+        # LLM
+        self.start_point = np.zeros(3)
+
         self._seed()
 
     def update_sense_noise(self, sense_noise):
@@ -358,7 +362,7 @@ class QuadrotorSingle:
         self.actions[1] = copy.deepcopy(self.actions[0])
         self.actions[0] = copy.deepcopy(action)
 
-        final_thrusts, acc_sbc = self.controller.step_func(dynamics=self.dynamics, acc_des=action, dt=self.dt, observation=sbc_data)
+        final_thrusts, acc_sbc = self.controller.step_func(dynamics=self.dynamics, goal=self.goal, dt=self.dt, observation=sbc_data)
 
         self.time_remain = self.ep_len - self.tick
         reward, rew_info = compute_reward_weighted(
@@ -402,22 +406,9 @@ class QuadrotorSingle:
         self.update_dynamics(dynamics_params=self.dynamics_params)
 
     def _reset(self):
-        # DYNAMICS RANDOMIZATION AND UPDATE
-        # if self.dynamics_randomize_every is not None and (self.traj_count + 1) % self.dynamics_randomize_every == 0:
-        #     self.resample_dynamics()
-
-        if self.box < 10:
-            self.box = self.box * self.box_scale
-        x, y, z = self.np_random.uniform(-self.box, self.box, size=(3,)) + self.spawn_point
-
-        if self.dim_mode == '1D':
-            x, y = self.goal[0], self.goal[1]
-        elif self.dim_mode == '2D':
-            y = self.goal[1]
-        # Since being near the groud means crash we have to start above
-        if z < 0.75:
-            z = 0.75
-        pos = npa(x, y, z)
+        # x, y= np.random.uniform(low=-3.0, high=3.0, size=(2,))
+        # pos = npa(x, y, 0.0)
+        pos = self.start_point
 
         # INIT STATE
         # Initializing rotation and velocities
@@ -463,7 +454,7 @@ class QuadrotorSingle:
     def reset(self):
         return self._reset()
 
-    def render(self, mode='human', **kwargs):
+    def render(self, **kwargs):
         """This class is only meant to be used as a component of QuadMultiEnv."""
         raise NotImplementedError()
 

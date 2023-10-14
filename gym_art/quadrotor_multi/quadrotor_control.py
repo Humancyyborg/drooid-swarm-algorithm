@@ -333,11 +333,11 @@ class MellingerController(object):
 
     # modifies the dynamics in place.
     # @profile
-    def step(self, dynamics, acc_des, dt, observation=None):
-        # to_goal = goal - dynamics.pos
-        # e_p = -clamp_norm(to_goal, 4.0)
-        # e_v = dynamics.vel
-        # acc_des = -self.kp_p * e_p - self.kd_p * e_v
+    def step(self, dynamics, goal, dt, observation=None):
+        to_goal = goal - dynamics.pos
+        e_p = -clamp_norm(to_goal, 4.0)
+        e_v = dynamics.vel
+        acc_des = -self.kp_p * e_p - self.kd_p * e_v
 
         if self.enable_sbc and observation is not None:
             new_acc = self.sbc.plan(observation["self_state"], observation["neighbor_descriptions"], acc_des)
@@ -381,13 +381,3 @@ class MellingerController(object):
         dynamics.step(thrusts, dt)
         self.action = thrusts.copy()
         return self.action, acc_des_without_grav  # TODO: Check with Baskin, originally, it was new_acc
-
-    # def action_space(self, dynamics):
-    #     circle_per_sec = 2 * np.pi
-    #     max_rp = 5 * circle_per_sec
-    #     max_yaw = 1 * circle_per_sec
-    #     min_g = -1.0
-    #     max_g = dynamics.thrust_to_weight - 1.0
-    #     low = np.array([min_g, -max_rp, -max_rp, -max_yaw])
-    #     high = np.array([max_g, max_rp, max_rp, max_yaw])
-    #     return spaces.Box(low, high, dtype=np.float32)

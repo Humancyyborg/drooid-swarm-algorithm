@@ -8,7 +8,7 @@ from gymnasium.utils.step_api_compatibility import convert_to_terminated_truncat
 # Mostly copied from gym.EnvCompatability
 # Modified since swarm_rl does not have a seed, and is a vectorized env
 class QuadEnvCompatibility(gym.Wrapper):
-    def __init__(self, env, render_mode=None):
+    def __init__(self, env):
         """A wrapper which converts old-style envs to valid modern envs.
 
         Some information may be lost in the conversion, so we recommend updating your environment.
@@ -18,7 +18,6 @@ class QuadEnvCompatibility(gym.Wrapper):
             render_mode (str): the render mode to use when rendering the environment, passed automatically to env.render
         """
         gym.Wrapper.__init__(self, env)
-        self._render_mode = render_mode
 
     def reset(self, seed: Optional[int] = None, options: Optional[dict] = None) -> Tuple[ObsType, dict]:
         """Resets the environment.
@@ -54,4 +53,4 @@ class QuadEnvCompatibility(gym.Wrapper):
         Returns:
             The rendering of the environment, depending on the render mode
         """
-        return self.env.render(mode=self._render_mode)
+        return self.env.render()

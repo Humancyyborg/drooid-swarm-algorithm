@@ -39,7 +39,10 @@ class QuadrotorEnvMulti(gym.Env):
                  sense_noise, init_random_state,
 
                  # extra controller
-                 use_sbc):
+                 use_sbc,
+                 # Rendering
+                 render_mode='human',
+                 ):
         super().__init__()
 
         # Predefined Parameters
@@ -183,6 +186,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Rendering
         # # set to true whenever we need to reset the OpenGL scene in render()
+        self.render_mode = render_mode
         self.quads_render = quads_render
         self.scenes = []
         if self.quads_render:
@@ -209,6 +213,10 @@ class QuadrotorEnvMulti(gym.Env):
         # Action space
         # self.action_min = -1.0 * self.envs[0].dynamics.acc_max
         self.action_max = 2.0
+
+        # LLM
+        self.approach_goal_count = 0
+        self.approach_goal_threshold = 100
 
     def all_dynamics(self):
         return tuple(e.dynamics for e in self.envs)
@@ -348,13 +356,16 @@ class QuadrotorEnvMulti(gym.Env):
         if obst_size:
             self.obst_size = obst_size
 
+        sx, sy = np.random.uniform(low=-3.0, high=3.0, size=(2,))
+        start_point = np.array([sx, sy, 0.0])
+
         # Scenario reset
         if self.use_obstacles:
             self.obstacles = MultiObstacles(obstacle_size=self.obst_size, quad_radius=self.quad_arm)
             self.obst_map, self.obst_pos_arr, cell_centers = self.obst_generation_given_density()
             self.scenario.reset(obst_map=self.obst_map, cell_centers=cell_centers)
         else:
-            self.scenario.reset()
+            self.scenario.reset(start_point=start_point)
 
         # Replay buffer
         if self.use_replay_buffer and not self.activate_replay_buffer:
@@ -364,10 +375,12 @@ class QuadrotorEnvMulti(gym.Env):
 
         for i, e in enumerate(self.envs):
             e.goal = self.scenario.goals[i]
-            if self.scenario.spawn_points is None:
-                e.spawn_point = self.scenario.goals[i]
-            else:
-                e.spawn_point = self.scenario.spawn_points[i]
+            e.start_point = start_point
+            if self.use_obstacles:
+                if self.scenario.spawn_points is None:
+                    e.spawn_point = self.scenario.goals[i]
+                else:
+                    e.spawn_point = self.scenario.spawn_points[i]
             e.rew_coeff = self.rew_coeff
 
             observation = e.reset()
@@ -396,6 +409,8 @@ class QuadrotorEnvMulti(gym.Env):
         self.prev_crashed_walls = []
         self.prev_crashed_ceiling = []
         self.prev_crashed_room = []
+        # #LLM
+        self.approach_goal_count = 0
 
         # Log
         # # Final Distance (1s / 3s / 5s)
@@ -668,6 +683,12 @@ class QuadrotorEnvMulti(gym.Env):
             self.all_collisions = {'drone': drone_col_matrix, 'ground': ground_collisions,
                                    'obstacle': obst_coll}
 
+        # Terminate early
+        if np.linalg.norm(self.envs[0].dynamics.pos - self.scenario.final_goal) <= 0.1:
+            self.approach_goal_count += 1
+        if self.approach_goal_count > self.approach_goal_threshold:
+            dones = [True for _ in range(self.num_agents)]
+
         # 7. DONES
         if any(dones):
             scenario_name = self.scenario.name()[9:]
@@ -757,7 +778,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         return obs, rewards, dones, infos
 
-    def render(self, mode='human', verbose=False):
+    def render(self, verbose=False):
         models = tuple(e.dynamics.model for e in self.envs)
 
         if len(self.scenes) == 0:
@@ -801,7 +822,7 @@ class QuadrotorEnvMulti(gym.Env):
         for i in range(len(self.scenes)):
             frame, first_spawn = self.scenes[i].render_chase(all_dynamics=self.all_dynamics(), goals=goals,
                                                              collisions=self.all_collisions,
-                                                             mode=mode, obstacles=self.obstacles,
+                                                             mode=self.render_mode, obstacles=self.obstacles,
                                                              first_spawn=first_spawn)
             frames.append(frame)
         # Update the formation size of the scenario
@@ -818,7 +839,7 @@ class QuadrotorEnvMulti(gym.Env):
         time_to_sleep = desired_time_between_frames - simulation_time - render_time
 
         # wait so we don't simulate/render faster than realtime
-        if mode == "human" and time_to_sleep > 0:
+        if self.render_mode == "human" and time_to_sleep > 0:
             time.sleep(time_to_sleep)
 
         if simulation_time + render_time > desired_time_between_frames:
@@ -842,7 +863,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         self.simulation_start_time = time.time()
 
-        if mode == "rgb_array":
+        if self.render_mode == "rgb_array":
             return frame
 
     def __deepcopy__(self, memo):

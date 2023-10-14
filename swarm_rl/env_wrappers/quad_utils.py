@@ -124,7 +124,7 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
     env = QuadsRewardShapingWrapper(env, reward_shaping_scheme=reward_shaping, annealing=annealing,
                                     safe_annealing=safe_annealing, with_pbt=cfg.with_pbt,
                                     enable_finetune=cfg.quads_enable_finetune)
-    env = QuadEnvCompatibility(env, render_mode=render_mode)
+    env = QuadEnvCompatibility(env)
 
     if cfg.visualize_v_value:
         actor_critic = create_actor_critic(cfg, env.observation_space, env.action_space)
@@ -138,7 +138,7 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         checkpoints = Learner.get_checkpoints(Learner.checkpoint_dir(cfg, policy_id), f"{name_prefix}_*")
         checkpoint_dict = Learner.load_checkpoint(checkpoints, device)
         actor_critic.load_state_dict(checkpoint_dict["model"])
-        env = V_ValueMapWrapper(env, actor_critic, render_mode=render_mode)
+        env = V_ValueMapWrapper(env, actor_critic)
 
     return env
 
