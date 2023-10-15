@@ -733,6 +733,11 @@ class QuadrotorEnvMulti(gym.Env):
             log_info(label_name=self.scenario.label, folder_name='thrusts',
                      file_name='thrusts_' + str(self.log_file_id[self.scenario.label]), logger_name='ThrustsLogger',
                      data=self.thrusts_data)
+            # Log subgoals
+            # Log pos
+            log_info(label_name=self.scenario.label, folder_name='goal_sequence',
+                     file_name='goal_sequence_' + str(self.log_file_id[self.scenario.label]), logger_name='GoalseqLogger',
+                     data=self.scenario.subgoals)
 
             scenario_name = self.scenario.name()[9:]
             for i in range(len(infos)):

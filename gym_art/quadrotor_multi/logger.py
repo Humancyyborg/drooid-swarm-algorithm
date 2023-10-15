@@ -4,14 +4,14 @@ import os
 
 def log_info(label_name='left', folder_name='pos', file_name='pos_v1', logger_name='PositionLogger', data=None):
     # Make folder given label name
-    label_loc = os.path.join('data', label_name)
+    label_loc = os.path.join('../data', label_name)
     os.makedirs(label_loc, exist_ok=True)
     # Make folder given folder name
     folder_loc = os.path.join(label_loc, folder_name)
     os.makedirs(folder_loc, exist_ok=True)
 
     # Create folders to store log files if they don't exist
-    log_file = os.path.join(folder_loc, file_name)
+    log_file = os.path.join(folder_loc, file_name+'.txt')
 
     # Configure logging for position
     logger = logging.getLogger(logger_name)
