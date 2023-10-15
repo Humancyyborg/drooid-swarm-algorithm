@@ -19,6 +19,7 @@ from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSce
 from gym_art.quadrotor_multi.quadrotor_single import QuadrotorSingle
 from gym_art.quadrotor_multi.quadrotor_control import NominalSBC
 from gym_art.quadrotor_multi.scenarios.mix import create_scenario
+from gym_art.quadrotor_multi.logger import log_info
 
 
 class QuadrotorEnvMulti(gym.Env):
@@ -217,6 +218,14 @@ class QuadrotorEnvMulti(gym.Env):
         # LLM
         self.approach_goal_count = 0
         self.approach_goal_threshold = 100
+
+        # Save files to logger
+        self.log_file_id = {'left': 0, 'right': 0}
+        self.obs_data = []
+        self.pos_data = []
+        self.vel_data = []
+        self.acc_data = []
+        self.thrusts_data = []
 
     def all_dynamics(self):
         return tuple(e.dynamics for e in self.envs)
@@ -418,6 +427,12 @@ class QuadrotorEnvMulti(gym.Env):
         self.agent_col_agent = np.ones(self.num_agents)
         self.agent_col_obst = np.ones(self.num_agents)
         self.reached_goal = [False for _ in range(len(self.envs))]
+
+        self.obs_data = []
+        self.pos_data = []
+        self.vel_data = []
+        self.acc_data = []
+        self.thrusts_data = []
 
         # Rendering
         if self.quads_render:
@@ -689,8 +704,36 @@ class QuadrotorEnvMulti(gym.Env):
         if self.approach_goal_count > self.approach_goal_threshold:
             dones = [True for _ in range(self.num_agents)]
 
+        self.obs_data.append(obs[0])
+        self.pos_data.append(self.envs[0].dynamics.pos)
+        self.vel_data.append(self.envs[0].dynamics.vel)
+        self.acc_data.append(self.envs[0].dynamics.acc)
+        self.thrusts_data.append(self.envs[0].thrusts)
+
         # 7. DONES
         if any(dones):
+            self.log_file_id[self.scenario.label] += 1
+            # Log pos
+            log_info(label_name=self.scenario.label, folder_name='obs',
+                     file_name='obs_' + str(self.log_file_id[self.scenario.label]), logger_name='ObservationLogger',
+                     data=self.obs_data)
+            # Log pos
+            log_info(label_name=self.scenario.label, folder_name='pos',
+                     file_name='pos_' + str(self.log_file_id[self.scenario.label]), logger_name='PositionLogger',
+                     data=self.pos_data)
+            # Log vel
+            log_info(label_name=self.scenario.label, folder_name='vel',
+                     file_name='vel_' + str(self.log_file_id[self.scenario.label]), logger_name='VelocityLogger',
+                     data=self.vel_data)
+            # Log acceleration
+            log_info(label_name=self.scenario.label, folder_name='acc',
+                     file_name='acc_' + str(self.log_file_id[self.scenario.label]), logger_name='AccelerationLogger',
+                     data=self.acc_data)
+            # Log thrusts
+            log_info(label_name=self.scenario.label, folder_name='thrusts',
+                     file_name='thrusts_' + str(self.log_file_id[self.scenario.label]), logger_name='ThrustsLogger',
+                     data=self.thrusts_data)
+
             scenario_name = self.scenario.name()[9:]
             for i in range(len(infos)):
                 if self.saved_in_replay_buffer:

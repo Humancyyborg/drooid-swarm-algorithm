@@ -258,6 +258,7 @@ class QuadrotorSingle:
 
         # LLM
         self.start_point = np.zeros(3)
+        self.thrusts = np.zeros(4)
 
         self._seed()
 
@@ -363,6 +364,7 @@ class QuadrotorSingle:
         self.actions[0] = copy.deepcopy(action)
 
         final_thrusts, acc_sbc = self.controller.step_func(dynamics=self.dynamics, goal=self.goal, dt=self.dt, observation=sbc_data)
+        self.thrusts = np.array(final_thrusts)
 
         self.time_remain = self.ep_len - self.tick
         reward, rew_info = compute_reward_weighted(
@@ -449,6 +451,7 @@ class QuadrotorSingle:
         self.actions = [np.zeros([3, ]), np.zeros([3, ])]
 
         state = self.state_vector(self)
+        self.thrusts = np.zeros(4)
         return state
 
     def reset(self):

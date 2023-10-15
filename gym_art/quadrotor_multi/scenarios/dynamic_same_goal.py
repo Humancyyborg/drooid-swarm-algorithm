@@ -66,9 +66,10 @@ class Scenario_dynamic_same_goal(QuadrotorScenario):
         else:
             self.label = 'right'
 
-        waypoints_gap = np.random.uniform(low=0.3, high=0.6)
+        waypoints_gap = np.random.uniform(low=0.2, high=0.5)
 
         waypoints_num = int(dist // waypoints_gap)
+        waypoints_num = max(waypoints_num, 3)
         # Given label, generate sequences
         self.subgoals = np.linspace(start=self.take_off_goal, stop=self.final_goal, num=waypoints_num)
 
