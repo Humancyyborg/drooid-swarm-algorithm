@@ -217,10 +217,10 @@ class QuadrotorEnvMulti(gym.Env):
 
         # LLM
         self.approach_goal_count = 0
-        self.approach_goal_threshold = 100
+        self.approach_goal_threshold = 300
 
         # Save files to logger
-        self.log_file_id = {'left': 0, 'right': 0}
+        self.log_file_id = {'left': 0, 'right': 0, 'takeoff': 0}
         self.obs_data = []
         self.pos_data = []
         self.vel_data = []
@@ -735,9 +735,9 @@ class QuadrotorEnvMulti(gym.Env):
                      data=self.thrusts_data)
             # Log subgoals
             # Log pos
-            log_info(label_name=self.scenario.label, folder_name='goal_sequence',
-                     file_name='goal_sequence_' + str(self.log_file_id[self.scenario.label]), logger_name='GoalseqLogger',
-                     data=self.scenario.subgoals)
+            # log_info(label_name=self.scenario.label, folder_name='goal_sequence',
+            #          file_name='goal_sequence_' + str(self.log_file_id[self.scenario.label]), logger_name='GoalseqLogger',
+            #          data=self.scenario.subgoals)
 
             scenario_name = self.scenario.name()[9:]
             for i in range(len(infos)):
