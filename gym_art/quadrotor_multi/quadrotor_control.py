@@ -7,7 +7,6 @@ from scipy.sparse import csc_matrix
 
 GRAV = 9.81
 
-
 class NominalSBC:
     class State:
         def __init__(self, position, velocity):
@@ -15,12 +14,15 @@ class NominalSBC:
             self.velocity = velocity
 
     class ObjectDescription:
-        def __init__(self, state, radius, maximum_linf_acceleration_lower_bound):
+        def __init__(
+                self, state, radius, maximum_linf_acceleration_lower_bound, is_infinite_height_cylinder = False):
             self.state = state
             self.radius = radius
             self.maximum_linf_acceleration_lower_bound = maximum_linf_acceleration_lower_bound
+            self.is_infinite_height_cylinder = is_infinite_height_cylinder
 
-    def __init__(self, maximum_linf_acceleration, aggressiveness, radius):
+    def __init__(
+            self, maximum_linf_acceleration, aggressiveness, radius):
         self.maximum_linf_acceleration = maximum_linf_acceleration
         self.aggressiveness = aggressiveness
         self.radius = radius
@@ -36,31 +38,40 @@ class NominalSBC:
         ub = np.array([self.maximum_linf_acceleration]*3)
 
         for object_description in object_descriptions:
-            relative_position = self_state.position - object_description.state.position
+            dim = 2 if object_description.is_infinite_height_cylinder else 3
+
+            relative_position = self_state.position[:dim] - object_description.state.position
             relative_position_norm = np.linalg.norm(relative_position)
             if abs(relative_position_norm) < 1e-10:
                 return None
-
             safety_distance = self.radius + object_description.radius
 
             if relative_position_norm < safety_distance:
                 return None
 
-            relative_velocity = self_state.velocity - object_description.state.velocity
-            relative_position_dot_relative_velocity = np.dot(relative_position, relative_velocity)
+            relative_velocity = self_state.velocity[:dim] - object_description.state.velocity
+            relative_position_dot_relative_velocity = np.dot(
+                relative_position, relative_velocity)
 
             hij = math.sqrt(2.0 * (self.maximum_linf_acceleration + object_description.maximum_linf_acceleration_lower_bound) * (
                 relative_position_norm - safety_distance)) + (relative_position_dot_relative_velocity / relative_position_norm)
 
-            bij = -relative_position_dot_relative_velocity * np.dot(relative_position, self_state.velocity) / \
-                (relative_position_norm * relative_position_norm) + np.dot(relative_velocity, self_state.velocity) + \
-                (self.maximum_linf_acceleration / (self.maximum_linf_acceleration +
-                 object_description.maximum_linf_acceleration_lower_bound)) * \
-                (self.aggressiveness * hij * hij * hij * relative_position_norm
-                 + (math.sqrt(self.maximum_linf_acceleration +
-                              object_description.maximum_linf_acceleration_lower_bound) *
-                    relative_position_dot_relative_velocity) /
-                 (math.sqrt(2.0 * (relative_position_norm - safety_distance))))
+            bij = -relative_position_dot_relative_velocity * np.dot(
+                relative_position, self_state.velocity[:dim]) / (
+                relative_position_norm * relative_position_norm) + np.dot(
+                relative_velocity, self_state.velocity[:dim]) + (
+                self.maximum_linf_acceleration /
+                (self.maximum_linf_acceleration + object_description.
+                maximum_linf_acceleration_lower_bound)) * (
+                self.aggressiveness * hij * hij * hij * relative_position_norm +
+                (math.sqrt(
+                    self.maximum_linf_acceleration + object_description.
+                    maximum_linf_acceleration_lower_bound) *
+                relative_position_dot_relative_velocity) /
+                (math.sqrt(2.0 * (relative_position_norm - safety_distance))))
+
+            if dim == 2:
+                relative_position = np.append(relative_position, 0.0)
 
             G = np.append(G, [-1.0 * relative_position], axis=0)
             h = np.append(h, bij)
@@ -127,7 +138,8 @@ class VerticalControl(object):
         elif self.dim_mode == '3D':
             self.step = self.step3D
         else:
-            raise ValueError('QuadEnv: Unknown dimensionality mode %s' % self.dim_mode)
+            raise ValueError(
+                'QuadEnv: Unknown dimensionality mode %s' % self.dim_mode)
         self.step_func = self.step
 
     def action_space(self, dynamics):
@@ -171,7 +183,8 @@ class VertPlaneControl(object):
         elif self.dim_mode == '3D':
             self.step = self.step3D
         else:
-            raise ValueError('QuadEnv: Unknown dimensionality mode %s' % self.dim_mode)
+            raise ValueError(
+                'QuadEnv: Unknown dimensionality mode %s' % self.dim_mode)
         self.step_func = self.step
 
     def action_space(self, dynamics):
@@ -194,7 +207,8 @@ class VertPlaneControl(object):
         # print('action: ', action)
         action = self.scale * (action + self.bias)
         action = np.clip(action, a_min=self.low, a_max=self.high)
-        dynamics.step(np.array([action[0], action[0], action[1], action[1]]), dt)
+        dynamics.step(
+            np.array([action[0], action[0], action[1], action[1]]), dt)
 
     # modifies the dynamics in place.
     # @profile
@@ -335,7 +349,10 @@ class MellingerController(object):
         # acc_des = -self.kp_p * e_p - self.kd_p * e_v
 
         if self.enable_sbc and observation is not None:
-            new_acc = self.sbc.plan(observation["self_state"], observation["neighbor_descriptions"], acc_des)
+            new_acc = self.sbc.plan(
+                observation["self_state"],
+                observation["neighbor_descriptions"],
+                acc_des)
 
             if new_acc is not None:
                 self.sbc_last_safe_acc = new_acc
@@ -375,7 +392,8 @@ class MellingerController(object):
 
         dynamics.step(thrusts, dt)
         self.action = thrusts.copy()
-        return self.action, acc_des_without_grav  # TODO: Check with Baskin, originally, it was new_acc
+        # TODO: Check with Baskin, originally, it was new_acc
+        return self.action, acc_des_without_grav
 
     # def action_space(self, dynamics):
     #     circle_per_sec = 2 * np.pi

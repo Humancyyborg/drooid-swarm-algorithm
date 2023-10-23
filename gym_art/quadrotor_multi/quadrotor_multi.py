@@ -443,24 +443,48 @@ class QuadrotorEnvMulti(gym.Env):
 
             # Add neighbor obstacle descriptions
             # TODO: Can we optimize this part?
+            # for obst_pose in self.obst_pos_arr:
+            #     x, y = obst_pose[0], obst_pose[1]
+            #     if np.linalg.norm(np.array([x, y]) - np.array([self_state.position[0], self_state.position[1]])) < 3.0:
+            #         z = 0.0
+            #         while z < self.room_dims[2]:
+            #             if np.linalg.norm(np.array([x, y, z]) - self_state.position) < 3.0:
+            #                 neighbor_descriptions.append(
+            #                     NominalSBC.ObjectDescription(
+            #                         state=NominalSBC.State(
+            #                             position=np.array([x, y, z]),
+            #                             velocity=np.zeros(3)
+            #                         ),
+            #                         radius=self.obst_size*0.5,
+            #                         maximum_linf_acceleration_lower_bound=0.0
+            #                     )
+            #                 )
+            #             z += self.obst_size * 0.5
+
             for obst_pose in self.obst_pos_arr:
                 x, y = obst_pose[0], obst_pose[1]
                 if np.linalg.norm(np.array([x, y]) - np.array([self_state.position[0], self_state.position[1]])) < 3.0:
-                    z = 0.0
-                    while z < self.room_dims[2]:
-                        if np.linalg.norm(np.array([x, y, z]) - self_state.position) < 3.0:
-                            neighbor_descriptions.append(
-                                NominalSBC.ObjectDescription(
-                                    state=NominalSBC.State(
-                                        position=np.array([x, y, z]),
-                                        velocity=np.zeros(3)
-                                    ),
-                                    radius=self.obst_size*0.5,
-                                    maximum_linf_acceleration_lower_bound=0.0
-                                )
-                            )
-                        z += self.obst_size * 0.5
+                    neighbor_descriptions.append(
+                        NominalSBC.ObjectDescription(
+                            state=NominalSBC.State(
+                                position=np.array([x, y]),
+                                velocity=np.zeros(2)
+                            ),
+                            radius=self.obst_size*0.5,
+                            maximum_linf_acceleration_lower_bound=0.0,
+                            is_infinite_height_cylinder=True
+                        )
+                    )
 
+            # PD Guided
+            # goal = self.envs[i].goal
+            # kp = 2.0
+            # kv = 1.0
+            # des_acc = kp * (goal - self.envs[i].dynamics.pos) + kv * (0.0 - self.envs[i].dynamics.vel)
+            # observation, reward, done, info = self.envs[i].step(
+            #     action=des_acc, sbc_data={"self_state": self_state, "neighbor_descriptions": neighbor_descriptions})
+
+            # Network Guided
             observation, reward, done, info = self.envs[i].step(
                 action=a, sbc_data={"self_state": self_state, "neighbor_descriptions": neighbor_descriptions})
 

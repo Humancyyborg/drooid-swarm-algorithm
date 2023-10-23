@@ -1,4 +1,4 @@
-python -m swarm_rl.train \
+python -m swarm_rl.enjoy \
 --env=quadrotor_multi \
 --train_for_env_steps=1000000000 \
 --algo=APPO \
@@ -41,12 +41,12 @@ python -m swarm_rl.train \
 --quads_neighbor_encoder_type=no_encoder \
 --quads_neighbor_visible_num=2 \
 --quads_use_obstacles=True \
---quads_obst_density=0.2 \
---quads_obst_size=0.6 \
+--quads_obst_density=0.4 \
+--quads_obst_size=0.8 \
 --quads_obst_collision_reward=5.0 \
 --quads_obstacle_obs_type=octomap \
 --quads_use_downwash=True \
---quads_sbc_radius=0.0 \
+--quads_sbc_radius=0.05 \
 --anneal_collision_steps=300000000 \
 --quads_anneal_safe_start_steps=0 \
 --quads_anneal_safe_total_steps=300000000 \
@@ -58,6 +58,8 @@ python -m swarm_rl.train \
 --wandb_group=grid_search_sbc_aggressive \
 --seed=0 \
 --quads_cost_rl_sbc=0.1 \
---quads_sbc_aggressive=0.05 \
+--quads_sbc_aggressive=1.0 \
 --experiment=test \
---train_dir=./train_dir_test/
+--train_dir=./train_dir_test/ \
+--quads_render=True \
+--quads_num_agents=3
