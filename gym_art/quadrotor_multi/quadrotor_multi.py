@@ -94,9 +94,9 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Reward
         self.rew_coeff = dict(
-            pos=1., crash=1., quadcol_bin=5., quadcol_bin_smooth_max=4., quadcol_bin_obst=5.,
-            rl_sbc=1.0, sbc_mellinger=1.0
-        )
+            pos=1., crash=1., quadcol_bin=5., quadcol_bin_smooth_max=4.,
+            quadcol_bin_obst=5., rl_sbc=1.0, sbc_mellinger=1.0,
+            sbc_boundary=0.5)
         rew_coeff_orig = copy.deepcopy(self.rew_coeff)
 
         if rew_coeff is not None:
@@ -115,9 +115,9 @@ class QuadrotorEnvMulti(gym.Env):
 
         self.clip_neighbor_space_length = self.num_use_neighbor_obs * neighbor_obs_size
         self.clip_neighbor_space_min_box = self.observation_space.low[
-                                           obs_self_size:obs_self_size + self.clip_neighbor_space_length]
+            obs_self_size:obs_self_size + self.clip_neighbor_space_length]
         self.clip_neighbor_space_max_box = self.observation_space.high[
-                                           obs_self_size:obs_self_size + self.clip_neighbor_space_length]
+            obs_self_size:obs_self_size + self.clip_neighbor_space_length]
 
         # Obstacles
         self.use_obstacles = use_obstacles
@@ -130,15 +130,17 @@ class QuadrotorEnvMulti(gym.Env):
             self.curr_quad_col = []
             self.obst_density = obst_density
             self.obst_spawn_area = obst_spawn_area
-            self.num_obstacles = int(obst_density * obst_spawn_area[0] * obst_spawn_area[1])
+            self.num_obstacles = int(
+                obst_density * obst_spawn_area[0] * obst_spawn_area[1])
             self.obst_map = None
             self.obst_size = obst_size
             self.obst_pos_arr = None
 
         # Scenarios
         self.quads_mode = quads_mode
-        self.scenario = create_scenario(quads_mode=quads_mode, envs=self.envs, num_agents=num_agents,
-                                        room_dims=room_dims)
+        self.scenario = create_scenario(
+            quads_mode=quads_mode, envs=self.envs, num_agents=num_agents,
+            room_dims=room_dims)
 
         # Collisions
         # # Collisions: Neighbors
@@ -229,28 +231,35 @@ class QuadrotorEnvMulti(gym.Env):
 
     def get_obs_neighbor_rel(self, env_id, closest_drones):
         i = env_id
-        pos_neighbors_rel, vel_neighbors_rel = self.get_rel_pos_vel_item(env_id=i, indices=closest_drones[i])
-        obs_neighbor_rel = np.concatenate((pos_neighbors_rel, vel_neighbors_rel), axis=1)
+        pos_neighbors_rel, vel_neighbors_rel = self.get_rel_pos_vel_item(
+            env_id=i,
+            indices=closest_drones
+            [i])
+        obs_neighbor_rel = np.concatenate(
+            (pos_neighbors_rel, vel_neighbors_rel), axis=1)
         return obs_neighbor_rel
 
     def extend_obs_space(self, obs, closest_drones):
         obs_neighbors = []
         for i in range(len(self.envs)):
-            obs_neighbor_rel = self.get_obs_neighbor_rel(env_id=i, closest_drones=closest_drones)
+            obs_neighbor_rel = self.get_obs_neighbor_rel(
+                env_id=i, closest_drones=closest_drones)
             obs_neighbors.append(obs_neighbor_rel.reshape(-1))
         obs_neighbors = np.stack(obs_neighbors)
 
         # clip observation space of neighborhoods
         obs_neighbors = np.clip(
-            obs_neighbors, a_min=self.clip_neighbor_space_min_box, a_max=self.clip_neighbor_space_max_box,
-        )
+            obs_neighbors, a_min=self.clip_neighbor_space_min_box,
+            a_max=self.clip_neighbor_space_max_box,)
         obs_ext = np.concatenate((obs, obs_neighbors), axis=1)
         return obs_ext
 
     def neighborhood_indices(self):
         """Return a list of closest drones for each drone in the swarm."""
         # indices of all the other drones except us
-        indices = [[j for j in range(self.num_agents) if i != j] for i in range(self.num_agents)]
+        indices = [
+            [j for j in range(self.num_agents) if i != j]
+            for i in range(self.num_agents)]
         indices = np.array(indices)
 
         if self.num_use_neighbor_obs == self.num_agents - 1:
@@ -259,7 +268,8 @@ class QuadrotorEnvMulti(gym.Env):
             close_neighbor_indices = []
 
             for i in range(self.num_agents):
-                rel_pos, rel_vel = self.get_rel_pos_vel_item(env_id=i, indices=indices[i])
+                rel_pos, rel_vel = self.get_rel_pos_vel_item(
+                    env_id=i, indices=indices[i])
                 rel_dist = np.linalg.norm(rel_pos, axis=1)
                 rel_dist = np.maximum(rel_dist, 0.01)
                 rel_pos_unit = rel_pos / rel_dist[:, None]
@@ -286,42 +296,56 @@ class QuadrotorEnvMulti(gym.Env):
         Here we count the average number of collisions with the walls and ground in the last N episodes
         Returns: True if drones are considered proficient at flying
         """
-        res = abs(np.mean(self.crashes_in_recent_episodes)) < 1 and len(self.crashes_in_recent_episodes) >= 10
+        res = abs(
+            np.mean(self.crashes_in_recent_episodes)) < 1 and len(
+            self.crashes_in_recent_episodes) >= 10
         return res
 
     def calculate_room_collision(self):
-        floor_collisions = np.array([env.dynamics.crashed_floor for env in self.envs])
-        wall_collisions = np.array([env.dynamics.crashed_wall for env in self.envs])
-        ceiling_collisions = np.array([env.dynamics.crashed_ceiling for env in self.envs])
+        floor_collisions = np.array(
+            [env.dynamics.crashed_floor for env in self.envs])
+        wall_collisions = np.array(
+            [env.dynamics.crashed_wall for env in self.envs])
+        ceiling_collisions = np.array(
+            [env.dynamics.crashed_ceiling for env in self.envs])
 
         floor_crash_list = np.where(floor_collisions >= 1)[0]
 
         cur_wall_crash_list = np.where(wall_collisions >= 1)[0]
-        wall_crash_list = np.setdiff1d(cur_wall_crash_list, self.prev_crashed_walls)
+        wall_crash_list = np.setdiff1d(
+            cur_wall_crash_list, self.prev_crashed_walls)
 
         cur_ceiling_crash_list = np.where(ceiling_collisions >= 1)[0]
-        ceiling_crash_list = np.setdiff1d(cur_ceiling_crash_list, self.prev_crashed_ceiling)
+        ceiling_crash_list = np.setdiff1d(
+            cur_ceiling_crash_list, self.prev_crashed_ceiling)
 
         return floor_crash_list, wall_crash_list, ceiling_crash_list
 
     def obst_generation_given_density(self, grid_size=1.0):
-        obst_area_length, obst_area_width = int(self.obst_spawn_area[0]), int(self.obst_spawn_area[1])
+        obst_area_length, obst_area_width = int(
+            self.obst_spawn_area[0]), int(
+            self.obst_spawn_area[1])
         num_room_grids = obst_area_length * obst_area_width
 
-        cell_centers = get_cell_centers(obst_area_length=obst_area_length, obst_area_width=obst_area_width,
-                                        grid_size=grid_size)
+        cell_centers = get_cell_centers(
+            obst_area_length=obst_area_length, obst_area_width=obst_area_width,
+            grid_size=grid_size)
 
         room_map = [i for i in range(0, num_room_grids)]
 
-        obst_index = np.random.choice(a=room_map, size=int(num_room_grids * self.obst_density), replace=False)
+        obst_index = np.random.choice(a=room_map, size=int(
+            num_room_grids * self.obst_density), replace=False)
 
         obst_pos_arr = []
         # 0: No Obst, 1: Obst
         obst_map = np.zeros([obst_area_length, obst_area_width])
         for obst_id in obst_index:
-            rid, cid = obst_id // obst_area_width, obst_id - (obst_id // obst_area_width) * obst_area_width
+            rid, cid = obst_id // obst_area_width, obst_id - \
+                (obst_id // obst_area_width) * obst_area_width
             obst_map[rid, cid] = 1
-            obst_item = list(cell_centers[rid + int(obst_area_length / grid_size) * cid])
+            obst_item = list(
+                cell_centers
+                [rid + int(obst_area_length / grid_size) * cid])
             obst_item.append(self.room_dims[2] / 2.)
             obst_pos_arr.append(obst_item)
 
@@ -330,14 +354,19 @@ class QuadrotorEnvMulti(gym.Env):
     def init_scene_multi(self):
         models = tuple(e.dynamics.model for e in self.envs)
         for i in range(len(self.quads_view_mode)):
-            self.scenes.append(Quadrotor3DSceneMulti(
-                models=models,
-                w=600, h=480, resizable=True, viewpoint=self.quads_view_mode[i],
-                room_dims=self.room_dims, num_agents=self.num_agents,
-                render_speed=self.render_speed, formation_size=self.quads_formation_size, obstacles=self.obstacles,
-                vis_vel_arrows=False, vis_acc_arrows=True, viz_traces=25, viz_trace_nth_step=1,
-                num_obstacles=self.num_obstacles, scene_index=i
-            ))
+            self.scenes.append(
+                Quadrotor3DSceneMulti(
+                    models=models, w=600, h=480, resizable=True,
+                    viewpoint=self.quads_view_mode[i],
+                    room_dims=self.room_dims,
+                    num_agents=self.num_agents,
+                    render_speed=self.render_speed,
+                    formation_size=self.quads_formation_size,
+                    obstacles=self.obstacles,
+                    vis_vel_arrows=False, vis_acc_arrows=True,
+                    viz_traces=25, viz_trace_nth_step=1,
+                    num_obstacles=self.num_obstacles,
+                    scene_index=i))
 
     def reset(self, obst_density=None, obst_size=None):
         obs, rewards, dones, infos = [], [], [], []
@@ -349,9 +378,11 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Scenario reset
         if self.use_obstacles:
-            self.obstacles = MultiObstacles(obstacle_size=self.obst_size, quad_radius=self.quad_arm)
+            self.obstacles = MultiObstacles(
+                obstacle_size=self.obst_size, quad_radius=self.quad_arm)
             self.obst_map, self.obst_pos_arr, cell_centers = self.obst_generation_given_density()
-            self.scenario.reset(obst_map=self.obst_map, cell_centers=cell_centers)
+            self.scenario.reset(obst_map=self.obst_map,
+                                cell_centers=cell_centers)
         else:
             self.scenario.reset()
 
@@ -380,7 +411,8 @@ class QuadrotorEnvMulti(gym.Env):
         # Obstacles
         if self.use_obstacles:
             quads_pos = np.array([e.dynamics.pos for e in self.envs])
-            obs = self.obstacles.reset(obs=obs, quads_pos=quads_pos, pos_arr=self.obst_pos_arr)
+            obs = self.obstacles.reset(
+                obs=obs, quads_pos=quads_pos, pos_arr=self.obst_pos_arr)
             self.obst_quad_collisions_per_episode = self.obst_quad_collisions_after_settle = 0
             self.prev_obst_quad_collisions = []
 
@@ -407,7 +439,9 @@ class QuadrotorEnvMulti(gym.Env):
         if self.quads_render:
             self.reset_scene = True
             self.quads_formation_size = self.scenario.formation_size
-            self.all_collisions = {val: [0.0 for _ in range(len(self.envs))] for val in ['drone', 'ground', 'obstacle']}
+            self.all_collisions = {
+                val: [0.0 for _ in range(len(self.envs))]
+                for val in ['drone', 'ground', 'obstacle']}
 
         return obs
 
@@ -422,7 +456,9 @@ class QuadrotorEnvMulti(gym.Env):
             self.envs[i].rew_coeff = self.rew_coeff
 
             # Output is acc, not thrusts
-            self_state = NominalSBC.State(position=self.envs[i].dynamics.pos, velocity=self.envs[i].dynamics.vel)
+            self_state = NominalSBC.State(
+                position=self.envs[i].dynamics.pos,
+                velocity=self.envs[i].dynamics.vel)
             neighbor_descriptions = []
 
             # Add neighbor robot descriptions
@@ -430,16 +466,16 @@ class QuadrotorEnvMulti(gym.Env):
                 if i == j:
                     continue
 
-                if np.linalg.norm(self_state.position - self.envs[j].dynamics.pos) < 5.0:
-                    neighbor_descriptions.append(NominalSBC.ObjectDescription(
+                if np.linalg.norm(
+                        self_state.position - self.envs[j].dynamics.pos) < 5.0:
+                    neighbor_descriptions.append(
+                        NominalSBC.ObjectDescription(
                             state=NominalSBC.State(
                                 position=self.envs[j].dynamics.pos,
-                                velocity=self.envs[j].dynamics.vel
-                            ),
+                                velocity=self.envs[j].dynamics.vel),
                             radius=self.envs[j].controller.sbc.radius,
-                            maximum_linf_acceleration_lower_bound=self.envs[j].controller.sbc.maximum_linf_acceleration
-                        )
-                    )
+                            maximum_linf_acceleration_lower_bound=self.
+                            envs[j].controller.sbc.maximum_linf_acceleration))
 
             # Add neighbor obstacle descriptions
             # TODO: Can we optimize this part?
@@ -463,7 +499,10 @@ class QuadrotorEnvMulti(gym.Env):
 
             for obst_pose in self.obst_pos_arr:
                 x, y = obst_pose[0], obst_pose[1]
-                if np.linalg.norm(np.array([x, y]) - np.array([self_state.position[0], self_state.position[1]])) < 3.0:
+                if np.linalg.norm(
+                    np.array([x, y]) - np.array(
+                        [self_state.position[0],
+                         self_state.position[1]])) < 3.0:
                     neighbor_descriptions.append(
                         NominalSBC.ObjectDescription(
                             state=NominalSBC.State(
@@ -478,15 +517,21 @@ class QuadrotorEnvMulti(gym.Env):
 
             # PD Guided
             # goal = self.envs[i].goal
+            # goal = np.array([3.0, 3.0, 100.0])
             # kp = 2.0
-            # kv = 1.0
-            # des_acc = kp * (goal - self.envs[i].dynamics.pos) + kv * (0.0 - self.envs[i].dynamics.vel)
+            # kv = 4.0
+            # des_acc = kp * (goal - self.envs[i].dynamics.pos) + kv * (
+            #     0.0 - self.envs[i].dynamics.vel)
             # observation, reward, done, info = self.envs[i].step(
-            #     action=des_acc, sbc_data={"self_state": self_state, "neighbor_descriptions": neighbor_descriptions})
+            #     action=des_acc,
+            #     sbc_data={"self_state": self_state,
+            #               "neighbor_descriptions": neighbor_descriptions})
 
             # Network Guided
             observation, reward, done, info = self.envs[i].step(
-                action=a, sbc_data={"self_state": self_state, "neighbor_descriptions": neighbor_descriptions})
+                action=a,
+                sbc_data={"self_state": self_state,
+                          "neighbor_descriptions": neighbor_descriptions})
 
             obs.append(observation)
             rewards.append(reward)
@@ -497,8 +542,8 @@ class QuadrotorEnvMulti(gym.Env):
 
         # 1. Calculate collisions: 1) between drones 2) with obstacles 3) with room
         # 1) Collisions between drones
-        drone_col_matrix, curr_drone_collisions, distance_matrix = \
-            calculate_collision_matrix(positions=self.pos, collision_threshold=self.collision_threshold)
+        drone_col_matrix, curr_drone_collisions, distance_matrix = calculate_collision_matrix(
+            positions=self.pos, collision_threshold=self.collision_threshold)
 
         # # Filter curr_drone_collisions
         curr_drone_collisions = curr_drone_collisions.astype(int)
@@ -506,12 +551,16 @@ class QuadrotorEnvMulti(gym.Env):
             np.where(curr_drone_collisions == [-1000, -1000])[0]), axis=0)
 
         old_quad_collision = set(map(tuple, self.prev_drone_collisions))
-        new_quad_collision = np.array([x for x in curr_drone_collisions if tuple(x) not in old_quad_collision])
+        new_quad_collision = np.array(
+            [x for x in curr_drone_collisions
+             if tuple(x) not in old_quad_collision])
 
-        self.last_step_unique_collisions = np.setdiff1d(curr_drone_collisions, self.prev_drone_collisions)
+        self.last_step_unique_collisions = np.setdiff1d(
+            curr_drone_collisions, self.prev_drone_collisions)
 
         # # Filter distance_matrix; Only contains quadrotor pairs with distance <= self.collision_threshold
-        near_quad_ids = np.where(distance_matrix[:, 2] <= self.collision_falloff_threshold)
+        near_quad_ids = np.where(
+            distance_matrix[:, 2] <= self.collision_falloff_threshold)
         distance_matrix = distance_matrix[near_quad_ids]
 
         # Collision between 2 drones counts as a single collision
@@ -530,10 +579,12 @@ class QuadrotorEnvMulti(gym.Env):
         # 2) Collisions with obstacles
         if self.use_obstacles:
             rew_obst_quad_collisions_raw = np.zeros(self.num_agents)
-            obst_quad_col_matrix, quad_obst_pair = self.obstacles.collision_detection(pos_quads=self.pos)
+            obst_quad_col_matrix, quad_obst_pair = self.obstacles.collision_detection(
+                pos_quads=self.pos)
             # We assume drone can only collide with one obstacle at the same time.
             # Given this setting, in theory, the gap between obstacles should >= 0.1 (drone diameter: 0.46*2 = 0.92)
-            self.curr_quad_col = np.setdiff1d(obst_quad_col_matrix, self.prev_obst_quad_collisions)
+            self.curr_quad_col = np.setdiff1d(
+                obst_quad_col_matrix, self.prev_obst_quad_collisions)
             collisions_obst_curr_tick = len(self.curr_quad_col)
             self.obst_quad_collisions_per_episode += collisions_obst_curr_tick
 
@@ -553,7 +604,8 @@ class QuadrotorEnvMulti(gym.Env):
 
         # 3) Collisions with room
         floor_crash_list, wall_crash_list, ceiling_crash_list = self.calculate_room_collision()
-        room_crash_list = np.unique(np.concatenate([floor_crash_list, wall_crash_list, ceiling_crash_list]))
+        room_crash_list = np.unique(np.concatenate(
+            [floor_crash_list, wall_crash_list, ceiling_crash_list]))
         room_crash_list = np.setdiff1d(room_crash_list, self.prev_crashed_room)
         # # Aux: Room Collisions
         self.prev_crashed_walls = wall_crash_list
@@ -570,9 +622,11 @@ class QuadrotorEnvMulti(gym.Env):
         # penalties for being too close to other drones
         if len(distance_matrix) > 0:
             rew_proximity = -1.0 * calculate_drone_proximity_penalties(
-                distance_matrix=distance_matrix, collision_falloff_threshold=self.collision_falloff_threshold,
-                dt=self.control_dt, max_penalty=self.rew_coeff["quadcol_bin_smooth_max"], num_agents=self.num_agents,
-            )
+                distance_matrix=distance_matrix,
+                collision_falloff_threshold=self.collision_falloff_threshold,
+                dt=self.control_dt, max_penalty=self.rew_coeff
+                ["quadcol_bin_smooth_max"],
+                num_agents=self.num_agents,)
         else:
             rew_proximity = np.zeros(self.num_agents)
 
@@ -615,7 +669,8 @@ class QuadrotorEnvMulti(gym.Env):
         # # 1) aerodynamics
         if self.use_downwash:
             envs_dynamics = [env.dynamics for env in self.envs]
-            applied_downwash_list = perform_downwash(drones_dyn=envs_dynamics, dt=self.control_dt)
+            applied_downwash_list = perform_downwash(
+                drones_dyn=envs_dynamics, dt=self.control_dt)
             downwash_agents_list = np.where(applied_downwash_list == 1)[0]
             if len(downwash_agents_list) > 0:
                 self_state_update_flag = True
@@ -625,7 +680,8 @@ class QuadrotorEnvMulti(gym.Env):
             if len(new_quad_collision) > 0:
                 self_state_update_flag = True
                 for val in new_quad_collision:
-                    dyn1, dyn2 = self.envs[val[0]].dynamics, self.envs[val[1]].dynamics
+                    dyn1, dyn2 = self.envs[val[0]
+                                           ].dynamics, self.envs[val[1]].dynamics
                     dyn1.vel, dyn1.omega, dyn2.vel, dyn2.omega = perform_collision_between_drones(
                         pos1=dyn1.pos, vel1=dyn1.vel, omega1=dyn1.omega,
                         pos2=dyn2.pos, vel2=dyn2.vel, omega2=dyn2.omega
@@ -638,19 +694,23 @@ class QuadrotorEnvMulti(gym.Env):
                     for val in self.curr_quad_col:
                         obstacle_id = quad_obst_pair[int(val)]
                         obstacle_pos = self.obstacles.pos_arr[int(obstacle_id)]
-                        perform_collision_with_obstacle(drone_dyn=self.envs[int(val)].dynamics,
-                                                        obstacle_pos=obstacle_pos,
-                                                        obstacle_size=self.obst_size)
+                        perform_collision_with_obstacle(
+                            drone_dyn=self.envs[int(val)].dynamics,
+                            obstacle_pos=obstacle_pos,
+                            obstacle_size=self.obst_size)
 
             # # 4) Room
             if len(wall_crash_list) > 0 or len(ceiling_crash_list) > 0:
                 self_state_update_flag = True
 
                 for val in wall_crash_list:
-                    perform_collision_with_wall(drone_dyn=self.envs[val].dynamics, room_box=self.envs[0].room_box)
+                    perform_collision_with_wall(
+                        drone_dyn=self.envs[val].dynamics,
+                        room_box=self.envs[0].room_box)
 
                 for val in ceiling_crash_list:
-                    perform_collision_with_ceiling(drone_dyn=self.envs[val].dynamics)
+                    perform_collision_with_ceiling(
+                        drone_dyn=self.envs[val].dynamics)
 
         # 4. Run the scenario passed to self.quads_mode
         self.scenario.step()
@@ -680,13 +740,18 @@ class QuadrotorEnvMulti(gym.Env):
         # Rendering
         if self.quads_render:
             # Collisions with room
-            ground_collisions = [1.0 if env.dynamics.on_floor else 0.0 for env in self.envs]
+            ground_collisions = [1.0
+                                 if env.dynamics.on_floor else 0.0
+                                 for env in self.envs]
             if self.use_obstacles:
-                obst_coll = [1.0 if i < 0 else 0.0 for i in rew_obst_quad_collisions_raw]
+                obst_coll = [1.0
+                             if i < 0 else 0.0
+                             for i in rew_obst_quad_collisions_raw]
             else:
                 obst_coll = [0.0 for _ in range(self.num_agents)]
-            self.all_collisions = {'drone': drone_col_matrix, 'ground': ground_collisions,
-                                   'obstacle': obst_coll}
+            self.all_collisions = {
+                'drone': drone_col_matrix, 'ground': ground_collisions,
+                'obstacle': obst_coll}
 
         # 7. DONES
         if any(dones):
@@ -735,39 +800,51 @@ class QuadrotorEnvMulti(gym.Env):
             if not self.saved_in_replay_buffer:
                 # agent_success_rate: base_success_rate, based on per agent
                 # 0: collision; 1: no collision
-                agent_col_flag_list = np.logical_and(self.agent_col_agent, self.agent_col_obst)
-                agent_success_flag_list = np.logical_and(agent_col_flag_list, self.reached_goal)
-                agent_success_ratio = 1.0 * np.sum(agent_success_flag_list) / self.num_agents
+                agent_col_flag_list = np.logical_and(
+                    self.agent_col_agent, self.agent_col_obst)
+                agent_success_flag_list = np.logical_and(
+                    agent_col_flag_list, self.reached_goal)
+                agent_success_ratio = 1.0 * np.sum(
+                    agent_success_flag_list) / self.num_agents
 
                 # agent_deadlock_rate
                 # Doesn't approach to the goal while no collisions with other objects
-                agent_deadlock_list = np.logical_and(agent_col_flag_list, 1 - self.reached_goal)
-                agent_deadlock_ratio = 1.0 * np.sum(agent_deadlock_list) / self.num_agents
+                agent_deadlock_list = np.logical_and(
+                    agent_col_flag_list, 1 - self.reached_goal)
+                agent_deadlock_ratio = 1.0 * np.sum(
+                    agent_deadlock_list) / self.num_agents
 
                 # agent_col_rate
                 # Collide with other drones and obstacles
-                agent_col_ratio = 1.0 - np.sum(agent_col_flag_list) / self.num_agents
+                agent_col_ratio = 1.0 - np.sum(
+                    agent_col_flag_list) / self.num_agents
 
                 # agent_neighbor_col_rate
-                agent_neighbor_col_ratio = 1.0 - np.sum(self.agent_col_agent) / self.num_agents
+                agent_neighbor_col_ratio = 1.0 - np.sum(
+                    self.agent_col_agent) / self.num_agents
                 # agent_obst_col_rate
-                agent_obst_col_ratio = 1.0 - np.sum(self.agent_col_obst) / self.num_agents
+                agent_obst_col_ratio = 1.0 - np.sum(
+                    self.agent_col_obst) / self.num_agents
 
                 for i in range(len(infos)):
                     # agent_success_rate
-                    infos[i]['episode_extra_stats']['metric/agent_success_rate'] = agent_success_ratio
+                    infos[i]['episode_extra_stats'][
+                        'metric/agent_success_rate'] = agent_success_ratio
                     infos[i]['episode_extra_stats'][f'{scenario_name}/agent_success_rate'] = agent_success_ratio
                     # agent_deadlock_rate
-                    infos[i]['episode_extra_stats']['metric/agent_deadlock_rate'] = agent_deadlock_ratio
+                    infos[i]['episode_extra_stats'][
+                        'metric/agent_deadlock_rate'] = agent_deadlock_ratio
                     infos[i]['episode_extra_stats'][f'{scenario_name}/agent_deadlock_rate'] = agent_deadlock_ratio
                     # agent_col_rate
                     infos[i]['episode_extra_stats']['metric/agent_col_rate'] = agent_col_ratio
-                    infos[i]['episode_extra_stats'][f'{scenario_name}/agent_col_rate'] = agent_col_ratio
+                    infos[i]['episode_extra_stats'][
+                        f'{scenario_name}/agent_col_rate'] = agent_col_ratio
                     # agent_neighbor_col_rate
                     infos[i]['episode_extra_stats']['metric/agent_neighbor_col_rate'] = agent_neighbor_col_ratio
                     infos[i]['episode_extra_stats'][f'{scenario_name}/agent_neighbor_col_rate'] = agent_neighbor_col_ratio
                     # agent_obst_col_rate
-                    infos[i]['episode_extra_stats']['metric/agent_obst_col_rate'] = agent_obst_col_ratio
+                    infos[i]['episode_extra_stats'][
+                        'metric/agent_obst_col_rate'] = agent_obst_col_ratio
                     infos[i]['episode_extra_stats'][f'{scenario_name}/agent_obst_col_rate'] = agent_obst_col_ratio
 
             obs = self.reset()
@@ -788,8 +865,10 @@ class QuadrotorEnvMulti(gym.Env):
                 self.scenes[i].formation_size = self.quads_formation_size
                 self.scenes[i].update_env(self.room_dims)
 
-                self.scenes[i].reset(tuple(e.goal for e in self.envs), self.all_dynamics(), self.obstacles,
-                                     self.all_collisions)
+                self.scenes[i].reset(
+                    tuple(e.goal for e in self.envs),
+                    self.all_dynamics(),
+                    self.obstacles, self.all_collisions)
 
             self.reset_scene = False
 
@@ -818,18 +897,21 @@ class QuadrotorEnvMulti(gym.Env):
         frames = []
         first_spawn = None
         for i in range(len(self.scenes)):
-            frame, first_spawn = self.scenes[i].render_chase(all_dynamics=self.all_dynamics(), goals=goals,
-                                                             collisions=self.all_collisions,
-                                                             mode=self.render_mode, obstacles=self.obstacles,
-                                                             first_spawn=first_spawn)
+            frame, first_spawn = self.scenes[i].render_chase(
+                all_dynamics=self.all_dynamics(),
+                goals=goals, collisions=self.all_collisions,
+                mode=self.render_mode, obstacles=self.obstacles,
+                first_spawn=first_spawn)
             frames.append(frame)
         # Update the formation size of the scenario
         if self.quads_mode == "mix":
             for i in range(len(self.scenes)):
-                self.scenario.scenario.update_formation_size(self.scenes[i].formation_size)
+                self.scenario.scenario.update_formation_size(
+                    self.scenes[i].formation_size)
         else:
             for i in range(len(self.scenes)):
-                self.scenario.update_formation_size(self.scenes[i].formation_size)
+                self.scenario.update_formation_size(
+                    self.scenes[i].formation_size)
 
         render_time = time.time() - render_start
 
@@ -843,18 +925,22 @@ class QuadrotorEnvMulti(gym.Env):
         if simulation_time + render_time > desired_time_between_frames:
             self.render_every_nth_frame += 1
             if verbose:
-                print(f"Last render + simulation time {render_time + simulation_time:.3f}")
-                print(f"Rendering does not keep up, rendering every {self.render_every_nth_frame} frames")
+                print(
+                    f"Last render + simulation time {render_time + simulation_time:.3f}")
+                print(
+                    f"Rendering does not keep up, rendering every {self.render_every_nth_frame} frames")
         elif simulation_time + render_time < realtime_control_period * (
                 self.frames_since_last_render - 1) / self.render_speed:
             self.render_every_nth_frame -= 1
             if verbose:
-                print(f"We can increase rendering framerate, rendering every {self.render_every_nth_frame} frames")
+                print(
+                    f"We can increase rendering framerate, rendering every {self.render_every_nth_frame} frames")
 
         if self.render_every_nth_frame > 5:
             self.render_every_nth_frame = 5
             if self.envs[0].tick % 20 == 0:
-                print(f"Rendering cannot keep up! Rendering every {self.render_every_nth_frame} frames")
+                print(
+                    f"Rendering cannot keep up! Rendering every {self.render_every_nth_frame} frames")
 
         self.render_skip_frames = self.render_every_nth_frame - 1
         self.frames_since_last_render = 0

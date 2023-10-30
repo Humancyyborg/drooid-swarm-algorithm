@@ -31,7 +31,9 @@ GRAV = 9.81  # default gravitational constant
 
 
 # reasonable reward function for hovering at a goal and not flying too high
-def compute_reward_weighted(goal, cur_pos, rl_acc, acc_sbc, mellinger_acc, dt, rew_coeff, on_floor):
+def compute_reward_weighted(
+        goal, cur_pos, rl_acc, acc_sbc, sbc_distance_to_boundary, mellinger_acc,
+        dt, rew_coeff, on_floor):
     # Distance to the goal
     dist = np.linalg.norm(goal - cur_pos)
     cost_pos_raw = dist
@@ -49,11 +51,20 @@ def compute_reward_weighted(goal, cur_pos, rl_acc, acc_sbc, mellinger_acc, dt, r
     cost_sbc_mellinger_raw = np.linalg.norm(mellinger_acc - acc_sbc)
     cost_sbc_mellinger = rew_coeff["sbc_mellinger"] * cost_sbc_mellinger_raw
 
+    # SBC boundary cost
+    if sbc_distance_to_boundary is not None:
+        cost_sbc_boundary_raw = sbc_distance_to_boundary
+        cost_sbc_boundary = rew_coeff["sbc_boundary"] * cost_sbc_boundary_raw
+    else:
+        cost_sbc_boundary_raw = 0.
+        cost_sbc_boundary = 0.
+
     reward = -dt * np.sum([
         cost_pos,
         cost_crash,
         cost_rl_sbc,
         cost_sbc_mellinger,
+        cost_sbc_boundary
     ])
 
     rew_info = {
@@ -62,12 +73,14 @@ def compute_reward_weighted(goal, cur_pos, rl_acc, acc_sbc, mellinger_acc, dt, r
         'rew_crash': -cost_crash,
         "rew_rl_sbc": -cost_rl_sbc,
         'rew_sbc_mellinger': -cost_sbc_mellinger,
+        'rew_sbc_boundary': -cost_sbc_boundary,
 
         "rewraw_main": -cost_pos_raw,
         'rewraw_pos': -cost_pos_raw,
         'rewraw_crash': -cost_crash_raw,
         "rewraw_rl_sbc": -cost_rl_sbc_raw,
         'rewraw_sbc_mellinger': -cost_sbc_mellinger_raw,
+        'rewraw_sbc_boundary': -cost_sbc_boundary_raw,
     }
 
     for k, v in rew_info.items():
@@ -85,14 +98,18 @@ def compute_reward_weighted(goal, cur_pos, rl_acc, acc_sbc, mellinger_acc, dt, r
 # size of the env and init state distribution are not the same ! It is done for the reason of having static (and
 # preferably short) episode length, since for some distance it would be impossible to reach the goal
 class QuadrotorSingle:
-    def __init__(self, dynamics_params="DefaultQuad", dynamics_change=None,
-                 dynamics_randomize_every=None, dyn_sampler_1=None, dyn_sampler_2=None,
-                 raw_control=True, raw_control_zero_middle=True, dim_mode='3D', tf_control=False, sim_freq=200.,
-                 sim_steps=2, obs_repr="xyz_vxyz_R_omega", ep_time=7, room_dims=(10.0, 10.0, 10.0),
-                 init_random_state=False, sense_noise=None, verbose=False, gravity=GRAV,
-                 t2w_std=0.005, t2t_std=0.0005, excite=False, dynamics_simplification=False, use_numba=False,
-                 neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0, use_obstacles=False, sbc_radius=0.1,
-                 sbc_aggressive=0.1):
+    def __init__(
+            self, dynamics_params="DefaultQuad", dynamics_change=None,
+            dynamics_randomize_every=None, dyn_sampler_1=None,
+            dyn_sampler_2=None, raw_control=True, raw_control_zero_middle=True,
+            dim_mode='3D', tf_control=False, sim_freq=200., sim_steps=2,
+            obs_repr="xyz_vxyz_R_omega", ep_time=7, room_dims=(10.0, 10.0,
+                                                               10.0),
+            init_random_state=False, sense_noise=None, verbose=False,
+            gravity=GRAV, t2w_std=0.005, t2t_std=0.0005, excite=False,
+            dynamics_simplification=False, use_numba=False,
+            neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0,
+            use_obstacles=False, sbc_radius=0.1, sbc_aggressive=0.1):
         np.seterr(under='ignore')
         """
         Args:
@@ -135,8 +152,9 @@ class QuadrotorSingle:
         self.room_length = room_dims[0]
         self.room_width = room_dims[1]
         self.room_height = room_dims[2]
-        self.room_box = np.array([[-self.room_length / 2., -self.room_width / 2, 0.],
-                                  [self.room_length / 2., self.room_width / 2., self.room_height]])
+        self.room_box = np.array(
+            [[-self.room_length / 2., -self.room_width / 2, 0.],
+             [self.room_length / 2., self.room_width / 2., self.room_height]])
 
         self.init_random_state = init_random_state
 
@@ -189,23 +207,24 @@ class QuadrotorSingle:
             sampler_type = dyn_sampler_1["class"]
             self.dyn_sampler_1_params = copy.deepcopy(dyn_sampler_1)
             del self.dyn_sampler_1_params["class"]
-            self.dyn_sampler_1 = getattr(quad_rand, sampler_type)(params=self.dynamics_params,
-                                                                  **self.dyn_sampler_1_params)
+            self.dyn_sampler_1 = getattr(quad_rand, sampler_type)(
+                params=self.dynamics_params, **self.dyn_sampler_1_params)
 
         self.dyn_sampler_2 = dyn_sampler_2
         if dyn_sampler_2 is not None:
             sampler_type = dyn_sampler_2["class"]
             self.dyn_sampler_2_params = copy.deepcopy(dyn_sampler_2)
             del self.dyn_sampler_2_params["class"]
-            self.dyn_sampler_2 = getattr(quad_rand, sampler_type)(params=self.dynamics_params,
-                                                                  **self.dyn_sampler_2_params)
+            self.dyn_sampler_2 = getattr(quad_rand, sampler_type)(
+                params=self.dynamics_params, **self.dyn_sampler_2_params)
 
         # Updating dynamics
         self.action_space = None
         self.resample_dynamics()
 
         # Self info
-        self.state_vector = self.state_vector = getattr(get_state, "state_" + self.obs_repr)
+        self.state_vector = self.state_vector = getattr(
+            get_state, "state_" + self.obs_repr)
         if use_obstacles:
             self.box = 0.1
         else:
@@ -232,27 +251,32 @@ class QuadrotorSingle:
             self.sense_noise = SensorNoise(**sense_noise)
         elif isinstance(sense_noise, str):
             if sense_noise == "default":
-                self.sense_noise = SensorNoise(bypass=False, use_numba=self.use_numba)
+                self.sense_noise = SensorNoise(
+                    bypass=False, use_numba=self.use_numba)
             else:
-                ValueError("ERROR: QuadEnv: sense_noise parameter is of unknown type: " + str(sense_noise))
+                ValueError(
+                    "ERROR: QuadEnv: sense_noise parameter is of unknown type: " + str(sense_noise))
         elif sense_noise is None:
             self.sense_noise = SensorNoise(bypass=True)
         else:
-            raise ValueError("ERROR: QuadEnv: sense_noise parameter is of unknown type: " + str(sense_noise))
+            raise ValueError(
+                "ERROR: QuadEnv: sense_noise parameter is of unknown type: " +
+                str(sense_noise))
 
     def update_dynamics(self, dynamics_params):
         # DYNAMICS
         # Then loading the dynamics
         self.dynamics_params = dynamics_params
-        self.dynamics = QuadrotorDynamics(model_params=dynamics_params,
-                                          dynamics_steps_num=self.sim_steps, room_box=self.room_box,
-                                          dim_mode=self.dim_mode, gravity=self.gravity,
-                                          dynamics_simplification=self.dynamics_simplification,
-                                          use_numba=self.use_numba, dt=self.dt)
+        self.dynamics = QuadrotorDynamics(
+            model_params=dynamics_params, dynamics_steps_num=self.sim_steps,
+            room_box=self.room_box, dim_mode=self.dim_mode, gravity=self.
+            gravity, dynamics_simplification=self.dynamics_simplification,
+            use_numba=self.use_numba, dt=self.dt)
 
         # CONTROL
-        self.controller = MellingerController(dynamics=self.dynamics, sbc_radius=self.sbc_radius,
-                                              sbc_aggressive=self.sbc_aggressive)
+        self.controller = MellingerController(
+            dynamics=self.dynamics, sbc_radius=self.sbc_radius,
+            sbc_aggressive=self.sbc_aggressive, room_box=self.room_box)
 
         # ACTIONS
         self.action_space = spaces.Box(low=-self.dynamics.acc_max * np.ones(3),
@@ -278,13 +302,16 @@ class QuadrotorSingle:
             "act": [np.zeros(4), np.ones(4)],
             "quat": [-np.ones(4), np.ones(4)],
             "euler": [-np.pi * np.ones(3), np.pi * np.ones(3)],
-            "rxyz": [-room_range, room_range],  # rxyz stands for relative pos between quadrotors
+            # rxyz stands for relative pos between quadrotors
+            "rxyz": [-room_range, room_range],
             "rvxyz": [-2.0 * self.dynamics.vxyz_max * np.ones(3), 2.0 * self.dynamics.vxyz_max * np.ones(3)],
             # rvxyz stands for relative velocity between quadrotors
-            "roxyz": [-room_range, room_range],  # roxyz stands for relative pos between quadrotor and obstacle
+            # roxyz stands for relative pos between quadrotor and obstacle
+            "roxyz": [-room_range, room_range],
             "rovxyz": [-20.0 * np.ones(3), 20.0 * np.ones(3)],
             # rovxyz stands for relative velocity between quadrotor and obstacle
-            "osize": [np.zeros(3), 20.0 * np.ones(3)],  # obstacle size, [[0., 0., 0.], [20., 20., 20.]]
+            # obstacle size, [[0., 0., 0.], [20., 20., 20.]]
+            "osize": [np.zeros(3), 20.0 * np.ones(3)],
             "otype": [np.zeros(1), 20.0 * np.ones(1)],
             # obstacle type, [[0.], [20.]], which means we can support 21 types of obstacles
             "goal": [-room_range, room_range],
@@ -293,11 +320,14 @@ class QuadrotorSingle:
             "octmap": [-10 * np.ones(9), 10 * np.ones(9)],
         }
         self.obs_comp_names = list(self.obs_space_low_high.keys())
-        self.obs_comp_sizes = [self.obs_space_low_high[name][1].size for name in self.obs_comp_names]
+        self.obs_comp_sizes = [
+            self.obs_space_low_high[name][1].size
+            for name in self.obs_comp_names]
 
         obs_comps = self.obs_repr.split("_")
         if self.neighbor_obs_type == 'pos_vel' and self.num_use_neighbor_obs > 0:
-            obs_comps = obs_comps + (['rxyz'] + ['rvxyz']) * self.num_use_neighbor_obs
+            obs_comps = obs_comps + (['rxyz'] + ['rvxyz']
+                                     ) * self.num_use_neighbor_obs
 
         if self.use_obstacles:
             obs_comps = obs_comps + ["octmap"]
@@ -329,13 +359,16 @@ class QuadrotorSingle:
         self.actions[1] = copy.deepcopy(self.actions[0])
         self.actions[0] = copy.deepcopy(action)
 
-        _, acc_sbc = self.controller.step_func(dynamics=self.dynamics, acc_des=action, dt=self.dt, observation=sbc_data)
+        _, acc_sbc, sbc_distance_to_boundary = self.controller.step_func(
+            dynamics=self.dynamics, acc_des=action, dt=self.dt,
+            observation=sbc_data)
 
         self.time_remain = self.ep_len - self.tick
         reward, rew_info = compute_reward_weighted(
-            goal=self.goal, cur_pos=self.dynamics.pos, rl_acc=action, acc_sbc=acc_sbc,
-            mellinger_acc=self.dynamics.acc,
-            dt=self.control_dt, rew_coeff=self.rew_coeff, on_floor=self.dynamics.on_floor)
+            goal=self.goal, cur_pos=self.dynamics.pos, rl_acc=action,
+            acc_sbc=acc_sbc, sbc_distance_to_boundary=sbc_distance_to_boundary,
+            mellinger_acc=self.dynamics.acc, dt=self.control_dt,
+            rew_coeff=self.rew_coeff, on_floor=self.dynamics.on_floor)
 
         self.tick += 1
         done = self.tick > self.ep_len
@@ -360,11 +393,13 @@ class QuadrotorSingle:
 
         # Applying sampler 1
         if self.dyn_sampler_1 is not None:
-            self.dynamics_params = self.dyn_sampler_1.sample(self.dynamics_params)
+            self.dynamics_params = self.dyn_sampler_1.sample(
+                self.dynamics_params)
 
         # Applying sampler 2
         if self.dyn_sampler_2 is not None:
-            self.dynamics_params = self.dyn_sampler_2.sample(self.dynamics_params)
+            self.dynamics_params = self.dyn_sampler_2.sample(
+                self.dynamics_params)
 
         # Checking that quad params make sense
         quad_rand.check_quad_param_limits(self.dynamics_params)
@@ -379,7 +414,8 @@ class QuadrotorSingle:
 
         if self.box < 10:
             self.box = self.box * self.box_scale
-        x, y, z = self.np_random.uniform(-self.box, self.box, size=(3,)) + self.spawn_point
+        x, y, z = self.np_random.uniform(-self.box,
+                                         self.box, size=(3,)) + self.spawn_point
 
         if self.dim_mode == '1D':
             x, y = self.goal[0], self.goal[1]
@@ -406,12 +442,13 @@ class QuadrotorSingle:
             else:
                 # It already sets the state internally
                 _, vel, rotation, omega = self.dynamics.random_state(
-                    box=(self.room_length, self.room_width, self.room_height), vel_max=self.max_init_vel,
-                    omega_max=self.max_init_omega
-                )
+                    box=(self.room_length, self.room_width, self.room_height),
+                    vel_max=self.max_init_vel, omega_max=self.max_init_omega)
         else:
             # INIT HORIZONTALLY WITH 0 VEL and OMEGA
-            vel, omega = np.zeros(3, dtype=np.float64), np.zeros(3, dtype=np.float64)
+            vel, omega = np.zeros(
+                3, dtype=np.float64), np.zeros(
+                3, dtype=np.float64)
 
             if self.dim_mode == '1D' or self.dim_mode == '2D':
                 rotation = np.eye(3)
