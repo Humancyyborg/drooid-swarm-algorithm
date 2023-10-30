@@ -266,17 +266,7 @@ class QuadrotorSingle:
                                           use_numba=self.use_numba, dt=self.dt)
 
         # CONTROL
-        if self.raw_control:
-            if self.dim_mode == '1D':  # Z axis only
-                self.controller = VerticalControl(self.dynamics, zero_action_middle=self.raw_control_zero_middle)
-            elif self.dim_mode == '2D':  # X and Z axes only
-                self.controller = VertPlaneControl(self.dynamics, zero_action_middle=self.raw_control_zero_middle)
-            elif self.dim_mode == '3D':
-                self.controller = RawControl(self.dynamics, zero_action_middle=self.raw_control_zero_middle)
-            else:
-                raise ValueError('QuadEnv: Unknown dimensionality mode %s' % self.dim_mode)
-        else:
-            self.controller = NonlinearPositionController(self.dynamics, tf_control=self.tf_control)
+        self.controller = RawControl(self.dynamics, zero_action_middle=self.raw_control_zero_middle)
 
         # ACTIONS
         self.action_space = self.controller.action_space(self.dynamics)
@@ -297,7 +287,7 @@ class QuadrotorSingle:
             "t2w": [0. * np.ones(1), 5. * np.ones(1)],
             "t2t": [0. * np.ones(1), 1. * np.ones(1)],
             "h": [0. * np.ones(1), self.room_box[1][2] * np.ones(1)],
-            "act": [np.zeros(4), np.ones(4)],
+            "act": [np.zeros(ACT_DIM), np.ones(ACT_DIM)],
             "quat": [-np.ones(4), np.ones(4)],
             "euler": [-np.pi * np.ones(3), np.pi * np.ones(3)],
             "rxyz": [-room_range, room_range],  # rxyz stands for relative pos between quadrotors

@@ -8,6 +8,8 @@ from gym_art.quadrotor_multi.inertia import QuadLink, QuadLinkSimplified
 from gym_art.quadrotor_multi.numba_utils import OUNoiseNumba, angvel2thrust_numba, numba_cross
 from gym_art.quadrotor_multi.quad_utils import OUNoise, rand_uniform_rot3d, cross_vec_mx4, cross_mx4, npa, cross, \
     randyaw, to_xyhat, normalize
+from gym_art.quadrotor_multi.quadrotor_control import ACT_DIM
+
 
 GRAV = 9.81  # default gravitational constant
 EPS = 1e-6  # small constant to avoid divisions by 0 and log(0)
@@ -477,8 +479,8 @@ class QuadrotorDynamics:
 
     @staticmethod
     def action_space():
-        low = np.zeros(4)
-        high = np.ones(4)
+        low = np.zeros(ACT_DIM)
+        high = np.ones(ACT_DIM)
         return spaces.Box(low, high, dtype=np.float32)
 
     def __deepcopy__(self, memo):
