@@ -90,6 +90,7 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
 
     reward_shaping['quad_rewards']['rl_sbc'] = cfg.quads_cost_rl_sbc
     reward_shaping['quad_rewards']['sbc_mellinger'] = cfg.quads_cost_sbc_mellinger
+    reward_shaping['quad_rewards']['sbc_boundary'] = cfg.quads_sbc_boundary
 
     # this is annealed by the reward shaping wrapper
     if cfg.anneal_collision_steps > 0:

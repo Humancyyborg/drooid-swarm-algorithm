@@ -66,7 +66,7 @@ class Scenario_o_base(QuadrotorScenario):
         return np.array([pos_x, pos_y, z_list_start])
 
     def generate_pos_obst_map_2(self, num_agents):
-        ids = np.random.choice(range(len(self.free_space)), num_agents, replace=False)
+        ids = np.random.choice(range(len(self.free_space)), num_agents, replace=True)
 
         generated_points = []
         for idx in ids:
