@@ -1,154 +1,146 @@
-import math
 import osqp
 import scipy.sparse as spa
 from gymnasium import spaces
 
 from gym_art.quadrotor_multi.quad_utils import *
+from gym_art.quadrotor_multi.quadrotor_control_utils import _compute_maximum_distance_to_boundary, get_min_real_dist, \
+    get_G_h, get_G_h_room, get_obst_min_real_dist, get_obst_G_h
 
 GRAV = 9.81
 
 
 class NominalSBC:
-    class State:
-        def __init__(self, position, velocity):
-            self.position = position
-            self.velocity = velocity
-
-    class ObjectDescription:
-        def __init__(
-                self, state, radius, maximum_linf_acceleration_lower_bound,
-                is_infinite_height_cylinder=False):
-            self.state = state
-            self.radius = radius
-            self.maximum_linf_acceleration_lower_bound = maximum_linf_acceleration_lower_bound
-            self.is_infinite_height_cylinder = is_infinite_height_cylinder
-
-    def __init__(
-            self, maximum_linf_acceleration, aggressiveness, radius, room_box):
+    def __init__(self, maximum_linf_acceleration, aggressiveness, radius, room_box, num_agents, num_obstacles):
         self.maximum_linf_acceleration = maximum_linf_acceleration
         self.aggressiveness = aggressiveness
         self.radius = radius
         self.room_box = room_box
-
-    def _compute_maximum_distance_to_boundary(self, acc, G, h):
-        """
-            Computes the maximum distance of v to the constraint boundary
-            defined by Gx <= h.
-
-            If a constraint is satisfied by v, the distance of v to the
-            constraint boundary is negative. Constraints take value zero at the
-            boundary. Distance to violated constraints is positive.
-
-            If the return value is positive, the return value is the distance
-            to the most violated constraint.
-
-            If it is non-positive, all constraints are satisfied,
-            and the return value is the (negated) distance to the
-            closest constraint.
-
-            In any case, we want this value to be minimized.
-        """
-        G_norms = np.linalg.norm(G, axis=1)
-        G_unit = G / G_norms[:, np.newaxis]
-        h_norm = h / G_norms
-        distances = np.dot(G_unit, acc) - h_norm
-        return np.maximum(distances.max(), 0)
-
-    def plan(self, self_state, object_descriptions, desired_acceleration):
         P = 2.0 * np.eye(3)
-        q = -2.0 * desired_acceleration
-        G = np.ndarray((0, 3), np.float64)
-        h = np.array([])
         A = np.ndarray((0, 3), np.float64)
-        b = np.array([])
-        lb = np.array([-self.maximum_linf_acceleration] * 3)
-        ub = np.array([self.maximum_linf_acceleration] * 3)
 
-        # Add robot and obstacle collision avoidance constraints
-        for object_description in object_descriptions:
-            dim = 2 if object_description.is_infinite_height_cylinder else 3
+        self.P = spa.csc_matrix(P)
+        self.A = spa.csc_matrix(A)
+        self.b = np.array([])
+        self.lb = np.array([-self.maximum_linf_acceleration] * 3)
+        self.ub = np.array([self.maximum_linf_acceleration] * 3)
+        self.A_osqp = spa.eye(3)
+        self.num_agents = num_agents
+        self.num_obstacles = num_obstacles
 
-            relative_position = self_state.position[:dim] - object_description.state.position
-            relative_position_norm = np.linalg.norm(relative_position)
-            if relative_position_norm < 1e-10:
+    def plan(self, self_state, neighbor_descriptions, obstacle_descriptions, desired_acceleration):
+        # Add robot and robot / obstacle collision avoidance constraints
+        min_rel_dist = 100.0
+        # Neighbor min_rel_dist check
+        neighbor_des_num = len(neighbor_descriptions)
+        rel_pos_arr = np.zeros((neighbor_des_num, 3))
+        rel_pos_norm_arr = np.zeros(neighbor_des_num)
+        if neighbor_des_num > 0:
+            description_state_pos = -1 * np.ones((self.num_agents, 3))
+            for idx in range(neighbor_des_num):
+                description_state_pos[idx] = neighbor_descriptions[idx]['state']['position']
+
+            min_rel_dist = get_min_real_dist(min_rel_dist=min_rel_dist, self_state_pos=self_state['position'],
+                                             description_state_pos=description_state_pos,
+                                             rel_pos_arr=rel_pos_arr, rel_pos_norm_arr=rel_pos_norm_arr,
+                                             neighbor_des_num=neighbor_des_num)
+            safety_distance = self.radius + neighbor_descriptions[0]['radius']
+            if min_rel_dist < safety_distance:
                 return None, None
+        else:
+            safety_distance = None
 
-            safety_distance = self.radius + object_description.radius
+        # Obstacle min_rel_dist check
+        obst_des_num = len(obstacle_descriptions)
+        obst_rel_pos_arr = np.zeros((obst_des_num, 2))
+        obst_rel_pos_norm_arr = np.zeros(obst_des_num)
+        if obst_des_num > 0:
+            min_rel_dist = 100.0
+            description_state_pos = -1 * np.ones((self.num_obstacles, 2))
+            for idx in range(obst_des_num):
+                description_state_pos[idx] = obstacle_descriptions[idx]['state']['position']
 
-            if relative_position_norm < safety_distance:
+            min_rel_dist = get_obst_min_real_dist(min_rel_dist=min_rel_dist, self_state_pos=self_state['position'][:2],
+                                                  description_state_pos=description_state_pos,
+                                                  rel_pos_arr=obst_rel_pos_arr, rel_pos_norm_arr=obst_rel_pos_norm_arr,
+                                                  neighbor_des_num=obst_des_num)
+
+            # # Obst min_rel_dist
+            obst_safety_distance = self.radius + obstacle_descriptions[0]['radius']
+            if min_rel_dist < obst_safety_distance:
                 return None, None
+        else:
+            obst_safety_distance = None
 
-            relative_velocity = self_state.velocity[:dim] - object_description.state.velocity
-            relative_position_dot_relative_velocity = np.dot(
-                relative_position, relative_velocity)
-
-            hij = math.sqrt(
-                2.0 * (self.maximum_linf_acceleration + object_description.maximum_linf_acceleration_lower_bound) * (
-                        relative_position_norm - safety_distance)) + (
-                              relative_position_dot_relative_velocity / relative_position_norm)
-
-            bij = -relative_position_dot_relative_velocity * np.dot(
-                relative_position, self_state.velocity[:dim]) / (
-                          relative_position_norm * relative_position_norm) + np.dot(
-                relative_velocity, self_state.velocity[:dim]) + (
-                          self.maximum_linf_acceleration /
-                          (self.maximum_linf_acceleration + object_description.
-                           maximum_linf_acceleration_lower_bound)) * (
-                          self.aggressiveness * hij * hij * hij * relative_position_norm +
-                          (math.sqrt(
-                              self.maximum_linf_acceleration + object_description.
-                              maximum_linf_acceleration_lower_bound) *
-                           relative_position_dot_relative_velocity) /
-                          (math.sqrt(2.0 * (relative_position_norm - safety_distance))))
-
-            if dim == 2:
-                relative_position = np.append(relative_position, 0.0)
-
-            G = np.append(G, [-1.0 * relative_position], axis=0)
-            h = np.append(h, bij)
-
+        # Room box
         # Add room box constraints
-        for d in range(3):
-            relative_positions = [
-                self_state.position[d] - self.room_box[0, d],
-                self_state.position[d] - self.room_box[1, d]]
+        room_rel_pos = np.array([
+            self_state['position'] - self.room_box[0],
+            self_state['position'] - self.room_box[1]
+        ])
+        if np.min(abs(room_rel_pos)) < self.radius:
+            return None, None
 
-            for relative_position in relative_positions:
-                relative_position_abs = abs(relative_position)
-                if relative_position_abs < 1e-10:
-                    return None, None
+        # 6 is room info, 6 faces
+        G = np.zeros(shape=(neighbor_des_num + obst_des_num + 6, 3), dtype=np.float64)
+        h = np.zeros(shape=(neighbor_des_num + obst_des_num + 6), dtype=np.float64)
+        # Neighbor G, h
+        if neighbor_des_num > 0:
+            max_lin_acc = (self.maximum_linf_acceleration +
+                           neighbor_descriptions[0]['maximum_linf_acceleration_lower_bound'])
+            description_state_vel = -1 * np.ones((self.num_agents, 3))
+            for idx in range(neighbor_des_num):
+                description_state_vel[idx] = neighbor_descriptions[idx]['state']['velocity']
 
-                if relative_position_abs < self.radius:
-                    return None, None
+            G, h = get_G_h(self_state_vel=self_state['velocity'],
+                           neighbor_descriptions=description_state_vel,
+                           rel_pos_arr=rel_pos_arr,
+                           rel_pos_norm_arr=rel_pos_norm_arr,
+                           safety_distance=safety_distance,
+                           maximum_linf_acceleration=self.maximum_linf_acceleration,
+                           aggressiveness=self.aggressiveness,
+                           G=G,
+                           h=h,
+                           start_id=0,
+                           max_lin_acc=max_lin_acc,
+                           neighbor_des_num=neighbor_des_num)
+        # Obstacle G, h
+        if obst_des_num > 0:
+            obst_max_lin_acc = (self.maximum_linf_acceleration +
+                                obstacle_descriptions[0]['maximum_linf_acceleration_lower_bound'])
+            obst_description_state_vel = -1 * np.ones((self.num_obstacles, 2))
+            for idx in range(obst_des_num):
+                obst_description_state_vel[idx] = obstacle_descriptions[idx]['state']['velocity']
 
-                relative_position_times_velocity = relative_position * self_state.velocity[d]
+            G, h = get_obst_G_h(self_state_vel=self_state['velocity'][:2],
+                                neighbor_descriptions=obst_description_state_vel,
+                                rel_pos_arr=obst_rel_pos_arr,
+                                rel_pos_norm_arr=obst_rel_pos_norm_arr,
+                                safety_distance=obst_safety_distance,
+                                maximum_linf_acceleration=self.maximum_linf_acceleration,
+                                aggressiveness=self.aggressiveness,
+                                G=G,
+                                h=h,
+                                start_id=neighbor_des_num,
+                                max_lin_acc=obst_max_lin_acc,
+                                neighbor_des_num=obst_des_num)
 
-                hij = math.sqrt(2.0 * self.maximum_linf_acceleration *
-                                (relative_position_abs - self.radius)) + (
-                              relative_position_times_velocity /
-                              relative_position_abs)
+        # for idx, rel_pos_axis in enumerate(room_rel_pos.flatten()):
+        room_rel_pos_flat = room_rel_pos.flatten('F')
+        G, h = get_G_h_room(self_state_vel=self_state['velocity'],
+                            neighbor_descriptions=room_rel_pos_flat,
+                            rel_pos_arr=room_rel_pos_flat,
+                            rel_pos_norm_arr=abs(room_rel_pos_flat),
+                            safety_distance=self.radius,
+                            maximum_linf_acceleration=self.maximum_linf_acceleration,
+                            aggressiveness=self.aggressiveness,
+                            G=G,
+                            h=h,
+                            start_id=neighbor_des_num + obst_des_num)
 
-                bij = -relative_position_times_velocity * \
-                      relative_position_times_velocity / \
-                      (relative_position * relative_position) + \
-                      self_state.velocity[d] * self_state.velocity[d] + \
-                      (self.aggressiveness *
-                       hij * hij * hij * relative_position_abs +
-                       (math.sqrt(self.maximum_linf_acceleration) *
-                        relative_position_times_velocity) /
-                       (math.sqrt(2.0 * (relative_position_abs - self.radius))))
+        maximum_distance = _compute_maximum_distance_to_boundary(desired_acceleration, G, h)
 
-                coefficients = np.zeros((1, 3))
-                coefficients[0, d] = -1.0 * relative_position
-
-                G = np.append(G, coefficients, axis=0)
-                h = np.append(h, bij)
-
-        maximum_distance = self._compute_maximum_distance_to_boundary(desired_acceleration, G, h)
-
-        P = spa.csc_matrix(P)
         G = spa.csc_matrix(G)
-        A = spa.csc_matrix(A)
+        q = -2.0 * desired_acceleration
 
         A_osqp = None
         l_osqp = None
@@ -157,25 +149,19 @@ class NominalSBC:
             A_osqp = G
             l_osqp = np.full(h.shape, -np.infty)
             u_osqp = h
-        if A is not None and b is not None:
-            A_osqp = A if A_osqp is None else spa.vstack([A_osqp, A], format="csc")
-            l_osqp = b if l_osqp is None else np.hstack([l_osqp, b])
-            u_osqp = b if u_osqp is None else np.hstack([u_osqp, b])
-        if lb is not None or ub is not None:
-            lb = lb if lb is not None else np.full(q.shape, -np.infty)
-            ub = ub if ub is not None else np.full(q.shape, +np.infty)
-            E = spa.eye(q.shape[0])
-            A_osqp = E if A_osqp is None else spa.vstack([A_osqp, E], format="csc")
-            l_osqp = lb if l_osqp is None else np.hstack([l_osqp, lb])
-            u_osqp = ub if u_osqp is None else np.hstack([u_osqp, ub])
+        E = spa.eye(q.shape[0])
+        A_osqp = E if A_osqp is None else spa.vstack([A_osqp, E], format="csc")
+        l_osqp = self.lb if l_osqp is None else np.hstack([l_osqp, self.lb])
+        u_osqp = self.ub if u_osqp is None else np.hstack([u_osqp, self.ub])
 
         solver = osqp.OSQP()
-        solver.setup(P=P, q=q, A=A_osqp, l=l_osqp, u=u_osqp, verbose=False)
-
+        solver.setup(P=self.P, q=q, A=A_osqp, l=l_osqp, u=u_osqp, verbose=False)
         res = solver.solve()
 
-        return (res.x, maximum_distance) if res.info.status_val == osqp.constant("OSQP_SOLVED") else (
-        None, maximum_distance)
+        if res.info.status_val == osqp.constant("OSQP_SOLVED"):
+            return res.x, maximum_distance
+        else:
+            return None, maximum_distance
 
 
 class RawControl(object):
@@ -212,7 +198,6 @@ class RawControl(object):
 
     # @profile
     def step_tf(self, dynamics, action, goal, dt, observation=None):
-        # print('bias/scale: ', self.scale, self.bias)
         action = np.clip(action, a_min=self.low, a_max=self.high)
         action = self.scale * (action + self.bias)
         dynamics.step(action, dt)
@@ -235,21 +220,20 @@ def quadrotor_jacobian(dynamics):
 
 class MellingerController(object):
     # @profile
-    def __init__(self, dynamics, sbc_radius, sbc_aggressive, room_box):
+    def __init__(self, dynamics, sbc_radius, sbc_aggressive, room_box, num_agents, num_obstacles):
         jacobian = quadrotor_jacobian(dynamics)
         self.Jinv = np.linalg.inv(jacobian)
         self.action = None
 
-        self.kp_p, self.kd_p = 4.5, 3.5
+        # self.kp_p, self.kd_p = 4.5, 3.5
         self.kp_a, self.kd_a = 200.0, 50.0
 
         self.rot_des = np.eye(3)
 
         self.enable_sbc = True
         # maximum_linf_acceleration, max_acc in any dimension
-        self.sbc = NominalSBC(
-            maximum_linf_acceleration=2.0, aggressiveness=sbc_aggressive,
-            radius=sbc_radius, room_box=room_box)
+        self.sbc = NominalSBC(maximum_linf_acceleration=2.0, aggressiveness=sbc_aggressive,
+                              radius=sbc_radius, room_box=room_box, num_agents=num_agents, num_obstacles=num_obstacles)
 
         self.sbc_last_safe_acc = None
 
@@ -260,9 +244,10 @@ class MellingerController(object):
 
         if self.enable_sbc and observation is not None:
             new_acc, sbc_distance_to_boundary = self.sbc.plan(
-                observation["self_state"],
-                observation["neighbor_descriptions"],
-                acc_des)
+                self_state=observation["self_state"],
+                neighbor_descriptions=observation["neighbor_descriptions"],
+                obstacle_descriptions=observation["obstacle_descriptions"],
+                desired_acceleration=acc_des)
 
             if new_acc is not None:
                 self.sbc_last_safe_acc = new_acc

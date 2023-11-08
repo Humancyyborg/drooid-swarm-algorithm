@@ -11,13 +11,11 @@ from gym_art.quadrotor_multi.collisions.obstacles import perform_collision_with_
 from gym_art.quadrotor_multi.collisions.quadrotors import calculate_collision_matrix, \
     calculate_drone_proximity_penalties, perform_collision_between_drones
 from gym_art.quadrotor_multi.collisions.room import perform_collision_with_wall, perform_collision_with_ceiling
+from gym_art.quadrotor_multi.obstacles.obstacles import MultiObstacles
 from gym_art.quadrotor_multi.obstacles.utils import get_cell_centers
 from gym_art.quadrotor_multi.quad_utils import QUADS_OBS_REPR, QUADS_NEIGHBOR_OBS_TYPE
-
-from gym_art.quadrotor_multi.obstacles.obstacles import MultiObstacles
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
 from gym_art.quadrotor_multi.quadrotor_single import QuadrotorSingle
-from gym_art.quadrotor_multi.quadrotor_control import NominalSBC
 from gym_art.quadrotor_multi.scenarios.mix import create_scenario
 
 
@@ -60,6 +58,11 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Generate All Quadrotors
         self.envs = []
+        # # get number of obstacles
+        tmp_num_obstacles = 0
+        if use_obstacles:
+            tmp_num_obstacles = int(obst_density * obst_spawn_area[0] * obst_spawn_area[1])
+
         for _ in range(self.num_agents):
             e = QuadrotorSingle(
                 # Quad Parameters
@@ -72,7 +75,7 @@ class QuadrotorEnvMulti(gym.Env):
                 num_agents=num_agents,
                 neighbor_obs_type=neighbor_obs_type, num_use_neighbor_obs=self.num_use_neighbor_obs,
                 # Obstacle
-                use_obstacles=use_obstacles,
+                use_obstacles=use_obstacles, num_obstacles=tmp_num_obstacles,
                 # SBC specific,
                 sbc_radius=sbc_radius, sbc_aggressive=sbc_aggressive
             )
@@ -299,9 +302,7 @@ class QuadrotorEnvMulti(gym.Env):
         Here we count the average number of collisions with the walls and ground in the last N episodes
         Returns: True if drones are considered proficient at flying
         """
-        res = abs(
-            np.mean(self.crashes_in_recent_episodes)) < 1 and len(
-            self.crashes_in_recent_episodes) >= 10
+        res = abs(np.mean(self.crashes_in_recent_episodes)) < 1 and len(self.crashes_in_recent_episodes) >= 10
         return res
 
     def calculate_room_collision(self):
@@ -459,71 +460,58 @@ class QuadrotorEnvMulti(gym.Env):
             self.envs[i].rew_coeff = self.rew_coeff
 
             # Output is acc, not thrusts
-            self_state = NominalSBC.State(
-                position=self.envs[i].dynamics.pos,
-                velocity=self.envs[i].dynamics.vel)
+            self_state = {
+                'position': self.envs[i].dynamics.pos,
+                'velocity': self.envs[i].dynamics.vel
+            }
             neighbor_descriptions = []
+            obstacle_descriptions = []
 
             # Add neighbor robot descriptions
-            neighbor_distances = [np.linalg.norm(self_state.position - self.envs[j].dynamics.pos) for j in
+            neighbor_distances = [np.linalg.norm(self_state['position'] - self.envs[j].dynamics.pos) for j in
                                   range(len(actions))]
+            # TODO: Consider in range? 5.0 might be too big, need to search.
             neighbor_ids = np.where(np.array(neighbor_distances) < 5.0)[0]
             for j in neighbor_ids:
                 if i == j:
                     continue
 
-                neighbor_descriptions.append(
-                    NominalSBC.ObjectDescription(
-                        state=NominalSBC.State(
-                            position=self.envs[j].dynamics.pos,
-                            velocity=self.envs[j].dynamics.vel),
-                        radius=self.envs[j].controller.sbc.radius,
-                        maximum_linf_acceleration_lower_bound=self.envs[j].controller.sbc.maximum_linf_acceleration))
+                neighbor_descriptions.append({
+                    'state': {
+                        'position': self.envs[j].dynamics.pos,
+                        'velocity': self.envs[j].dynamics.vel
+                    },
+                    # TODO: Baskin, this value is a hyperparameter, 0.1,
+                    # For drone-drone collision, maximum_linf_acceleration any hints?
+                    'radius': self.envs[j].controller.sbc.radius,
+                    'maximum_linf_acceleration_lower_bound': self.envs[j].controller.sbc.maximum_linf_acceleration,
+                    'is_infinite_height_cylinder': False
+                })
 
             # Add neighbor obstacle descriptions
-            # TODO: Can we optimize this part?
-            # for obst_pose in self.obst_pos_arr:
-            #     x, y = obst_pose[0], obst_pose[1]
-            #     if np.linalg.norm(np.array([x, y]) - np.array([self_state.position[0], self_state.position[1]])) < 3.0:
-            #         z = 0.0
-            #         while z < self.room_dims[2]:
-            #             if np.linalg.norm(np.array([x, y, z]) - self_state.position) < 3.0:
-            #                 neighbor_descriptions.append(
-            #                     NominalSBC.ObjectDescription(
-            #                         state=NominalSBC.State(
-            #                             position=np.array([x, y, z]),
-            #                             velocity=np.zeros(3)
-            #                         ),
-            #                         radius=self.obst_size*0.5,
-            #                         maximum_linf_acceleration_lower_bound=0.0
-            #                     )
-            #                 )
-            #             z += self.obst_size * 0.5
-
-            self_pos = np.array([self_state.position[0], self_state.position[1]])
+            self_pos = np.array([self_state['position'][0], self_state['position'][1]])
             obst_distances = [np.linalg.norm(np.array([obst_pos[0], obst_pos[1]]) - self_pos)
                               for obst_pos in self.obst_pos_arr]
             # Add neighbor obstacle descriptions
+            # TODO: Consider in range? 3.0 might be too big, need to search.
             obst_ids = np.where(np.array(obst_distances) < 3.0)[0]
             for obst_id in obst_ids:
-                x, y = self.obst_pos_arr[obst_id][0], self.obst_pos_arr[obst_id][1]
-                if np.linalg.norm(np.array([x, y]) - np.array([self_state.position[0], self_state.position[1]])) < 3.0:
-                    neighbor_descriptions.append(
-                        NominalSBC.ObjectDescription(
-                            state=NominalSBC.State(
-                                position=np.array([x, y]),
-                                velocity=np.zeros(2)
-                            ),
-                            radius=self.obst_size * 0.5,
-                            maximum_linf_acceleration_lower_bound=0.0,
-                            is_infinite_height_cylinder=True
-                        )
-                    )
+                obst_pos = np.array(self.obst_pos_arr[obst_id])[:2]
+                obstacle_descriptions.append({
+                    'state': {
+                        'position': obst_pos,
+                        'velocity': np.zeros(2)
+                    },
+                    'radius': self.obst_size * 0.5,
+                    'maximum_linf_acceleration_lower_bound': 0.0,
+                    'is_infinite_height_cylinder': True
+                })
 
             observation, reward, done, info = self.envs[i].step(
                 action=a,
-                sbc_data={"self_state": self_state,
-                          "neighbor_descriptions": neighbor_descriptions})
+                sbc_data={"self_state": self_state, "neighbor_descriptions": neighbor_descriptions,
+                          'obstacle_descriptions': obstacle_descriptions}
+            )
 
             obs.append(observation)
             rewards.append(reward)
@@ -672,8 +660,7 @@ class QuadrotorEnvMulti(gym.Env):
             if len(new_quad_collision) > 0:
                 self_state_update_flag = True
                 for val in new_quad_collision:
-                    dyn1, dyn2 = self.envs[val[0]
-                    ].dynamics, self.envs[val[1]].dynamics
+                    dyn1, dyn2 = self.envs[val[0]].dynamics, self.envs[val[1]].dynamics
                     dyn1.vel, dyn1.omega, dyn2.vel, dyn2.omega = perform_collision_between_drones(
                         pos1=dyn1.pos, vel1=dyn1.vel, omega1=dyn1.omega,
                         pos2=dyn2.pos, vel2=dyn2.vel, omega2=dyn2.omega
@@ -805,15 +792,10 @@ class QuadrotorEnvMulti(gym.Env):
                 # agent_col_rate
                 # Collide with other drones and obstacles
                 agent_col_ratio = 1.0 - np.sum(agent_col_flag_list) / self.num_agents
-                agent_col_neighbor_ratio = 1.0 - np.sum(self.agent_col_agent) / self.num_agents
-                agent_col_obst_ratio = 1.0 - np.sum(self.agent_col_obst) / self.num_agents
-
                 # agent_neighbor_col_rate
-                agent_neighbor_col_ratio = 1.0 - np.sum(
-                    self.agent_col_agent) / self.num_agents
+                agent_neighbor_col_ratio = 1.0 - np.sum(self.agent_col_agent) / self.num_agents
                 # agent_obst_col_rate
-                agent_obst_col_ratio = 1.0 - np.sum(
-                    self.agent_col_obst) / self.num_agents
+                agent_obst_col_ratio = 1.0 - np.sum(self.agent_col_obst) / self.num_agents
 
                 for i in range(len(infos)):
                     # agent_success_rate

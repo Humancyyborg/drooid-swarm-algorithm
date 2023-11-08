@@ -109,7 +109,7 @@ class QuadrotorSingle:
             gravity=GRAV, t2w_std=0.005, t2t_std=0.0005, excite=False,
             dynamics_simplification=False, use_numba=False,
             neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0,
-            use_obstacles=False, sbc_radius=0.1, sbc_aggressive=0.1):
+            use_obstacles=False, num_obstacles=0, sbc_radius=0.1, sbc_aggressive=0.1):
         np.seterr(under='ignore')
         """
         Args:
@@ -145,6 +145,14 @@ class QuadrotorSingle:
         """
         # Numba Speed Up
         self.use_numba = use_numba
+        # Neighbor info
+        self.num_agents = num_agents
+        self.neighbor_obs_type = neighbor_obs_type
+        self.num_use_neighbor_obs = num_use_neighbor_obs
+        # Obstacles info
+        self.use_obstacles = use_obstacles
+        self.num_obstacles = num_obstacles
+
         # # SBC specific
         self.sbc_radius = sbc_radius
         self.sbc_aggressive = sbc_aggressive
@@ -233,14 +241,6 @@ class QuadrotorSingle:
         self.goal = None
         self.spawn_point = None
 
-        # Neighbor info
-        self.num_agents = num_agents
-        self.neighbor_obs_type = neighbor_obs_type
-        self.num_use_neighbor_obs = num_use_neighbor_obs
-
-        # Obstacles info
-        self.use_obstacles = use_obstacles
-
         # Make observation space
         self.observation_space = self.make_observation_space()
 
@@ -275,8 +275,8 @@ class QuadrotorSingle:
 
         # CONTROL
         self.controller = MellingerController(
-            dynamics=self.dynamics, sbc_radius=self.sbc_radius,
-            sbc_aggressive=self.sbc_aggressive, room_box=self.room_box)
+            dynamics=self.dynamics, sbc_radius=self.sbc_radius, sbc_aggressive=self.sbc_aggressive,
+            room_box=self.room_box, num_agents=self.num_agents, num_obstacles=self.num_obstacles)
 
         # ACTIONS
         self.action_space = spaces.Box(low=-self.dynamics.acc_max * np.ones(3),
@@ -309,8 +309,7 @@ class QuadrotorSingle:
             # roxyz stands for relative pos between quadrotor and obstacle
             "roxyz": [-room_range, room_range],
             "rovxyz": [-20.0 * np.ones(3), 20.0 * np.ones(3)],
-            # rovxyz stands for relative velocity between quadrotor and obstacle
-            # obstacle size, [[0., 0., 0.], [20., 20., 20.]]
+            # rovxyz stands for relative velocity between quadrotor and obstacle size, [[0., 0., 0.], [20., 20., 20.]]
             "osize": [np.zeros(3), 20.0 * np.ones(3)],
             "otype": [np.zeros(1), 20.0 * np.ones(1)],
             # obstacle type, [[0.], [20.]], which means we can support 21 types of obstacles
