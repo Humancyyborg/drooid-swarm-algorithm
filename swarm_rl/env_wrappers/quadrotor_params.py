@@ -128,3 +128,7 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_sbc_radius', default=0.1, type=float, help='sbc sensing radius')
     p.add_argument('--quads_sbc_aggressive', default=0.1, type=float, help='sbc aggressiveness')
     p.add_argument('--quads_sbc_boundary', default=0.1, type=float, help='sbc boundary in reward function')
+    p.add_argument('--quads_neighbor_range', default=5.0, type=float, help='Consider other drones in this range')
+    p.add_argument('--quads_obst_range', default=3.0, type=float, help='Consider obstacles in this range')
+    p.add_argument('--quads_obst_safe_coeff', default=1.0, type=float,
+                   help='To calculate the safety range of obstacles, we use a coefficient')

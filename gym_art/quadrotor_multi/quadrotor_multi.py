@@ -38,7 +38,7 @@ class QuadrotorEnvMulti(gym.Env):
                  # Rendering
                  render_mode='human',
                  # SBC specific
-                 sbc_radius=0.1, sbc_aggressive=0.1
+                 sbc_radius=0.1, sbc_aggressive=0.1, sbc_nei_range=5.0, sbc_obst_range=3.0, sbc_obst_safe_coeff=1.0
                  ):
         super().__init__()
 
@@ -217,6 +217,11 @@ class QuadrotorEnvMulti(gym.Env):
         self.action_max = 2.0
 
         self.step_time_buffer = deque([], maxlen=100)
+
+        # Controller: SBC
+        self.sbc_nei_range = sbc_nei_range
+        self.sbc_obst_range = sbc_obst_range
+        self.sbc_obst_safe_coeff = sbc_obst_safe_coeff
 
     def all_dynamics(self):
         return tuple(e.dynamics for e in self.envs)
@@ -471,7 +476,7 @@ class QuadrotorEnvMulti(gym.Env):
             neighbor_distances = [np.linalg.norm(self_state['position'] - self.envs[j].dynamics.pos) for j in
                                   range(len(actions))]
             # TODO: Consider in range? 5.0 might be too big, need to search.
-            neighbor_ids = np.where(np.array(neighbor_distances) < 5.0)[0]
+            neighbor_ids = np.where(np.array(neighbor_distances) < self.sbc_nei_range)[0]
             for j in neighbor_ids:
                 if i == j:
                     continue
@@ -481,7 +486,7 @@ class QuadrotorEnvMulti(gym.Env):
                         'position': self.envs[j].dynamics.pos,
                         'velocity': self.envs[j].dynamics.vel
                     },
-                    # TODO: Baskin, this value is a hyperparameter, 0.1,
+                    # TODO: this value is a hyperparameter, 0.1,
                     # For drone-drone collision, maximum_linf_acceleration any hints?
                     'radius': self.envs[j].controller.sbc.radius,
                     'maximum_linf_acceleration_lower_bound': self.envs[j].controller.sbc.maximum_linf_acceleration,
@@ -494,7 +499,7 @@ class QuadrotorEnvMulti(gym.Env):
                               for obst_pos in self.obst_pos_arr]
             # Add neighbor obstacle descriptions
             # TODO: Consider in range? 3.0 might be too big, need to search.
-            obst_ids = np.where(np.array(obst_distances) < 3.0)[0]
+            obst_ids = np.where(np.array(obst_distances) < self.sbc_obst_range)[0]
             for obst_id in obst_ids:
                 obst_pos = np.array(self.obst_pos_arr[obst_id])[:2]
                 obstacle_descriptions.append({
@@ -502,7 +507,7 @@ class QuadrotorEnvMulti(gym.Env):
                         'position': obst_pos,
                         'velocity': np.zeros(2)
                     },
-                    'radius': self.obst_size * 0.5,
+                    'radius': self.obst_size * 0.5 * self.sbc_obst_safe_coeff,
                     'maximum_linf_acceleration_lower_bound': 0.0,
                     'is_infinite_height_cylinder': True
                 })
