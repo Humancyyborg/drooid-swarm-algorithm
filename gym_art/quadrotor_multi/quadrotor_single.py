@@ -103,13 +103,12 @@ class QuadrotorSingle:
             dynamics_randomize_every=None, dyn_sampler_1=None,
             dyn_sampler_2=None, raw_control=True, raw_control_zero_middle=True,
             dim_mode='3D', tf_control=False, sim_freq=200., sim_steps=2,
-            obs_repr="xyz_vxyz_R_omega", ep_time=7, room_dims=(10.0, 10.0,
-                                                               10.0),
+            obs_repr="xyz_vxyz_R_omega", ep_time=7, room_dims=(10.0, 10.0, 10.0),
             init_random_state=False, sense_noise=None, verbose=False,
             gravity=GRAV, t2w_std=0.005, t2t_std=0.0005, excite=False,
             dynamics_simplification=False, use_numba=False,
             neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0,
-            use_obstacles=False, num_obstacles=0, sbc_radius=0.1, sbc_aggressive=0.1):
+            use_obstacles=False, num_obstacles=0, sbc_radius=0.1, sbc_aggressive=0.1, sbc_max_acc=2.0):
         np.seterr(under='ignore')
         """
         Args:
@@ -156,6 +155,7 @@ class QuadrotorSingle:
         # # SBC specific
         self.sbc_radius = sbc_radius
         self.sbc_aggressive = sbc_aggressive
+        self.sbc_max_acc = sbc_max_acc
         # Room
         self.room_length = room_dims[0]
         self.room_width = room_dims[1]
@@ -276,7 +276,8 @@ class QuadrotorSingle:
         # CONTROL
         self.controller = MellingerController(
             dynamics=self.dynamics, sbc_radius=self.sbc_radius, sbc_aggressive=self.sbc_aggressive,
-            room_box=self.room_box, num_agents=self.num_agents, num_obstacles=self.num_obstacles)
+            room_box=self.room_box, num_agents=self.num_agents, num_obstacles=self.num_obstacles,
+            sbc_max_acc=self.sbc_max_acc)
 
         # ACTIONS
         self.action_space = spaces.Box(low=-self.dynamics.acc_max * np.ones(3),

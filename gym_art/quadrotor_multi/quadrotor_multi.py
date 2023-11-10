@@ -38,7 +38,8 @@ class QuadrotorEnvMulti(gym.Env):
                  # Rendering
                  render_mode='human',
                  # SBC specific
-                 sbc_radius=0.1, sbc_aggressive=0.1, sbc_nei_range=5.0, sbc_obst_range=3.0, sbc_obst_safe_coeff=1.0
+                 sbc_radius=0.1, sbc_aggressive=0.1, sbc_nei_range=5.0, sbc_obst_range=3.0, sbc_obst_safe_coeff=1.0,
+                 sbc_max_acc=2.0
                  ):
         super().__init__()
 
@@ -77,7 +78,7 @@ class QuadrotorEnvMulti(gym.Env):
                 # Obstacle
                 use_obstacles=use_obstacles, num_obstacles=tmp_num_obstacles,
                 # SBC specific,
-                sbc_radius=sbc_radius, sbc_aggressive=sbc_aggressive
+                sbc_radius=sbc_radius, sbc_aggressive=sbc_aggressive, sbc_max_acc=sbc_max_acc
             )
             self.envs.append(e)
 
@@ -214,7 +215,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Action space
         # self.action_min = -1.0 * self.envs[0].dynamics.acc_max
-        self.action_max = 2.0
+        self.action_max = sbc_max_acc
 
         self.step_time_buffer = deque([], maxlen=100)
 

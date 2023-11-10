@@ -220,7 +220,7 @@ def quadrotor_jacobian(dynamics):
 
 class MellingerController(object):
     # @profile
-    def __init__(self, dynamics, sbc_radius, sbc_aggressive, room_box, num_agents, num_obstacles):
+    def __init__(self, dynamics, sbc_radius, sbc_aggressive, room_box, num_agents, num_obstacles, sbc_max_acc):
         jacobian = quadrotor_jacobian(dynamics)
         self.Jinv = np.linalg.inv(jacobian)
         self.action = None
@@ -232,7 +232,7 @@ class MellingerController(object):
 
         self.enable_sbc = True
         # maximum_linf_acceleration, max_acc in any dimension
-        self.sbc = NominalSBC(maximum_linf_acceleration=2.0, aggressiveness=sbc_aggressive,
+        self.sbc = NominalSBC(maximum_linf_acceleration=sbc_max_acc, aggressiveness=sbc_aggressive,
                               radius=sbc_radius, room_box=room_box, num_agents=num_agents, num_obstacles=num_obstacles)
 
         self.sbc_last_safe_acc = None
