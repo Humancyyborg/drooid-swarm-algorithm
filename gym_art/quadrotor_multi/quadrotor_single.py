@@ -280,9 +280,9 @@ class QuadrotorSingle:
             sbc_max_acc=self.sbc_max_acc)
 
         # ACTIONS
-        self.action_space = spaces.Box(low=-self.dynamics.acc_max * np.ones(3),
-                                       high=self.dynamics.acc_max * np.ones(3),
-                                       dtype=np.float32)
+        action_lows_space = np.array([-1, -1, -1, 0, 0, 0], dtype=np.float32)
+        action_high_space = np.array([1, 1, 1, 1, 1, 1], dtype=np.float32)
+        self.action_space = spaces.Box(low=action_lows_space, high=action_high_space, dtype=np.float32)
 
         # STATE VECTOR FUNCTION
         self.state_vector = getattr(get_state, "state_" + self.obs_repr)

@@ -39,7 +39,8 @@ class QuadrotorEnvMulti(gym.Env):
                  render_mode='human',
                  # SBC specific
                  sbc_radius=0.1, sbc_aggressive=0.1, sbc_nei_range=5.0, sbc_obst_range=3.0, sbc_obst_safe_coeff=1.0,
-                 sbc_max_acc=2.0
+                 sbc_max_acc=2.0, sbc_max_neighbor_aggressive=100.0, sbc_max_obst_aggressive=100.0,
+                 sbc_max_room_aggressive=1.0
                  ):
         super().__init__()
 
@@ -119,9 +120,9 @@ class QuadrotorEnvMulti(gym.Env):
 
         self.clip_neighbor_space_length = self.num_use_neighbor_obs * neighbor_obs_size
         self.clip_neighbor_space_min_box = self.observation_space.low[
-            obs_self_size:obs_self_size + self.clip_neighbor_space_length]
+                                           obs_self_size:obs_self_size + self.clip_neighbor_space_length]
         self.clip_neighbor_space_max_box = self.observation_space.high[
-            obs_self_size:obs_self_size + self.clip_neighbor_space_length]
+                                           obs_self_size:obs_self_size + self.clip_neighbor_space_length]
 
         # Obstacles
         self.use_obstacles = use_obstacles
@@ -223,6 +224,10 @@ class QuadrotorEnvMulti(gym.Env):
         self.sbc_nei_range = sbc_nei_range
         self.sbc_obst_range = sbc_obst_range
         self.sbc_obst_safe_coeff = sbc_obst_safe_coeff
+        self.sbc_max_neighbor_aggressive = sbc_max_neighbor_aggressive
+        self.sbc_max_obst_aggressive = sbc_max_obst_aggressive
+        self.sbc_max_room_aggressive = sbc_max_room_aggressive
+
 
     def all_dynamics(self):
         return tuple(e.dynamics for e in self.envs)
@@ -456,13 +461,19 @@ class QuadrotorEnvMulti(gym.Env):
         return obs
 
     def step(self, actions):
-        actions = np.clip(actions, a_min=-1.0, a_max=1.0)
+        actions = np.array(actions)
+        actions_acc = np.clip(actions[:, :3], a_min=-1.0, a_max=1.0)
         # TODO: Maybe need to normalize actions, since the overall maximum acc is ~ 2.0
-        actions = actions * self.action_max
+        actions_acc = actions_acc * self.action_max
+        actions_aggressive = np.clip(actions[:, 3:6], a_min=0.0, a_max=1.0)
+
+        sbc_neighbor_aggressive = self.sbc_max_neighbor_aggressive * actions_aggressive[:, 0]
+        sbc_obst_aggressive = self.sbc_max_obst_aggressive * actions_aggressive[:, 1]
+        sbc_room_aggressive = self.sbc_max_room_aggressive * actions_aggressive[:, 2]
 
         obs, rewards, dones, infos = [], [], [], []
 
-        for i, a in enumerate(actions):
+        for i, a in enumerate(actions_acc):
             self.envs[i].rew_coeff = self.rew_coeff
 
             # Output is acc, not thrusts
@@ -475,7 +486,7 @@ class QuadrotorEnvMulti(gym.Env):
 
             # Add neighbor robot descriptions
             neighbor_distances = [np.linalg.norm(self_state['position'] - self.envs[j].dynamics.pos) for j in
-                                  range(len(actions))]
+                                  range(self.num_agents)]
             # TODO: Consider in range? 5.0 might be too big, need to search.
             neighbor_ids = np.where(np.array(neighbor_distances) < self.sbc_nei_range)[0]
             for j in neighbor_ids:
@@ -516,7 +527,11 @@ class QuadrotorEnvMulti(gym.Env):
             observation, reward, done, info = self.envs[i].step(
                 action=a,
                 sbc_data={"self_state": self_state, "neighbor_descriptions": neighbor_descriptions,
-                          'obstacle_descriptions': obstacle_descriptions}
+                          'obstacle_descriptions': obstacle_descriptions,
+                          'sbc_neighbor_aggressive': sbc_neighbor_aggressive[i],
+                          'sbc_obst_aggressive': sbc_obst_aggressive[i],
+                          'sbc_room_aggressive': sbc_room_aggressive[i]
+                          }
             )
 
             obs.append(observation)

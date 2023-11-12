@@ -119,7 +119,7 @@ def add_quadrotors_env_args(env, parser):
     # Controller
     p.add_argument('--quads_cost_rl_sbc', default=0.1, type=float,
                    help='cost coeff of the difference between rl acc outputs and sbc acc outputs')
-    p.add_argument('--quads_cost_sbc_mellinger', default=1.0, type=float,
+    p.add_argument('--quads_cost_sbc_mellinger', default=0.0, type=float,
                    help='cost coeff of the difference between sbc acc outputs and mellinger acc outputs')
     p.add_argument('--quads_cost_pos', default=1.0, type=float, help='cost coeff of the position cost')
     p.add_argument('--quads_cost_crash', default=1.0, type=float, help='cost coeff of the crash cost')
@@ -133,3 +133,6 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obst_safe_coeff', default=1.0, type=float,
                    help='To calculate the safety range of obstacles, we use a coefficient')
     p.add_argument('--quads_max_acc', default=2.0, type=float, help='maximum acceleration')
+    p.add_argument('--quads_max_neighbor_aggressive', default=100.0, type=float, help='maximum aggressive')
+    p.add_argument('--quads_max_obst_aggressive', default=100.0, type=float, help='maximum aggressive')
+    p.add_argument('--quads_max_room_aggressive', default=1.0, type=float, help='maximum aggressive')

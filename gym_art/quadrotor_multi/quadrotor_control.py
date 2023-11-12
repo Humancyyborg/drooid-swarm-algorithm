@@ -12,7 +12,9 @@ GRAV = 9.81
 class NominalSBC:
     def __init__(self, maximum_linf_acceleration, aggressiveness, radius, room_box, num_agents, num_obstacles):
         self.maximum_linf_acceleration = maximum_linf_acceleration
-        self.aggressiveness = aggressiveness
+        self.sbc_neighbor_aggressive = aggressiveness
+        self.sbc_obst_aggressive = aggressiveness
+        self.sbc_room_aggressive = aggressiveness
         self.radius = radius
         self.room_box = room_box
         P = 2.0 * np.eye(3)
@@ -27,7 +29,11 @@ class NominalSBC:
         self.num_agents = num_agents
         self.num_obstacles = num_obstacles
 
-    def plan(self, self_state, neighbor_descriptions, obstacle_descriptions, desired_acceleration):
+    def plan(self, self_state, neighbor_descriptions, obstacle_descriptions, desired_acceleration,
+             sbc_neighbor_aggressive, sbc_obst_aggressive, sbc_room_aggressive):
+        self.sbc_neighbor_aggressive = sbc_neighbor_aggressive
+        self.sbc_obst_aggressive = sbc_obst_aggressive
+        self.sbc_room_aggressive = sbc_room_aggressive
         # Add robot and robot / obstacle collision avoidance constraints
         min_rel_dist = 100.0
         # Neighbor min_rel_dist check
@@ -97,7 +103,7 @@ class NominalSBC:
                            rel_pos_norm_arr=rel_pos_norm_arr,
                            safety_distance=safety_distance,
                            maximum_linf_acceleration=self.maximum_linf_acceleration,
-                           aggressiveness=self.aggressiveness,
+                           aggressiveness=self.sbc_neighbor_aggressive,
                            G=G,
                            h=h,
                            start_id=0,
@@ -117,7 +123,7 @@ class NominalSBC:
                                 rel_pos_norm_arr=obst_rel_pos_norm_arr,
                                 safety_distance=obst_safety_distance,
                                 maximum_linf_acceleration=self.maximum_linf_acceleration,
-                                aggressiveness=self.aggressiveness,
+                                aggressiveness=self.sbc_obst_aggressive,
                                 G=G,
                                 h=h,
                                 start_id=neighbor_des_num,
@@ -132,7 +138,7 @@ class NominalSBC:
                             rel_pos_norm_arr=abs(room_rel_pos_flat),
                             safety_distance=self.radius,
                             maximum_linf_acceleration=self.maximum_linf_acceleration,
-                            aggressiveness=self.aggressiveness,
+                            aggressiveness=self.sbc_room_aggressive,
                             G=G,
                             h=h,
                             start_id=neighbor_des_num + obst_des_num)
@@ -247,7 +253,11 @@ class MellingerController(object):
                 self_state=observation["self_state"],
                 neighbor_descriptions=observation["neighbor_descriptions"],
                 obstacle_descriptions=observation["obstacle_descriptions"],
-                desired_acceleration=acc_des)
+                desired_acceleration=acc_des,
+                sbc_neighbor_aggressive=observation["sbc_neighbor_aggressive"],
+                sbc_obst_aggressive=observation["sbc_obst_aggressive"],
+                sbc_room_aggressive=observation["sbc_room_aggressive"]
+            )
 
             if new_acc is not None:
                 self.sbc_last_safe_acc = new_acc
