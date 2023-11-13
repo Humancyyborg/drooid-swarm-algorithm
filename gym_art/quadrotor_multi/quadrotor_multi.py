@@ -467,8 +467,11 @@ class QuadrotorEnvMulti(gym.Env):
         actions_acc = actions_acc * self.action_max
         actions_aggressive = np.clip(actions[:, 3:6], a_min=0.0, a_max=1.0)
 
-        sbc_neighbor_aggressive = self.sbc_max_neighbor_aggressive * actions_aggressive[:, 0]
-        sbc_obst_aggressive = self.sbc_max_obst_aggressive * actions_aggressive[:, 1]
+        coeff_sbc_nei_max_agg = self.rew_coeff['sbc_nei_max_agg']
+        coeff_sbc_obst_max_agg = self.rew_coeff['sbc_obst_max_agg']
+
+        sbc_neighbor_aggressive = self.sbc_max_neighbor_aggressive * actions_aggressive[:, 0] * coeff_sbc_nei_max_agg
+        sbc_obst_aggressive = self.sbc_max_obst_aggressive * actions_aggressive[:, 1] * coeff_sbc_obst_max_agg
         sbc_room_aggressive = self.sbc_max_room_aggressive * actions_aggressive[:, 2]
 
         obs, rewards, dones, infos = [], [], [], []

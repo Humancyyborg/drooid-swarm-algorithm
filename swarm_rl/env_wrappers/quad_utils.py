@@ -18,11 +18,12 @@ class AnnealSchedule:
 
 
 class TwoStageAnnealSchedule:
-    def __init__(self, coeff_name, final_value, start_steps, total_steps):
+    def __init__(self, coeff_name, final_value, start_steps, total_steps, start_value=0.0):
         self.coeff_name = coeff_name
         self.final_value = final_value
         self.start_steps = start_steps
         self.total_steps = total_steps
+        self.start_value = start_value
 
 
 def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
@@ -117,14 +118,25 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         # rl_sbc & sbc_mellinger
         reward_shaping['quad_rewards']['rl_sbc'] = 0.0
         reward_shaping['quad_rewards']['sbc_mellinger'] = 0.0
+        reward_shaping['quad_rewards']['sbc_nei_max_agg'] = 0.01
+        reward_shaping['quad_rewards']['sbc_obst_max_agg'] = 0.01
 
         safe_annealing = [
             TwoStageAnnealSchedule(
                 coeff_name='rl_sbc', final_value=cfg.quads_cost_rl_sbc, start_steps=cfg.quads_anneal_safe_start_steps,
-                total_steps=cfg.quads_anneal_safe_total_steps),
+                total_steps=cfg.quads_anneal_safe_total_steps, start_value=0.0),
             TwoStageAnnealSchedule(
                 coeff_name='sbc_mellinger', final_value=cfg.quads_cost_sbc_mellinger,
-                start_steps=cfg.quads_anneal_safe_start_steps, total_steps=cfg.quads_anneal_safe_total_steps),
+                start_steps=cfg.quads_anneal_safe_start_steps, total_steps=cfg.quads_anneal_safe_total_steps,
+                start_value=0.0),
+            TwoStageAnnealSchedule(
+                coeff_name='sbc_nei_max_agg', final_value=1.0,
+                start_steps=cfg.quads_anneal_safe_start_steps, total_steps=cfg.quads_anneal_safe_total_steps,
+                start_value=0.01),
+            TwoStageAnnealSchedule(
+                coeff_name='sbc_obst_max_agg', final_value=1.0,
+                start_steps=cfg.quads_anneal_safe_start_steps, total_steps=cfg.quads_anneal_safe_total_steps,
+                start_value=0.01),
         ]
     else:
         safe_annealing = None

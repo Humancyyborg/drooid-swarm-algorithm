@@ -127,12 +127,12 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapin
                         final_value = anneal_schedule.final_value
                         start_steps = anneal_schedule.start_steps
                         total_steps = anneal_schedule.total_steps
+                        start_value = anneal_schedule.start_value
                         if approx_total_training_steps <= start_steps:
-                            env_reward_shaping[coeff_name] = 0.0
+                            env_reward_shaping[coeff_name] = start_value
                         else:
                             env_reward_shaping[coeff_name] = final_value * min(
-                                (approx_total_training_steps - start_steps) / total_steps,
-                                1.0)
+                                (approx_total_training_steps - start_steps) / total_steps + start_value, 1.0)
                         extra_stats[f'z_anneal_{coeff_name}'] = env_reward_shaping[coeff_name]
 
         if any(dones_multi):
