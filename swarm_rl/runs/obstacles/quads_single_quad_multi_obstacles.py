@@ -5,7 +5,7 @@ _params = ParamGrid(
     [
         ("seed", [0000, 3333]),
         ("quads_num_agents", [1]),
-        ("seed", [0.6, 0.7]),
+        ("quads_obst_size", [0.6, 0.7]),
     ]
 )
 
