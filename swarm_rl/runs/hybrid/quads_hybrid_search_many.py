@@ -15,7 +15,7 @@ OBSTACLE_MODEL_CLI = QUAD_BASELINE_CLI_8 + (
     '--quads_obs_acc_his=True --quads_obst_density=0.8 --quads_obst_size=0.85 --quads_cost_rl_sbc=1.0 '
     '--quads_anneal_safe_start_steps=0 --quads_sbc_radius=0.05 --quads_sbc_boundary=0.0 --quads_max_acc=1.0 '
     '--quads_max_neighbor_aggressive=5.0 --quads_max_obst_aggressive=5.0 --anneal_collision_steps=300000000 '
-    '--quads_anneal_safe_total_steps=300000000 --quads_neighbor_range=2.0'
+    '--quads_anneal_safe_total_steps=300000000 --quads_neighbor_range=2.0 '
     '--with_wandb=True --wandb_project=Quad-Hybrid --wandb_user=multi-drones '
     '--wandb_group=grid_search_his_orange_sbc_mellinger '
 )
