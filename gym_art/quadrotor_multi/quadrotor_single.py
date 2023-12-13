@@ -19,6 +19,7 @@ References:
 """
 import copy
 
+import numpy as np
 from gymnasium.utils import seeding
 
 import gym_art.quadrotor_multi.get_state as get_state
@@ -359,9 +360,8 @@ class QuadrotorSingle:
         self.actions[1] = copy.deepcopy(self.actions[0])
         self.actions[0] = copy.deepcopy(action)
 
-        _, acc_sbc, sbc_distance_to_boundary = self.controller.step_func(
-            dynamics=self.dynamics, acc_des=action, dt=self.dt,
-            observation=sbc_data)
+        _, acc_sbc, sbc_distance_to_boundary= self.controller.step_func(
+            dynamics=self.dynamics, acc_des=action, dt=self.dt, observation=sbc_data)
 
         self.time_remain = self.ep_len - self.tick
         reward, rew_info = compute_reward_weighted(
@@ -375,7 +375,8 @@ class QuadrotorSingle:
         sv = self.state_vector(self)
         self.traj_count += int(done)
 
-        return sv, reward, done, {'rewards': rew_info}
+        acc_info = {'acc_ref': action, 'acc_sbc': acc_sbc, 'acc_real': self.dynamics.acc}
+        return sv, reward, done, {'rewards': rew_info, 'acc': acc_info}
 
     def resample_dynamics(self):
         """
@@ -407,7 +408,7 @@ class QuadrotorSingle:
         # Updating params
         self.update_dynamics(dynamics_params=self.dynamics_params)
 
-    def _reset(self):
+    def _reset(self, init_pos=None):
         # DYNAMICS RANDOMIZATION AND UPDATE
         # if self.dynamics_randomize_every is not None and (self.traj_count + 1) % self.dynamics_randomize_every == 0:
         #     self.resample_dynamics()
@@ -424,7 +425,11 @@ class QuadrotorSingle:
         # Since being near the groud means crash we have to start above
         if z < 0.75:
             z = 0.75
-        pos = npa(x, y, z)
+
+        if init_pos is None:
+            pos = npa(x, y, z)
+        else:
+            pos = np.array(init_pos)
 
         # INIT STATE
         # Initializing rotation and velocities
@@ -468,8 +473,8 @@ class QuadrotorSingle:
         state = self.state_vector(self)
         return state
 
-    def reset(self):
-        return self._reset()
+    def reset(self, init_pos=None):
+        return self._reset(init_pos)
 
     def render(self, **kwargs):
         """This class is only meant to be used as a component of QuadMultiEnv."""

@@ -1,3 +1,4 @@
+import numpy as np
 import osqp
 import scipy.sparse as spa
 from gymnasium import spaces

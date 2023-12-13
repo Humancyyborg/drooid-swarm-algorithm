@@ -1,4 +1,5 @@
 import copy
+import os
 import time
 from collections import deque
 from copy import deepcopy
@@ -13,10 +14,12 @@ from gym_art.quadrotor_multi.collisions.quadrotors import calculate_collision_ma
 from gym_art.quadrotor_multi.collisions.room import perform_collision_with_wall, perform_collision_with_ceiling
 from gym_art.quadrotor_multi.obstacles.obstacles import MultiObstacles
 from gym_art.quadrotor_multi.obstacles.utils import get_cell_centers
+from gym_art.quadrotor_multi.plots.log_info import log_list_data, log_data_v1, log_init_info
 from gym_art.quadrotor_multi.quad_utils import QUADS_OBS_REPR, QUADS_NEIGHBOR_OBS_TYPE
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
 from gym_art.quadrotor_multi.quadrotor_single import QuadrotorSingle
 from gym_art.quadrotor_multi.scenarios.mix import create_scenario
+import pandas as pd
 
 
 class QuadrotorEnvMulti(gym.Env):
@@ -210,6 +213,9 @@ class QuadrotorEnvMulti(gym.Env):
         # Log metric
         self.agent_col_agent = np.ones(self.num_agents)
         self.agent_col_obst = np.ones(self.num_agents)
+        self.agent_col_wall = np.ones(self.num_agents)
+        self.agent_col_floor = np.ones(self.num_agents)
+        self.agent_col_ceil = np.ones(self.num_agents)
 
         # Others
         self.apply_collision_force = True
@@ -228,6 +234,30 @@ class QuadrotorEnvMulti(gym.Env):
         self.sbc_max_obst_aggressive = sbc_max_obst_aggressive
         self.sbc_max_room_aggressive = sbc_max_room_aggressive
 
+        # Log information for plots
+        # # Log obst pos
+        # # # Log init data which will be used for compare the performance with the same environment
+        self.log_init_data_flag = False
+        # # # Log data which will be used for render 2d videos
+        self.log_2d_visual_data_flag = False
+        # # # When load same environments, this flag is used to log the metric data
+        self.log_metric_data_flag = False
+        self.file_counter = 0
+        if self.log_2d_visual_data_flag:
+            # # Log all drone acc_ref, acc_opt, acc_rel
+            self.acc_list = [[] for _ in range(self.num_agents)]
+            # # Log all drone cur pos, cur vel
+            self.pv_list = [[] for _ in range(self.num_agents)]
+
+        if self.log_metric_data_flag:
+            self.success_ratio_buf = deque([], maxlen=100)
+            self.deadlock_rate_buf = deque([], maxlen=100)
+            self.reached_goal_buf = deque([], maxlen=100)
+            self.obst_collision_rate_buf = deque([], maxlen=100)
+            self.neighbor_collision_rate_buf = deque([], maxlen=100)
+            self.wall_collision_rate_buf = deque([], maxlen=100)
+            self.floor_collision_rate_buf = deque([], maxlen=100)
+            self.ceil_collision_rate_buf = deque([], maxlen=100)
 
     def all_dynamics(self):
         return tuple(e.dynamics for e in self.envs)
@@ -393,11 +423,9 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Scenario reset
         if self.use_obstacles:
-            self.obstacles = MultiObstacles(
-                obstacle_size=self.obst_size, quad_radius=self.quad_arm)
+            self.obstacles = MultiObstacles(obstacle_size=self.obst_size, quad_radius=self.quad_arm)
             self.obst_map, self.obst_pos_arr, cell_centers = self.obst_generation_given_density()
-            self.scenario.reset(obst_map=self.obst_map,
-                                cell_centers=cell_centers)
+            self.scenario.reset(obst_map=self.obst_map, cell_centers=cell_centers)
         else:
             self.scenario.reset()
 
@@ -407,6 +435,13 @@ class QuadrotorEnvMulti(gym.Env):
             self.activate_replay_buffer = self.can_drones_fly()
             self.crashes_last_episode = 0
 
+        # Load environment from record data
+        # Match self.log_2d_visual_data_flag or self.log_metric_data_flag
+        if self.log_2d_visual_data_flag or self.log_metric_data_flag:
+            init_poses, self.scenario.goals, self.obst_pos_arr = self.load_record_data()
+        else:
+            init_poses = [None for _ in range(self.num_agents)]
+
         for i, e in enumerate(self.envs):
             e.goal = self.scenario.goals[i]
             if self.scenario.spawn_points is None:
@@ -415,7 +450,7 @@ class QuadrotorEnvMulti(gym.Env):
                 e.spawn_point = self.scenario.spawn_points[i]
             e.rew_coeff = self.rew_coeff
 
-            observation = e.reset()
+            observation = e.reset(init_pos=init_poses[i])
             obs.append(observation)
             self.pos[i, :] = e.dynamics.pos
 
@@ -426,8 +461,7 @@ class QuadrotorEnvMulti(gym.Env):
         # Obstacles
         if self.use_obstacles:
             quads_pos = np.array([e.dynamics.pos for e in self.envs])
-            obs = self.obstacles.reset(
-                obs=obs, quads_pos=quads_pos, pos_arr=self.obst_pos_arr)
+            obs = self.obstacles.reset(obs=obs, quads_pos=quads_pos, pos_arr=self.obst_pos_arr)
             self.obst_quad_collisions_per_episode = self.obst_quad_collisions_after_settle = 0
             self.prev_obst_quad_collisions = []
 
@@ -448,6 +482,9 @@ class QuadrotorEnvMulti(gym.Env):
         self.distance_to_goal = [[] for _ in range(len(self.envs))]
         self.agent_col_agent = np.ones(self.num_agents)
         self.agent_col_obst = np.ones(self.num_agents)
+        self.agent_col_wall = np.ones(self.num_agents)
+        self.agent_col_floor = np.ones(self.num_agents)
+        self.agent_col_ceil = np.ones(self.num_agents)
         self.reached_goal = [False for _ in range(len(self.envs))]
 
         # Rendering
@@ -458,6 +495,17 @@ class QuadrotorEnvMulti(gym.Env):
                 val: [0.0 for _ in range(len(self.envs))]
                 for val in ['drone', 'ground', 'obstacle']}
 
+        # Log information for 2d videos
+        if self.log_2d_visual_data_flag:
+            self.set_2d_visual_data()
+            self.acc_list = [[] for _ in range(self.num_agents)]
+            self.pv_list = [[] for _ in range(self.num_agents)]
+
+        if self.log_init_data_flag:
+            self.set_init_data()
+
+        # # Log obst pos
+        self.file_counter += 1
         return obs
 
     def step(self, actions):
@@ -542,6 +590,10 @@ class QuadrotorEnvMulti(gym.Env):
             dones.append(done)
             infos.append(info)
 
+            if self.log_2d_visual_data_flag:
+                self.acc_list[i].append(info['acc'])
+                self.pv_list[i].append({'pos': self.envs[i].dynamics.pos, 'vel': self.envs[i].dynamics.vel})
+
             self.pos[i, :] = self.envs[i].dynamics.pos
 
         # 1. Calculate collisions: 1) between drones 2) with obstacles 3) with room
@@ -608,13 +660,21 @@ class QuadrotorEnvMulti(gym.Env):
 
         # 3) Collisions with room
         floor_crash_list, wall_crash_list, ceiling_crash_list = self.calculate_room_collision()
-        room_crash_list = np.unique(np.concatenate(
-            [floor_crash_list, wall_crash_list, ceiling_crash_list]))
+        room_crash_list = np.unique(np.concatenate([floor_crash_list, wall_crash_list, ceiling_crash_list]))
         room_crash_list = np.setdiff1d(room_crash_list, self.prev_crashed_room)
         # # Aux: Room Collisions
         self.prev_crashed_walls = wall_crash_list
         self.prev_crashed_ceiling = ceiling_crash_list
         self.prev_crashed_room = room_crash_list
+        # # # Aux: collect info room collision rate
+        for qid in floor_crash_list:
+            self.agent_col_floor[qid] = 0
+
+        for qid in wall_crash_list:
+            self.agent_col_wall[qid] = 0
+
+        for qid in ceiling_crash_list:
+            self.agent_col_ceil[qid] = 0
 
         # 2. Calculate rewards and infos for collision
         # 1) Between drones
@@ -799,19 +859,17 @@ class QuadrotorEnvMulti(gym.Env):
             if not self.saved_in_replay_buffer:
                 # agent_success_rate: base_success_rate, based on per agent
                 # 0: collision; 1: no collision
-                agent_col_flag_list = np.logical_and(
-                    self.agent_col_agent, self.agent_col_obst)
-                agent_success_flag_list = np.logical_and(
-                    agent_col_flag_list, self.reached_goal)
-                agent_success_ratio = 1.0 * np.sum(
-                    agent_success_flag_list) / self.num_agents
+                agent_col_flag_list = np.logical_and(self.agent_col_agent, self.agent_col_obst)
+                agent_success_flag_list = np.logical_and(agent_col_flag_list, self.reached_goal)
+                agent_success_ratio = 1.0 * np.sum(agent_success_flag_list) / self.num_agents
 
                 # agent_deadlock_rate
                 # Doesn't approach to the goal while no collisions with other objects
-                agent_deadlock_list = np.logical_and(
-                    agent_col_flag_list, 1 - self.reached_goal)
-                agent_deadlock_ratio = 1.0 * np.sum(
-                    agent_deadlock_list) / self.num_agents
+                agent_deadlock_list = np.logical_and(agent_col_flag_list, 1 - self.reached_goal)
+                agent_deadlock_ratio = 1.0 * np.sum(agent_deadlock_list) / self.num_agents
+
+                # reached goal
+                reached_goal_ratio = 1.0 * np.sum(self.reached_goal) / self.num_agents
 
                 # agent_col_rate
                 # Collide with other drones and obstacles
@@ -820,28 +878,44 @@ class QuadrotorEnvMulti(gym.Env):
                 agent_neighbor_col_ratio = 1.0 - np.sum(self.agent_col_agent) / self.num_agents
                 # agent_obst_col_rate
                 agent_obst_col_ratio = 1.0 - np.sum(self.agent_col_obst) / self.num_agents
+                # collision with wall, floor, ceiling
+                agent_wall_col_ratio = 1.0 - np.sum(self.agent_col_wall) / self.num_agents
+                agent_floor_col_ratio = 1.0 - np.sum(self.agent_col_floor) / self.num_agents
+                agent_ceil_col_ratio = 1.0 - np.sum(self.agent_col_ceil) / self.num_agents
+
+                if self.log_metric_data_flag:
+                    self.set_metric_data(agent_success_ratio, agent_deadlock_ratio, agent_obst_col_ratio,
+                                         agent_neighbor_col_ratio, agent_wall_col_ratio, agent_floor_col_ratio,
+                                         agent_ceil_col_ratio, reached_goal_ratio)
 
                 for i in range(len(infos)):
                     # agent_success_rate
-                    infos[i]['episode_extra_stats'][
-                        'metric/agent_success_rate'] = agent_success_ratio
+                    infos[i]['episode_extra_stats']['metric/agent_success_rate'] = agent_success_ratio
                     infos[i]['episode_extra_stats'][f'{scenario_name}/agent_success_rate'] = agent_success_ratio
                     # agent_deadlock_rate
-                    infos[i]['episode_extra_stats'][
-                        'metric/agent_deadlock_rate'] = agent_deadlock_ratio
+                    infos[i]['episode_extra_stats']['metric/agent_deadlock_rate'] = agent_deadlock_ratio
                     infos[i]['episode_extra_stats'][f'{scenario_name}/agent_deadlock_rate'] = agent_deadlock_ratio
                     # agent_col_rate
                     infos[i]['episode_extra_stats']['metric/agent_col_rate'] = agent_col_ratio
-                    infos[i]['episode_extra_stats'][
-                        f'{scenario_name}/agent_col_rate'] = agent_col_ratio
+                    infos[i]['episode_extra_stats'][f'{scenario_name}/agent_col_rate'] = agent_col_ratio
                     # agent_neighbor_col_rate
                     infos[i]['episode_extra_stats']['metric/agent_neighbor_col_rate'] = agent_neighbor_col_ratio
-                    infos[i]['episode_extra_stats'][
-                        f'{scenario_name}/agent_neighbor_col_rate'] = agent_neighbor_col_ratio
+                    infos[i]['episode_extra_stats'][f'{scenario_name}/agent_neighbor_col_rate'] = agent_neighbor_col_ratio
                     # agent_obst_col_rate
-                    infos[i]['episode_extra_stats'][
-                        'metric/agent_obst_col_rate'] = agent_obst_col_ratio
+                    infos[i]['episode_extra_stats']['metric/agent_obst_col_rate'] = agent_obst_col_ratio
                     infos[i]['episode_extra_stats'][f'{scenario_name}/agent_obst_col_rate'] = agent_obst_col_ratio
+                    # agent_wall_col_ratio
+                    infos[i]['episode_extra_stats']['metric/agent_wall_col_rate'] = agent_wall_col_ratio
+                    infos[i]['episode_extra_stats'][f'{scenario_name}/agent_wall_col_rate'] = agent_wall_col_ratio
+                    # agent_floor_col_ratio
+                    infos[i]['episode_extra_stats']['metric/agent_floor_col_rate'] = agent_floor_col_ratio
+                    infos[i]['episode_extra_stats'][f'{scenario_name}/agent_floor_col_rate'] = agent_floor_col_ratio
+                    # agent_ceil_col_ratio
+                    infos[i]['episode_extra_stats']['metric/agent_ceil_col_rate'] = agent_ceil_col_ratio
+                    infos[i]['episode_extra_stats'][f'{scenario_name}/agent_ceil_col_rate'] = agent_ceil_col_ratio
+                    # reached_goal_ratio
+                    infos[i]['episode_extra_stats']['metric/reached_goal_rate'] = reached_goal_ratio
+                    infos[i]['episode_extra_stats'][f'{scenario_name}/reached_goal_rate'] = reached_goal_ratio
 
             obs = self.reset()
             # terminate the episode for all "sub-envs"
@@ -966,3 +1040,106 @@ class QuadrotorEnvMulti(gym.Env):
         copied_env.scene = None
 
         return copied_env
+
+    def set_metric_data(self, agent_success_ratio, agent_deadlock_ratio, agent_obst_col_ratio,
+                        agent_neighbor_col_ratio, agent_wall_col_ratio, agent_floor_col_ratio, agent_ceil_col_ratio,
+                        reached_goal_ratio):
+        self.success_ratio_buf.append(agent_success_ratio)
+        self.deadlock_rate_buf.append(agent_deadlock_ratio)
+        self.reached_goal_buf.append(reached_goal_ratio)
+        self.obst_collision_rate_buf.append(agent_obst_col_ratio)
+        self.neighbor_collision_rate_buf.append(agent_neighbor_col_ratio)
+        self.wall_collision_rate_buf.append(agent_wall_col_ratio)
+        self.floor_collision_rate_buf.append(agent_floor_col_ratio)
+        self.ceil_collision_rate_buf.append(agent_ceil_col_ratio)
+
+        print('number: ', len(self.success_ratio_buf))
+        print('success_ratio_buf: ', self.success_ratio_buf)
+        print('succ mean:   ', np.mean(np.array(self.success_ratio_buf)))
+        print('succ std:   ', np.std(np.array(self.success_ratio_buf)))
+
+        print('reached_goal_buf: ', self.reached_goal_buf)
+        print('reached goal mean:   ', np.mean(np.array(self.reached_goal_buf)))
+        print('reached goal std:   ', np.std(np.array(self.reached_goal_buf)))
+
+        print('deadlock_rate_buf: ', self.deadlock_rate_buf)
+        print('deadlock mean:   ', np.mean(np.array(self.deadlock_rate_buf)))
+        print('deadlock std:   ', np.std(np.array(self.deadlock_rate_buf)))
+
+        print('obst_collision_rate_buf: ', self.obst_collision_rate_buf)
+        print('obst col mean:   ', np.mean(np.array(self.obst_collision_rate_buf)))
+        print('obst col std:   ', np.std(np.array(self.obst_collision_rate_buf)))
+
+        print('neighbor_collision_rate_buf: ', self.neighbor_collision_rate_buf)
+        print('nei col mean:   ', np.mean(np.array(self.neighbor_collision_rate_buf)))
+        print('nei col std:   ', np.std(np.array(self.neighbor_collision_rate_buf)))
+
+        print('wall_collision_rate_buf: ', self.wall_collision_rate_buf)
+        print('wall col mean:   ', np.mean(np.array(self.wall_collision_rate_buf)))
+        print('wall col std:   ', np.std(np.array(self.wall_collision_rate_buf)))
+
+        print('floor_collision_rate_buf: ', self.floor_collision_rate_buf)
+        print('floor col mean:   ', np.mean(np.array(self.floor_collision_rate_buf)))
+        print('floor col std:   ', np.std(np.array(self.floor_collision_rate_buf)))
+
+        print('ceil_collision_rate_buf: ', self.ceil_collision_rate_buf)
+        print('ceil col mean:   ', np.mean(np.array(self.ceil_collision_rate_buf)))
+        print('ceil col std:   ', np.std(np.array(self.ceil_collision_rate_buf)))
+
+    def load_record_data(self):
+        str_counter = str(self.file_counter)
+        load_folder_path = os.path.join('init_data', self.scenario.name()[9:], str_counter)
+        print('load record data, folder name: ', load_folder_path)
+        init_pos_csv_name = os.path.join(load_folder_path, 'init_pos_' + str_counter + '.csv')
+        init_poses = pd.read_csv(init_pos_csv_name, header=None).to_numpy()
+        init_goal_csv_name = os.path.join(load_folder_path, 'init_goal_' + str_counter + '.csv')
+        goals = pd.read_csv(init_goal_csv_name, header=None).to_numpy()
+        init_obst_pos_name = os.path.join(load_folder_path, 'init_obstacle_positions_' + str_counter + '.csv')
+        obst_pos_arr = pd.read_csv(init_obst_pos_name, header=None).to_numpy()
+
+        return init_poses, goals, obst_pos_arr
+
+    def set_2d_visual_data(self):
+        folder_path = os.path.join('2d_video', self.scenario.name()[9:], str(self.file_counter))
+        print('set 2d visual data, folder name: ', folder_path)
+        if not os.path.exists(folder_path):
+            # Create the folder
+            os.makedirs(folder_path, exist_ok=True)
+
+        # Log current obstacle_positions and goal
+        file_name = os.path.join(folder_path, 'obstacle_positions.csv')
+        log_data_v1(filename=file_name, data=self.obst_pos_arr)
+        file_name = os.path.join(folder_path, 'goal.csv')
+        log_data_v1(filename=file_name, data=self.scenario.goals)
+
+        if self.file_counter > 0:
+            # # use self.file_counter - 1, since current acc, pos, and vel based on the previous obstacle and goal
+            folder_path = os.path.join('2d_video', self.scenario.name()[9:], str(self.file_counter - 1))
+            for i in range(self.num_agents):
+                # # Log all drones acc_ref, acc_opt, acc_rel
+                file_name = os.path.join(folder_path, 'acc_list_' + str(i) + '.csv')
+                log_list_data(filename=file_name, data=self.acc_list[i])
+                # # Log all drones pos vel
+                file_name = os.path.join(folder_path, 'pv_list_' + str(i) + '.csv')
+                log_list_data(filename=file_name, data=self.pv_list[i])
+
+    def set_init_data(self):
+        str_counter = str(self.file_counter)
+        folder_path = os.path.join('init_data', self.scenario.name()[9:], str_counter)
+        print('set init data, folder name: ', folder_path)
+        if not os.path.exists(folder_path):
+            # Create the folder
+            os.makedirs(folder_path, exist_ok=True)
+
+        # Record init pos
+        file_name = os.path.join(folder_path, 'init_pos_' + str_counter + '.csv')
+        drone_pos_arr = np.array([e.dynamics.pos for e in self.envs])
+        log_init_info(filename=file_name, data=drone_pos_arr)
+
+        # Record obstacle pos
+        file_name = os.path.join(folder_path, 'init_obstacle_positions_' + str_counter + '.csv')
+        log_init_info(filename=file_name, data=self.obst_pos_arr)
+
+        # Record goal pos
+        file_name = os.path.join(folder_path, 'init_goal_' + str_counter + '.csv')
+        log_init_info(filename=file_name, data=self.scenario.goals)
