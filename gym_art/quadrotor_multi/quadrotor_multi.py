@@ -42,7 +42,7 @@ class QuadrotorEnvMulti(gym.Env):
                  render_mode='human',
                  # SBC specific
                  sbc_radius=0.1, sbc_aggressive=0.1, sbc_nei_range=5.0, sbc_obst_range=3.0, sbc_obst_safe_coeff=1.0,
-                 sbc_max_acc=2.0, sbc_max_neighbor_aggressive=100.0, sbc_max_obst_aggressive=100.0,
+                 sbc_max_acc=1.0, sbc_max_neighbor_aggressive=5.0, sbc_max_obst_aggressive=5.0,
                  sbc_max_room_aggressive=1.0
                  ):
         super().__init__()
@@ -511,9 +511,9 @@ class QuadrotorEnvMulti(gym.Env):
         return obs
 
     def step(self, actions):
+        # The meaning of actions is acceleration change
         actions = np.array(actions)
         actions_acc = np.clip(actions[:, :3], a_min=-1.0, a_max=1.0)
-        # TODO: Maybe need to normalize actions, since the overall maximum acc is ~ 2.0
         actions_acc = actions_acc * self.action_max
         actions_aggressive = np.clip(actions[:, 3:6], a_min=0.0, a_max=1.0)
 

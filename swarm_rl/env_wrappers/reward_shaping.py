@@ -96,7 +96,7 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapin
 
                 if hasattr(self.env.unwrapped, 'scenario') and self.env.unwrapped.scenario:
                     scenario_name = self.env.unwrapped.scenario.name()
-                    for rew_key in ['rew_pos', 'rew_crash', 'rew_rl_sbc', 'rew_sbc_mellinger']:
+                    for rew_key in ['rew_pos', 'rew_crash', 'rew_rl_sbc', 'rew_rl_mellinger']:
                         extra_stats[f'{scenario_name}/{rew_key}'] = self.cumulative_rewards[i][rew_key]
 
                 episode_actions = np.array(self.episode_actions)

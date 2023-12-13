@@ -49,9 +49,9 @@ def compute_reward_weighted(
     cost_rl_sbc_raw = np.linalg.norm(acc_sbc - rl_acc)
     cost_rl_sbc = rew_coeff["rl_sbc"] * cost_rl_sbc_raw
 
-    # Difference between acc_sbc & acc_mellinger
-    cost_sbc_mellinger_raw = np.linalg.norm(mellinger_acc - acc_sbc)
-    cost_sbc_mellinger = rew_coeff["sbc_mellinger"] * cost_sbc_mellinger_raw
+    # Difference between acc_rl & acc_mellinger
+    cost_rl_mellinger_raw = np.linalg.norm(mellinger_acc - rl_acc)
+    cost_rl_mellinger = rew_coeff["sbc_mellinger"] * cost_rl_mellinger_raw
 
     # SBC boundary cost
     if sbc_distance_to_boundary is not None:
@@ -65,7 +65,7 @@ def compute_reward_weighted(
         cost_pos,
         cost_crash,
         cost_rl_sbc,
-        cost_sbc_mellinger,
+        cost_rl_mellinger,
         cost_sbc_boundary
     ])
 
@@ -74,14 +74,14 @@ def compute_reward_weighted(
         'rew_pos': -cost_pos,
         'rew_crash': -cost_crash,
         "rew_rl_sbc": -cost_rl_sbc,
-        'rew_sbc_mellinger': -cost_sbc_mellinger,
+        'rew_rl_mellinger': -cost_rl_mellinger,
         'rew_sbc_boundary': -cost_sbc_boundary,
 
         "rewraw_main": -cost_pos_raw,
         'rewraw_pos': -cost_pos_raw,
         'rewraw_crash': -cost_crash_raw,
         "rewraw_rl_sbc": -cost_rl_sbc_raw,
-        'rewraw_sbc_mellinger': -cost_sbc_mellinger_raw,
+        'rewraw_rl_mellinger': -cost_rl_mellinger_raw,
         'rewraw_sbc_boundary': -cost_sbc_boundary_raw,
     }
 
@@ -365,16 +365,21 @@ class QuadrotorSingle:
         return [seed]
 
     def _step(self, action, sbc_data):
+        # since action means action change
+        # acc = pre_acc + action
+        desired_acc = action + self.dynamics.acc
+
         self.actions[1] = copy.deepcopy(self.actions[0])
         self.actions[0] = copy.deepcopy(action)
+
         self.obs_his_accs.append(self.dynamics.acc)
 
         _, acc_sbc, sbc_distance_to_boundary= self.controller.step_func(
-            dynamics=self.dynamics, acc_des=action, dt=self.dt, observation=sbc_data)
+            dynamics=self.dynamics, acc_des=desired_acc, dt=self.dt, observation=sbc_data)
 
         self.time_remain = self.ep_len - self.tick
         reward, rew_info = compute_reward_weighted(
-            goal=self.goal, cur_pos=self.dynamics.pos, rl_acc=action,
+            goal=self.goal, cur_pos=self.dynamics.pos, rl_acc=desired_acc,
             acc_sbc=acc_sbc, sbc_distance_to_boundary=sbc_distance_to_boundary,
             mellinger_acc=self.dynamics.acc, dt=self.control_dt,
             rew_coeff=self.rew_coeff, on_floor=self.dynamics.on_floor)
@@ -384,7 +389,7 @@ class QuadrotorSingle:
         sv = self.state_vector(self)
         self.traj_count += int(done)
 
-        acc_info = {'acc_ref': action, 'acc_sbc': acc_sbc, 'acc_real': self.dynamics.acc}
+        acc_info = {'acc_ref': desired_acc, 'acc_sbc': acc_sbc, 'acc_real': self.dynamics.acc}
         return sv, reward, done, {'rewards': rew_info, 'acc': acc_info}
 
     def resample_dynamics(self):

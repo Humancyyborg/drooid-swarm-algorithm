@@ -135,7 +135,7 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_obst_range', default=3.0, type=float, help='Consider obstacles in this range')
     p.add_argument('--quads_obst_safe_coeff', default=1.0, type=float,
                    help='To calculate the safety range of obstacles, we use a coefficient')
-    p.add_argument('--quads_max_acc', default=2.0, type=float, help='maximum acceleration')
-    p.add_argument('--quads_max_neighbor_aggressive', default=100.0, type=float, help='maximum aggressive')
-    p.add_argument('--quads_max_obst_aggressive', default=100.0, type=float, help='maximum aggressive')
-    p.add_argument('--quads_max_room_aggressive', default=1.0, type=float, help='maximum aggressive')
+    p.add_argument('--quads_max_acc', default=1.0, type=float, help='maximum acceleration')
+    p.add_argument('--quads_max_neighbor_aggressive', default=5.0, type=float, help='maximum aggressive')
+    p.add_argument('--quads_max_obst_aggressive', default=5.0, type=float, help='maximum aggressive')
+    p.add_argument('--quads_max_room_aggressive', default=0.2, type=float, help='maximum aggressive')
