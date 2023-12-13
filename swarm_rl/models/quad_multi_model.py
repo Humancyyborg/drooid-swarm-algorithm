@@ -132,6 +132,9 @@ class QuadMultiHeadAttentionEncoder(Encoder):
         else:
             raise NotImplementedError(f'Layer {cfg.quads_obs_repr} not supported!')
 
+        if cfg.quads_obs_acc_his:
+            self.self_obs_dim += cfg.quads_obs_acc_his_num * 3
+
         self.neighbor_hidden_size = cfg.quads_neighbor_hidden_size
         self.use_obstacles = cfg.quads_use_obstacles
 
@@ -233,8 +236,10 @@ class QuadMultiEncoder(Encoder):
         super().__init__(cfg)
 
         self.self_obs_dim = QUADS_OBS_REPR[cfg.quads_obs_repr]
-        self.use_obstacles = cfg.quads_use_obstacles
+        if cfg.quads_obs_acc_his:
+            self.self_obs_dim += cfg.quads_obs_acc_his_num * 3
 
+        self.use_obstacles = cfg.quads_use_obstacles
         # Neighbor
         neighbor_hidden_size = cfg.quads_neighbor_hidden_size
         neighbor_obs_dim = QUADS_NEIGHBOR_OBS_TYPE[cfg.quads_neighbor_obs_type]

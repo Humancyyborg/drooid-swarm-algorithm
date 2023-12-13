@@ -18,11 +18,14 @@ def add_quadrotors_env_args(env, parser):
     # Quadrotor features
     p.add_argument('--quads_num_agents', default=8, type=int, help='Override default value for the number of quadrotors')
     p.add_argument('--quads_obs_repr', default='xyz_vxyz_R_omega', type=str,
-                   choices=['xyz_vxyz_R_omega', 'xyz_vxyz_R_omega_floor', 'xyz_vxyz_R_omega_wall'],
+                   choices=['xyz_vxyz_R_omega', 'xyz_vxyz_R_omega_floor', 'xyz_vxyz_R_omega_wall',
+                            'xyz_vxyz_R_omega_acc_floor'],
                    help='obs space for quadrotor self')
     p.add_argument('--quads_episode_duration', default=15.0, type=float,
                    help='Override default value for episode duration')
     p.add_argument('--quads_encoder_type', default="corl", type=str, help='The type of the neighborhood encoder')
+    p.add_argument('--quads_obs_acc_his', default=False, type=str2bool, help='If use history acc in obs or not')
+    p.add_argument('--quads_obs_acc_his_num', default=3, type=int, help='The number of history acceleration')
 
     # Neighbor
     # Neighbor Features

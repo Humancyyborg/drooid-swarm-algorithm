@@ -18,6 +18,7 @@ References:
 [7] Rodrigues' rotation formula: https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
 """
 import copy
+from collections import deque
 
 import numpy as np
 from gymnasium.utils import seeding
@@ -100,16 +101,20 @@ def compute_reward_weighted(
 # preferably short) episode length, since for some distance it would be impossible to reach the goal
 class QuadrotorSingle:
     def __init__(
-            self, dynamics_params="DefaultQuad", dynamics_change=None,
-            dynamics_randomize_every=None, dyn_sampler_1=None,
-            dyn_sampler_2=None, raw_control=True, raw_control_zero_middle=True,
-            dim_mode='3D', tf_control=False, sim_freq=200., sim_steps=2,
-            obs_repr="xyz_vxyz_R_omega", ep_time=7, room_dims=(10.0, 10.0, 10.0),
-            init_random_state=False, sense_noise=None, verbose=False,
-            gravity=GRAV, t2w_std=0.005, t2t_std=0.0005, excite=False,
-            dynamics_simplification=False, use_numba=False,
-            neighbor_obs_type='none', num_agents=1, num_use_neighbor_obs=0,
-            use_obstacles=False, num_obstacles=0, sbc_radius=0.1, sbc_aggressive=0.1, sbc_max_acc=2.0):
+            # self
+            self, dynamics_params="DefaultQuad", dynamics_change=None, dynamics_randomize_every=None,
+            dyn_sampler_1=None, dyn_sampler_2=None, raw_control=True, raw_control_zero_middle=True, sense_noise=None,
+            init_random_state=False, obs_repr="xyz_vxyz_R_omega", ep_time=7, room_dims=(10.0, 10.0, 10.0),
+            use_numba=False, his_acc=False, his_acc_num=3,
+            # Neighbor
+            num_agents=1, neighbor_obs_type='none', num_use_neighbor_obs=0,
+            # Obstacle
+            use_obstacles=False, num_obstacles=0,
+            # SBC specific,
+            sbc_radius=0.1, sbc_aggressive=0.1, sbc_max_acc=2.0,
+            # Others
+            dim_mode='3D', tf_control=False, sim_freq=200., sim_steps=2, verbose=False, gravity=GRAV, t2w_std=0.005,
+            t2t_std=0.0005, excite=False, dynamics_simplification=False):
         np.seterr(under='ignore')
         """
         Args:
@@ -170,6 +175,9 @@ class QuadrotorSingle:
         # Preset parameters
         self.obs_repr = obs_repr
         self.rew_coeff = None
+        self.his_acc = his_acc
+        self.his_acc_num = his_acc_num
+        self.obs_his_accs = deque([], maxlen=his_acc_num)
         # EPISODE PARAMS
         self.ep_time = ep_time  # In seconds
         self.sim_steps = sim_steps
@@ -321,14 +329,14 @@ class QuadrotorSingle:
             "octmap": [-10 * np.ones(9), 10 * np.ones(9)],
         }
         self.obs_comp_names = list(self.obs_space_low_high.keys())
-        self.obs_comp_sizes = [
-            self.obs_space_low_high[name][1].size
-            for name in self.obs_comp_names]
+        self.obs_comp_sizes = [self.obs_space_low_high[name][1].size for name in self.obs_comp_names]
 
         obs_comps = self.obs_repr.split("_")
+        if self.his_acc:
+            obs_comps = obs_comps + ['acc'] * self.his_acc_num
+
         if self.neighbor_obs_type == 'pos_vel' and self.num_use_neighbor_obs > 0:
-            obs_comps = obs_comps + (['rxyz'] + ['rvxyz']
-                                     ) * self.num_use_neighbor_obs
+            obs_comps = obs_comps + (['rxyz'] + ['rvxyz']) * self.num_use_neighbor_obs
 
         if self.use_obstacles:
             obs_comps = obs_comps + ["octmap"]
@@ -359,6 +367,7 @@ class QuadrotorSingle:
     def _step(self, action, sbc_data):
         self.actions[1] = copy.deepcopy(self.actions[0])
         self.actions[0] = copy.deepcopy(action)
+        self.obs_his_accs.append(self.dynamics.acc)
 
         _, acc_sbc, sbc_distance_to_boundary= self.controller.step_func(
             dynamics=self.dynamics, acc_des=action, dt=self.dt, observation=sbc_data)
@@ -469,6 +478,11 @@ class QuadrotorSingle:
         # Reseting some internal state (counters, etc)
         self.tick = 0
         self.actions = [np.zeros([3, ]), np.zeros([3, ])]
+
+        if self.his_acc:
+            self.obs_his_accs = deque([], maxlen=self.his_acc_num)
+            for _ in range(self.his_acc_num):
+                self.obs_his_accs.append(np.zeros(3))
 
         state = self.state_vector(self)
         return state

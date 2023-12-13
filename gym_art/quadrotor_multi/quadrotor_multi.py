@@ -23,7 +23,7 @@ import pandas as pd
 
 
 class QuadrotorEnvMulti(gym.Env):
-    def __init__(self, num_agents, ep_time, rew_coeff, obs_repr,
+    def __init__(self, num_agents, ep_time, rew_coeff, obs_repr, his_acc, his_acc_num,
                  # Neighbor
                  neighbor_visible_num, neighbor_obs_type, collision_hitbox_radius, collision_falloff_radius,
 
@@ -50,6 +50,8 @@ class QuadrotorEnvMulti(gym.Env):
         # Predefined Parameters
         self.num_agents = num_agents
         obs_self_size = QUADS_OBS_REPR[obs_repr]
+        if his_acc:
+            obs_self_size += his_acc_num * 3
         if neighbor_visible_num == -1:
             self.num_use_neighbor_obs = self.num_agents - 1
         else:
@@ -72,10 +74,10 @@ class QuadrotorEnvMulti(gym.Env):
             e = QuadrotorSingle(
                 # Quad Parameters
                 dynamics_params=dynamics_params, dynamics_change=dynamics_change,
-                dynamics_randomize_every=dynamics_randomize_every, dyn_sampler_1=dyn_sampler_1,
+                dynamics_randomize_every=dynamics_randomize_every, dyn_sampler_1=dyn_sampler_1, dyn_sampler_2=None,
                 raw_control=raw_control, raw_control_zero_middle=raw_control_zero_middle, sense_noise=sense_noise,
                 init_random_state=init_random_state, obs_repr=obs_repr, ep_time=ep_time, room_dims=room_dims,
-                use_numba=use_numba,
+                use_numba=use_numba, his_acc=his_acc, his_acc_num=his_acc_num,
                 # Neighbor
                 num_agents=num_agents,
                 neighbor_obs_type=neighbor_obs_type, num_use_neighbor_obs=self.num_use_neighbor_obs,
