@@ -5,7 +5,6 @@ _params = ParamGrid(
     [
         ("seed", [0000, 3333]),
         ("quads_cost_rl_sbc", [0.1]),
-        ("quads_sbc_aggressive", [0.05, 0.2, 0.4]),
     ]
 )
 

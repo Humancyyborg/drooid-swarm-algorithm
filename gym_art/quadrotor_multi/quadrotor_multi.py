@@ -41,7 +41,7 @@ class QuadrotorEnvMulti(gym.Env):
                  # Rendering
                  render_mode='human',
                  # SBC specific
-                 sbc_radius=0.1, sbc_aggressive=0.1, sbc_nei_range=5.0, sbc_obst_range=3.0, sbc_obst_safe_coeff=1.0,
+                 sbc_radius=0.1, sbc_nei_range=5.0, sbc_obst_range=3.0,
                  sbc_max_acc=1.0, sbc_max_neighbor_aggressive=5.0, sbc_max_obst_aggressive=5.0,
                  sbc_max_room_aggressive=1.0
                  ):
@@ -84,7 +84,7 @@ class QuadrotorEnvMulti(gym.Env):
                 # Obstacle
                 use_obstacles=use_obstacles, num_obstacles=tmp_num_obstacles,
                 # SBC specific,
-                sbc_radius=sbc_radius, sbc_aggressive=sbc_aggressive, sbc_max_acc=sbc_max_acc
+                sbc_radius=sbc_radius, sbc_max_acc=sbc_max_acc
             )
             self.envs.append(e)
 
@@ -231,7 +231,6 @@ class QuadrotorEnvMulti(gym.Env):
         # Controller: SBC
         self.sbc_nei_range = sbc_nei_range
         self.sbc_obst_range = sbc_obst_range
-        self.sbc_obst_safe_coeff = sbc_obst_safe_coeff
         self.sbc_max_neighbor_aggressive = sbc_max_neighbor_aggressive
         self.sbc_max_obst_aggressive = sbc_max_obst_aggressive
         self.sbc_max_room_aggressive = sbc_max_room_aggressive
@@ -572,7 +571,7 @@ class QuadrotorEnvMulti(gym.Env):
                         'position': obst_pos,
                         'velocity': np.zeros(2)
                     },
-                    'radius': self.obst_size * 0.5 * self.sbc_obst_safe_coeff,
+                    'radius': self.obst_size * 0.5,
                     'maximum_linf_acceleration_lower_bound': 0.0,
                     'is_infinite_height_cylinder': True
                 })

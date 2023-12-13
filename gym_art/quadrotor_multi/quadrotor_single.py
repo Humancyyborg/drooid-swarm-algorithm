@@ -111,7 +111,7 @@ class QuadrotorSingle:
             # Obstacle
             use_obstacles=False, num_obstacles=0,
             # SBC specific,
-            sbc_radius=0.1, sbc_aggressive=0.1, sbc_max_acc=2.0,
+            sbc_radius=0.1, sbc_max_acc=2.0,
             # Others
             dim_mode='3D', tf_control=False, sim_freq=200., sim_steps=2, verbose=False, gravity=GRAV, t2w_std=0.005,
             t2t_std=0.0005, excite=False, dynamics_simplification=False):
@@ -160,7 +160,6 @@ class QuadrotorSingle:
 
         # # SBC specific
         self.sbc_radius = sbc_radius
-        self.sbc_aggressive = sbc_aggressive
         self.sbc_max_acc = sbc_max_acc
         # Room
         self.room_length = room_dims[0]
@@ -284,7 +283,7 @@ class QuadrotorSingle:
 
         # CONTROL
         self.controller = MellingerController(
-            dynamics=self.dynamics, sbc_radius=self.sbc_radius, sbc_aggressive=self.sbc_aggressive,
+            dynamics=self.dynamics, sbc_radius=self.sbc_radius,
             room_box=self.room_box, num_agents=self.num_agents, num_obstacles=self.num_obstacles,
             sbc_max_acc=self.sbc_max_acc)
 

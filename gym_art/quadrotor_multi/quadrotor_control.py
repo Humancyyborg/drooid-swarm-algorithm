@@ -11,11 +11,11 @@ GRAV = 9.81
 
 
 class NominalSBC:
-    def __init__(self, maximum_linf_acceleration, aggressiveness, radius, room_box, num_agents, num_obstacles):
+    def __init__(self, maximum_linf_acceleration, radius, room_box, num_agents, num_obstacles):
         self.maximum_linf_acceleration = maximum_linf_acceleration
-        self.sbc_neighbor_aggressive = aggressiveness
-        self.sbc_obst_aggressive = aggressiveness
-        self.sbc_room_aggressive = aggressiveness
+        self.sbc_neighbor_aggressive = 0.2
+        self.sbc_obst_aggressive = 0.2
+        self.sbc_room_aggressive = 0.2
         self.radius = radius
         self.room_box = room_box
         P = 2.0 * np.eye(3)
@@ -227,7 +227,7 @@ def quadrotor_jacobian(dynamics):
 
 class MellingerController(object):
     # @profile
-    def __init__(self, dynamics, sbc_radius, sbc_aggressive, room_box, num_agents, num_obstacles, sbc_max_acc):
+    def __init__(self, dynamics, sbc_radius, room_box, num_agents, num_obstacles, sbc_max_acc):
         jacobian = quadrotor_jacobian(dynamics)
         self.Jinv = np.linalg.inv(jacobian)
         self.action = None
@@ -239,8 +239,8 @@ class MellingerController(object):
 
         self.enable_sbc = True
         # maximum_linf_acceleration, max_acc in any dimension
-        self.sbc = NominalSBC(maximum_linf_acceleration=sbc_max_acc, aggressiveness=sbc_aggressive,
-                              radius=sbc_radius, room_box=room_box, num_agents=num_agents, num_obstacles=num_obstacles)
+        self.sbc = NominalSBC(maximum_linf_acceleration=sbc_max_acc, radius=sbc_radius, room_box=room_box,
+                              num_agents=num_agents, num_obstacles=num_obstacles)
 
         self.sbc_last_safe_acc = None
 
