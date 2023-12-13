@@ -34,8 +34,7 @@ GRAV = 9.81  # default gravitational constant
 
 # reasonable reward function for hovering at a goal and not flying too high
 def compute_reward_weighted(
-        goal, cur_pos, rl_acc, acc_sbc, sbc_distance_to_boundary, mellinger_acc,
-        dt, rew_coeff, on_floor):
+        goal, cur_pos, rl_acc, acc_sbc, sbc_distance_to_boundary, mellinger_acc, dt, rew_coeff, on_floor):
     # Distance to the goal
     dist = np.linalg.norm(goal - cur_pos)
     cost_pos_raw = dist
@@ -366,19 +365,19 @@ class QuadrotorSingle:
     def _step(self, action, sbc_data):
         # since action means action change
         # acc = pre_acc + action
-        desired_acc = action + self.dynamics.acc
+        # desired_acc = action + self.dynamics.acc
 
         self.actions[1] = copy.deepcopy(self.actions[0])
         self.actions[0] = copy.deepcopy(action)
 
         self.obs_his_accs.append(self.dynamics.acc)
 
-        _, acc_sbc, sbc_distance_to_boundary= self.controller.step_func(
-            dynamics=self.dynamics, acc_des=desired_acc, dt=self.dt, observation=sbc_data)
+        _, acc_sbc, sbc_distance_to_boundary = self.controller.step_func(
+            dynamics=self.dynamics, acc_des=action, dt=self.dt, observation=sbc_data)
 
         self.time_remain = self.ep_len - self.tick
         reward, rew_info = compute_reward_weighted(
-            goal=self.goal, cur_pos=self.dynamics.pos, rl_acc=desired_acc,
+            goal=self.goal, cur_pos=self.dynamics.pos, rl_acc=action,
             acc_sbc=acc_sbc, sbc_distance_to_boundary=sbc_distance_to_boundary,
             mellinger_acc=self.dynamics.acc, dt=self.control_dt,
             rew_coeff=self.rew_coeff, on_floor=self.dynamics.on_floor)
@@ -388,7 +387,7 @@ class QuadrotorSingle:
         sv = self.state_vector(self)
         self.traj_count += int(done)
 
-        acc_info = {'acc_ref': desired_acc, 'acc_sbc': acc_sbc, 'acc_real': self.dynamics.acc}
+        acc_info = {'acc_ref': action, 'acc_sbc': acc_sbc, 'acc_real': self.dynamics.acc}
         return sv, reward, done, {'rewards': rew_info, 'acc': acc_info}
 
     def resample_dynamics(self):

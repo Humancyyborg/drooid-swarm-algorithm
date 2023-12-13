@@ -132,7 +132,7 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_sbc_boundary', default=0.1, type=float, help='sbc boundary in reward function')
     p.add_argument('--quads_neighbor_range', default=5.0, type=float, help='Consider other drones in this range')
     p.add_argument('--quads_obst_range', default=3.0, type=float, help='Consider obstacles in this range')
-    p.add_argument('--quads_max_acc', default=1.0, type=float, help='maximum acceleration')
+    p.add_argument('--quads_max_acc', default=2.0, type=float, help='maximum acceleration')
     p.add_argument('--quads_max_neighbor_aggressive', default=5.0, type=float, help='maximum aggressive')
     p.add_argument('--quads_max_obst_aggressive', default=5.0, type=float, help='maximum aggressive')
     p.add_argument('--quads_max_room_aggressive', default=0.2, type=float, help='maximum aggressive')
