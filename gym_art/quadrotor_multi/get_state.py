@@ -72,7 +72,7 @@ def state_xyz_vxyz_R_omega_wall(self):
     return np.concatenate([pos - self.goal[:3], vel, rot.flatten(), omega, wall_box_0, wall_box_1])
 
 
-def state_xyz_vxyz_R_omega_acc_floor(self):
+def state_xyz_vxyz_R_omega_floor_acc(self):
     if self.use_numba:
         pos, vel, rot, omega, acc = self.sense_noise.add_noise_numba(
             self.dynamics.pos,
@@ -91,4 +91,7 @@ def state_xyz_vxyz_R_omega_acc_floor(self):
             acc=self.dynamics.accelerometer,
             dt=self.dt
         )
-    return np.concatenate([pos - self.goal[:3], vel, rot.flatten(), omega, acc, (pos[2],), np.array(self.obs_his_accs).flatten()])
+    if self.his_acc:
+        return np.concatenate([pos - self.goal[:3], vel, rot.flatten(), omega, acc, (pos[2],), np.array(self.obs_his_accs).flatten()])
+    else:
+        return np.concatenate([pos - self.goal[:3], vel, rot.flatten(), omega, acc, (pos[2],)])

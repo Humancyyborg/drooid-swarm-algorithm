@@ -19,7 +19,7 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_num_agents', default=8, type=int, help='Override default value for the number of quadrotors')
     p.add_argument('--quads_obs_repr', default='xyz_vxyz_R_omega', type=str,
                    choices=['xyz_vxyz_R_omega', 'xyz_vxyz_R_omega_floor', 'xyz_vxyz_R_omega_wall',
-                            'xyz_vxyz_R_omega_acc_floor'],
+                            'xyz_vxyz_R_omega_floor_acc'],
                    help='obs space for quadrotor self')
     p.add_argument('--quads_episode_duration', default=15.0, type=float,
                    help='Override default value for episode duration')
@@ -60,7 +60,7 @@ def add_quadrotors_env_args(env, parser):
                    choices=['none', 'octomap'], help='Choose what kind of obs to send to encoder.')
     p.add_argument('--quads_obst_density', default=0.2, type=float, help='Obstacle density in the map')
     p.add_argument('--quads_obst_size', default=1.0, type=float, help='The radius of obstacles')
-    p.add_argument('--quads_obst_spawn_area', nargs='+', default=[6.0, 6.0], type=float,
+    p.add_argument('--quads_obst_spawn_area', nargs='+', default=[8.0, 8.0], type=float,
                    help='The spawning area of obstacles')
     p.add_argument('--quads_domain_random', default=False, type=str2bool, help='Use domain randomization or not')
     p.add_argument('--quads_obst_density_random', default=False, type=str2bool, help='Enable obstacle density randomization or not')
@@ -122,7 +122,7 @@ def add_quadrotors_env_args(env, parser):
     # Controller
     p.add_argument('--quads_cost_rl_sbc', default=0.1, type=float,
                    help='cost coeff of the difference between rl acc outputs and sbc acc outputs')
-    p.add_argument('--quads_cost_sbc_mellinger', default=0.0, type=float,
+    p.add_argument('--quads_cost_sbc_mellinger', default=0.1, type=float,
                    help='cost coeff of the difference between sbc acc outputs and mellinger acc outputs')
     p.add_argument('--quads_cost_pos', default=1.0, type=float, help='cost coeff of the position cost')
     p.add_argument('--quads_cost_crash', default=1.0, type=float, help='cost coeff of the crash cost')
@@ -130,8 +130,8 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_anneal_safe_total_steps', default=0.0, type=float, help='Total annealing steps')
     p.add_argument('--quads_sbc_radius', default=0.05, type=float, help='sbc sensing radius')
     p.add_argument('--quads_sbc_boundary', default=0.1, type=float, help='sbc boundary in reward function')
-    p.add_argument('--quads_neighbor_range', default=5.0, type=float, help='Consider other drones in this range')
-    p.add_argument('--quads_obst_range', default=3.0, type=float, help='Consider obstacles in this range')
+    p.add_argument('--quads_neighbor_range', default=2.0, type=float, help='Consider other drones in this range')
+    p.add_argument('--quads_obst_range', default=2.0, type=float, help='Consider obstacles in this range')
     p.add_argument('--quads_max_acc', default=2.0, type=float, help='maximum acceleration')
     p.add_argument('--quads_max_neighbor_aggressive', default=5.0, type=float, help='maximum aggressive')
     p.add_argument('--quads_max_obst_aggressive', default=5.0, type=float, help='maximum aggressive')

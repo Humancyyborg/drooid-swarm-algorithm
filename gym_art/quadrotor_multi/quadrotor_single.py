@@ -175,7 +175,8 @@ class QuadrotorSingle:
         self.rew_coeff = None
         self.his_acc = his_acc
         self.his_acc_num = his_acc_num
-        self.obs_his_accs = deque([], maxlen=his_acc_num)
+        if his_acc:
+            self.obs_his_accs = deque([], maxlen=his_acc_num)
         # EPISODE PARAMS
         self.ep_time = ep_time  # In seconds
         self.sim_steps = sim_steps
@@ -369,8 +370,8 @@ class QuadrotorSingle:
 
         self.actions[1] = copy.deepcopy(self.actions[0])
         self.actions[0] = copy.deepcopy(action)
-
-        self.obs_his_accs.append(self.dynamics.acc)
+        if self.his_acc:
+            self.obs_his_accs.append(self.dynamics.acc)
 
         _, acc_sbc, sbc_distance_to_boundary = self.controller.step_func(
             dynamics=self.dynamics, acc_des=action, dt=self.dt, observation=sbc_data)
