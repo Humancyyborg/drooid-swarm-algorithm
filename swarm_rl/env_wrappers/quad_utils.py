@@ -140,6 +140,8 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         ]
     else:
         safe_annealing = None
+        reward_shaping['quad_rewards']['sbc_nei_max_agg'] = 1.0
+        reward_shaping['quad_rewards']['sbc_obst_max_agg'] = 1.0
 
     env = QuadsRewardShapingWrapper(env, reward_shaping_scheme=reward_shaping, annealing=annealing,
                                     safe_annealing=safe_annealing, with_pbt=cfg.with_pbt)
