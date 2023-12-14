@@ -247,6 +247,9 @@ class MellingerController(object):
         self.step_func = self.step
 
     def step(self, dynamics, acc_des, dt, observation=None):
+        # Preset
+        acc_rl = np.array(acc_des)
+        acc_for_control = np.array(acc_des)
         sbc_distance_to_boundary = None
 
         if self.enable_sbc and observation is not None:
@@ -254,26 +257,27 @@ class MellingerController(object):
                 self_state=observation["self_state"],
                 neighbor_descriptions=observation["neighbor_descriptions"],
                 obstacle_descriptions=observation["obstacle_descriptions"],
-                desired_acceleration=acc_des,
+                desired_acceleration=acc_rl,
                 sbc_neighbor_aggressive=observation["sbc_neighbor_aggressive"],
                 sbc_obst_aggressive=observation["sbc_obst_aggressive"],
                 sbc_room_aggressive=observation["sbc_room_aggressive"]
             )
 
             if new_acc is not None:
-                self.sbc_last_safe_acc = new_acc
-                acc_des = new_acc
+                self.sbc_last_safe_acc = np.array(new_acc)
+                acc_for_control = np.array(new_acc)
             else:
                 if self.sbc_last_safe_acc is not None:
-                    acc_des = self.sbc_last_safe_acc
+                    acc_for_control = np.array(self.sbc_last_safe_acc)
+
 
         # Question: Why do we need to do this???
-        acc_des_without_grav = np.array(acc_des)
-        acc_des += np.array([0, 0, GRAV])
+        acc_for_control_without_grav = np.array(acc_for_control)
+        acc_for_control_with_grav = acc_for_control + np.array([0, 0, GRAV])
         xc_des = self.rot_des[:, 0]
 
         # see Mellinger and Kumar 2011
-        zb_des, _ = normalize(acc_des)
+        zb_des, _ = normalize(acc_for_control_with_grav)
         yb_des, _ = normalize(cross(zb_des, xc_des))
         xb_des = cross(yb_des, zb_des)
         R_des = np.column_stack((xb_des, yb_des, zb_des))
@@ -288,7 +292,7 @@ class MellingerController(object):
 
         dw_des = -self.kp_a * e_R - self.kd_a * e_w
         # we want this acceleration, but we can only accelerate in one direction!
-        thrust_mag = np.dot(acc_des, R[:, 2])
+        thrust_mag = np.dot(acc_for_control_with_grav, R[:, 2])
 
         des = np.append(thrust_mag, dw_des)
 
@@ -299,4 +303,4 @@ class MellingerController(object):
         dynamics.step(thrusts, dt)
         self.action = thrusts.copy()
 
-        return self.action, acc_des_without_grav, sbc_distance_to_boundary
+        return self.action, acc_for_control_without_grav, sbc_distance_to_boundary
