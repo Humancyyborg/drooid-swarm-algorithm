@@ -6,7 +6,7 @@ _params = ParamGrid(
         ("seed", [0000, 3333]),
         ("quads_obs_acc_his_num", [1, 4, 8]),
         ("quads_obst_range", [2.0, 4.0]),
-        ("quads_cost_sbc_mellinger", [0.0, 1.0]),
+        ("quads_cost_rl_mellinger", [0.0, 1.0]),
     ]
 )
 
@@ -17,11 +17,11 @@ OBSTACLE_MODEL_CLI = QUAD_BASELINE_CLI_8 + (
     '--quads_max_neighbor_aggressive=5.0 --quads_max_obst_aggressive=5.0 --anneal_collision_steps=300000000 '
     '--quads_anneal_safe_total_steps=300000000 --quads_neighbor_range=2.0 '
     '--with_wandb=True --wandb_project=Quad-Hybrid --wandb_user=multi-drones '
-    '--wandb_group=grid_search_his_orange_sbc_mellinger '
+    '--wandb_group=grid_search_his_orange_rl_mellinger '
 )
 
 _experiment = Experiment(
-    "grid_search_his_orange_sbc_mellinger",
+    "grid_search_his_orange_rl_mellinger",
     OBSTACLE_MODEL_CLI,
     _params.generate_params(randomize=False),
 )

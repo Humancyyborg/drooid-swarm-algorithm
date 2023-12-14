@@ -105,7 +105,7 @@ class QuadrotorEnvMulti(gym.Env):
         # Reward
         self.rew_coeff = dict(
             pos=1., crash=1., quadcol_bin=5., quadcol_bin_smooth_max=4.,
-            quadcol_bin_obst=5., rl_sbc=1.0, sbc_mellinger=1.0,
+            quadcol_bin_obst=5., rl_sbc=1.0, rl_mellinger=1.0,
             sbc_boundary=0.5)
         rew_coeff_orig = copy.deepcopy(self.rew_coeff)
 

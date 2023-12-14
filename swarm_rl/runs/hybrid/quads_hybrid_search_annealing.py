@@ -16,7 +16,7 @@ OBSTACLE_MODEL_CLI = QUAD_BASELINE_CLI_8 + (
     # Obstacle
     '--quads_obst_density=0.8 --quads_obst_size=0.85 '
     # SBC
-    '--quads_cost_rl_sbc=0.1 --quads_cost_sbc_mellinger=0.1 --quads_sbc_boundary=0.0 --quads_sbc_radius=0.05 '
+    '--quads_cost_rl_sbc=0.1 --quads_cost_rl_mellinger=0.1 --quads_sbc_boundary=0.0 --quads_sbc_radius=0.05 '
     '--quads_max_neighbor_aggressive=5.0 --quads_max_obst_aggressive=5.0 --quads_max_room_aggressive=0.2 '
     '--quads_neighbor_range=2.0 --quads_obst_range=2.0 '
     # Annealing

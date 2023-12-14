@@ -51,7 +51,7 @@ python -m swarm_rl.enjoy \
 --quads_anneal_safe_start_steps=0 \
 --quads_anneal_safe_total_steps=300000000 \
 --quads_cost_pos=1.0 \
---quads_cost_sbc_mellinger=0.0 \
+--quads_cost_rl_mellinger=0.0 \
 --with_wandb=False \
 --wandb_project=Quad-Hybrid \
 --wandb_user=multi-drones \

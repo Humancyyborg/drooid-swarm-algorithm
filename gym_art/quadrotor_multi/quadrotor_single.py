@@ -50,7 +50,7 @@ def compute_reward_weighted(
 
     # Difference between acc_rl & acc_mellinger
     cost_rl_mellinger_raw = np.linalg.norm(mellinger_acc - rl_acc)
-    cost_rl_mellinger = rew_coeff["sbc_mellinger"] * cost_rl_mellinger_raw
+    cost_rl_mellinger = rew_coeff["rl_mellinger"] * cost_rl_mellinger_raw
 
     # SBC boundary cost
     if sbc_distance_to_boundary is not None:
