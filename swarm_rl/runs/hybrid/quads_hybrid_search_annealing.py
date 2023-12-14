@@ -3,9 +3,10 @@ from swarm_rl.runs.hybrid.baseline import QUAD_BASELINE_CLI_8
 
 _params = ParamGrid(
     [
-        ("seed", [0000, 1111, 2222, 3333]),
+        ("seed", [0000, 3333]),
         ("anneal_collision_steps", [0, 300000000]),
         ("quads_anneal_safe_total_steps", [0, 300000000]),
+        ("cbf_agg_anneal_steps", [0, 300000000]),
     ]
 )
 
@@ -26,11 +27,11 @@ OBSTACLE_MODEL_CLI = QUAD_BASELINE_CLI_8 + (
     # '--quads_anneal_safe_start_steps=0 --quads_anneal_safe_total_steps=0 '
     # Wandb
     '--with_wandb=True --wandb_project=Quad-Hybrid --wandb_user=multi-drones '
-    '--wandb_group=grid_search_anneal'
+    '--wandb_group=grid_search_anneal_v2'
 )
 
 _experiment = Experiment(
-    "grid_search_anneal",
+    "grid_search_anneal_v2",
     OBSTACLE_MODEL_CLI,
     _params.generate_params(randomize=False),
 )
