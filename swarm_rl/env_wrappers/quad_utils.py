@@ -81,9 +81,10 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
     )
 
     if use_replay_buffer:
-        env = ExperienceReplayWrapper(env, cfg.replay_buffer_sample_prob, cfg.quads_obst_density, cfg.quads_obst_size,
-                                      cfg.quads_domain_random, cfg.quads_obst_density_random, cfg.quads_obst_size_random,
-                                      cfg.quads_obst_density_min, cfg.quads_obst_density_max, cfg.quads_obst_size_min, cfg.quads_obst_size_max)
+        env = ExperienceReplayWrapper(
+            env, cfg.replay_buffer_sample_prob, cfg.quads_obst_density, cfg.quads_obst_size,
+            cfg.quads_domain_random, cfg.quads_obst_density_random, cfg.quads_obst_size_random,
+            cfg.quads_obst_density_min, cfg.quads_obst_density_max, cfg.quads_obst_size_min, cfg.quads_obst_size_max)
 
     reward_shaping = copy.deepcopy(DEFAULT_QUAD_REWARD_SHAPING)
 
@@ -118,8 +119,7 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         # rl_sbc & rl_mellinger
         reward_shaping['quad_rewards']['rl_sbc'] = 0.0
         reward_shaping['quad_rewards']['rl_mellinger'] = 0.0
-        reward_shaping['quad_rewards']['sbc_nei_max_agg'] = 0.01
-        reward_shaping['quad_rewards']['sbc_obst_max_agg'] = 0.01
+        reward_shaping['quad_rewards']['sbc_boundary'] = 0.0
 
         safe_annealing = [
             TwoStageAnnealSchedule(
@@ -130,21 +130,35 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
                 start_steps=cfg.quads_anneal_safe_start_steps, total_steps=cfg.quads_anneal_safe_total_steps,
                 start_value=0.0),
             TwoStageAnnealSchedule(
-                coeff_name='sbc_nei_max_agg', final_value=1.0,
+                coeff_name='sbc_boundary', final_value=cfg.quads_sbc_boundary,
                 start_steps=cfg.quads_anneal_safe_start_steps, total_steps=cfg.quads_anneal_safe_total_steps,
-                start_value=0.01),
-            TwoStageAnnealSchedule(
-                coeff_name='sbc_obst_max_agg', final_value=1.0,
-                start_steps=cfg.quads_anneal_safe_start_steps, total_steps=cfg.quads_anneal_safe_total_steps,
-                start_value=0.01),
+                start_value=0.0),
         ]
     else:
         safe_annealing = None
+
+    if cfg.cbf_agg_anneal_steps > 0:
+        reward_shaping['quad_rewards']['sbc_nei_max_agg'] = 0.01
+        reward_shaping['quad_rewards']['sbc_obst_max_agg'] = 0.01
+
+        cbf_aggressive_annealing = [
+            TwoStageAnnealSchedule(
+                coeff_name='sbc_nei_max_agg', final_value=1.0,
+                start_steps=0, total_steps=cfg.cbf_agg_anneal_steps,
+                start_value=0.01),
+            TwoStageAnnealSchedule(
+                coeff_name='sbc_obst_max_agg', final_value=1.0,
+                start_steps=0, total_steps=cfg.cbf_agg_anneal_steps,
+                start_value=0.01),
+        ]
+    else:
+        cbf_aggressive_annealing = None
         reward_shaping['quad_rewards']['sbc_nei_max_agg'] = 1.0
         reward_shaping['quad_rewards']['sbc_obst_max_agg'] = 1.0
 
     env = QuadsRewardShapingWrapper(env, reward_shaping_scheme=reward_shaping, annealing=annealing,
-                                    safe_annealing=safe_annealing, with_pbt=cfg.with_pbt)
+                                    safe_annealing=safe_annealing, cbf_aggressive_annealing=cbf_aggressive_annealing,
+                                    with_pbt=cfg.with_pbt)
     env = QuadEnvCompatibility(env)
 
     if cfg.visualize_v_value:

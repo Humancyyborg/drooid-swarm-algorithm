@@ -108,9 +108,8 @@ def add_quadrotors_env_args(env, parser):
                         'to disable the replay. Set to value in (0.0, 1.0] to use replay buffer')
 
     # Annealing
-    p.add_argument('--anneal_collision_steps', default=0.0, type=float, help='Anneal collision penalties over this '
-                                                                             'many steps. Default (0.0) is no '
-                                                                             'annealing')
+    p.add_argument('--anneal_collision_steps', default=0.0, type=float,
+                   help='Anneal collision penalties over this many steps. Default (0.0) is no annealing')
 
     # Rendering
     p.add_argument('--quads_view_mode', nargs='+', default=['topdown', 'chase', 'global'],
@@ -120,19 +119,31 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--visualize_v_value', action='store_true', help="Visualize v value map")
 
     # Controller
+    # # Reward coefficient
     p.add_argument('--quads_cost_rl_sbc', default=0.1, type=float,
                    help='cost coeff of the difference between rl acc outputs and sbc acc outputs')
     p.add_argument('--quads_cost_rl_mellinger', default=0.1, type=float,
                    help='cost coeff of the difference between rl acc outputs and mellinger acc outputs')
+    p.add_argument('--quads_sbc_boundary', default=0.1, type=float, help='sbc boundary in reward function')
     p.add_argument('--quads_cost_pos', default=1.0, type=float, help='cost coeff of the position cost')
     p.add_argument('--quads_cost_crash', default=1.0, type=float, help='cost coeff of the crash cost')
+
+    # # Reward annealing for: 1) quads_cost_rl_sbc 2) quads_cost_rl_mellinger
     p.add_argument('--quads_anneal_safe_start_steps', default=0.0, type=float, help='Start annealing')
     p.add_argument('--quads_anneal_safe_total_steps', default=0.0, type=float, help='Total annealing steps')
-    p.add_argument('--quads_sbc_radius', default=0.05, type=float, help='sbc sensing radius')
-    p.add_argument('--quads_sbc_boundary', default=0.1, type=float, help='sbc boundary in reward function')
-    p.add_argument('--quads_neighbor_range', default=2.0, type=float, help='Consider other drones in this range')
-    p.add_argument('--quads_obst_range', default=2.0, type=float, help='Consider obstacles in this range')
-    p.add_argument('--quads_max_acc', default=2.0, type=float, help='maximum acceleration')
+
+    # # CBF aggressiveness annealing for:
+    # # 1) quads_max_neighbor_aggressive 2) quads_max_obst_aggressive
+    p.add_argument('--cbf_agg_anneal_steps', default=0.0, type=float,
+                   help='Anneal steps for cbf aggressiveness, neighbor and obst. Default (0.0) is no annealing')
+
+    # # Aggressiveness
     p.add_argument('--quads_max_neighbor_aggressive', default=5.0, type=float, help='maximum aggressive')
     p.add_argument('--quads_max_obst_aggressive', default=5.0, type=float, help='maximum aggressive')
     p.add_argument('--quads_max_room_aggressive', default=0.2, type=float, help='maximum aggressive')
+
+    # # Others
+    p.add_argument('--quads_sbc_radius', default=0.05, type=float, help='sbc sensing radius')
+    p.add_argument('--quads_neighbor_range', default=2.0, type=float, help='Consider other drones in this range')
+    p.add_argument('--quads_obst_range', default=2.0, type=float, help='Consider obstacles in this range')
+    p.add_argument('--quads_max_acc', default=2.0, type=float, help='maximum acceleration')

@@ -18,7 +18,8 @@ DEFAULT_QUAD_REWARD_SHAPING['quad_rewards'].update(dict(
 
 
 class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapingInterface):
-    def __init__(self, env, reward_shaping_scheme=None, annealing=None, safe_annealing=None, with_pbt=False):
+    def __init__(self, env, reward_shaping_scheme=None, annealing=None, safe_annealing=None,
+                 cbf_aggressive_annealing=None, with_pbt=False):
         gym.Wrapper.__init__(self, env)
         TrainingInfoInterface.__init__(self)
         if with_pbt:
@@ -34,6 +35,7 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapin
 
         self.annealing = annealing
         self.safe_annealing = safe_annealing
+        self.cbf_aggressive_annealing = cbf_aggressive_annealing
 
     def get_default_reward_shaping(self):
         return dict(quad_rewards=dict())
@@ -123,6 +125,21 @@ class QuadsRewardShapingWrapper(gym.Wrapper, TrainingInfoInterface, RewardShapin
                     env_reward_shaping = self.env.unwrapped.rew_coeff
                     # annealing from 0.0 to final value
                     for anneal_schedule in self.safe_annealing:
+                        coeff_name = anneal_schedule.coeff_name
+                        final_value = anneal_schedule.final_value
+                        start_steps = anneal_schedule.start_steps
+                        total_steps = anneal_schedule.total_steps
+                        start_value = anneal_schedule.start_value
+                        if approx_total_training_steps <= start_steps:
+                            env_reward_shaping[coeff_name] = start_value
+                        else:
+                            env_reward_shaping[coeff_name] = final_value * min(
+                                (approx_total_training_steps - start_steps) / total_steps + start_value, 1.0)
+                        extra_stats[f'z_anneal_{coeff_name}'] = env_reward_shaping[coeff_name]
+                if self.cbf_aggressive_annealing:
+                    env_reward_shaping = self.env.unwrapped.rew_coeff
+                    # annealing from 0.0 to final value
+                    for anneal_schedule in self.cbf_aggressive_annealing:
                         coeff_name = anneal_schedule.coeff_name
                         final_value = anneal_schedule.final_value
                         start_steps = anneal_schedule.start_steps
