@@ -6,7 +6,7 @@ QUAD_BASELINE_CLI_8 = (
     '--gae_lambda=1.00 --max_grad_norm=5.0 --exploration_loss_coeff=0.0 --rollout=128 --batch_size=1024 '
     '--with_pbt=False --normalize_input=False --normalize_returns=False --reward_clip=10 '
     # Quad specific
-    '--quads_use_numba=True --save_milestones_sec=3600 --anneal_collision_steps=300000000 '
+    '--quads_use_numba=True --save_milestones_sec=21600 --anneal_collision_steps=300000000 '
     '--replay_buffer_sample_prob=0.75 --quads_encoder_type=attention '
     # Scenarios
     '--quads_mode=mix --quads_episode_duration=15.0 '
