@@ -248,6 +248,8 @@ class QuadrotorEnvMulti(gym.Env):
             self.acc_list = [[] for _ in range(self.num_agents)]
             # # Log all drone cur pos, cur vel
             self.pv_list = [[] for _ in range(self.num_agents)]
+            # # Log all drone aggressiveness for neighbor and obstacles
+            self.aggressive_list = [[] for _ in range(self.num_agents)]
 
         if self.log_metric_data_flag:
             self.success_ratio_buf = deque([], maxlen=100)
@@ -484,6 +486,7 @@ class QuadrotorEnvMulti(gym.Env):
             self.set_2d_visual_data()
             self.acc_list = [[] for _ in range(self.num_agents)]
             self.pv_list = [[] for _ in range(self.num_agents)]
+            self.aggressive_list = [[] for _ in range(self.num_agents)]
 
         if self.log_init_data_flag:
             self.set_init_data()
@@ -577,6 +580,7 @@ class QuadrotorEnvMulti(gym.Env):
             if self.log_2d_visual_data_flag:
                 self.acc_list[i].append(info['acc'])
                 self.pv_list[i].append({'pos': self.envs[i].dynamics.pos, 'vel': self.envs[i].dynamics.vel})
+                self.aggressive_list[i].append({'neighbor': sbc_neighbor_aggressive[i], 'obst': sbc_obst_aggressive[i]})
 
             self.pos[i, :] = self.envs[i].dynamics.pos
 

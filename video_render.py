@@ -107,7 +107,7 @@ def main():
     ax.set_xlabel('Range/m')
     ax.set_ylabel('Range/m')
 
-    for file_counter in range(1, 10):
+    for file_counter in range(0, 10):
         start_time = time.time()
         acc_lists, pv_lists, obstacle_positions, goal_positions, obstacle_pos, goal_pos = load_record_data(file_counter)
 
