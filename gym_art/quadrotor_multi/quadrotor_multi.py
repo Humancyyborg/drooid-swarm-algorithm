@@ -104,9 +104,8 @@ class QuadrotorEnvMulti(gym.Env):
 
         # Reward
         self.rew_coeff = dict(
-            pos=1., crash=1., quadcol_bin=5., quadcol_bin_smooth_max=4.,
-            quadcol_bin_obst=5., rl_sbc=1.0, rl_mellinger=1.0,
-            sbc_boundary=0.5)
+            pos=1., crash=1., quadcol_bin=5., quadcol_bin_smooth_max=4., quadcol_bin_obst=5.,
+            rl_sbc=1.0, rl_mellinger=1.0, sbc_boundary=0.5)
         rew_coeff_orig = copy.deepcopy(self.rew_coeff)
 
         if rew_coeff is not None:
@@ -498,14 +497,14 @@ class QuadrotorEnvMulti(gym.Env):
         actions = np.array(actions)
         actions_acc = np.clip(actions[:, :3], a_min=-1.0, a_max=1.0)
         actions_acc = actions_acc * self.action_max
-        actions_aggressive = np.clip(actions[:, 3:6], a_min=0.0, a_max=1.0)
+        actions_aggressive = np.clip(actions[:, 3:5], a_min=0.0, a_max=1.0)
 
         coeff_sbc_nei_max_agg = self.rew_coeff['sbc_nei_max_agg']
         coeff_sbc_obst_max_agg = self.rew_coeff['sbc_obst_max_agg']
 
         sbc_neighbor_aggressive = self.sbc_max_neighbor_aggressive * actions_aggressive[:, 0] * coeff_sbc_nei_max_agg
         sbc_obst_aggressive = self.sbc_max_obst_aggressive * actions_aggressive[:, 1] * coeff_sbc_obst_max_agg
-        sbc_room_aggressive = self.sbc_max_room_aggressive * actions_aggressive[:, 2]
+        sbc_room_aggressive = self.sbc_max_room_aggressive
 
         obs, rewards, dones, infos = [], [], [], []
 
