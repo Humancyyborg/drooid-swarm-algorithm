@@ -28,11 +28,11 @@ OBSTACLE_MODEL_CLI = QUAD_BASELINE_CLI_8 + (
     '--quads_anneal_safe_start_steps=0 --quads_anneal_safe_total_steps=0 --cbf_agg_anneal_steps=0 '
     # Wandb
     '--with_wandb=True --wandb_project=Quad-Hybrid --wandb_user=multi-drones '
-    '--wandb_group=grid_search_no_sbc_baseline'
+    '--wandb_group=grid_search_no_sbc_mellinger'
 )
 
 _experiment = Experiment(
-    "grid_search_no_sbc_baseline",
+    "grid_search_no_sbc_mellinger",
     OBSTACLE_MODEL_CLI,
     _params.generate_params(randomize=False),
 )
