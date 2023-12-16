@@ -13,10 +13,11 @@ scenaio_name = 'o_random'
 color_list = ['red', 'orange', 'yellow', 'cyan', 'magenta', 'blue', 'purple', 'violet', 'brown', 'gray', 'olive']
 obstacle_radius = 0.85 * 0.5
 trail_length = 200
+experiment_name = 'None'
 
 def load_record_data(file_counter=0):
     str_counter = str(file_counter)
-    load_folder_path = os.path.join('2d_video', scenaio_name, str_counter)
+    load_folder_path = os.path.join('data_for_video', experiment_name, scenaio_name, str_counter)
     print('load record data, folder name: ', load_folder_path)
 
     acc_lists = []
@@ -144,7 +145,7 @@ def main():
                             fargs=(acc_lists, pv_lists, obstacle_positions, goal_positions, ax, trails, trail_buffers),
                             interval=100)
 
-        folder_path = os.path.join('videos', scenaio_name)
+        folder_path = os.path.join('videos', experiment_name, scenaio_name)
         if not os.path.exists(folder_path):
             os.makedirs(folder_path, exist_ok=True)
 

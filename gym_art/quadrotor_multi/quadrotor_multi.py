@@ -44,7 +44,9 @@ class QuadrotorEnvMulti(gym.Env):
                  # SBC specific
                  enable_sbc=True, sbc_radius=0.1, sbc_nei_range=5.0, sbc_obst_range=3.0,
                  sbc_max_acc=1.0, sbc_max_neighbor_aggressive=5.0, sbc_max_obst_aggressive=5.0,
-                 sbc_max_room_aggressive=1.0
+                 sbc_max_room_aggressive=1.0,
+                 # Log
+                 experiment_name='default',
                  ):
         super().__init__()
 
@@ -255,6 +257,7 @@ class QuadrotorEnvMulti(gym.Env):
         self.log_metric_data_flag = False
         self.file_counter = 0
         if self.log_2d_visual_data_flag:
+            self.experiment_name = experiment_name
             # # Log all drone acc_ref, acc_opt, acc_rel
             self.acc_list = [[] for _ in range(self.num_agents)]
             # # Log all drone cur pos, cur vel
@@ -1093,7 +1096,7 @@ class QuadrotorEnvMulti(gym.Env):
         return init_poses, goals, obst_pos_arr
 
     def set_2d_visual_data(self):
-        folder_path = os.path.join('2d_video', self.scenario.name()[9:], str(self.file_counter))
+        folder_path = os.path.join('data_for_video', self.experiment_name, self.scenario.name()[9:], str(self.file_counter))
         print('set 2d visual data, folder name: ', folder_path)
         if not os.path.exists(folder_path):
             # Create the folder
@@ -1107,7 +1110,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         if self.file_counter > 0:
             # # use self.file_counter - 1, since current acc, pos, and vel based on the previous obstacle and goal
-            folder_path = os.path.join('2d_video', self.scenario.name()[9:], str(self.file_counter - 1))
+            folder_path = os.path.join('data_for_video', self.experiment_name, self.scenario.name()[9:], str(self.file_counter - 1))
             for i in range(self.num_agents):
                 # # Log all drones acc_ref, acc_opt, acc_rel
                 file_name = os.path.join(folder_path, 'acc_list_' + str(i) + '.csv')
