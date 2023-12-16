@@ -128,6 +128,8 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_cost_crash', default=1.0, type=float, help='cost coeff of the crash cost')
     p.add_argument('--quads_cost_act_change', default=1.0, type=float, help='cost coeff of the action change cost')
     p.add_argument('--quads_cost_cbf_agg', default=1.0, type=float, help='cost coeff of the aggressiveness cost')
+    p.add_argument('--quads_cost_enable_extra', default=False, type=str2bool,
+                   help='enable cost for action, effort, and orientation')
 
     # # Reward annealing for: 1) quads_cost_rl_sbc 2) quads_cost_rl_mellinger
     p.add_argument('--quads_anneal_safe_start_steps', default=0.0, type=float, help='Start annealing')

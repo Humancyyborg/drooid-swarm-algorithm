@@ -24,7 +24,7 @@ import pandas as pd
 
 
 class QuadrotorEnvMulti(gym.Env):
-    def __init__(self, num_agents, ep_time, rew_coeff, obs_repr, his_acc, his_acc_num,
+    def __init__(self, num_agents, ep_time, rew_coeff, obs_repr, his_acc, his_acc_num, cost_enable_extra,
                  # Neighbor
                  neighbor_visible_num, neighbor_obs_type, collision_hitbox_radius, collision_falloff_radius,
 
@@ -90,6 +90,7 @@ class QuadrotorEnvMulti(gym.Env):
                 raw_control=raw_control, raw_control_zero_middle=raw_control_zero_middle, sense_noise=sense_noise,
                 init_random_state=init_random_state, obs_repr=obs_repr, ep_time=ep_time, room_dims=room_dims,
                 use_numba=use_numba, his_acc=his_acc, his_acc_num=his_acc_num, obs_single_his_acc=obs_single_his_acc,
+                cost_enable_extra=cost_enable_extra,
                 # Neighbor
                 num_agents=num_agents,
                 neighbor_obs_type=neighbor_obs_type, num_use_neighbor_obs=self.num_use_neighbor_obs,
@@ -117,7 +118,9 @@ class QuadrotorEnvMulti(gym.Env):
         # Reward
         self.rew_coeff = dict(
             pos=1., crash=1., quadcol_bin=5., quadcol_bin_smooth_max=4., quadcol_bin_obst=5.,
-            rl_sbc=1.0, rl_mellinger=1.0, sbc_boundary=0.5, act_change=1.0, cbf_agg=1.0)
+            rl_sbc=1.0, rl_mellinger=1.0, sbc_boundary=0.5, act_change=1.0, cbf_agg=1.0,
+            effort=0.05, orient=1., spin=0.1
+        )
         rew_coeff_orig = copy.deepcopy(self.rew_coeff)
 
         if rew_coeff is not None:

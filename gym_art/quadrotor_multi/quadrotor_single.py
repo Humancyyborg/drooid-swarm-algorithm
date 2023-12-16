@@ -35,7 +35,7 @@ GRAV = 9.81  # default gravitational constant
 # reasonable reward function for hovering at a goal and not flying too high
 def compute_reward_weighted(
         goal, cur_pos, rl_acc, acc_sbc, sbc_distance_to_boundary, mellinger_acc, dt, rew_coeff, on_floor, action_prev,
-        aggressive_unclip, enable_sbc):
+        aggressive_unclip, enable_sbc, dynamics, cost_enable_extra):
     # Distance to the goal
     dist = np.linalg.norm(goal - cur_pos)
     cost_pos_raw = dist
@@ -44,6 +44,30 @@ def compute_reward_weighted(
     # Loss crash for staying on the floor
     cost_crash_raw = float(on_floor)
     cost_crash = rew_coeff["crash"] * cost_crash_raw
+
+    if cost_enable_extra:
+        # Penalize amount of control effort
+        cost_effort_raw = np.linalg.norm(rl_acc)
+        cost_effort = rew_coeff["effort"] * cost_effort_raw
+
+        # Loss orientation
+        if on_floor:
+            cost_orient_raw = 1.0
+        else:
+            cost_orient_raw = -dynamics.rot[2, 2]
+
+        cost_orient = rew_coeff["orient"] * cost_orient_raw
+
+        # Loss for constant uncontrolled rotation around vertical axis
+        cost_spin_raw = (dynamics.omega[0] ** 2 + dynamics.omega[1] ** 2 + dynamics.omega[2] ** 2) ** 0.5
+        cost_spin = rew_coeff["spin"] * cost_spin_raw
+    else:
+        cost_effort_raw = 0.0
+        cost_effort = 0.0
+        cost_orient_raw = 0.0
+        cost_orient = 0.0
+        cost_spin_raw = 0.0
+        cost_spin = 0.0
 
     # Difference between acc_rl & acc_sbc
     if enable_sbc:
@@ -136,7 +160,7 @@ class QuadrotorSingle:
             self, dynamics_params="DefaultQuad", dynamics_change=None, dynamics_randomize_every=None,
             dyn_sampler_1=None, dyn_sampler_2=None, raw_control=True, raw_control_zero_middle=True, sense_noise=None,
             init_random_state=False, obs_repr="xyz_vxyz_R_omega", ep_time=7, room_dims=(10.0, 10.0, 10.0),
-            use_numba=False, his_acc=False, his_acc_num=3, obs_single_his_acc=11,
+            use_numba=False, his_acc=False, his_acc_num=3, obs_single_his_acc=11, cost_enable_extra=False,
             # Neighbor
             num_agents=1, neighbor_obs_type='none', num_use_neighbor_obs=0,
             # Obstacle
@@ -179,6 +203,8 @@ class QuadrotorSingle:
                 are loaded. Otherwise one can provide specific params.
             excite: [bool] change the set point at the fixed frequency to perturb the quad
         """
+        # Preset
+        self.cost_enable_extra = cost_enable_extra
         # Numba Speed Up
         self.use_numba = use_numba
         # Neighbor info
@@ -443,7 +469,8 @@ class QuadrotorSingle:
                 acc_sbc=acc_sbc, sbc_distance_to_boundary=sbc_distance_to_boundary,
                 mellinger_acc=self.dynamics.acc, dt=self.control_dt,
                 rew_coeff=self.rew_coeff, on_floor=self.dynamics.on_floor,
-                action_prev=self.actions[1], aggressive_unclip=sbc_data['agg_unclip'], enable_sbc=self.enable_sbc
+                action_prev=self.actions[1], aggressive_unclip=sbc_data['agg_unclip'], enable_sbc=self.enable_sbc,
+                dynamics=self.dynamics, cost_enable_extra=self.cost_enable_extra,
             )
         else:
             reward, rew_info = compute_reward_weighted(
@@ -451,7 +478,8 @@ class QuadrotorSingle:
                 acc_sbc=None, sbc_distance_to_boundary=None,
                 mellinger_acc=self.dynamics.acc, dt=self.control_dt,
                 rew_coeff=self.rew_coeff, on_floor=self.dynamics.on_floor,
-                action_prev=self.actions[1], aggressive_unclip=None, enable_sbc=self.enable_sbc
+                action_prev=self.actions[1], aggressive_unclip=None, enable_sbc=self.enable_sbc,
+                dynamics=self.dynamics, cost_enable_extra=self.cost_enable_extra,
             )
 
         self.tick += 1
