@@ -34,7 +34,8 @@ GRAV = 9.81  # default gravitational constant
 
 # reasonable reward function for hovering at a goal and not flying too high
 def compute_reward_weighted(
-        goal, cur_pos, rl_acc, acc_sbc, sbc_distance_to_boundary, mellinger_acc, dt, rew_coeff, on_floor):
+        goal, cur_pos, rl_acc, acc_sbc, sbc_distance_to_boundary, mellinger_acc, dt, rew_coeff, on_floor, action_prev,
+        aggressive_unclip):
     # Distance to the goal
     dist = np.linalg.norm(goal - cur_pos)
     cost_pos_raw = dist
@@ -52,6 +53,19 @@ def compute_reward_weighted(
     cost_rl_mellinger_raw = np.linalg.norm(mellinger_acc - rl_acc)
     cost_rl_mellinger = rew_coeff["rl_mellinger"] * cost_rl_mellinger_raw
 
+    # Action change
+    cost_act_change_raw = np.linalg.norm(action_prev - rl_acc)
+    cost_act_change = rew_coeff["act_change"] * cost_act_change_raw
+
+    # Aggressiveness unclip
+    aggressiveness_clip = np.clip(aggressive_unclip, a_min=0.0, a_max=1.0)
+    agg_clipped_list = np.abs(aggressive_unclip - aggressiveness_clip)
+    agg_clipped_cost = agg_clipped_list[0] + agg_clipped_list[1]
+    agg_too_large_cost = aggressiveness_clip[0] + aggressiveness_clip[1]
+
+    cost_aggressiveness_raw = agg_clipped_cost + agg_too_large_cost
+    cost_aggressiveness = rew_coeff["cbg_agg"] * cost_aggressiveness_raw
+
     # SBC boundary cost
     if sbc_distance_to_boundary is not None:
         cost_sbc_boundary_raw = sbc_distance_to_boundary
@@ -65,7 +79,9 @@ def compute_reward_weighted(
         cost_crash,
         cost_rl_sbc,
         cost_rl_mellinger,
-        cost_sbc_boundary
+        cost_sbc_boundary,
+        cost_act_change,
+        cost_aggressiveness,
     ])
 
     rew_info = {
@@ -75,6 +91,8 @@ def compute_reward_weighted(
         "rew_rl_sbc": -cost_rl_sbc,
         'rew_rl_mellinger': -cost_rl_mellinger,
         'rew_sbc_boundary': -cost_sbc_boundary,
+        'rew_act_change': -cost_act_change,
+        'rew_cbf_agg': -cost_aggressiveness,
 
         "rewraw_main": -cost_pos_raw,
         'rewraw_pos': -cost_pos_raw,
@@ -82,6 +100,8 @@ def compute_reward_weighted(
         "rewraw_rl_sbc": -cost_rl_sbc_raw,
         'rewraw_rl_mellinger': -cost_rl_mellinger_raw,
         'rewraw_sbc_boundary': -cost_sbc_boundary_raw,
+        'rewraw_act_change': -cost_act_change_raw,
+        'rewraw_cbf_agg': -cost_aggressiveness_raw,
     }
 
     for k, v in rew_info.items():
@@ -172,6 +192,7 @@ class QuadrotorSingle:
 
         # Preset parameters
         self.obs_repr = obs_repr
+        self.actions = [np.zeros([3, ]), np.zeros([3, ])]
         self.rew_coeff = None
         self.his_acc = his_acc
         self.his_acc_num = his_acc_num
@@ -390,7 +411,9 @@ class QuadrotorSingle:
             goal=self.goal, cur_pos=self.dynamics.pos, rl_acc=action,
             acc_sbc=acc_sbc, sbc_distance_to_boundary=sbc_distance_to_boundary,
             mellinger_acc=self.dynamics.acc, dt=self.control_dt,
-            rew_coeff=self.rew_coeff, on_floor=self.dynamics.on_floor)
+            rew_coeff=self.rew_coeff, on_floor=self.dynamics.on_floor,
+            action_prev=self.actions[1], aggressive_unclip=sbc_data['agg_unclip']
+        )
 
         self.tick += 1
         done = self.tick > self.ep_len
