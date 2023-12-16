@@ -15,7 +15,7 @@ from gym_art.quadrotor_multi.collisions.room import perform_collision_with_wall,
 from gym_art.quadrotor_multi.obstacles.obstacles import MultiObstacles
 from gym_art.quadrotor_multi.obstacles.utils import get_cell_centers
 from gym_art.quadrotor_multi.plots.log_info import log_list_data, log_data_v1, log_init_info
-from gym_art.quadrotor_multi.quad_utils import QUADS_OBS_REPR, QUADS_NEIGHBOR_OBS_TYPE
+from gym_art.quadrotor_multi.quad_utils import QUADS_OBS_REPR, QUADS_NEIGHBOR_OBS_TYPE, OBS_SINGLE_HIS_ACC_DIM
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
 from gym_art.quadrotor_multi.quadrotor_single import QuadrotorSingle
 from gym_art.quadrotor_multi.scenarios.mix import create_scenario
@@ -50,8 +50,11 @@ class QuadrotorEnvMulti(gym.Env):
         # Predefined Parameters
         self.num_agents = num_agents
         obs_self_size = QUADS_OBS_REPR[obs_repr]
+        obs_single_his_acc = 0
         if his_acc:
-            obs_self_size += his_acc_num * 3
+            # acc_ref, acc_sbc, acc_real, aggressiveness for neighbor, aggressiveness for obstacle
+            obs_single_his_acc = OBS_SINGLE_HIS_ACC_DIM
+            obs_self_size += his_acc_num * obs_single_his_acc
         if neighbor_visible_num == -1:
             self.num_use_neighbor_obs = self.num_agents - 1
         else:
@@ -77,7 +80,7 @@ class QuadrotorEnvMulti(gym.Env):
                 dynamics_randomize_every=dynamics_randomize_every, dyn_sampler_1=dyn_sampler_1, dyn_sampler_2=None,
                 raw_control=raw_control, raw_control_zero_middle=raw_control_zero_middle, sense_noise=sense_noise,
                 init_random_state=init_random_state, obs_repr=obs_repr, ep_time=ep_time, room_dims=room_dims,
-                use_numba=use_numba, his_acc=his_acc, his_acc_num=his_acc_num,
+                use_numba=use_numba, his_acc=his_acc, his_acc_num=his_acc_num, obs_single_his_acc=obs_single_his_acc,
                 # Neighbor
                 num_agents=num_agents,
                 neighbor_obs_type=neighbor_obs_type, num_use_neighbor_obs=self.num_use_neighbor_obs,
@@ -297,9 +300,9 @@ class QuadrotorEnvMulti(gym.Env):
         obs_neighbors = np.stack(obs_neighbors)
 
         # clip observation space of neighborhoods
-        obs_neighbors = np.clip(
-            obs_neighbors, a_min=self.clip_neighbor_space_min_box,
-            a_max=self.clip_neighbor_space_max_box, )
+        obs_neighbors = np.clip(obs_neighbors,
+                                a_min=self.clip_neighbor_space_min_box,
+                                a_max=self.clip_neighbor_space_max_box)
         obs_ext = np.concatenate((obs, obs_neighbors), axis=1)
         return obs_ext
 
@@ -568,7 +571,7 @@ class QuadrotorEnvMulti(gym.Env):
                           'obstacle_descriptions': obstacle_descriptions,
                           'sbc_neighbor_aggressive': sbc_neighbor_aggressive[i],
                           'sbc_obst_aggressive': sbc_obst_aggressive[i],
-                          'sbc_room_aggressive': sbc_room_aggressive[i]
+                          'sbc_room_aggressive': sbc_room_aggressive
                           }
             )
 

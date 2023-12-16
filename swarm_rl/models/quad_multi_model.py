@@ -6,7 +6,8 @@ from sample_factory.algo.utils.torch_utils import calc_num_elements
 from sample_factory.model.encoder import Encoder
 from sample_factory.model.model_utils import fc_layer, nonlinearity
 
-from gym_art.quadrotor_multi.quad_utils import QUADS_OBS_REPR, QUADS_NEIGHBOR_OBS_TYPE, QUADS_OBSTACLE_OBS_TYPE
+from gym_art.quadrotor_multi.quad_utils import QUADS_OBS_REPR, QUADS_NEIGHBOR_OBS_TYPE, QUADS_OBSTACLE_OBS_TYPE, \
+    OBS_SINGLE_HIS_ACC_DIM
 
 from swarm_rl.models.attention_layer import MultiHeadAttention, OneHeadAttention
 
@@ -133,7 +134,7 @@ class QuadMultiHeadAttentionEncoder(Encoder):
             raise NotImplementedError(f'Layer {cfg.quads_obs_repr} not supported!')
 
         if cfg.quads_obs_acc_his:
-            self.self_obs_dim += cfg.quads_obs_acc_his_num * 3
+            self.self_obs_dim += cfg.quads_obs_acc_his_num * OBS_SINGLE_HIS_ACC_DIM
 
         self.neighbor_hidden_size = cfg.quads_neighbor_hidden_size
         self.use_obstacles = cfg.quads_use_obstacles
@@ -237,7 +238,7 @@ class QuadMultiEncoder(Encoder):
 
         self.self_obs_dim = QUADS_OBS_REPR[cfg.quads_obs_repr]
         if cfg.quads_obs_acc_his:
-            self.self_obs_dim += cfg.quads_obs_acc_his_num * 3
+            self.self_obs_dim += cfg.quads_obs_acc_his_num * OBS_SINGLE_HIS_ACC_DIM
 
         self.use_obstacles = cfg.quads_use_obstacles
         # Neighbor

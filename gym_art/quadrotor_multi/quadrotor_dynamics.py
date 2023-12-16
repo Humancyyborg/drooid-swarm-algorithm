@@ -408,16 +408,13 @@ class QuadrotorDynamics:
         # Change pos, omega, rot, acc
         self.crashed_floor = False
         if self.pos[2] <= self.floor_threshold:
-            self.pos = np.array(
-                (self.pos[0],
-                 self.pos[1],
-                 self.floor_threshold))
+            self.pos = np.array([self.pos[0], self.pos[1], self.floor_threshold])
             force = np.matmul(self.rot, sum_thr_drag)
             if self.on_floor:
                 # Drone is on the floor, and on_floor flag still True
                 theta = np.arctan2(self.rot[1][0], self.rot[0][0] + EPS)
                 c, s = np.cos(theta), np.sin(theta)
-                self.rot = np.array(((c, -s, 0.), (s, c, 0.), (0., 0., 1.)))
+                self.rot = np.array([[c, -s, 0.], [s, c, 0.], [0., 0., 1.]])
 
                 # Add friction if drone is on the floor
                 force_xy = np.array([force[0], force[1]])
@@ -431,19 +428,14 @@ class QuadrotorDynamics:
                         force[1] = 0.
                     else:
                         force_angle = np.arctan2(force[1], force[0])
-                        force_xy_dir = np.array(
-                            [np.cos(force_angle),
-                             np.sin(force_angle)])
+                        force_xy_dir = np.array([np.cos(force_angle), np.sin(force_angle)])
                         force_xy = force_xy_magn * force_xy_dir
                         force[0] = force_xy[0]
                         force[1] = force_xy[1]
                 else:
                     # vel > 0, friction direction is opposite to velocity direction
-                    friction_xy_angle = np.arctan2(
-                        -1.0 * self.vel[1], -1.0 * self.vel[0])
-                    friction_xy_dir = np.array(
-                        [np.cos(friction_xy_angle),
-                         np.sin(friction_xy_angle)])
+                    friction_xy_angle = np.arctan2(-1.0 * self.vel[1], -1.0 * self.vel[0])
+                    friction_xy_dir = np.array([np.cos(friction_xy_angle), np.sin(friction_xy_angle)])
                     force[0] = force[0] - friction_xy_dir[0] * friction_xy_magn
                     force[1] = force[1] - friction_xy_dir[1] * friction_xy_magn
             else:

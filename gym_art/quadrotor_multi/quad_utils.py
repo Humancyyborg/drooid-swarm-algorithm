@@ -28,8 +28,10 @@ QUADS_OBS_REPR = {
     'xyz_vxyz_R_omega': 18,
     'xyz_vxyz_R_omega_floor': 19,
     'xyz_vxyz_R_omega_wall': 24,
-    'xyz_vxyz_R_omega_floor_acc': 22,
 }
+
+# acc_ref, acc_sbc, acc_real, aggressiveness for neighbor, aggressiveness for obstacle
+OBS_SINGLE_HIS_ACC_DIM = 11
 
 QUADS_NEIGHBOR_OBS_TYPE = {
     'none': 0,

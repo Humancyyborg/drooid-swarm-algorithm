@@ -11,7 +11,7 @@ _params = ParamGrid(
 )
 
 OBSTACLE_MODEL_CLI = QUAD_BASELINE_CLI_8 + (
-    ' --quads_num_agents=8 --quads_obs_repr=xyz_vxyz_R_omega_floor_acc --quads_episode_duration=20.0 '
+    ' --quads_num_agents=8 --quads_obs_repr=xyz_vxyz_R_omega_floor --quads_episode_duration=20.0 '
     '--quads_obs_acc_his=True --quads_obst_density=0.8 --quads_obst_size=0.85 --quads_cost_rl_sbc=1.0 '
     '--quads_anneal_safe_start_steps=0 --quads_sbc_radius=0.05 --quads_sbc_boundary=0.0 --quads_max_acc=1.0 '
     '--quads_max_neighbor_aggressive=5.0 --quads_max_obst_aggressive=5.0 --anneal_collision_steps=300000000 '

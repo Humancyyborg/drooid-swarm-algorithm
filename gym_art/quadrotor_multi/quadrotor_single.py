@@ -104,7 +104,7 @@ class QuadrotorSingle:
             self, dynamics_params="DefaultQuad", dynamics_change=None, dynamics_randomize_every=None,
             dyn_sampler_1=None, dyn_sampler_2=None, raw_control=True, raw_control_zero_middle=True, sense_noise=None,
             init_random_state=False, obs_repr="xyz_vxyz_R_omega", ep_time=7, room_dims=(10.0, 10.0, 10.0),
-            use_numba=False, his_acc=False, his_acc_num=3,
+            use_numba=False, his_acc=False, his_acc_num=3, obs_single_his_acc=11,
             # Neighbor
             num_agents=1, neighbor_obs_type='none', num_use_neighbor_obs=0,
             # Obstacle
@@ -176,6 +176,8 @@ class QuadrotorSingle:
         self.his_acc = his_acc
         self.his_acc_num = his_acc_num
         if his_acc:
+            # acc_ref, acc_sbc, acc_real, aggressiveness for neighbor, aggressiveness for obstacle
+            self.obs_single_his_acc = obs_single_his_acc
             self.obs_his_accs = deque([], maxlen=his_acc_num)
         # EPISODE PARAMS
         self.ep_time = ep_time  # In seconds
@@ -326,13 +328,15 @@ class QuadrotorSingle:
             "wall": [np.zeros(6), 5.0 * np.ones(6)],
             "floor": [np.zeros(1), self.room_box[1][2] * np.ones(1)],
             "octmap": [-10 * np.ones(9), 10 * np.ones(9)],
+            # CBF, aggressiveness
+            'agg': [np.zeros(1), 100. * np.ones(1)]
         }
         self.obs_comp_names = list(self.obs_space_low_high.keys())
         self.obs_comp_sizes = [self.obs_space_low_high[name][1].size for name in self.obs_comp_names]
 
         obs_comps = self.obs_repr.split("_")
         if self.his_acc:
-            obs_comps = obs_comps + ['acc'] * self.his_acc_num
+            obs_comps = obs_comps + (['acc'] * 3 + ['agg'] * 2) * self.his_acc_num
 
         if self.neighbor_obs_type == 'pos_vel' and self.num_use_neighbor_obs > 0:
             obs_comps = obs_comps + (['rxyz'] + ['rvxyz']) * self.num_use_neighbor_obs
@@ -370,11 +374,16 @@ class QuadrotorSingle:
 
         self.actions[1] = copy.deepcopy(self.actions[0])
         self.actions[0] = copy.deepcopy(action)
-        if self.his_acc:
-            self.obs_his_accs.append(self.dynamics.acc)
 
         _, acc_sbc, sbc_distance_to_boundary = self.controller.step_func(
             dynamics=self.dynamics, acc_des=action, dt=self.dt, observation=sbc_data)
+
+        if self.his_acc:
+            obs_single_acc = np.concatenate([action, acc_sbc, self.dynamics.acc,
+                                             np.array([sbc_data['sbc_neighbor_aggressive']]),
+                                             np.array([sbc_data['sbc_obst_aggressive']])
+                                             ])
+            self.obs_his_accs.append(obs_single_acc)
 
         self.time_remain = self.ep_len - self.tick
         reward, rew_info = compute_reward_weighted(
@@ -486,7 +495,7 @@ class QuadrotorSingle:
         if self.his_acc:
             self.obs_his_accs = deque([], maxlen=self.his_acc_num)
             for _ in range(self.his_acc_num):
-                self.obs_his_accs.append(np.zeros(3))
+                self.obs_his_accs.append(np.zeros(self.obs_single_his_acc))
 
         state = self.state_vector(self)
         return state
