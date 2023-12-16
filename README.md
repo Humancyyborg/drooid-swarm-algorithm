@@ -35,13 +35,6 @@ conda create -n swarm-rl python=3.8
 conda activate swarm-rl
 ```
 
-Then clone Sample Factory and install version 2.0:
-```
-git clone https://github.com/alex-petrenko/sample-factory.git
-cd sample-factory
-git checkout sf2
-pip install -e . && cd ..
-```
 
 Clone and install this repo as an editable Pip package:
 
