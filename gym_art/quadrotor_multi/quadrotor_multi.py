@@ -15,7 +15,8 @@ from gym_art.quadrotor_multi.collisions.room import perform_collision_with_wall,
 from gym_art.quadrotor_multi.obstacles.obstacles import MultiObstacles
 from gym_art.quadrotor_multi.obstacles.utils import get_cell_centers
 from gym_art.quadrotor_multi.plots.log_info import log_list_data, log_data_v1, log_init_info
-from gym_art.quadrotor_multi.quad_utils import QUADS_OBS_REPR, QUADS_NEIGHBOR_OBS_TYPE, OBS_SINGLE_HIS_ACC_DIM
+from gym_art.quadrotor_multi.quad_utils import QUADS_OBS_REPR, QUADS_NEIGHBOR_OBS_TYPE, OBS_SINGLE_HIS_ACC_DIM, \
+    OBS_SINGLE_HIS_ACC_DIM_NO_SBC
 from gym_art.quadrotor_multi.quadrotor_multi_visualization import Quadrotor3DSceneMulti
 from gym_art.quadrotor_multi.quadrotor_single import QuadrotorSingle
 from gym_art.quadrotor_multi.scenarios.mix import create_scenario
@@ -41,7 +42,7 @@ class QuadrotorEnvMulti(gym.Env):
                  # Rendering
                  render_mode='human',
                  # SBC specific
-                 sbc_radius=0.1, sbc_nei_range=5.0, sbc_obst_range=3.0,
+                 enable_sbc=True, sbc_radius=0.1, sbc_nei_range=5.0, sbc_obst_range=3.0,
                  sbc_max_acc=1.0, sbc_max_neighbor_aggressive=5.0, sbc_max_obst_aggressive=5.0,
                  sbc_max_room_aggressive=1.0
                  ):
@@ -52,9 +53,15 @@ class QuadrotorEnvMulti(gym.Env):
         obs_self_size = QUADS_OBS_REPR[obs_repr]
         obs_single_his_acc = 0
         if his_acc:
-            # acc_ref, acc_sbc, acc_real, aggressiveness for neighbor, aggressiveness for obstacle
-            obs_single_his_acc = OBS_SINGLE_HIS_ACC_DIM
-            obs_self_size += his_acc_num * obs_single_his_acc
+            if enable_sbc:
+                # acc_ref, acc_sbc, acc_real, aggressiveness for neighbor, aggressiveness for obstacle
+                obs_single_his_acc = OBS_SINGLE_HIS_ACC_DIM
+                obs_self_size += his_acc_num * obs_single_his_acc
+            else:
+                # acc_ref, acc_real
+                obs_single_his_acc = OBS_SINGLE_HIS_ACC_DIM_NO_SBC
+                obs_self_size += his_acc_num * obs_single_his_acc
+
         if neighbor_visible_num == -1:
             self.num_use_neighbor_obs = self.num_agents - 1
         else:
@@ -87,7 +94,7 @@ class QuadrotorEnvMulti(gym.Env):
                 # Obstacle
                 use_obstacles=use_obstacles, num_obstacles=tmp_num_obstacles,
                 # SBC specific,
-                sbc_radius=sbc_radius, sbc_max_acc=sbc_max_acc
+                enable_sbc=enable_sbc, sbc_radius=sbc_radius, sbc_max_acc=sbc_max_acc
             )
             self.envs.append(e)
 
@@ -151,8 +158,7 @@ class QuadrotorEnvMulti(gym.Env):
         # Scenarios
         self.quads_mode = quads_mode
         self.scenario = create_scenario(
-            quads_mode=quads_mode, envs=self.envs, num_agents=num_agents,
-            room_dims=room_dims)
+            quads_mode=quads_mode, envs=self.envs, num_agents=num_agents, room_dims=room_dims)
 
         # Collisions
         # # Collisions: Neighbors
@@ -231,11 +237,13 @@ class QuadrotorEnvMulti(gym.Env):
         self.step_time_buffer = deque([], maxlen=100)
 
         # Controller: SBC
-        self.sbc_nei_range = sbc_nei_range
-        self.sbc_obst_range = sbc_obst_range
-        self.sbc_max_neighbor_aggressive = sbc_max_neighbor_aggressive
-        self.sbc_max_obst_aggressive = sbc_max_obst_aggressive
-        self.sbc_max_room_aggressive = sbc_max_room_aggressive
+        self.enable_sbc = enable_sbc
+        if enable_sbc:
+            self.sbc_nei_range = sbc_nei_range
+            self.sbc_obst_range = sbc_obst_range
+            self.sbc_max_neighbor_aggressive = sbc_max_neighbor_aggressive
+            self.sbc_max_obst_aggressive = sbc_max_obst_aggressive
+            self.sbc_max_room_aggressive = sbc_max_room_aggressive
 
         # Log information for plots
         # # Log obst pos
@@ -504,79 +512,86 @@ class QuadrotorEnvMulti(gym.Env):
         actions_acc = np.clip(actions[:, :3], a_min=-1.0, a_max=1.0)
         actions_acc = actions_acc * self.action_max
 
-        actions_aggressive_unclip = np.array(actions[:, 3:5])
-        actions_aggressive = np.clip(actions[:, 3:5], a_min=0.0, a_max=1.0)
+        if self.enable_sbc:
+            actions_aggressive_unclip = np.array(actions[:, 3:5])
+            actions_aggressive = np.clip(actions[:, 3:5], a_min=0.0, a_max=1.0)
 
-        coeff_sbc_nei_max_agg = self.rew_coeff['sbc_nei_max_agg']
-        coeff_sbc_obst_max_agg = self.rew_coeff['sbc_obst_max_agg']
+            coeff_sbc_nei_max_agg = self.rew_coeff['sbc_nei_max_agg']
+            coeff_sbc_obst_max_agg = self.rew_coeff['sbc_obst_max_agg']
 
-        sbc_neighbor_aggressive = self.sbc_max_neighbor_aggressive * actions_aggressive[:, 0] * coeff_sbc_nei_max_agg
-        sbc_obst_aggressive = self.sbc_max_obst_aggressive * actions_aggressive[:, 1] * coeff_sbc_obst_max_agg
-        sbc_room_aggressive = self.sbc_max_room_aggressive
+            sbc_neighbor_aggressive = self.sbc_max_neighbor_aggressive * actions_aggressive[:, 0] * coeff_sbc_nei_max_agg
+            sbc_obst_aggressive = self.sbc_max_obst_aggressive * actions_aggressive[:, 1] * coeff_sbc_obst_max_agg
+            sbc_room_aggressive = self.sbc_max_room_aggressive
 
         obs, rewards, dones, infos = [], [], [], []
 
         for i, a in enumerate(actions_acc):
             self.envs[i].rew_coeff = self.rew_coeff
 
-            # Output is acc, not thrusts
-            self_state = {
-                'position': self.envs[i].dynamics.pos,
-                'velocity': self.envs[i].dynamics.vel
-            }
-            neighbor_descriptions = []
-            obstacle_descriptions = []
+            if self.enable_sbc:
+                # Output is acc, not thrusts
+                self_state = {
+                    'position': self.envs[i].dynamics.pos,
+                    'velocity': self.envs[i].dynamics.vel
+                }
+                neighbor_descriptions = []
+                obstacle_descriptions = []
 
-            # Add neighbor robot descriptions
-            neighbor_distances = [np.linalg.norm(self_state['position'] - self.envs[j].dynamics.pos) for j in
-                                  range(self.num_agents)]
-            # TODO: Consider in range? 5.0 might be too big, need to search.
-            neighbor_ids = np.where(np.array(neighbor_distances) < self.sbc_nei_range)[0]
-            for j in neighbor_ids:
-                if i == j:
-                    continue
+                # Add neighbor robot descriptions
+                neighbor_distances = [np.linalg.norm(self_state['position'] - self.envs[j].dynamics.pos) for j in
+                                      range(self.num_agents)]
+                # TODO: Consider in range? 5.0 might be too big, need to search.
+                neighbor_ids = np.where(np.array(neighbor_distances) < self.sbc_nei_range)[0]
+                for j in neighbor_ids:
+                    if i == j:
+                        continue
 
-                neighbor_descriptions.append({
-                    'state': {
-                        'position': self.envs[j].dynamics.pos,
-                        'velocity': self.envs[j].dynamics.vel
-                    },
-                    # TODO: this value is a hyperparameter, 0.1,
-                    # For drone-drone collision, maximum_linf_acceleration any hints?
-                    'radius': self.envs[j].controller.sbc.radius,
-                    'maximum_linf_acceleration_lower_bound': self.envs[j].controller.sbc.maximum_linf_acceleration,
-                    'is_infinite_height_cylinder': False
-                })
+                    neighbor_descriptions.append({
+                        'state': {
+                            'position': self.envs[j].dynamics.pos,
+                            'velocity': self.envs[j].dynamics.vel
+                        },
+                        # TODO: this value is a hyperparameter, 0.1,
+                        # For drone-drone collision, maximum_linf_acceleration any hints?
+                        'radius': self.envs[j].controller.sbc.radius,
+                        'maximum_linf_acceleration_lower_bound': self.envs[j].controller.sbc.maximum_linf_acceleration,
+                        'is_infinite_height_cylinder': False
+                    })
 
-            # Add neighbor obstacle descriptions
-            self_pos = np.array([self_state['position'][0], self_state['position'][1]])
-            obst_distances = [np.linalg.norm(np.array([obst_pos[0], obst_pos[1]]) - self_pos)
-                              for obst_pos in self.obst_pos_arr]
-            # Add neighbor obstacle descriptions
-            # TODO: Consider in range? 3.0 might be too big, need to search.
-            obst_ids = np.where(np.array(obst_distances) < self.sbc_obst_range)[0]
-            for obst_id in obst_ids:
-                obst_pos = np.array(self.obst_pos_arr[obst_id])[:2]
-                obstacle_descriptions.append({
-                    'state': {
-                        'position': obst_pos,
-                        'velocity': np.zeros(2)
-                    },
-                    'radius': self.obst_size * 0.5,
-                    'maximum_linf_acceleration_lower_bound': 0.0,
-                    'is_infinite_height_cylinder': True
-                })
+                # Add neighbor obstacle descriptions
+                self_pos = np.array([self_state['position'][0], self_state['position'][1]])
+                obst_distances = [np.linalg.norm(np.array([obst_pos[0], obst_pos[1]]) - self_pos)
+                                  for obst_pos in self.obst_pos_arr]
+                # Add neighbor obstacle descriptions
+                # TODO: Consider in range? 3.0 might be too big, need to search.
+                obst_ids = np.where(np.array(obst_distances) < self.sbc_obst_range)[0]
+                for obst_id in obst_ids:
+                    obst_pos = np.array(self.obst_pos_arr[obst_id])[:2]
+                    obstacle_descriptions.append({
+                        'state': {
+                            'position': obst_pos,
+                            'velocity': np.zeros(2)
+                        },
+                        'radius': self.obst_size * 0.5,
+                        'maximum_linf_acceleration_lower_bound': 0.0,
+                        'is_infinite_height_cylinder': True
+                    })
 
-            observation, reward, done, info = self.envs[i].step(
-                action=a,
-                sbc_data={'self_state': self_state, 'neighbor_descriptions': neighbor_descriptions,
-                          'obstacle_descriptions': obstacle_descriptions,
-                          'sbc_neighbor_aggressive': sbc_neighbor_aggressive[i],
-                          'sbc_obst_aggressive': sbc_obst_aggressive[i],
-                          'sbc_room_aggressive': sbc_room_aggressive,
-                          'agg_unclip': actions_aggressive_unclip[i],
-                          }
-            )
+                observation, reward, done, info = self.envs[i].step(
+                    action=a,
+                    sbc_data={'self_state': self_state, 'neighbor_descriptions': neighbor_descriptions,
+                              'obstacle_descriptions': obstacle_descriptions,
+                              'sbc_neighbor_aggressive': sbc_neighbor_aggressive[i],
+                              'sbc_obst_aggressive': sbc_obst_aggressive[i],
+                              'sbc_room_aggressive': sbc_room_aggressive,
+                              'agg_unclip': actions_aggressive_unclip[i],
+                              }
+                )
+            else:
+                observation, reward, done, info = self.envs[i].step(
+                    action=a,
+                    sbc_data=None
+                )
 
             obs.append(observation)
             rewards.append(reward)

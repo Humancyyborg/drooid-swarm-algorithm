@@ -35,7 +35,7 @@ GRAV = 9.81  # default gravitational constant
 # reasonable reward function for hovering at a goal and not flying too high
 def compute_reward_weighted(
         goal, cur_pos, rl_acc, acc_sbc, sbc_distance_to_boundary, mellinger_acc, dt, rew_coeff, on_floor, action_prev,
-        aggressive_unclip):
+        aggressive_unclip, enable_sbc):
     # Distance to the goal
     dist = np.linalg.norm(goal - cur_pos)
     cost_pos_raw = dist
@@ -46,8 +46,12 @@ def compute_reward_weighted(
     cost_crash = rew_coeff["crash"] * cost_crash_raw
 
     # Difference between acc_rl & acc_sbc
-    cost_rl_sbc_raw = np.linalg.norm(acc_sbc - rl_acc)
-    cost_rl_sbc = rew_coeff["rl_sbc"] * cost_rl_sbc_raw
+    if enable_sbc:
+        cost_rl_sbc_raw = np.linalg.norm(acc_sbc - rl_acc)
+        cost_rl_sbc = rew_coeff["rl_sbc"] * cost_rl_sbc_raw
+    else:
+        cost_rl_sbc_raw = 0.0
+        cost_rl_sbc = 0.0
 
     # Difference between acc_rl & acc_mellinger
     cost_rl_mellinger_raw = np.linalg.norm(mellinger_acc - rl_acc)
@@ -58,18 +62,26 @@ def compute_reward_weighted(
     cost_act_change = rew_coeff["act_change"] * cost_act_change_raw
 
     # Aggressiveness unclip
-    aggressiveness_clip = np.clip(aggressive_unclip, a_min=0.0, a_max=1.0)
-    agg_clipped_list = np.abs(aggressive_unclip - aggressiveness_clip)
-    agg_clipped_cost = agg_clipped_list[0] + agg_clipped_list[1]
-    agg_too_large_cost = aggressiveness_clip[0] + aggressiveness_clip[1]
+    if enable_sbc:
+        aggressiveness_clip = np.clip(aggressive_unclip, a_min=0.0, a_max=1.0)
+        agg_clipped_list = np.abs(aggressive_unclip - aggressiveness_clip)
+        agg_clipped_cost = agg_clipped_list[0] + agg_clipped_list[1]
+        agg_too_large_cost = aggressiveness_clip[0] + aggressiveness_clip[1]
 
-    cost_aggressiveness_raw = agg_clipped_cost + agg_too_large_cost
-    cost_aggressiveness = rew_coeff["cbg_agg"] * cost_aggressiveness_raw
+        cost_aggressiveness_raw = agg_clipped_cost + agg_too_large_cost
+        cost_aggressiveness = rew_coeff["cbg_agg"] * cost_aggressiveness_raw
+    else:
+        cost_aggressiveness_raw = 0.0
+        cost_aggressiveness = 0.0
 
     # SBC boundary cost
-    if sbc_distance_to_boundary is not None:
-        cost_sbc_boundary_raw = sbc_distance_to_boundary
-        cost_sbc_boundary = rew_coeff["sbc_boundary"] * cost_sbc_boundary_raw
+    if enable_sbc:
+        if sbc_distance_to_boundary is not None:
+            cost_sbc_boundary_raw = sbc_distance_to_boundary
+            cost_sbc_boundary = rew_coeff["sbc_boundary"] * cost_sbc_boundary_raw
+        else:
+            cost_sbc_boundary_raw = 0.
+            cost_sbc_boundary = 0.
     else:
         cost_sbc_boundary_raw = 0.
         cost_sbc_boundary = 0.
@@ -130,7 +142,7 @@ class QuadrotorSingle:
             # Obstacle
             use_obstacles=False, num_obstacles=0,
             # SBC specific,
-            sbc_radius=0.1, sbc_max_acc=2.0,
+            enable_sbc=True, sbc_radius=0.1, sbc_max_acc=2.0,
             # Others
             dim_mode='3D', tf_control=False, sim_freq=200., sim_steps=2, verbose=False, gravity=GRAV, t2w_std=0.005,
             t2t_std=0.0005, excite=False, dynamics_simplification=False):
@@ -178,8 +190,14 @@ class QuadrotorSingle:
         self.num_obstacles = num_obstacles
 
         # # SBC specific
-        self.sbc_radius = sbc_radius
-        self.sbc_max_acc = sbc_max_acc
+        self.enable_sbc = enable_sbc
+        if enable_sbc:
+            self.sbc_radius = sbc_radius
+            self.sbc_max_acc = sbc_max_acc
+        else:
+            self.sbc_radius = 0.05
+            self.sbc_max_acc = 2.0
+
         # Room
         self.room_length = room_dims[0]
         self.room_width = room_dims[1]
@@ -308,11 +326,16 @@ class QuadrotorSingle:
         self.controller = MellingerController(
             dynamics=self.dynamics, sbc_radius=self.sbc_radius,
             room_box=self.room_box, num_agents=self.num_agents, num_obstacles=self.num_obstacles,
-            sbc_max_acc=self.sbc_max_acc)
+            sbc_max_acc=self.sbc_max_acc, enable_sbc=self.enable_sbc)
 
         # ACTIONS
-        action_lows_space = np.array([-1, -1, -1, 0, 0], dtype=np.float32)
-        action_high_space = np.array([1, 1, 1, 1, 1], dtype=np.float32)
+        if self.enable_sbc:
+            action_lows_space = np.array([-1, -1, -1, 0, 0], dtype=np.float32)
+            action_high_space = np.array([1, 1, 1, 1, 1], dtype=np.float32)
+        else:
+            action_lows_space = np.array([-1, -1, -1], dtype=np.float32)
+            action_high_space = np.array([1, 1, 1], dtype=np.float32)
+
         self.action_space = spaces.Box(low=action_lows_space, high=action_high_space, dtype=np.float32)
 
         # STATE VECTOR FUNCTION
@@ -357,7 +380,10 @@ class QuadrotorSingle:
 
         obs_comps = self.obs_repr.split("_")
         if self.his_acc:
-            obs_comps = obs_comps + (['acc'] * 3 + ['agg'] * 2) * self.his_acc_num
+            if self.enable_sbc:
+                obs_comps = obs_comps + (['acc'] * 3 + ['agg'] * 2) * self.his_acc_num
+            else:
+                obs_comps = obs_comps + (['acc'] * 2) * self.his_acc_num
 
         if self.neighbor_obs_type == 'pos_vel' and self.num_use_neighbor_obs > 0:
             obs_comps = obs_comps + (['rxyz'] + ['rvxyz']) * self.num_use_neighbor_obs
@@ -400,20 +426,33 @@ class QuadrotorSingle:
             dynamics=self.dynamics, acc_des=action, dt=self.dt, observation=sbc_data)
 
         if self.his_acc:
-            obs_single_acc = np.concatenate([action, acc_sbc, self.dynamics.acc,
-                                             np.array([sbc_data['sbc_neighbor_aggressive']]),
-                                             np.array([sbc_data['sbc_obst_aggressive']])
-                                             ])
-            self.obs_his_accs.append(obs_single_acc)
+            if self.enable_sbc:
+                obs_single_acc = np.concatenate([action, acc_sbc, self.dynamics.acc,
+                                                 np.array([sbc_data['sbc_neighbor_aggressive']]),
+                                                 np.array([sbc_data['sbc_obst_aggressive']])
+                                                 ])
+                self.obs_his_accs.append(obs_single_acc)
+            else:
+                obs_single_acc = np.concatenate([action, self.dynamics.acc])
+                self.obs_his_accs.append(obs_single_acc)
 
         self.time_remain = self.ep_len - self.tick
-        reward, rew_info = compute_reward_weighted(
-            goal=self.goal, cur_pos=self.dynamics.pos, rl_acc=action,
-            acc_sbc=acc_sbc, sbc_distance_to_boundary=sbc_distance_to_boundary,
-            mellinger_acc=self.dynamics.acc, dt=self.control_dt,
-            rew_coeff=self.rew_coeff, on_floor=self.dynamics.on_floor,
-            action_prev=self.actions[1], aggressive_unclip=sbc_data['agg_unclip']
-        )
+        if self.enable_sbc:
+            reward, rew_info = compute_reward_weighted(
+                goal=self.goal, cur_pos=self.dynamics.pos, rl_acc=action,
+                acc_sbc=acc_sbc, sbc_distance_to_boundary=sbc_distance_to_boundary,
+                mellinger_acc=self.dynamics.acc, dt=self.control_dt,
+                rew_coeff=self.rew_coeff, on_floor=self.dynamics.on_floor,
+                action_prev=self.actions[1], aggressive_unclip=sbc_data['agg_unclip'], enable_sbc=self.enable_sbc
+            )
+        else:
+            reward, rew_info = compute_reward_weighted(
+                goal=self.goal, cur_pos=self.dynamics.pos, rl_acc=action,
+                acc_sbc=None, sbc_distance_to_boundary=None,
+                mellinger_acc=self.dynamics.acc, dt=self.control_dt,
+                rew_coeff=self.rew_coeff, on_floor=self.dynamics.on_floor,
+                action_prev=self.actions[1], aggressive_unclip=None, enable_sbc=self.enable_sbc
+            )
 
         self.tick += 1
         done = self.tick > self.ep_len

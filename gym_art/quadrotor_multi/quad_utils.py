@@ -32,6 +32,7 @@ QUADS_OBS_REPR = {
 
 # acc_ref, acc_sbc, acc_real, aggressiveness for neighbor, aggressiveness for obstacle
 OBS_SINGLE_HIS_ACC_DIM = 11
+OBS_SINGLE_HIS_ACC_DIM_NO_SBC = 6
 
 QUADS_NEIGHBOR_OBS_TYPE = {
     'none': 0,

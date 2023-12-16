@@ -72,6 +72,7 @@ def make_quadrotor_env_multi(cfg, render_mode=None, **kwargs):
         # Rendering
         render_mode=render_mode,
         # SBC specific
+        enable_sbc=cfg.quads_enable_sbc,
         sbc_radius=cfg.quads_sbc_radius,
         sbc_nei_range=cfg.quads_neighbor_range, sbc_obst_range=cfg.quads_obst_range,
         sbc_max_acc=cfg.quads_max_acc,

@@ -227,7 +227,7 @@ def quadrotor_jacobian(dynamics):
 
 class MellingerController(object):
     # @profile
-    def __init__(self, dynamics, sbc_radius, room_box, num_agents, num_obstacles, sbc_max_acc):
+    def __init__(self, dynamics, sbc_radius, room_box, num_agents, num_obstacles, sbc_max_acc, enable_sbc):
         jacobian = quadrotor_jacobian(dynamics)
         self.Jinv = np.linalg.inv(jacobian)
         self.action = None
@@ -237,12 +237,12 @@ class MellingerController(object):
 
         self.rot_des = np.eye(3)
 
-        self.enable_sbc = True
+        self.enable_sbc = enable_sbc
         # maximum_linf_acceleration, max_acc in any dimension
-        self.sbc = NominalSBC(maximum_linf_acceleration=sbc_max_acc, radius=sbc_radius, room_box=room_box,
-                              num_agents=num_agents, num_obstacles=num_obstacles)
-
-        self.sbc_last_safe_acc = None
+        if enable_sbc:
+            self.sbc = NominalSBC(maximum_linf_acceleration=sbc_max_acc, radius=sbc_radius, room_box=room_box,
+                                  num_agents=num_agents, num_obstacles=num_obstacles)
+            self.sbc_last_safe_acc = None
 
         self.step_func = self.step
 
@@ -269,7 +269,8 @@ class MellingerController(object):
             else:
                 if self.sbc_last_safe_acc is not None:
                     acc_for_control = np.array(self.sbc_last_safe_acc)
-
+        else:
+            acc_for_control = np.array(acc_des)
 
         # Question: Why do we need to do this???
         acc_for_control_without_grav = np.array(acc_for_control)

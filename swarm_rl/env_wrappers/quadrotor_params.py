@@ -133,6 +133,9 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_anneal_safe_start_steps', default=0.0, type=float, help='Start annealing')
     p.add_argument('--quads_anneal_safe_total_steps', default=0.0, type=float, help='Total annealing steps')
 
+    # Enable sbc
+    p.add_argument('--quads_enable_sbc', default=True, type=str2bool, help='Whether to use sbc or not ')
+
     # # CBF aggressiveness annealing for:
     # # 1) quads_max_neighbor_aggressive 2) quads_max_obst_aggressive
     p.add_argument('--cbf_agg_anneal_steps', default=0.0, type=float,
