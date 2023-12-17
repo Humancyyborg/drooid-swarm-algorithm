@@ -515,8 +515,8 @@ class QuadrotorEnvMulti(gym.Env):
     def step(self, actions):
         # The meaning of actions is acceleration change
         actions = np.array(actions)
-        actions_acc = np.clip(actions[:, :3], a_min=-1.0, a_max=1.0)
-        actions_acc = actions_acc * self.action_max
+        # actions_acc = np.clip(actions[:, :3], a_min=-1.0, a_max=1.0)
+        # actions_acc = actions_acc * self.action_max
 
         if self.enable_sbc:
             actions_aggressive_unclip = np.array(actions[:, 3:5])
@@ -531,7 +531,7 @@ class QuadrotorEnvMulti(gym.Env):
 
         obs, rewards, dones, infos = [], [], [], []
 
-        for i, a in enumerate(actions_acc):
+        for i, a in enumerate(actions):
             self.envs[i].rew_coeff = self.rew_coeff
 
             if self.enable_sbc:

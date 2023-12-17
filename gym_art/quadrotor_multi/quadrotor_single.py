@@ -75,8 +75,8 @@ def compute_reward_weighted(
         cost_rl_sbc = 0.0
 
     # Difference between acc_rl & acc_mellinger
-    cost_rl_mellinger_raw = np.linalg.norm(mellinger_acc - rl_acc)
-    cost_rl_mellinger = rew_coeff["rl_mellinger"] * cost_rl_mellinger_raw
+    cost_rl_mellinger_raw = 0.0
+    cost_rl_mellinger = 0.0
 
     # Action change
     cost_act_change_raw = np.linalg.norm(action_prev - rl_acc)
@@ -254,7 +254,7 @@ class QuadrotorSingle:
 
         # Preset parameters
         self.obs_repr = obs_repr
-        self.actions = [np.zeros([3, ]), np.zeros([3, ])]
+        self.actions = [np.zeros([4, ]), np.zeros([4, ])]
         self.rew_coeff = None
         self.his_acc = his_acc
         self.his_acc_num = his_acc_num
@@ -367,20 +367,17 @@ class QuadrotorSingle:
             use_numba=self.use_numba, dt=self.dt)
 
         # CONTROL
-        self.controller = MellingerController(
-            dynamics=self.dynamics, sbc_radius=self.sbc_radius,
-            room_box=self.room_box, num_agents=self.num_agents, num_obstacles=self.num_obstacles,
-            sbc_max_acc=self.sbc_max_acc, enable_sbc=self.enable_sbc)
+        self.controller = RawControl(self.dynamics, zero_action_middle=self.raw_control_zero_middle)
 
         # ACTIONS
-        if self.enable_sbc:
-            action_lows_space = np.array([-1, -1, -1, 0, 0], dtype=np.float32)
-            action_high_space = np.array([1, 1, 1, 1, 1], dtype=np.float32)
-        else:
-            action_lows_space = np.array([-1, -1, -1], dtype=np.float32)
-            action_high_space = np.array([1, 1, 1], dtype=np.float32)
+        # if self.enable_sbc:
+        #     action_lows_space = np.array([-1, -1, -1, 0, 0], dtype=np.float32)
+        #     action_high_space = np.array([1, 1, 1, 1, 1], dtype=np.float32)
+        # else:
+        #     action_lows_space = np.array([-1, -1, -1], dtype=np.float32)
+        #     action_high_space = np.array([1, 1, 1], dtype=np.float32)
 
-        self.action_space = spaces.Box(low=action_lows_space, high=action_high_space, dtype=np.float32)
+        self.action_space = self.controller.action_space(self.dynamics)
 
         # STATE VECTOR FUNCTION
         self.state_vector = getattr(get_state, "state_" + self.obs_repr)
@@ -466,8 +463,9 @@ class QuadrotorSingle:
         self.actions[1] = copy.deepcopy(self.actions[0])
         self.actions[0] = copy.deepcopy(action)
 
-        _, acc_sbc, sbc_distance_to_boundary = self.controller.step_func(
-            dynamics=self.dynamics, acc_des=action, dt=self.dt, observation=sbc_data)
+        acc_sbc = None
+        sbc_distance_to_boundary = None
+        self.controller.step_func(dynamics=self.dynamics, action=action, dt=self.dt)
 
         if self.his_acc:
             if self.enable_sbc:
@@ -598,7 +596,7 @@ class QuadrotorSingle:
 
         # Reseting some internal state (counters, etc)
         self.tick = 0
-        self.actions = [np.zeros([3, ]), np.zeros([3, ])]
+        self.actions = [np.zeros([4, ]), np.zeros([4, ])]
 
         if self.his_acc:
             self.obs_his_accs = deque([], maxlen=self.his_acc_num)
