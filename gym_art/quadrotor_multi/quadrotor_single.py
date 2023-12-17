@@ -92,8 +92,12 @@ def compute_reward_weighted(
         cost_aggressiveness_raw = agg_clipped_cost + agg_too_large_cost
         cost_aggressiveness = rew_coeff["cbg_agg"] * cost_aggressiveness_raw
     else:
-        cost_aggressiveness_raw = 0.0
-        cost_aggressiveness = 0.0
+        aggressiveness_clip = np.clip(aggressive_unclip, a_min=0.0, a_max=1.0)
+        agg_clipped_list = np.abs(aggressive_unclip - aggressiveness_clip)
+        agg_clipped_cost = agg_clipped_list[0] + agg_clipped_list[1]
+
+        cost_aggressiveness_raw = agg_clipped_cost
+        cost_aggressiveness = rew_coeff["cbg_agg"] * cost_aggressiveness_raw
 
     # SBC boundary cost
     if enable_sbc:
@@ -254,7 +258,7 @@ class QuadrotorSingle:
 
         # Preset parameters
         self.obs_repr = obs_repr
-        self.actions = [np.zeros([3, ]), np.zeros([3, ])]
+        self.actions = [np.zeros([5, ]), np.zeros([5, ])]
         self.rew_coeff = None
         self.his_acc = his_acc
         self.his_acc_num = his_acc_num
@@ -373,12 +377,12 @@ class QuadrotorSingle:
             sbc_max_acc=self.sbc_max_acc, enable_sbc=self.enable_sbc)
 
         # ACTIONS
-        if self.enable_sbc:
-            action_lows_space = np.array([-1, -1, -1, 0, 0], dtype=np.float32)
-            action_high_space = np.array([1, 1, 1, 1, 1], dtype=np.float32)
-        else:
-            action_lows_space = np.array([-1, -1, -1], dtype=np.float32)
-            action_high_space = np.array([1, 1, 1], dtype=np.float32)
+        # if self.enable_sbc:
+        action_lows_space = np.array([-1, -1, -1, 0, 0], dtype=np.float32)
+        action_high_space = np.array([1, 1, 1, 1, 1], dtype=np.float32)
+        # else:
+        #     action_lows_space = np.array([-1, -1, -1], dtype=np.float32)
+        #     action_high_space = np.array([1, 1, 1], dtype=np.float32)
 
         self.action_space = spaces.Box(low=action_lows_space, high=action_high_space, dtype=np.float32)
 
@@ -598,7 +602,7 @@ class QuadrotorSingle:
 
         # Reseting some internal state (counters, etc)
         self.tick = 0
-        self.actions = [np.zeros([3, ]), np.zeros([3, ])]
+        self.actions = [np.zeros([5, ]), np.zeros([5, ])]
 
         if self.his_acc:
             self.obs_his_accs = deque([], maxlen=self.his_acc_num)
