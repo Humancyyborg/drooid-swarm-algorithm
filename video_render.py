@@ -59,7 +59,7 @@ def update(frame, acc_lists, pv_lists, obstacle_positions, goal_positions, ax, t
         ax.add_artist(circle)
 
     for g_id, goal in goal_positions.iterrows():
-        circle = plt.Circle((goal['X'], goal['Y']), radius=0.1, color=color_list[g_id])
+        circle = plt.Circle((goal['X'], goal['Y']), radius=0.05, color=color_list[g_id])
         ax.add_artist(circle)
 
     # Plot drones

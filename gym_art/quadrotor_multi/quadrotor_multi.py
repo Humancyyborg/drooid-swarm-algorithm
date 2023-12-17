@@ -607,7 +607,8 @@ class QuadrotorEnvMulti(gym.Env):
             if self.log_2d_visual_data_flag:
                 self.acc_list[i].append(info['acc'])
                 self.pv_list[i].append({'pos': self.envs[i].dynamics.pos, 'vel': self.envs[i].dynamics.vel})
-                self.aggressive_list[i].append({'neighbor': sbc_neighbor_aggressive[i], 'obst': sbc_obst_aggressive[i]})
+                if self.enable_sbc:
+                    self.aggressive_list[i].append({'neighbor': sbc_neighbor_aggressive[i], 'obst': sbc_obst_aggressive[i]})
 
             self.pos[i, :] = self.envs[i].dynamics.pos
 
