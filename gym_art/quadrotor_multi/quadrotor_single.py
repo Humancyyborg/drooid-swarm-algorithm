@@ -45,28 +45,25 @@ def compute_reward_weighted(
     cost_crash_raw = float(on_floor)
     cost_crash = rew_coeff["crash"] * cost_crash_raw
 
+    # Penalize amount of control effort
+    cost_effort_raw = np.linalg.norm(rl_acc)
+
+    # Loss orientation
+    if on_floor:
+        cost_orient_raw = 1.0
+    else:
+        cost_orient_raw = -dynamics.rot[2, 2]
+
+    # Loss for constant uncontrolled rotation around vertical axis
+    cost_spin_raw = (dynamics.omega[0] ** 2 + dynamics.omega[1] ** 2 + dynamics.omega[2] ** 2) ** 0.5
+
     if cost_enable_extra:
-        # Penalize amount of control effort
-        cost_effort_raw = np.linalg.norm(rl_acc)
         cost_effort = rew_coeff["effort"] * cost_effort_raw
-
-        # Loss orientation
-        if on_floor:
-            cost_orient_raw = 1.0
-        else:
-            cost_orient_raw = -dynamics.rot[2, 2]
-
         cost_orient = rew_coeff["orient"] * cost_orient_raw
-
-        # Loss for constant uncontrolled rotation around vertical axis
-        cost_spin_raw = (dynamics.omega[0] ** 2 + dynamics.omega[1] ** 2 + dynamics.omega[2] ** 2) ** 0.5
         cost_spin = rew_coeff["spin"] * cost_spin_raw
     else:
-        cost_effort_raw = 0.0
         cost_effort = 0.0
-        cost_orient_raw = 0.0
         cost_orient = 0.0
-        cost_spin_raw = 0.0
         cost_spin = 0.0
 
     # Difference between acc_rl & acc_sbc
@@ -113,31 +110,52 @@ def compute_reward_weighted(
     reward = -dt * np.sum([
         cost_pos,
         cost_crash,
-        cost_rl_sbc,
+        # Extra #1: original paper
+        cost_effort,
+        cost_orient,
+        cost_spin,
+        # Extra #2: diff b/w rl and real
         cost_rl_mellinger,
+        # Extra #3: SBC based
+        cost_rl_sbc,
         cost_sbc_boundary,
-        cost_act_change,
         cost_aggressiveness,
+        # Extra #4: action change
+        cost_act_change,
     ])
 
     rew_info = {
         "rew_main": -cost_pos,
         'rew_pos': -cost_pos,
         'rew_crash': -cost_crash,
-        "rew_rl_sbc": -cost_rl_sbc,
+        # Extra #1: original paper
+        'rew_effort': -cost_effort,
+        'rew_orient': -cost_orient,
+        'rew_spin': -cost_spin,
+        # Extra #2: diff b/w rl and real
         'rew_rl_mellinger': -cost_rl_mellinger,
+        # Extra #3: SBC based
+        "rew_rl_sbc": -cost_rl_sbc,
         'rew_sbc_boundary': -cost_sbc_boundary,
-        'rew_act_change': -cost_act_change,
         'rew_cbf_agg': -cost_aggressiveness,
+        # Extra #4: action change
+        'rew_act_change': -cost_act_change,
 
         "rewraw_main": -cost_pos_raw,
         'rewraw_pos': -cost_pos_raw,
         'rewraw_crash': -cost_crash_raw,
-        "rewraw_rl_sbc": -cost_rl_sbc_raw,
+        # Extra #1: original paper
+        'rewraw_effort': -cost_effort_raw,
+        'rewraw_orient': -cost_orient_raw,
+        'rewraw_spin': -cost_spin_raw,
+        # Extra #2: diff b/w rl and real
         'rewraw_rl_mellinger': -cost_rl_mellinger_raw,
+        # Extra #3: SBC based
+        "rewraw_rl_sbc": -cost_rl_sbc_raw,
         'rewraw_sbc_boundary': -cost_sbc_boundary_raw,
-        'rewraw_act_change': -cost_act_change_raw,
         'rewraw_cbf_agg': -cost_aggressiveness_raw,
+        # Extra #4: action change
+        'rewraw_act_change': -cost_act_change_raw,
     }
 
     for k, v in rew_info.items():
