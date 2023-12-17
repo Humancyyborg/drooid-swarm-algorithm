@@ -104,12 +104,19 @@ def compute_reward_weighted(
         if sbc_distance_to_boundary is not None:
             cost_sbc_boundary_raw = sbc_distance_to_boundary
             cost_sbc_boundary = rew_coeff["sbc_boundary"] * cost_sbc_boundary_raw
+
+            cost_extra_rl_real_raw = cost_rl_mellinger_raw * cost_sbc_boundary_raw
+            cost_extra_rl_real = rew_coeff["extra_rl_real"] * cost_extra_rl_real_raw
         else:
             cost_sbc_boundary_raw = 0.
             cost_sbc_boundary = 0.
+            cost_extra_rl_real_raw = 0.
+            cost_extra_rl_real = 0.
     else:
         cost_sbc_boundary_raw = 0.
         cost_sbc_boundary = 0.
+        cost_extra_rl_real_raw = 0.
+        cost_extra_rl_real = 0.
 
     reward = -dt * np.sum([
         cost_pos,
@@ -126,6 +133,8 @@ def compute_reward_weighted(
         cost_aggressiveness,
         # Extra #4: action change
         cost_act_change,
+        # Extra #5: cost_extra_rl_real
+        cost_extra_rl_real,
     ])
 
     rew_info = {
@@ -144,6 +153,8 @@ def compute_reward_weighted(
         'rew_cbf_agg': -cost_aggressiveness,
         # Extra #4: action change
         'rew_act_change': -cost_act_change,
+        # Extra #5: cost_extra_rl_real
+        'rew_extra_rl_real': -cost_extra_rl_real,
 
         "rewraw_main": -cost_pos_raw,
         'rewraw_pos': -cost_pos_raw,
@@ -160,6 +171,8 @@ def compute_reward_weighted(
         'rewraw_cbf_agg': -cost_aggressiveness_raw,
         # Extra #4: action change
         'rewraw_act_change': -cost_act_change_raw,
+        # Extra #5: cost_extra_rl_real
+        'rewraw_extra_rl_real': -cost_extra_rl_real_raw,
     }
 
     for k, v in rew_info.items():
@@ -258,7 +271,7 @@ class QuadrotorSingle:
 
         # Preset parameters
         self.obs_repr = obs_repr
-        self.actions = [np.zeros([5, ]), np.zeros([5, ])]
+        self.actions = [np.zeros([3, ]), np.zeros([3, ])]
         self.rew_coeff = None
         self.his_acc = his_acc
         self.his_acc_num = his_acc_num
@@ -602,7 +615,7 @@ class QuadrotorSingle:
 
         # Reseting some internal state (counters, etc)
         self.tick = 0
-        self.actions = [np.zeros([5, ]), np.zeros([5, ])]
+        self.actions = [np.zeros([3, ]), np.zeros([3, ])]
 
         if self.his_acc:
             self.obs_his_accs = deque([], maxlen=self.his_acc_num)

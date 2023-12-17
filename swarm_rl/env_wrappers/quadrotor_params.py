@@ -130,6 +130,8 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_cost_cbf_agg', default=1.0, type=float, help='cost coeff of the aggressiveness cost')
     p.add_argument('--quads_cost_enable_extra', default=False, type=str2bool,
                    help='enable cost for action, effort, and orientation')
+    p.add_argument('--quads_cost_extra_rl_real', default=1.0, type=float,
+                   help='cost coeff of the extra cost b/w acc_rl and acc_mellinger')
 
     # # Reward annealing for: 1) quads_cost_rl_sbc 2) quads_cost_rl_mellinger
     p.add_argument('--quads_anneal_safe_start_steps', default=0.0, type=float, help='Start annealing')
