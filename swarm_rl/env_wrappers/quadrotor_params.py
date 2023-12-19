@@ -126,11 +126,11 @@ def add_quadrotors_env_args(env, parser):
     p.add_argument('--quads_sbc_boundary', default=0.1, type=float, help='sbc boundary in reward function')
     p.add_argument('--quads_cost_pos', default=1.0, type=float, help='cost coeff of the position cost')
     p.add_argument('--quads_cost_crash', default=1.0, type=float, help='cost coeff of the crash cost')
-    p.add_argument('--quads_cost_act_change', default=1.0, type=float, help='cost coeff of the action change cost')
-    p.add_argument('--quads_cost_cbf_agg', default=1.0, type=float, help='cost coeff of the aggressiveness cost')
+    p.add_argument('--quads_cost_act_change', default=0.0, type=float, help='cost coeff of the action change cost')
+    p.add_argument('--quads_cost_cbf_agg', default=0.0, type=float, help='cost coeff of the aggressiveness cost')
     p.add_argument('--quads_cost_enable_extra', default=False, type=str2bool,
                    help='enable cost for action, effort, and orientation')
-    p.add_argument('--quads_cost_extra_rl_real', default=1.0, type=float,
+    p.add_argument('--quads_cost_extra_rl_real', default=0.0, type=float,
                    help='cost coeff of the extra cost b/w acc_rl and acc_mellinger')
 
     # # Reward annealing for: 1) quads_cost_rl_sbc 2) quads_cost_rl_mellinger
