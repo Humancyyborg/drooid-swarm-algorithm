@@ -1,15 +1,6 @@
-# Decentralized Control of Quadrotor Swarms with End-to-end Deep Reinforcement Learning
+ We demonstrate decentralized drone swarm control learned via large-scale multi-agent reinforcement learning. Neural network policies trained to control individual drones in physics simulation produce advanced flocking, tight maneuvers in formation, collision avoidance, dynamic formation restructuring to dodge obstacles, and pursuit task coordination. By analyzing model architectures & training parameters influencing final performance, we develop policies that transfer from simulation to physically constrained drones, enabling key swarm behaviors like station keeping and goal swapping within constrained environments.
 
-A codebase for training reinforcement learning policies for quadrotor swarms.
-Includes:
-* Flight dynamics simulator forked from https://github.com/amolchanov86/gym_art
-and extended to support swarms of quadrotor drones
-* Scripts and the necessary wrappers to facilitate training of control policies with Sample Factory
-https://github.com/alex-petrenko/sample-factory
-
-**Paper:** https://arxiv.org/abs/2109.07735
-
-**Website:** https://sites.google.com/view/swarm-rl
+**Website:**https://drooid.xyz/
 
 
 
@@ -106,25 +97,7 @@ To run unit tests:
 ./run_tests.sh
 ```
 
-## Citation
+## Reference 
 
-If you use this repository in your work or otherwise wish to cite it, please make reference to our CORL paper.
+https://arxiv.org/abs/2109.07735
 
-```
-@inproceedings{batra21corl,
-  author    = {Sumeet Batra and
-               Zhehui Huang and
-               Aleksei Petrenko and
-               Tushar Kumar and
-               Artem Molchanov and
-               Gaurav S. Sukhatme},
-  title     = {Decentralized Control of Quadrotor Swarms with End-to-end Deep Reinforcement Learning},
-  booktitle = {5th Conference on Robot Learning, CoRL 2021, 8-11 November 2021, London, England, {UK}},
-  series    = {Proceedings of Machine Learning Research},
-  publisher = {{PMLR}},
-  year      = {2021},
-  url       = {https://arxiv.org/abs/2109.07735}
-}
-```
-
-Github issues and pull requests are welcome.
